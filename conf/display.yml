@@ -1,0 +1,6 @@
+font: Helvetica
+default_color: '#000000'
+token_color: '#000000'
+found_color: '#ff0000'
+filtered_color: '#cccccc'
+edge_weight: 1

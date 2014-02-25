@@ -1,0 +1,118 @@
+%html{ :xmlns => "http://www.w3.org/1999/xhtml", "xml:lang" => "en", :lang => "en" }
+  %head
+    /%title GAST &ndash; Graph Annotation and Search Tool
+    %title Graph annotation and search tool
+    %meta{'http-equiv' => 'Content-Type', :content => 'text/html; charset=utf-8' }
+    %link{ :rel => "stylesheet", :type => "text/css", :href => "/style.css" }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }  
+
+  %body
+    %div{ :id => "graphdiv" }
+      %object{ :id => "graph", :type => "image/svg+xml" }
+      /%div{ :id => "loadinginfo" }
+      /  Loading graph image ...
+
+    %div{ :id => "bottom" }
+      %div{ :id => "textline" }
+      %div{ :id => "meta" }
+      %div{ :id => "cmddiv" }
+        %form{ :action => "/commandline", :method => "post",  :name => "cmd" }
+          %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
+          %select{ :name => "layer", :id => "layer" }
+            - display.layers_combinations.each do |k,v|
+              %option{ :value => k }= k
+            %option{ :value => "none" }= "none"
+          %select{ :name => "sentence", :id => "sentence" }
+            - graph.sentences.each do |n|
+              - if display.found && display.found[:sentences].include?(n)
+                %option{ :value => n, :class => "found_sentence" }= n
+              - else
+                %option{ :value => n }= n
+          %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
+
+    %script{ :type => "text/javascript", :language => "JavaScript" }
+      setSelectedIndex(document.getElementById('sentence'),'#{request.cookies['traw_sentence']}');
+      setSelectedIndex(document.getElementById('layer'),'#{request.cookies['traw_layer']}');
+    
+    %div{ :id => "search" }
+      %form{ :action => "/search", :method => "post", :name => "search" }
+        %textarea{ :cols => "50", :rows => "20", :name => "query", :id => "query" } #{request.cookies['traw_query'].to_s}
+        %br
+        %input{ :type => "button", :value => "Search", :onclick => "sendSearch()" }
+        %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export/subcorpus.json'" }
+        %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
+      %div{ :id => "searchresult" }
+        #{searchresult}
+    
+    %div{ :id => "filter" }
+      %form{ :action => "/filter", :method => "post", :name => "filter" }
+        %textarea{ :cols => "50", :rows => "4", :name => "filterfield", :id => "filterfield" } #{request.cookies['traw_filter'].to_s}
+        %br
+        %table
+          %tr
+            %td
+              %input{ :id => 'hide rest', :type => "button", :value => "Hide rest", :onclick => "sendFilter('hide rest')", :class => request.cookies['traw_filter_mode'].to_s == 'hide rest' ? 'selected_filter_mode' : '' }
+            %td
+              %input{ :id => 'hide selected', :type => "button", :value => "Hide defined", :onclick => "sendFilter('hide selected')", :class => request.cookies['traw_filter_mode'].to_s == 'hide selected' ? 'selected_filter_mode' : '' }
+          %tr
+            %td
+              %input{ :id => 'filter rest', :type => "button", :value => "Filter rest", :onclick => "sendFilter('filter rest')", :class => request.cookies['traw_filter_mode'].to_s == 'filter rest' ? 'selected_filter_mode' : '' }
+            %td
+              %input{ :id => 'filter selected', :type => "button", :value => "Filter defined", :onclick => "sendFilter('filter selected')", :class => request.cookies['traw_filter_mode'].to_s == 'filter selected' ? 'selected_filter_mode' : '' }
+          %tr
+            %td{ :colspan => "2" }
+              %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
+    
+    %div{ :id => "documentation" }
+      %a{ :href => "/doc/GAST-Dokumentation.pdf"} Documentation
+    
+    %div{ :id => "help" }
+      %h3 key commands
+      %ul
+        %li scale the graph: ctrl + shift + -/+/0
+        %li scroll the graph: ctrl + shift + arrows/Home/End/PgUp/PgDown
+        %li show/hide help window: F1
+        %li show/hide text and sentence info: F2
+        %li show/hide element IDs: F4
+        %li show/hide search window: F7
+      %h3 command line commands
+      %h4 data and navigation
+      %ul
+        %li load file: <i>load file_name_without_extension</i>
+        %li load and add file: <i>add file_name_without_extension</i>
+        %li save workspace to file: <i>save file_name_without_extension</i>
+        %li clear workspace: <i>clear</i>
+        %li create new sentence: <i>ns</i>
+        %li set sentence: <i>s sentence</i>
+        %li delete sentence: <i>del</i>
+        %li export: <i>export format name</i>
+      %h4 annotation
+      %ul
+        %li new node: <i>n key:value key:value ...</i>
+        %ul
+          %li n typ:S ill:decl tns:prs
+        %li new edge: <i>e start end key:value key:value ...</i>
+        %ul
+          %li e n2 n4 typ:re level:fct
+        %li annotate: <i>a target target ... key:value key:value ...</i>
+        %ul
+          %li a r2 n21 t4 abc:def ghi:jkl
+          %li a m trans:"Ganz Gallien ist in drei Teile geteilt"
+        %li delete: <i>d target target ...</i>
+        %ul
+          %li d n21 r12 t7
+        %li set layer: <i>l f/s/fs</i>
+        %ul
+          %li l fs
+        %li group nodes under new mother node: <i>g node node ... key:value key:value ...</i>
+        %ul
+          %li g t1 t2 n0 typ:S tns:prs
+        %li attach new child node: <i>h node1 node2 ... key:value key:value ...</i>
+        %ul
+          %li h n2 n4 typ:R
+        %li tokenise (and append): <i>t A string separated by spaces .</i>
+        %ul
+          %li t This is a test .
+        %li tokenise and insert before: <i>ti token A string separated by spaces .</i>
+        %ul
+          %li ti t0 I think that

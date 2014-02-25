@@ -1,0 +1,166 @@
+/*
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	background: transparent;
+	border: 0;
+	margin: 0;
+	padding: 0;
+	vertical-align: baseline;
+	text-decoration: none;
+	font-family: sans-serif;
+	font-size: 11pt;
+}
+*/
+
+body {
+	margin: 0px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin-top: 0ex;
+	margin-bottom: 1ex;
+}
+
+ul {
+	margin-top: 0ex;
+	padding-left: 2em;
+}
+
+form {
+	margin: 0px;
+}
+
+textarea {
+	font-size: 95%;
+}
+
+#graphdiv {
+	position: absolute;
+	top: 0px;
+	height: 100%;
+	width: 100%;
+	overflow: scroll;
+}
+
+#graph {
+	position: absolute;
+	margin-left: auto;
+	margin-right: auto;
+	left: 0px;
+	right: 0px;
+}
+
+#bottom {
+	position: fixed;
+	bottom: 0px;
+	width: 100%;
+}
+
+#textline {
+	padding-left: 0.5em;
+	background-color: #ddd;
+	color: #00a;
+}
+
+#meta {
+	padding-left: 0.5em;
+	background-color: #ddd;
+}
+
+#cmddiv {
+	padding: 0.5em;
+	background-color: #bbb;
+}
+
+#filter {
+	display: none;
+	position: fixed;
+	top: 0px;
+	right: 0px;
+	padding: 0.5em;
+	background-color: #ddd;
+}
+
+#filter input {
+	width: 8em;
+}
+
+.selected_filter_mode {
+	font-weight: bold;
+	border-color: #000;
+}
+
+#search {
+	display: none;
+	position: fixed;
+	height: 100%;
+	top: 0px;
+	right: 0px;
+	width: 40%;
+	padding: 0.5em;
+	background-color: #ddd;
+}
+
+#query {
+	width: 100%;
+}
+
+#searchresult {
+	margin-top: 0.5em;
+	width: 100%;
+}
+
+#help {
+	display: none;
+	position: fixed;
+	height: 100%;
+	top: 0px;
+	right: 0px;
+	font-size: 84%;
+	padding: 0.5em;
+	background-color: #ddd;
+	overflow: auto;
+}
+
+#documentation {
+	position: fixed; 
+	right: 0px;
+	bottom: 0px;
+	text-align: right;
+	padding: 0.5em;
+}
+
+#loadinginfo {
+	position: absolute;
+	top: 200px;
+	left: 50%;
+	width: 300px;
+	display: block;
+	margin-left: -150px;
+	font-weight: bold;
+}
+
+.hidden_word {
+	color: #888;
+}
+
+.found_word {
+	color: #d00;
+}
+
+.found_sentence {
+	color: #f22;
+	font-weight: bold;
+}
+
+.error_message {
+	color: #d00;
+	font-weight: bold;
+}
