@@ -1,10 +1,10 @@
 
-In order to run GAST you need:
+In order to run GraphAnno you need:
 
 1) An installation of Graphviz (http://www.graphviz.org/)
 
 2) Ruby (http://www.ruby-lang.org/)
-   (GAST has been developed with version 2.0; but 1.9 should work, too)
+   (GraphAnno has been developed with version 2.0; but 1.9 should work, too)
    Rubygems needed (install by running 'gem install ...'):
      sinatra
      haml
@@ -12,16 +12,16 @@ In order to run GAST you need:
      htmlentities
      unicode_utils
    Or install with bundler (if necessary, run 'gem install bundler' before):
-     1. navigate to the GAST main directory
+     1. navigate to the GraphAnno main directory
      2. run 'bundle install'
 
-3) Browser (GAST has been developed with Firefox, other browsers might work or not)
+3) Browser (GraphAnno has been developed with Firefox, other browsers might work or not)
 
 
 
 Using the program:
 
-1) start 'main.rb' in GAST main directory ('ruby main.rb')
+1) start 'main.rb' in GraphAnno main directory ('ruby main.rb')
 
 2) navigate to the following address in your browser: 'http://localhost:4567/'
 
