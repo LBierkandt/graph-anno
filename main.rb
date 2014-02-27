@@ -99,7 +99,7 @@ post '/search' do
 	set_query_cookies
 	begin
 		display.found = graph.teilgraph_suchen(params[:query])
-		searchresult = display.found[:tg].length.to_s + ' Treffer'
+		searchresult = display.found[:tg].length.to_s + ' matches'
 	rescue StandardError => e
 		display.found = {:tg => [], :id_type => {}}
 		searchresult = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
