@@ -10,16 +10,7 @@ window.onload = function() {
 	anfrage.send(null);
 	
 	window.onkeydown = taste;
-	
-	document.getElementById('sentence').onchange = function() {
-		var txtcmd = document.cmd.txtcmd.value;
-		var layer = document.cmd.layer.value;
-		var sentence = document.cmd.sentence.value;
-		var anfrage = new XMLHttpRequest();
-		var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
-		anfrage.open('POST', '/sentence');
-		makeAnfrage(anfrage, params);
-	}
+	document.getElementById('sentence').onchange = changeSentence;
 	
 	document.forms['cmd'].elements['txtcmd'].focus();
 	document.forms['cmd'].elements['txtcmd'].select();
@@ -61,11 +52,12 @@ function taste(tast) {
 		}
 	}
 	else if (tast.which == 112) {
+		tast.preventDefault();
 		var help = document.getElementById('help');
 		help.style.display = (help.style.display != 'block') ? 'block' : 'none';
-		tast.preventDefault();
 	}
 	else if (tast.which == 113) {
+		tast.preventDefault();
 		var textline = document.getElementById('textline');
 		var meta = document.getElementById('meta');
 		if (textline.style.display != 'none') {
@@ -82,9 +74,9 @@ function taste(tast) {
 			if (meta.innerHTML != '') meta.style.display = 'none'; else meta.style.display = 'block';
 		}
 		graphdivEinpassen();
-		tast.preventDefault();
 	}
 	else if (tast.which == 115) {
+		tast.preventDefault();
 		var anfrage = new XMLHttpRequest();
 		anfrage.open('GET', '/toggle_refs');
 		anfrage.onreadystatechange = function () {
@@ -96,6 +88,7 @@ function taste(tast) {
 		anfrage.send(null);
 	}
 	else if (tast.which == 117) {
+		tast.preventDefault();
 		var filter = document.getElementById('filter');
 		if (filter.style.display != 'block') {
 			filter.style.display = 'block';
@@ -106,9 +99,9 @@ function taste(tast) {
 			document.forms['cmd'].elements['txtcmd'].focus();
 			document.forms['cmd'].elements['txtcmd'].select();
 		}
-		tast.preventDefault();
 	}
 	else if (tast.which == 118) {
+		tast.preventDefault();
 		var search = document.getElementById('search');
 		if (search.style.display != 'block') {
 			search.style.display = 'block';
@@ -119,7 +112,30 @@ function taste(tast) {
 			document.forms['cmd'].elements['txtcmd'].focus();
 			document.forms['cmd'].elements['txtcmd'].select();
 		}
+	}
+	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
+		var sentenceField = document.getElementById('sentence');
+		sentenceField.selectedIndex = Math.max(sentenceField.selectedIndex - 1, 0);
+		changeSentence();
+	}
+	else if (tast.altKey && tast.which == 39) {
+		tast.preventDefault();
+		var sentenceField = document.getElementById('sentence');
+		sentenceField.selectedIndex = Math.min(sentenceField.selectedIndex + 1, sentenceField.options.length - 1);
+		changeSentence();
+	}
+	else if (tast.altKey && tast.which == 36) {
+		tast.preventDefault();
+		var sentenceField = document.getElementById('sentence');
+		sentenceField.selectedIndex = 0;
+		changeSentence();
+	}
+	else if (tast.altKey && tast.which == 35) {
+		tast.preventDefault();
+		var sentenceField = document.getElementById('sentence');
+		sentenceField.selectedIndex = sentenceField.options.length - 1;
+		changeSentence();
 	}
 }
 function aendereBildgroesze(richtung) {
@@ -276,4 +292,13 @@ function makeAnfrage(anfrage, params) {
 			}
 		}
 		anfrage.send(params);
+}
+function changeSentence() {
+	var txtcmd = document.cmd.txtcmd.value;
+	var layer = document.cmd.layer.value;
+	var sentence = document.cmd.sentence.value;
+	var anfrage = new XMLHttpRequest();
+	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
+	anfrage.open('POST', '/sentence');
+	makeAnfrage(anfrage, params);
 }
