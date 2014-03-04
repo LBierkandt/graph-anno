@@ -19,13 +19,11 @@
 
 class Anno_graph
 
-	def toolbox_einlesen(quelldatei, korpusformat, satznamenpraefix)
+	def toolbox_einlesen(quelldatei, korpusformat)
 		# korpusformat:
 		# {ebene_0: [marker_0, ..., marker_n], ..., ebene_m: [marker_0, ..., marker_p]}
 		# Marker für Tokentext: * voranstellen; Tokeneben wird dadurch ebenfalls festgelegt
 		# falls nicht markiert wird ein Defaultwert verwendet (erster Marker der zweituntersten Ebene / Ebene unter Satz)
-		
-		@satznamenpraefix = satznamenpraefix
 		
 		#Alternative Formatbeschreibung zulassen (die Ebenenbezeichnungen braucht man ja eigentlich gar nicht):
 		# [[marker_0, ..., marker_n], ..., [marker_0, ..., marker_p]]
@@ -96,9 +94,9 @@ class Anno_graph
 		korpus << self.recordparsen(recordzeilen)
 		
 		# Nur zu Anschauungs- und Testzwecken:
-		datei = open('tbtest.json', 'w')
-		datei.write(JSON.pretty_generate(korpus))
-		datei.close
+		#datei = open('tbtest.json', 'w')
+		#datei.write(JSON.pretty_generate(korpus))
+		#datei.close
 
 		
 		##### Korpus in Graph umwandeln
@@ -108,13 +106,13 @@ class Anno_graph
 	end
 	
 	
-	def baumlesen(ebenenr, korpusteil, mutter, satznr, letztes_token, sentence = @satznamenpraefix)
+	def baumlesen(ebenenr, korpusteil, mutter, satznr, letztes_token, sentence)
 		ebene = @ebenen[ebenenr]
 		korpusteil.each do |element|
 			if ebenenr == 0 # Wenn Satzebene:
 				element['cat'] = 'meta'
 				satznr += 1
-				sentence = @satznamenpraefix + '-' + element['ref']
+				sentence = element['ref']
 				letztes_token[0] = nil
 			elsif ebene == @tokenebene
 				element['token'] = element[@textmarker]
@@ -124,7 +122,6 @@ class Anno_graph
 				element['f-layer'] = 't'
 			end
 			#element['ebene'] = ebene
-			#sentence = @satznamenpraefix + "%03d"%satznr
 			element['sentence'] = sentence
 			neuer_knoten = self.add_node(:attr => element.reject{|s,w| s == 'toechter'})
 			if ebene == @tokenebene
