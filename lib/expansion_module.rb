@@ -375,7 +375,7 @@ module Expansion
 
 end
 
-class Anno_node
+class AnnoNode
 
 	def referent=(ref)
 		@referent = ref
@@ -558,6 +558,6 @@ class Anno_node
 
 end
 
-class Anno_graph
+class AnnoGraph
 	include(Expansion)
 end

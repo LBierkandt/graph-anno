@@ -20,7 +20,7 @@
 require_relative 'graph'
 require_relative 'search_module'
 
-class Node_or_edge
+class NodeOrEdge
 
 	def cat
 		@attr['cat']
@@ -44,7 +44,7 @@ class Node_or_edge
 
 end
 
-class Anno_node < Node
+class AnnoNode < Node
 
 	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
 		if !link
@@ -188,7 +188,7 @@ class Anno_node < Node
 
 end
 
-class Anno_edge < Edge
+class AnnoEdge < Edge
 	attr_accessor :type
 
 	def initialize(h)
@@ -208,7 +208,7 @@ class Anno_edge < Edge
 
 end
 
-class Anno_graph < Graph
+class AnnoGraph < Graph
 
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file
@@ -274,7 +274,7 @@ class Anno_graph < Graph
 	# @return [Node] the new node
 	def add_node(h)
 		new_id(h, :node)
-		@nodes[h[:ID]] = Anno_node.new(h.merge(:graph => self))
+		@nodes[h[:ID]] = AnnoNode.new(h.merge(:graph => self))
 	end
 
 	# creates a new edge and adds it to self
@@ -282,7 +282,7 @@ class Anno_graph < Graph
 	# @return [Edge] the new edge
 	def add_edge(h)
 		new_id(h, :edge)
-		@edges[h[:ID]] = Anno_edge.new(h.merge(:graph => self))
+		@edges[h[:ID]] = AnnoEdge.new(h.merge(:graph => self))
 	end
 
 	def filter!(bedingung)

@@ -361,7 +361,7 @@ class Graph
 
 end
 
-class Node_or_edge
+class NodeOrEdge
 
 	def fulfil?(bedingung)
 		if bedingung.class == String

@@ -19,7 +19,7 @@
 
 require 'json'
 
-class Node_or_edge
+class NodeOrEdge
 
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
@@ -28,7 +28,7 @@ class Node_or_edge
 
 end
 
-class Node < Node_or_edge
+class Node < NodeOrEdge
 	attr_accessor :attr, :ID, :in, :out
 
 	# initializes node
@@ -86,7 +86,7 @@ class Node < Node_or_edge
 
 end
 
-class Edge < Node_or_edge
+class Edge < NodeOrEdge
 	attr_accessor :attr, :ID, :start, :end
 
 	# initializes edge, registering it with start and end node

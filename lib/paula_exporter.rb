@@ -17,15 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Anno_graph
+class AnnoGraph
 
-	def export_paula(corpus_name)
+	def export_paula(corpus_name, doc_name = nil)
 		# einzuführender Parameter: syntaktische Kanten als dominierend ansehen?
 		
 		require 'REXML/document'
 		require 'fileutils'
+		
 		corpus_path = 'exports/' + corpus_name
-		doc_name = 'doc1'
+		if !doc_name then doc_name = 'doc1' end
 		doc_path = corpus_path + "/#{doc_name}/"
 		FileUtils.mkdir_p(doc_path)
 		
@@ -196,20 +197,26 @@ class Anno_graph
 		
 		# AnnoSet anlegen
 		s = anno_list.add_element('struct', {'id'=>'anno_1'})
-		s.add_element('rel', {'id'=>'rel_1', 'xlink:href'=>"#{corpus_name}.#{doc_name}.text.xml"})
-		s.add_element('rel', {'id'=>'rel_2', 'xlink:href'=>"#{corpus_name}.#{doc_name}.tok.xml"})
+			s.add_element('rel', {'id'=>'rel_1', 'xlink:href'=>"#{corpus_name}.#{doc_name}.text.xml"})
+			s.add_element('rel', {'id'=>'rel_2', 'xlink:href'=>"#{corpus_name}.#{doc_name}.tok.xml"})
 		s = anno_list.add_element('struct', {'id'=>'anno_2'})
-		s.add_element('rel', {'id'=>'rel_3', 'xlink:href'=>"#{corpus_name}.#{doc_name}.sentence_seg.xml"})
-		s.add_element('rel', {'id'=>'rel_4', 'xlink:href'=>"#{corpus_name}.#{doc_name}.sentence_seg_multiFeat.xml"})
+			s.add_element('rel', {'id'=>'rel_3', 'xlink:href'=>"#{corpus_name}.#{doc_name}.sentence_seg.xml"})
+			s.add_element('rel', {'id'=>'rel_4', 'xlink:href'=>"#{corpus_name}.#{doc_name}.sentence_seg_multiFeat.xml"})
 		s = anno_list.add_element('struct', {'id'=>'anno_3'})
-		s.add_element('rel', {'id'=>'rel_5', 'xlink:href'=>"#{corpus_name}.#{doc_name}.synNode.xml"})
-		s.add_element('rel', {'id'=>'rel_6', 'xlink:href'=>"#{corpus_name}.#{doc_name}.synNode_multiFeat.xml"})
-		s.add_element('rel', {'id'=>'rel_7', 'xlink:href'=>"#{corpus_name}.#{doc_name}.domrel_multiFeat.xml"})
+		if synstruct_list.length > 0
+			s.add_element('rel', {'id'=>'rel_5', 'xlink:href'=>"#{corpus_name}.#{doc_name}.synNode.xml"})
+			s.add_element('rel', {'id'=>'rel_6', 'xlink:href'=>"#{corpus_name}.#{doc_name}.synNode_multiFeat.xml"})
+			s.add_element('rel', {'id'=>'rel_7', 'xlink:href'=>"#{corpus_name}.#{doc_name}.domrel_multiFeat.xml"})
+		end
 		s = anno_list.add_element('struct', {'id'=>'anno_4'})
-		s.add_element('rel', {'id'=>'rel_8', 'xlink:href'=>"#{corpus_name}.#{doc_name}.semNode.xml"})
-		s.add_element('rel', {'id'=>'rel_9', 'xlink:href'=>"#{corpus_name}.#{doc_name}.semNode_multiFeat.xml"})
-		s.add_element('rel', {'id'=>'rel_8', 'xlink:href'=>"#{corpus_name}.#{doc_name}.nondomrel.xml"})
-		s.add_element('rel', {'id'=>'rel_8', 'xlink:href'=>"#{corpus_name}.#{doc_name}.nondomrel_multiFeat.xml"})
+		if semstruct_list.length > 0
+			s.add_element('rel', {'id'=>'rel_8', 'xlink:href'=>"#{corpus_name}.#{doc_name}.semNode.xml"})
+			s.add_element('rel', {'id'=>'rel_9', 'xlink:href'=>"#{corpus_name}.#{doc_name}.semNode_multiFeat.xml"})
+		end
+		if rel_list.length > 0
+			s.add_element('rel', {'id'=>'rel_8', 'xlink:href'=>"#{corpus_name}.#{doc_name}.nondomrel.xml"})
+			s.add_element('rel', {'id'=>'rel_8', 'xlink:href'=>"#{corpus_name}.#{doc_name}.nondomrel_multiFeat.xml"})
+		end
 
 		# Kleiner Hack für XML-Attribute in doppelten Anführungsstrichen
 		REXML::Attribute.class_exec do
@@ -238,6 +245,13 @@ class Anno_graph
 		formatter.compact = true
 		formatter.width = 99999999999
 		dtd.keys.each do |dt|
+			if ['synNode', 'synNode_multiFeat', 'domrel_multiFeat'].include?(dt) and synstruct_list.length == 0
+				next
+			elsif ['semNode', 'semNode_multiFeat'].include?(dt) and semstruct_list.length == 0
+				next
+			elsif ['nondomrel', 'nondomrel_multiFeat'].include?(dt) and rel_list.length == 0
+				next
+			end
 			File.open("#{doc_path}#{corpus_name}.#{doc_name}.#{dt}.xml", 'w') do |f|
 				formatter.write(docs[dt], f)
 			end

@@ -152,7 +152,7 @@ def execute_command(command_line, layer, graph, display)
 			end
 		
 		when 'add' # load corpus file and add it to the workspace
-			addgraph = Anno_graph.new
+			addgraph = AnnoGraph.new
 			addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
 			graph.update(addgraph)
 		
@@ -165,20 +165,27 @@ def execute_command(command_line, layer, graph, display)
 			graph.clear
 			display.sentence = nil
 
-		when 'export' # export sentence as graphics file or export corpus in other format
+		when 'image' # export sentence as graphics file
 			if display.sentence
 				format = parameters[:words][0]
 				name = parameters[:words][1]
 				case format
 					when 'dot', 'svg', 'png'
-						display.draw_graph(format.to_sym, 'exports/'+name+'.'+format)
-					when 'paula'
-						require_relative 'paula_exporter'
-						graph.export_paula(name)
-					when 'salt'
-						require_relative 'salt_exporter'
-						graph.export_saltxml(name)
+						display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
 				end
+			end
+		
+		when 'export' # export corpus in other format
+			format = parameters[:words][0]
+			name = parameters[:words][1]
+			name2 = parameters[:words][2]
+			case format
+				when 'paula'
+					require_relative 'paula_exporter'
+					graph.export_paula(name, name2 ? name2 : nil)
+				when 'salt'
+					require_relative 'salt_exporter'
+					graph.export_saltxml(name)
 			end
 
 		when 'import_toolbox' # import Toolbox data
@@ -195,7 +202,6 @@ def execute_command(command_line, layer, graph, display)
 				format = JSON.parse(formatbeschreibung)
 			end
 			graph.toolbox_einlesen(datei, format)
-
 
 		# all following commands are related to annotation graph expansion -- Experimental!
 		when 'project'

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Anno_graph
+class AnnoGraph
 
 	def toolbox_einlesen(quelldatei, korpusformat)
 		# korpusformat:
@@ -25,15 +25,7 @@ class Anno_graph
 		# Marker für Tokentext: * voranstellen; Tokeneben wird dadurch ebenfalls festgelegt
 		# falls nicht markiert wird ein Defaultwert verwendet (erster Marker der zweituntersten Ebene / Ebene unter Satz)
 		
-		#Alternative Formatbeschreibung zulassen (die Ebenenbezeichnungen braucht man ja eigentlich gar nicht):
-		#if korpusformat.class == Array
-		#	f = {}
-		#	korpusformat.each_with_index do |ebenenmarker,i|
-		#		f['ebene_' + i.to_s] = ebenenmarker
-		#	end
-		#	korpusformat = f
-		#end
-		
+		@recmarker = korpusformat[0][0]
 		# default-Werte für Wort- und Tokenebene
 		if korpusformat.length <= 2
 			@tokenebene = korpusformat.length - 1
@@ -53,6 +45,7 @@ class Anno_graph
 			end
 		end
 		
+		puts 'Record-ID-Marker: ' + @recmarker
 		puts 'Tokenebene: ' + @tokenebene.to_s
 		puts 'Textmarker: ' + @textmarker
 		
@@ -100,16 +93,21 @@ class Anno_graph
 		##### Korpus in Graph umwandeln
 		letztes_token = []
 		self.baumlesen(0, korpus, nil, -1, letztes_token)
+		# Kodierung prüfen
+		@nodes.values.each do |n|
+			n.attr.each do |k, v|
+				if v.sanitize then puts "Encoding error in record \"#{n.sentence}\"" end
+			end
+		end
 		
 	end
-	
 	
 	def baumlesen(ebene, korpusteil, mutter, satznr, letztes_token, sentence = '')
 		korpusteil.each do |element|
 			if ebene == 0 # Wenn Satzebene:
 				element['cat'] = 'meta'
 				satznr += 1
-				sentence = element['ref']
+				sentence = element[@recmarker]
 				letztes_token[0] = nil
 			elsif ebene == @tokenebene
 				element['token'] = element[@textmarker]
@@ -249,5 +247,15 @@ class String
 	
 	def ohnemarker()
 		return self.partition(' ')[2].strip
+	end
+	
+	def sanitize
+		s = self.chars.map{|c| c.valid_encoding? ? c : '�'}.join
+		if s == self
+			return false
+		else
+			self.replace(s)
+			return true
+		end
 	end
 end

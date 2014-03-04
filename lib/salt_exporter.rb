@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Anno_graph
+class AnnoGraph
 
 	def export_saltxml(textname)
 		require 'fileutils'
@@ -78,7 +78,7 @@ class Anno_graph
 		end
 		
 		# Satzspannen
-		saetzegraph = Anno_graph.new
+		saetzegraph = AnnoGraph.new
 		self.sentences.each_with_index do |ns, index|
 			knot = saetzegraph.add_node(:attr => {'sentenceID' => ns})
 			knot.salt_init
@@ -221,7 +221,7 @@ class Anno_graph
 
 end
 
-class Anno_node
+class AnnoNode
 	attr_accessor :salt_attr
 	def salt_init
 		@salt_attr = {}

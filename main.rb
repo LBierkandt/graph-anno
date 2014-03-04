@@ -27,7 +27,7 @@ require './lib/interface_methods'
 
 
 
-graph = Anno_graph.new
+graph = AnnoGraph.new
 display = Graph_display.new(graph)
 data_table = nil
 searchresult = ''
