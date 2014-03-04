@@ -21,30 +21,29 @@ class Anno_graph
 
 	def toolbox_einlesen(quelldatei, korpusformat)
 		# korpusformat:
-		# {ebene_0: [marker_0, ..., marker_n], ..., ebene_m: [marker_0, ..., marker_p]}
+		# [[marker_0, ..., marker_n], ..., [marker_0, ..., marker_p]]
 		# Marker für Tokentext: * voranstellen; Tokeneben wird dadurch ebenfalls festgelegt
 		# falls nicht markiert wird ein Defaultwert verwendet (erster Marker der zweituntersten Ebene / Ebene unter Satz)
 		
 		#Alternative Formatbeschreibung zulassen (die Ebenenbezeichnungen braucht man ja eigentlich gar nicht):
-		# [[marker_0, ..., marker_n], ..., [marker_0, ..., marker_p]]
-		if korpusformat.class == Array
-			f = {}
-			korpusformat.each_with_index do |ebenenmarker,i|
-				f['ebene_' + i.to_s] = ebenenmarker
-			end
-			korpusformat = f
-		end
+		#if korpusformat.class == Array
+		#	f = {}
+		#	korpusformat.each_with_index do |ebenenmarker,i|
+		#		f['ebene_' + i.to_s] = ebenenmarker
+		#	end
+		#	korpusformat = f
+		#end
 		
 		# default-Werte für Wort- und Tokenebene
 		if korpusformat.length <= 2
-			@tokenebene = korpusformat.keys[-1]
-			@textmarker = korpusformat.values[-1][0]
+			@tokenebene = korpusformat.length - 1
+			@textmarker = korpusformat[-1][0]
 		else
-			@tokenebene = korpusformat.keys[-2]
-			@textmarker = korpusformat.values[-2][0]
+			@tokenebene = korpusformat.length - 2
+			@textmarker = korpusformat[-2][0]
 		end
 		# Wort- und Tokenebene herausfinden
-		korpusformat.each do |ebene, markers|
+		korpusformat.each_with_index do |markers, ebene|
 			markers.each_with_index do |marker,i|
 				if marker[0] == '*'
 					korpusformat[ebene][i] = marker[1..-1]
@@ -54,15 +53,14 @@ class Anno_graph
 			end
 		end
 		
-		puts 'Tokenebene: ' + @tokenebene
+		puts 'Tokenebene: ' + @tokenebene.to_s
 		puts 'Textmarker: ' + @textmarker
 		
 		# zusätzliche Variablen zur Formatbeschreibung generieren
-		@ebenen = korpusformat.keys
-		@ebenenmarker = korpusformat
-		@untermarker = {}
-		korpusformat.keys.each_with_index do |ebene,i|
-			@untermarker[ebene] = korpusformat.values[i..-1].flatten
+		@korpusformat = korpusformat
+		@untermarker = []
+		korpusformat.length.times do |ebene|
+			@untermarker[ebene] = korpusformat[ebene..-1].flatten
 		end
 		
 		
@@ -80,14 +78,14 @@ class Anno_graph
 		recordzeilen = []
 		zeilen.each do |zeile|
 			# Wenn Record-Anfangsmarker erreicht ist
-			if zeile.getmarker == @ebenenmarker[@ebenen.first][0]
+			if zeile.getmarker == @korpusformat[0][0]
 				# Wenn schon Zeilen da
 				if recordzeilen != []
 					korpus << self.recordparsen(recordzeilen)
 				end
 				recordzeilen = [zeile]
 			# Falls anderer (im Korpusformat deklarierter) Marker auftritt
-			elsif @untermarker[@ebenen[0]].include?(zeile.getmarker)
+			elsif @untermarker[0].include?(zeile.getmarker)
 				recordzeilen << zeile
 			end
 		end
@@ -106,10 +104,9 @@ class Anno_graph
 	end
 	
 	
-	def baumlesen(ebenenr, korpusteil, mutter, satznr, letztes_token, sentence)
-		ebene = @ebenen[ebenenr]
+	def baumlesen(ebene, korpusteil, mutter, satznr, letztes_token, sentence = '')
 		korpusteil.each do |element|
-			if ebenenr == 0 # Wenn Satzebene:
+			if ebene == 0 # Wenn Satzebene:
 				element['cat'] = 'meta'
 				satznr += 1
 				sentence = element['ref']
@@ -121,7 +118,6 @@ class Anno_graph
 				element['s-layer'] = 't'
 				element['f-layer'] = 't'
 			end
-			#element['ebene'] = ebene
 			element['sentence'] = sentence
 			neuer_knoten = self.add_node(:attr => element.reject{|s,w| s == 'toechter'})
 			if ebene == @tokenebene
@@ -129,7 +125,7 @@ class Anno_graph
 				letztes_token[0] = neuer_knoten
 			end
 			# Kanten erstellen
-			if mutter != nil and ebenenr > 1
+			if mutter != nil and ebene > 1
 				kantenattribute = {}
 				kantenattribute['sentence'] = sentence
 				kantenattribute['s-layer'] = 't'
@@ -138,7 +134,7 @@ class Anno_graph
 			end
 			if element['toechter']
 				if ebene != @tokenebene
-					baumlesen(ebenenr+1, element['toechter'], neuer_knoten, satznr, letztes_token, sentence)
+					baumlesen(ebene+1, element['toechter'], neuer_knoten, satznr, letztes_token, sentence)
 				else
 					# Subtoken: Verketten
 					element['toechter'].each do |tochter|
@@ -155,8 +151,7 @@ class Anno_graph
 		end
 	end
 	
-	def inbaum(ebenennr, start, ende, recordzeilen, schnitte)
-		ebene = @ebenen[ebenennr]
+	def inbaum(ebene, start, ende, recordzeilen, schnitte)
 		rueck = []
 		letzterschnitt = start
 		schnittliste = schnitte[ebene].sort
@@ -164,14 +159,14 @@ class Anno_graph
 		schnittliste.each do |schnitt|
 			if schnitt <= start || schnitt > ende then next end
 			rueck << {}
-			@ebenenmarker[ebene].each do |marker|
+			@korpusformat[ebene].each do |marker|
 				if recordzeilen[marker]
 					rueck.last[marker] = recordzeilen[marker][letzterschnitt..schnitt].strip.force_encoding('utf-8')
 				end
 			end
 			# wenn noch eine tiefere Ebene vorhanden
-			if ebenennr < @ebenen.length-1
-				rueck.last['toechter'] = inbaum(ebenennr+1, letzterschnitt, schnitt, recordzeilen, schnitte)
+			if ebene < @korpusformat.length-1
+				rueck.last['toechter'] = inbaum(ebene+1, letzterschnitt, schnitt, recordzeilen, schnitte)
 			end
 			letzterschnitt = schnitt + 1
 		end
@@ -184,7 +179,7 @@ class Anno_graph
 		# Zeilen des Records verarbeiten
 		quellzeilen.each do |zeile|
 			# Falls Marker auf Recordebene: Zeile in Record übernehmen
-			if @ebenenmarker[@ebenen[0]].include?(zeile.getmarker)
+			if @korpusformat[0].include?(zeile.getmarker)
 				record[zeile.getmarker] = zeile.ohnemarker.force_encoding('utf-8').gsub(/\s+/, ' ')
 			# sonst Zeilen mit gleichem Marker konkatenieren ('\n' als Trennzeichen)
 			else
@@ -199,7 +194,7 @@ class Anno_graph
 		schleifenende = false
 		loop do
 			laenge = {}
-			@untermarker[@ebenen[1]].each do |marker|
+			@untermarker[1].each do |marker|
 				if recordzeilen[marker]
 					if recordzeilen[marker].index("\n") == nil
 						# wenn kein \n mehr da: abbrechen
@@ -212,7 +207,7 @@ class Anno_graph
 			end
 			if schleifenende then break end
 			maxlaenge = laenge.values.max
-			@untermarker[@ebenen[1]].each do |marker|
+			@untermarker[1].each do |marker|
 				if recordzeilen[marker]
 					recordzeilen[marker].sub!("\n", ' ' * (maxlaenge - laenge[marker] + 1))
 				end
@@ -220,16 +215,16 @@ class Anno_graph
 		end
 		# Für jede Ebene Trennstellen (schnitte) zwischen Elementen finden
 		leerzeichen = {}
-		schnitte = {}
-		@untermarker[@ebenen[1]].each do |marker|
+		schnitte = []
+		@untermarker[1].each do |marker|
 			if recordzeilen[marker]
 				positionen = []
 				recordzeilen[marker].scan(/ \S/){|x| positionen << $`.size}
 				leerzeichen[marker] = (positionen + [recordzeilen[marker].length-1]).uniq
 			end
 		end
-		@ebenen[1..-1].each do |ebene|
-			schnitte[ebene] = leerzeichen[@ebenenmarker[ebene][0]]
+		(1..@korpusformat.length-1).each do |ebene|
+			schnitte[ebene] = leerzeichen[@korpusformat[ebene][0]]
 			@untermarker[ebene].each do |marker|
 				if leerzeichen[marker]
 					schnitte[ebene] = schnitte[ebene] & leerzeichen[marker]
@@ -237,7 +232,7 @@ class Anno_graph
 			end
 		end
 		# in Baumstruktur bringen
-		record['toechter'] = inbaum(1, 0, recordzeilen[@ebenenmarker[@ebenen[1]][0]].length, recordzeilen, schnitte)
+		record['toechter'] = inbaum(1, 0, recordzeilen[@korpusformat[1][0]].length, recordzeilen, schnitte)
 		return record
 	end
 

@@ -194,7 +194,7 @@ def execute_command(command_line, layer, graph, display)
 				# for hash: ":" instead of "=>"
 				format = JSON.parse(formatbeschreibung)
 			end
-			graph.toolbox_einlesen(datei, format, datei.rpartition('.')[0].rpartition('/')[2])
+			graph.toolbox_einlesen(datei, format)
 
 
 		# all following commands are related to annotation graph expansion -- Experimental!
