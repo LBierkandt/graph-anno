@@ -45,9 +45,10 @@ class AnnoGraph
 			end
 		end
 		
-		puts 'Record-ID-Marker: ' + @recmarker
-		puts 'Tokenebene: ' + @tokenebene.to_s
-		puts 'Textmarker: ' + @textmarker
+		puts "reading #{quelldatei}"
+		puts 'record ID marker: ' + @recmarker
+		puts 'token layer: ' + @tokenebene.to_s
+		puts 'text marker: ' + @textmarker
 		
 		# zusätzliche Variablen zur Formatbeschreibung generieren
 		@korpusformat = korpusformat
@@ -152,7 +153,11 @@ class AnnoGraph
 	def inbaum(ebene, start, ende, recordzeilen, schnitte)
 		rueck = []
 		letzterschnitt = start
-		schnittliste = schnitte[ebene].sort
+		if schnitte[ebene]
+			schnittliste = schnitte[ebene].sort
+		else
+			schnittliste = []
+		end
 		# Elementgrenzen durchgehen
 		schnittliste.each do |schnitt|
 			if schnitt <= start || schnitt > ende then next end
@@ -178,7 +183,9 @@ class AnnoGraph
 		quellzeilen.each do |zeile|
 			# Falls Marker auf Recordebene: Zeile in Record übernehmen
 			if @korpusformat[0].include?(zeile.getmarker)
-				record[zeile.getmarker] = zeile.ohnemarker.force_encoding('utf-8').gsub(/\s+/, ' ')
+				record[zeile.getmarker] = zeile.ohnemarker.force_encoding('utf-8')
+				if record[zeile.getmarker].sanitize then puts "Encoding error in record \"#{record[@recmarker]}\"" end
+				record[zeile.getmarker].gsub!(/\s+/, ' ')
 			# sonst Zeilen mit gleichem Marker konkatenieren ('\n' als Trennzeichen)
 			else
 				if recordzeilen[zeile.getmarker] == nil
@@ -204,6 +211,7 @@ class AnnoGraph
 				end
 			end
 			if schleifenende then break end
+			if @untermarker[1].all?{|m| !recordzeilen[m]} then break end
 			maxlaenge = laenge.values.max
 			@untermarker[1].each do |marker|
 				if recordzeilen[marker]
@@ -230,6 +238,7 @@ class AnnoGraph
 			end
 		end
 		# in Baumstruktur bringen
+		if !recordzeilen[@korpusformat[1][0]] then recordzeilen[@korpusformat[1][0]] = '' end
 		record['toechter'] = inbaum(1, 0, recordzeilen[@korpusformat[1][0]].length, recordzeilen, schnitte)
 		return record
 	end

@@ -86,7 +86,7 @@ class AnnoGraph
 		elem_ids = {}
 		self.sentences.each do |ns| # satzweise vorgehen
 			ns_nodes = @nodes.values.select{|k| k.sentence == ns}
-			ns_tokens = ns_nodes.select{|t| t.token}[0].sentence_tokens
+			ns_tokens = ns_nodes.select{|t| t.token}[0].sentence_tokens rescue []
 			sentence_no += 1
 			# Tokens anlegen
 			ns_tokens.each do |tok|
