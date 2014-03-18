@@ -187,7 +187,7 @@ class Graph_display
 					end
 				end
 			elsif e.token
-				display_attr.sort.each do |key, value|
+				display_attr.each do |key, value|
 					case key
 						when 'token'
 							label = "#{value}\n#{label}"
