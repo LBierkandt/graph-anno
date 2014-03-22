@@ -48,10 +48,10 @@ class AnnoNode < Node
 
 	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
 		if !link
-			if @attr['s-ebene'] == 'y'
-				link = 'edge(s-ebene:y)*'
+			if @attr['s-layer'] == 'y'
+				link = 'edge(s-layer:y)*'
 			else
-				link = 'edge(cat:ex) node(s-ebene:y | token://) edge(s-ebene:y)*'
+				link = 'edge(cat:ex) node(s-layer:y | token://) edge(s-layer:y)*'
 			end
 		end
 		return self.nodes(link, 'token://').sort{|a,b| a.tokenid <=> b.tokenid}
