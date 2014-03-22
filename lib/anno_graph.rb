@@ -48,10 +48,10 @@ class AnnoNode < Node
 
 	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
 		if !link
-			if @attr['s-layer'] == 'y'
-				link = 'edge(s-layer:y)*'
+			if @attr['s-layer'] == 't'
+				link = 'edge(s-layer:t)*'
 			else
-				link = 'edge(cat:ex) node(s-layer:y | token://) edge(s-layer:y)*'
+				link = 'edge(cat:ex) node(s-layer:t | token://) edge(s-layer:t)*'
 			end
 		end
 		return self.nodes(link, 'token://').sort{|a,b| a.tokenid <=> b.tokenid}
@@ -83,22 +83,21 @@ class AnnoNode < Node
 	end
 
 	def position
-		if !@position
-			if @attr['token']
-				@position = self.tokenid.to_f
+		if @attr['token']
+			position = self.tokenid.to_f
+		else
+			summe = 0
+			toks = self.tokens
+			toks.each do |t|
+				summe += t.position
+			end
+			if toks.length > 0
+				position = summe / toks.length
 			else
-				summe = 0
-				self.tokens.each do |t|
-					summe += t.position
-				end
-				if @tokens.length > 0
-					@position = summe / @tokens.length
-				else
-					@position = 0
-				end
+				position = 0
 			end
 		end
-		return @position
+		return position
 	end
 
 	def position_wrt(other, stil = nil, detail = true)

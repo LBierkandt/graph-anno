@@ -337,28 +337,6 @@ class Graph
 		end
 	end
 
-	def evallambda(op, id_index)
-		string = op[:string].clone
-		op[:ids].keys.sort{|a,b| b.begin <=> a.begin}.each do |stelle|
-			id = op[:ids][stelle]
-			if (id_type = id_index[id]).class == Hash then id_type = id_index[id][:art] end
-			case id_type
-				when 'node', 'edge'
-					string[stelle] = 'tg.ids["' + id + '"][0]'
-				when 'nodes', 'text', 'link'
-					string[stelle] = 'tg.ids["' + id + '"]'
-			end
-		end
-		string = 'lambda{|tg| ' + string + '}'
-		begin
-			rueck = eval(string)
-		rescue SyntaxError
-			rueck = eval('lambda{|tg| "error!"}')
-			raise "Syntaxfehler in Zeile:\n#{op[:operator]} #{op[:title] ? op[:title] : ''} #{op[:string]}"
-		end
-		return rueck
-	end
-
 end
 
 class NodeOrEdge
@@ -490,7 +468,7 @@ class Node
 	end
 
 	def nodes(link, zielknotenbedingung = '')
-		return links(link, zielknotenbedingung.parse_attributes[:op]).map{|knot, pfad| knot}.unique
+		return links(link, zielknotenbedingung.parse_attributes[:op]).map{|node_and_link| node_and_link[0]}.uniq
 	end
 
 end
@@ -845,5 +823,27 @@ class String
 			return self.sub(reg, '\1')
 		end
 	end
+end
+
+def evallambda(op, id_index)
+	string = op[:string].clone
+	op[:ids].keys.sort{|a,b| b.begin <=> a.begin}.each do |stelle|
+		id = op[:ids][stelle]
+		if (id_type = id_index[id]).class == Hash then id_type = id_index[id][:art] end
+		case id_type
+			when 'node', 'edge'
+				string[stelle] = 'tg.ids["' + id + '"][0]'
+			when 'nodes', 'text', 'link'
+				string[stelle] = 'tg.ids["' + id + '"]'
+		end
+	end
+	string = 'lambda{|tg| ' + string + '}'
+	begin
+		rueck = eval(string)
+	rescue SyntaxError
+		rueck = eval('lambda{|tg| "error!"}')
+		raise "Syntaxfehler in Zeile:\n#{op[:operator]} #{op[:title] ? op[:title] : ''} #{op[:string]}"
+	end
+	return rueck
 end
 
