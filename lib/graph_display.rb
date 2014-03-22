@@ -106,10 +106,10 @@ class Graph_display
 				color = @conf['filtered_color']
 			else
 				@conf['layers'].values.each do |l|
-					if node.attr[l['attr']] == 't' then color = l['color'] end
+					if node[l['attr']] == 't' then color = l['color'] end
 				end
 				@conf['combinations'].values.sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
-					if c['attr'].all?{|a| node.attr[a] == 't'}
+					if c['attr'].all?{|a| node[a] == 't'}
 						color = c['color']
 					end
 				end
@@ -135,13 +135,13 @@ class Graph_display
 				color = @conf['filtered_color']
 			else
 				@conf['layers'].values.each do |l|
-					if edge.attr[l['attr']] == 't'
+					if edge[l['attr']] == 't'
 						color = l['color']
 						weight = l['weight']
 					end
 				end
 				@conf['combinations'].values.sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
-					if c['attr'].all?{|a| edge.attr[a] == 't'}
+					if c['attr'].all?{|a| edge[a] == 't'}
 						color = c['color']
 						weight = c['weight']
 					end

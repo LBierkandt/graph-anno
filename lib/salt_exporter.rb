@@ -107,7 +107,7 @@ class AnnoGraph
 		# Satzspannen verbinden
 		satzrelzaehler = 1
 		saetzegraph.nodes.values.each do |satz|
-			tokens = @nodes.values.select{|k| k.token and k.sentence == satz.attr['sentenceID']}
+			tokens = @nodes.values.select{|k| k.token and k.sentence == satz['sentenceID']}
 			tokens.each do |tok|
 				name = 'spanningRel' + satzrelzaehler.to_s
 				saltxml += '  <edges xsi:type="sDocumentStructure:SSpanningRelation" source="//@nodes.'+satz.salt_attr['index']+'" target="//@nodes.'+tok.salt_attr['index']+'">'+"\n"
@@ -122,7 +122,7 @@ class AnnoGraph
 		
 		# andere Kanten
 		@edges.values.select{|k| k.type == 'g'}.each_with_index do |kante, index|
-			if kante.attr['s-layer'] == 't'
+			if kante['s-layer'] == 't'
 				kantentyp = 'SDominanceRelation'
 			else
 				kantentyp = 'SPointingRelation'

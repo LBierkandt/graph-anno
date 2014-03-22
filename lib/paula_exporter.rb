@@ -123,7 +123,7 @@ class AnnoGraph
 		end
 		# Syn-Knoten anlegen
 		structs = {}
-		synnodes = @nodes.values.select{|k| k.attr['s-layer'] == 't' && !k.token}
+		synnodes = @nodes.values.select{|k| k['s-layer'] == 't' && !k.token}
 		synnodes.each_with_index do |node,i|
 			elem_ids[node] = 'synNode_' + (i+1).to_s
 			structs[node] = synstruct_list.add_element('struct', {'id'=>elem_ids[node]})
@@ -138,7 +138,7 @@ class AnnoGraph
 		end
 		# ausgehende (dominierende) Kanten hinzufügen
 		synnodes.each do |node|
-			node.out.select{|k| k.attr['s-layer'] == 't'}.each do |edge|
+			node.out.select{|k| k['s-layer'] == 't'}.each do |edge|
 				rel_no += 1
 				if edge.end.token
 					target = "#{corpus_name}.#{doc_name}.tok.xml##{elem_ids[edge.end]}"
@@ -157,7 +157,7 @@ class AnnoGraph
 			end
 		end
 		# Sem-Knoten anlegen
-		@nodes.values.select{|k| k.attr['s-layer'] != 't' && !k.token && k.cat != 'meta'}.each_with_index do |node,i|
+		@nodes.values.select{|k| k['s-layer'] != 't' && !k.token && k.cat != 'meta'}.each_with_index do |node,i|
 			elem_ids[node] = 'semNode_' + (i+1).to_s
 			semstruct_list.add_element('struct', {'id'=>elem_ids[node]})
 			mf = semstruct_feat_list.add_element('multiFeat', {'xlink:href'=>'#'+elem_ids[node]})
@@ -170,18 +170,18 @@ class AnnoGraph
 			end
 		end
 		# nicht-dominierende Kanten anlegen
-		@edges.values.select{|k| k.type == 'g' && !(k.attr['s-layer'] == 't' && k.start.attr['s-layer'] == 't')}.each_with_index do |edge,i|
+		@edges.values.select{|k| k.type == 'g' && !(k['s-layer'] == 't' && k.start['s-layer'] == 't')}.each_with_index do |edge,i|
 			rel_id = 'rel_' + (i+1).to_s
 			if edge.start.token
 				source = "#{corpus_name}.#{doc_name}.tok.xml##{elem_ids[edge.start]}"
-			elsif edge.start.attr['s-layer'] == 't'
+			elsif edge.start['s-layer'] == 't'
 				source = "#{corpus_name}.#{doc_name}.synNode.xml##{elem_ids[edge.start]}"
 			else
 				source = "#{corpus_name}.#{doc_name}.semNode.xml##{elem_ids[edge.start]}"
 			end
 			if edge.end.token
 				target = "#{corpus_name}.#{doc_name}.tok.xml##{elem_ids[edge.end]}"
-			elsif edge.end.attr['s-layer'] == 't'
+			elsif edge.end['s-layer'] == 't'
 				target = "#{corpus_name}.#{doc_name}.synNode.xml##{elem_ids[edge.end]}"
 			else
 				target = "#{corpus_name}.#{doc_name}.semNode.xml##{elem_ids[edge.end]}"

@@ -21,6 +21,16 @@ require 'json'
 
 class NodeOrEdge
 
+	# getter for @attr hash
+	def [](key)
+		@attr[key]
+	end
+
+	# setter for @attr hash
+	def []=(key, value)
+		@attr[key] = value
+	end
+
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)

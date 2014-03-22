@@ -138,10 +138,10 @@ class AnnoGraph
 					# Subtoken: Verketten
 					element['toechter'].each do |tochter|
 						tochter.each do |s,w|
-							if neuer_knoten.attr[s] == nil
-								neuer_knoten.attr[s] = w
+							if neuer_knoten[s] == nil
+								neuer_knoten[s] = w
 							else
-								neuer_knoten.attr[s] += w
+								neuer_knoten[s] += w
 							end
 						end
 					end

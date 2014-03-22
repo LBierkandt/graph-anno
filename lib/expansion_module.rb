@@ -66,7 +66,7 @@ module Expansion
 				if self.edges_between(ausdruck.referent, knot.referent){|e| e.cat == 'co'} == []
 					self.add_edge(:type => 'g', :start => ausdruck.referent, :end => knot.referent, :attr => {'cat'=>'co', 'f-layer'=>'t', 'sentence'=>sentence})
 				end
-				if pfad.last.attr['s-layer'] == 't'
+				if pfad.last['s-layer'] == 't'
 					pfad.last.attr.delete('f-layer')
 				end
 			end
@@ -87,10 +87,10 @@ module Expansion
 					self.add_edge(:type => 'g', :start => satz.praedikation, :end => argument, :attr => {'cat'=>rolle, 'f-layer'=>'t', 'sentence'=>sentence})
 					self.add_edge(:type => 'g', :start => ausdruck.referent, :end => argument, :attr => {'cat'=>'as', 'f-layer'=>'t', 'sentence'=>sentence})
 					# ggf. ARG und Ausdruck verbinden
-					if !pfad.map{|k| k.attr['s-layer']}.include?(nil)
+					if !pfad.map{|k| k['s-layer']}.include?(nil)
 						self.add_edge(:type => 'g', :start => argument, :end => ausdruck, :attr => {'cat'=>'ex', 'f-layer'=>'t', 'sentence'=>sentence})
 					end
-					if pfad.last.attr['s-layer'] == 't'
+					if pfad.last['s-layer'] == 't'
 						pfad.last.attr.delete('f-layer')
 						#pfad.last.cat = 'c'
 					else
@@ -174,7 +174,7 @@ module Expansion
 			if satz
 				if ausdruck.class != Array and nachk = satz.nachkommen(nil, 's-ebene:y').select{|n| n['knoten'] == ausdruck}[0]
 					nachk['pfad'].last.cat = praedkante.cat
-					nachk['pfad'].last.attr['f-layer'] = 't'
+					nachk['pfad'].last['f-layer'] = 't'
 				elsif ausdruck.class != Array
 					self.add_edge(:type => 'g', :start => satz, :end => ausdruck, :attr => {'cat'=>praedkante.cat, 'f-layer'=>'t', 'sentence'=>sentence})
 				else
@@ -199,7 +199,7 @@ module Expansion
 		referentenarray.each do |ref|
 			# Ausdrücke semantifizieren
 			ref.ausdruecke.each do |aus|
-				if !aus.token then aus.attr['f-layer'] = 't' end
+				if !aus.token then aus['f-layer'] = 't' end
 			end
 			# Über Entfernung entscheiden
 			entfernen = true
@@ -221,7 +221,7 @@ module Expansion
 					ausdrucknachk = ausdruck.nachkommen('co')
 					# CO-Kanten semantifizieren
 					ausdrucknachk.map{|n| n['pfad']}.each do |pfad|
-						pfad.last.attr['f-layer'] = 't'
+						pfad.last['f-layer'] = 't'
 					end
 					ausdruckco = ausdrucknachk.map{|n| n['knoten']}
 					ref.child_nodes{|e| e.cat == 'co'}.each do |co|
@@ -257,12 +257,12 @@ module Expansion
 					satznachk = praed.satz.nachkommen(kante.cat)
 					if satznachk.map{|n| n['knoten']}.include?(kante.end)
 						satznachk.select{|n| n['knoten'] == kante.end}.map{|n| n['pfad']}.each do |pfad|
-							pfad.last.attr['f-layer'] = 't'
+							pfad.last['f-layer'] = 't'
 							kante.delete
 						end
 					elsif satznachk.map{|n| n['knoten']} & kante.end.ausdruecke != []
 						satznachk.select{|n| kante.end.ausdruecke.include?(n['knoten'])}.map{|n| n['pfad']}.each do |pfad|
-							pfad.last.attr['f-layer'] = 't'
+							pfad.last['f-layer'] = 't'
 							kante.delete
 						end
 					else
@@ -281,7 +281,7 @@ module Expansion
 				praed.out.reject{|k| k.cat == 'ex'}.each do |kante|
 					kante.start = praed.satz
 				end
-				praed.satz.attr['f-layer'] = 't'
+				praed.satz['f-layer'] = 't'
 				praed.delete
 			end
 		end
@@ -365,7 +365,7 @@ module Expansion
 	def de_sem(elems)
 		elems = [*elems]
 		elems.each do |elem|
-			if elem.attr['s-layer'] == 't'
+			if elem['s-layer'] == 't'
 				elem.attr.delete('f-layer')
 			else
 				elem.delete

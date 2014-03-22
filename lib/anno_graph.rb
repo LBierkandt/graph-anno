@@ -237,18 +237,18 @@ class AnnoGraph < Graph
 			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
 			(@nodes.values + @edges.values).each do |k|
 				if nodes_and_edges['version'].to_i < 5
-					if k.attr['f-ebene'] == 'y' then k.attr['f-layer'] = 't' end
-					if k.attr['s-ebene'] == 'y' then k.attr['s-layer'] = 't' end
+					if k['f-ebene'] == 'y' then k['f-layer'] = 't' end
+					if k['s-ebene'] == 'y' then k['s-layer'] = 't' end
 					k.attr.delete('f-ebene')
 					k.attr.delete('s-ebene')
 				end
 				if nodes_and_edges['version'].to_i < 2
-					if k.attr['typ']
-						k.attr['cat'] = k.attr['typ']
+					if k['typ']
+						k['cat'] = k['typ']
 						k.attr.delete('typ')
 					end
-					if k.attr['namespace']
-						k.attr['sentence'] = k.attr['namespace']
+					if k['namespace']
+						k['sentence'] = k['namespace']
 						k.attr.delete('namespace')
 					end
 					k.attr.delete('elementid')
