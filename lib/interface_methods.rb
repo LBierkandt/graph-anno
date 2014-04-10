@@ -169,10 +169,8 @@ def execute_command(command_line, layer, graph, display)
 			if display.sentence
 				format = parameters[:words][0]
 				name = parameters[:words][1]
-				if ['dot', 'eps', 'png', 'svg'].include?(format)
-					if !File.exist?('images') then Dir.mkdir('images') end
-					display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
-				end
+				if !File.exist?('images') then Dir.mkdir('images') end
+				display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
 			end
 		
 		when 'export' # export corpus in other format
