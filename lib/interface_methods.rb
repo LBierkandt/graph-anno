@@ -169,9 +169,9 @@ def execute_command(command_line, layer, graph, display)
 			if display.sentence
 				format = parameters[:words][0]
 				name = parameters[:words][1]
-				case format
-					when 'dot', 'svg', 'png'
-						display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
+				if ['dot', 'eps', 'png', 'svg'].include?(format)
+					if !File.exist?('images') then Dir.mkdir('images') end
+					display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
 				end
 			end
 		
