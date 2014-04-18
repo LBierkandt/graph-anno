@@ -28,7 +28,7 @@ require './lib/interface_methods'
 
 
 graph = AnnoGraph.new
-display = Graph_display.new(graph)
+display = GraphDisplay.new(graph)
 data_table = nil
 searchresult = ''
 sentence_list = []
