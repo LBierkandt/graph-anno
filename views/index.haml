@@ -28,6 +28,7 @@
               - else
                 %option{ :value => n }= n
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
+          %div{ :id => "active_file" } #{if graph_file != '' then 'file: ' + graph_file else '' end}
 
     %script{ :type => "text/javascript", :language => "JavaScript" }
       setSelectedIndex(document.getElementById('sentence'),'#{request.cookies['traw_sentence']}');

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-def execute_command(command_line, layer, graph, display)
+def execute_command(command_line, layer, graph, display, graph_file)
 	command_line.strip!
 	command = command_line.partition(' ')[0]
 	string = command_line.partition(' ')[2]
@@ -145,23 +145,27 @@ def execute_command(command_line, layer, graph, display)
 			end
 
 		when 'load', 'laden' # clear workspace and load corpus file
-			graph.read_json_file('data/' + parameters[:words][0] + '.json')
+			graph_file.replace('data/' + parameters[:words][0] + '.json')
+			graph.read_json_file(graph_file)
 			saetze = graph.sentences
 			if not saetze.include?(display.sentence)
 				display.sentence = saetze[0]
 			end
 		
 		when 'add' # load corpus file and add it to the workspace
+			graph_file.replace('')
 			addgraph = AnnoGraph.new
 			addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
 			graph.update(addgraph)
 		
 		when 'save', 'speichern' # save workspace to corpus file
+			if parameters[:words][0] then graph_file.replace(graph_file.replace('data/' + parameters[:words][0] + '.json')) end
 			if display.sentence
-				graph.write_json_file('data/' + parameters[:words][0] + '.json')
+				graph.write_json_file(graph_file)
 			end
 		
 		when 'clear', 'leeren' # clear workspace
+			graph_file.replace('')
 			graph.clear
 			display.sentence = nil
 
@@ -187,6 +191,7 @@ def execute_command(command_line, layer, graph, display)
 			end
 
 		when 'import_toolbox' # import Toolbox data
+			graph_file.replace('')
 			graph.clear
 			require_relative 'toolbox_module'
 			datei = parameters[:words][0]
@@ -429,17 +434,17 @@ def check_cookies
 end
 
 def set_cmd_cookies
-  if request.cookies['traw_layer'] && params[:layer]
-    response.set_cookie('traw_layer', { :value => params[:layer], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
-  end
+	if request.cookies['traw_layer'] && params[:layer]
+		response.set_cookie('traw_layer', { :value => params[:layer], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+	end
 
-  if request.cookies['traw_cmd'] && params[:txtcmd]
-    response.set_cookie('traw_cmd', { :value => params[:txtcmd], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
-  end
+	if request.cookies['traw_cmd'] && params[:txtcmd]
+		response.set_cookie('traw_cmd', { :value => params[:txtcmd], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+	end
 
-  if request.cookies['traw_sentence'] && params[:sentence]
-    response.set_cookie('traw_sentence', { :value => params[:sentence], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
-  end
+	if request.cookies['traw_sentence'] && params[:sentence]
+		response.set_cookie('traw_sentence', { :value => params[:sentence], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+	end
 end
 
 def set_filter_cookies

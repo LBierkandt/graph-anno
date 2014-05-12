@@ -79,6 +79,10 @@ textarea {
 	background-color: #bbb;
 }
 
+#active_file {
+	display: inline;
+}
+
 #filter {
 	display: none;
 	position: fixed;

@@ -209,7 +209,7 @@ function sendFilter(mode) {
 	var filterfield = document.filter.filterfield.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'filter=' + encodeURIComponent(filterfield) + '&mode=' + encodeURIComponent(mode);
-	anfrage.open('POST', '/filter');
+	anfrage.open('GET', '/filter');
 	makeAnfrage(anfrage, params);
 	
 	document.getElementById('hide rest').className = '';
@@ -227,14 +227,14 @@ function sendSearch() {
 	var query = document.search.query.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'query=' + encodeURIComponent(query);
-	anfrage.open('POST', '/search');
+	anfrage.open('GET', '/search');
 	makeAnfrage(anfrage, params);
 }
 function sendDataExport() {
 	var query = document.search.query.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'query=' + encodeURIComponent(query);
-	anfrage.open('POST', '/export_data');
+	anfrage.open('GET', '/export_data');
 	anfrage.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 	anfrage.setRequestHeader("Content-length", params.length);
 	anfrage.setRequestHeader("Connection", "close");
@@ -279,6 +279,7 @@ function makeAnfrage(anfrage, params) {
 				if (antworthash['sentences_html'] != 'none') document.cmd.sentence.innerHTML = antworthash['sentences_html'];
 				setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 				setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
+				if (antworthash['graph_file'] != 'none') document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
 				if (antworthash['searchresult'] != undefined) {
 					document.getElementById('searchresult').innerHTML = antworthash['searchresult'];
 					query.focus();
@@ -299,6 +300,6 @@ function changeSentence() {
 	var sentence = document.cmd.sentence.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
-	anfrage.open('POST', '/sentence');
+	anfrage.open('GET', '/sentence');
 	makeAnfrage(anfrage, params);
 }

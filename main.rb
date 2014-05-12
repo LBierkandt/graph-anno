@@ -29,6 +29,7 @@ require './lib/interface_methods'
 
 graph = AnnoGraph.new
 display = GraphDisplay.new(graph)
+graph_file = ''
 data_table = nil
 searchresult = ''
 sentence_list = []
@@ -37,7 +38,7 @@ sentences_html = ''
 
 get '/' do
 	check_cookies
-	haml :index, :locals => {:graph => graph, :display => display, :searchresult => searchresult}
+	haml :index, :locals => {:graph => graph, :display => display, :searchresult => searchresult, :graph_file => graph_file}
 end
 
 get '/graph' do
@@ -60,7 +61,7 @@ post '/commandline' do
 	else
 		display.sentence = params[:sentence]
 	end
-	execute_command(params[:txtcmd], params[:layer], graph, display)
+	execute_command(params[:txtcmd], params[:layer], graph, display, graph_file)
 	response.set_cookie('traw_sentence', { :value => display.sentence, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
 	# Prüfen, ob sich Satz geändert hat:
@@ -76,17 +77,17 @@ post '/commandline' do
 	else
 		sentences_html = 'none'
 	end
-	{:sentences_html => sentences_html, :sentence_changed => sentence_changed}.update(satzinfo).to_json
+	{:sentences_html => sentences_html, :sentence_changed => sentence_changed, :graph_file => graph_file}.update(satzinfo).to_json
 end
 
-post '/sentence' do
+get '/sentence' do
 	set_cmd_cookies
 	display.sentence = params[:sentence]
 	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
 	{:sentences_html => 'none', :sentence_changed => true}.update(satzinfo).to_json
 end
 
-post '/filter' do
+get '/filter' do
 	set_filter_cookies
 	mode = params[:mode].partition(' ')
 	display.filter = {:cond => params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
@@ -95,7 +96,7 @@ post '/filter' do
 	{:sentences_html => 'none', :sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
 end
 
-post '/search' do
+get '/search' do
 	set_query_cookies
 	begin
 		display.found = graph.teilgraph_suchen(params[:query])
@@ -124,7 +125,7 @@ get '/export/subcorpus.json' do
 	end
 end
 
-post '/export_data' do
+get '/export_data' do
 	if display.found
 		begin
 			anfrage = (params[:query])
