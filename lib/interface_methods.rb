@@ -146,6 +146,7 @@ def execute_command(command_line, layer, graph, display, graph_file)
 
 		when 'load', 'laden' # clear workspace and load corpus file
 			graph_file.replace('data/' + parameters[:words][0] + '.json')
+			
 			graph.read_json_file(graph_file)
 			saetze = graph.sentences
 			if not saetze.include?(display.sentence)
@@ -155,11 +156,13 @@ def execute_command(command_line, layer, graph, display, graph_file)
 		when 'add' # load corpus file and add it to the workspace
 			graph_file.replace('')
 			addgraph = AnnoGraph.new
+			if !File.exist?('data') then Dir.mkdir('data') end
 			addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
 			graph.update(addgraph)
 		
 		when 'save', 'speichern' # save workspace to corpus file
 			if parameters[:words][0] then graph_file.replace(graph_file.replace('data/' + parameters[:words][0] + '.json')) end
+			if !File.exist?('data') then Dir.mkdir('data') end
 			if display.sentence
 				graph.write_json_file(graph_file)
 			end
