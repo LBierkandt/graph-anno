@@ -156,7 +156,6 @@ def execute_command(command_line, layer, graph, display, graph_file)
 		when 'add' # load corpus file and add it to the workspace
 			graph_file.replace('')
 			addgraph = AnnoGraph.new
-			if !File.exist?('data') then Dir.mkdir('data') end
 			addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
 			graph.update(addgraph)
 		
