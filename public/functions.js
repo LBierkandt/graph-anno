@@ -279,7 +279,7 @@ function makeAnfrage(anfrage, params) {
 				if (antworthash['sentences_html'] != 'none') document.cmd.sentence.innerHTML = antworthash['sentences_html'];
 				setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 				setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
-				if (antworthash['graph_file'] != 'none') document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
+				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
 				if (antworthash['searchresult'] != undefined) {
 					document.getElementById('searchresult').innerHTML = antworthash['searchresult'];
 					query.focus();
@@ -300,6 +300,6 @@ function changeSentence() {
 	var sentence = document.cmd.sentence.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
-	anfrage.open('GET', '/sentence');
+	anfrage.open('POST', '/sentence');
 	makeAnfrage(anfrage, params);
 }

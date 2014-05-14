@@ -80,14 +80,14 @@ post '/commandline' do
 	{:sentences_html => sentences_html, :sentence_changed => sentence_changed, :graph_file => graph_file}.update(satzinfo).to_json
 end
 
-get '/sentence' do
+post '/sentence' do
 	set_cmd_cookies
 	display.sentence = params[:sentence]
 	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
 	{:sentences_html => 'none', :sentence_changed => true}.update(satzinfo).to_json
 end
 
-get '/filter' do
+post '/filter' do
 	set_filter_cookies
 	mode = params[:mode].partition(' ')
 	display.filter = {:cond => params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
@@ -96,7 +96,7 @@ get '/filter' do
 	{:sentences_html => 'none', :sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
 end
 
-get '/search' do
+post '/search' do
 	set_query_cookies
 	begin
 		display.found = graph.teilgraph_suchen(params[:query])
