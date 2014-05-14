@@ -209,7 +209,7 @@ function sendFilter(mode) {
 	var filterfield = document.filter.filterfield.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'filter=' + encodeURIComponent(filterfield) + '&mode=' + encodeURIComponent(mode);
-	anfrage.open('GET', '/filter');
+	anfrage.open('POST', '/filter');
 	makeAnfrage(anfrage, params);
 	
 	document.getElementById('hide rest').className = '';
@@ -227,7 +227,7 @@ function sendSearch() {
 	var query = document.search.query.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'query=' + encodeURIComponent(query);
-	anfrage.open('GET', '/search');
+	anfrage.open('POST', '/search');
 	makeAnfrage(anfrage, params);
 }
 function sendDataExport() {
