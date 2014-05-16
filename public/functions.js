@@ -276,7 +276,7 @@ function makeAnfrage(anfrage, params) {
 				var antworthash = JSON.parse(this.responseText);
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
-				if (antworthash['sentences_html'] != 'none') document.cmd.sentence.innerHTML = antworthash['sentences_html'];
+				if (antworthash['sentences_html'] != undefined) document.cmd.sentence.innerHTML = antworthash['sentences_html'];
 				setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 				setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];

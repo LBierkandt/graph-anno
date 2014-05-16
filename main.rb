@@ -75,7 +75,7 @@ post '/commandline' do
 		sentence_list = new_sentence_list
 		sentences_html = build_sentence_html(sentence_list, graph, display.found)
 	else
-		sentences_html = 'none'
+		sentences_html = nil
 	end
 	{:sentences_html => sentences_html, :sentence_changed => sentence_changed, :graph_file => graph_file}.update(satzinfo).to_json
 end
@@ -84,7 +84,7 @@ post '/sentence' do
 	set_cmd_cookies
 	display.sentence = params[:sentence]
 	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	{:sentences_html => 'none', :sentence_changed => true}.update(satzinfo).to_json
+	{:sentence_changed => true}.update(satzinfo).to_json
 end
 
 post '/filter' do
@@ -93,7 +93,7 @@ post '/filter' do
 	display.filter = {:cond => params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 	display.sentence = request.cookies['traw_sentence']
 	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	{:sentences_html => 'none', :sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
+	{:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
 end
 
 post '/search' do

@@ -81,7 +81,6 @@ def execute_command(command_line, layer, graph, display, graph_file)
 					layer = k
 				end
 			end
-
 			response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 
 		when 'g' # group under new parent node
