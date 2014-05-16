@@ -83,7 +83,7 @@ def execute_command(command_line, layer, graph, display, graph_file)
 			end
 			response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 
-		when 'g' # group under new parent node
+		when 'p', 'g' # group under new parent node
 			if display.sentence
 				properties['sentence'] = display.sentence
 				mother = graph.add_node(:attr => properties.merge(parameters[:attributes]))
@@ -94,7 +94,7 @@ def execute_command(command_line, layer, graph, display, graph_file)
 				end
 			end
 		
-		when 'h' # attach new child node
+		when 'c', 'h' # attach new child node
 			if display.sentence
 				properties['sentence'] = display.sentence
 				daughter = graph.add_node(:attr => properties.merge(parameters[:attributes]))
