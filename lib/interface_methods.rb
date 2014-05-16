@@ -22,13 +22,7 @@ def execute_command(command_line, layer, graph, display, graph_file)
 	command = command_line.partition(' ')[0]
 	string = command_line.partition(' ')[2]
 	parameters = string.parse_parameters
-	properties = {}
-
-	if display.layers_combinations[layer]
-		[*display.layers_combinations[layer]['attr']].each do |a|
-			properties[a] = 't'
-		end
-	end
+	properties = display.layer_attributes[layer].to_h
 
 	case command
 		when 'n' # new node
@@ -81,12 +75,10 @@ def execute_command(command_line, layer, graph, display, graph_file)
 			end
 		
 		when 'l' # set layer
-			display.layers_combinations.each do |k,v|
-				if parameters[:words][0] == v['shortcut']
-					layer = k
-				end
+			if new_layer = display.layer_shortcuts[parameters[:words][0]]
+				layer = new_layer
+				response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 			end
-			response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 
 		when 'p', 'g' # group under new parent node
 			if display.sentence

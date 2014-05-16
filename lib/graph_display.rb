@@ -18,6 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class GraphDisplay
+	require 'yaml'
 	require 'graphviz'
 	require 'htmlentities'
 	
@@ -44,6 +45,16 @@ class GraphDisplay
 
 	def layers_and_layer_combinations
 		@conf['layers'].merge(@conf['combinations'])
+	end
+
+	def layer_shortcuts
+		layers_and_layer_combinations.map{|k, v| {v['shortcut'] => k}}.reduce{|m, h| m.merge(h)}
+	end
+
+	def layer_attributes
+		layers_and_layer_combinations.map_hash do |k, v|
+			[*v['attr']].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
+		end
 	end
 
 	def draw_graph(format, path)
