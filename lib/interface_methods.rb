@@ -42,7 +42,12 @@ def execute_command(command_line, layer, graph, display, graph_file)
 			if display.sentence
 				properties['sentence'] = display.sentence
 				properties.merge!(parameters[:attributes])
-				graph.add_edge(:type => 'g', :start => element_by_identifier(display, parameters[:all_nodes][0]), :end => element_by_identifier(display, parameters[:all_nodes][1]), :attr => properties)
+				graph.add_edge(
+					:type => 'g',
+					:start => element_by_identifier(display, parameters[:all_nodes][0]),
+					:end => element_by_identifier(display, parameters[:all_nodes][1]),
+					:attr => properties
+				)
 			end
 		
 		when 'a' # annotate elements
@@ -89,7 +94,12 @@ def execute_command(command_line, layer, graph, display, graph_file)
 				mother = graph.add_node(:attr => properties.merge(parameters[:attributes]))
 				(parameters[:nodes] + parameters[:tokens]).each do |node|
 					if element = element_by_identifier(display, node)
-						graph.add_edge(:type => 'g', :start => mother, :end => element, :attr => properties.clone)
+						graph.add_edge(
+							:type => 'g',
+							:start => mother,
+							:end => element,
+							:attr => properties.clone
+						)
 					end
 				end
 			end
@@ -100,7 +110,12 @@ def execute_command(command_line, layer, graph, display, graph_file)
 				daughter = graph.add_node(:attr => properties.merge(parameters[:attributes]))
 				(parameters[:nodes] + parameters[:tokens]).each do |node|
 					if element = element_by_identifier(display, node)
-						graph.add_edge(:type => 'g', :start => element, :end => daughter, :attr => properties.clone)
+						graph.add_edge(
+							:type => 'g',
+							:start => element,
+							:end => daughter,
+							:attr => properties.clone
+						)
 					end
 				end
 			end

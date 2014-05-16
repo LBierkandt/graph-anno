@@ -42,7 +42,7 @@ class GraphDisplay
 		@conf['layers']
 	end
 
-	def layers_combinations
+	def layers_and_layer_combinations
 		@conf['layers'].merge(@conf['combinations'])
 	end
 

@@ -18,7 +18,7 @@
         %form{ :action => "/commandline", :method => "post",  :name => "cmd" }
           %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
           %select{ :name => "layer", :id => "layer" }
-            - display.layers_combinations.each do |k,v|
+            - display.layers_and_layer_combinations.each do |k,v|
               %option{ :value => k }= k
             %option{ :value => "none" }= "none"
           %select{ :name => "sentence", :id => "sentence" }
