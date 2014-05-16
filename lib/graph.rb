@@ -350,11 +350,7 @@ class Hash
 	# @param block [Proc] the block to be applied to the key-value pairs of self
 	# @return [Hash] the new Hash
 	def map_hash(&block)
-		new_hash = {}
-		self.each do |k,v|
-			new_hash[k] = block.call(k, v)
-		end
-		return new_hash
+		self.merge(self){|k, v| block.call(k, v)}
 	end
 
 end
