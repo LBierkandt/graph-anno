@@ -27,6 +27,7 @@ def execute_command(command_line, layer, graph, display, graph_file)
 	case command
 		when 'n' # new node
 			if display.sentence
+				layer = set_new_layer(parameters[:words], display, properties)
 				properties['sentence'] = display.sentence
 				properties.merge!(parameters[:attributes])
 				graph.add_node(:attr => properties)
@@ -34,6 +35,7 @@ def execute_command(command_line, layer, graph, display, graph_file)
 		
 		when 'e' # new edge
 			if display.sentence
+				layer = set_new_layer(parameters[:words], display, properties)
 				properties['sentence'] = display.sentence
 				properties.merge!(parameters[:attributes])
 				graph.add_edge(
@@ -75,13 +77,11 @@ def execute_command(command_line, layer, graph, display, graph_file)
 			end
 		
 		when 'l' # set layer
-			if new_layer = display.layer_shortcuts[parameters[:words][0]]
-				layer = new_layer
-				response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
-			end
+			layer = set_new_layer(parameters[:words], display, properties)
 
 		when 'p', 'g' # group under new parent node
 			if display.sentence
+				layer = set_new_layer(parameters[:words], display, properties)
 				properties['sentence'] = display.sentence
 				mother = graph.add_node(:attr => properties.merge(parameters[:attributes]))
 				(parameters[:nodes] + parameters[:tokens]).each do |node|
@@ -98,6 +98,7 @@ def execute_command(command_line, layer, graph, display, graph_file)
 		
 		when 'c', 'h' # attach new child node
 			if display.sentence
+				layer = set_new_layer(parameters[:words], display, properties)
 				properties['sentence'] = display.sentence
 				daughter = graph.add_node(:attr => properties.merge(parameters[:attributes]))
 				(parameters[:nodes] + parameters[:tokens]).each do |node|
@@ -468,4 +469,13 @@ def set_query_cookies
   if request.cookies['traw_query']
     response.set_cookie('traw_query', { :value => params[:query], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
   end
+end
+
+def set_new_layer(words, display, properties)
+	if new_layer_shortcut = words.select{|w| display.layer_shortcuts.keys.include?(w)}.last
+		layer = display.layer_shortcuts[new_layer_shortcut]
+		response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		properties.replace(display.layer_attributes[layer].to_h)
+		return layer
+	end
 end
