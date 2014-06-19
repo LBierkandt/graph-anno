@@ -18,20 +18,30 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'sinatra'
+require 'haml'
 
 require './lib/anno_graph'
 require './lib/expansion_module'
 require './lib/graph_display'
 require './lib/graph_controller'
 
-controller = GraphController.new(params, request, response)
+controller = GraphController.new
 
 get '/' do
-	controller.root
+	controller.check_cookies(params, request, response)
+	haml(
+		:index,
+		:locals => {
+			:graph => controller.graph,
+			:display => controller.display,
+			:searchresult => controller.searchresult,
+			:graph_file => controller.graph_file
+		}
+	)
 end
 
 get '/graph' do
-	controller.graph
+	controller.draw_graph(request)
 end
 
 get '/toggle_refs' do
@@ -39,19 +49,19 @@ get '/toggle_refs' do
 end
 
 post '/commandline' do
-	controller.handle_commandline
+	controller.handle_commandline(params, request, response)
 end
 
 post '/sentence' do
-	controller.change_sentence
+	controller.change_sentence(params, request, response)
 end
 
 post '/filter' do
-	controller.filter
+	controller.filter(params, request, response)
 end
 
 post '/search' do
-	controller.search
+	controller.search(params, request, response)
 end
 
 get '/export/subcorpus.json' do
@@ -59,7 +69,7 @@ get '/export/subcorpus.json' do
 end
 
 get '/export_data' do
-	export_data
+	controller.export_data(params)
 end
 
 get '/export/data_table.csv' do
