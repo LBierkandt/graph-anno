@@ -18,130 +18,52 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'sinatra'
-require 'haml'
 
 require './lib/anno_graph'
 require './lib/expansion_module'
 require './lib/graph_display'
-require './lib/interface_methods'
+require './lib/graph_controller'
 
-
-
-graph = AnnoGraph.new
-display = GraphDisplay.new(graph)
-graph_file = ''
-data_table = nil
-searchresult = ''
-sentence_list = []
-sentences_html = ''
-
+controller = GraphController.new(params, request, response)
 
 get '/' do
-	check_cookies
-	haml :index, :locals => {:graph => graph, :display => display, :searchresult => searchresult, :graph_file => graph_file}
+	controller.root
 end
 
 get '/graph' do
-	display.sentence = request.cookies['traw_sentence']
-	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	{:sentence_changed => true}.update(satzinfo).to_json
+	controller.graph
 end
 
 get '/toggle_refs' do
-	display.show_refs = !display.show_refs
-	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	{:sentence_changed => false}.update(satzinfo).to_json
+	controller.toggle_refs
 end
 
 post '/commandline' do
-	puts params[:txtcmd]
-	set_cmd_cookies
-	if params[:sentence] == ''
-		display.sentence = nil
-	else
-		display.sentence = params[:sentence]
-	end
-	execute_command(params[:txtcmd], params[:layer], graph, display, graph_file)
-	response.set_cookie('traw_sentence', { :value => display.sentence, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
-	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	# Prüfen, ob sich Satz geändert hat:
-	if request.cookies['traw_sentence'] == display.sentence
-		sentence_changed = false
-	else
-		sentence_changed = true
-	end
-	# prüfen, ob sich die Satzliste geändert hat (und nur dann neue Liste fürs select-Feld erstellen)
-	if (new_sentence_list = graph.sentences) != sentence_list
-		sentence_list = new_sentence_list
-		sentences_html = build_sentence_html(sentence_list, graph, display.found)
-	else
-		sentences_html = nil
-	end
-	{:sentences_html => sentences_html, :sentence_changed => sentence_changed, :graph_file => graph_file}.update(satzinfo).to_json
+	controller.handle_commandline
 end
 
 post '/sentence' do
-	set_cmd_cookies
-	display.sentence = params[:sentence]
-	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	{:sentence_changed => true}.update(satzinfo).to_json
+	controller.change_sentence
 end
 
 post '/filter' do
-	set_filter_cookies
-	mode = params[:mode].partition(' ')
-	display.filter = {:cond => params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
-	display.sentence = request.cookies['traw_sentence']
-	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	{:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
+	controller.filter
 end
 
 post '/search' do
-	set_query_cookies
-	begin
-		display.found = graph.teilgraph_suchen(params[:query])
-		searchresult = display.found[:tg].length.to_s + ' matches'
-	rescue StandardError => e
-		display.found = {:tg => [], :id_type => {}}
-		searchresult = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
-	end
-	display.found[:all_nodes] = display.found[:tg].map{|tg| tg.nodes}.flatten.uniq
-	display.found[:all_edges] = display.found[:tg].map{|tg| tg.edges}.flatten.uniq
-	display.found[:sentences] = display.found[:all_nodes].map{|k| k.sentence}.uniq
-	display.sentence = request.cookies['traw_sentence']
-	satzinfo = display.draw_graph(:svg, 'public/graph.svg')
-	{:sentences_html => build_sentence_html(sentence_list, graph, display.found), :searchresult => searchresult, :sentence_changed => false}.update(satzinfo).to_json
+	controller.search
 end
 
 get '/export/subcorpus.json' do
-	if display.found
-		subgraph = {'nodes' => [], 'edges' => []}
-		display.found[:sentences].each do |sentence|
-			subgraph['nodes'] += graph.nodes.values.select{|k| k.sentence == sentence}
-			subgraph['edges'] += graph.edges.values.select{|k| k.sentence == sentence}
-		end
-		headers "Content-Type" => "data:Application/octet-stream; charset=utf8"
-		JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
-	end
+	controller.export_subcorpus
 end
 
 get '/export_data' do
-	if display.found
-		begin
-			anfrage = (params[:query])
-			data_table = display.found.teilgraph_ausgeben(anfrage, :string)
-			''
-		rescue StandardError => e
-			e.message
-		end
-	end
+	export_data
 end
 
 get '/export/data_table.csv' do
-	if data_table
-		headers "Content-Type" => "data:Application/octet-stream; charset=utf8"
-		data_table
-	end
+	controller.export_data_table
 end
 
 get '/doc/:filename' do
