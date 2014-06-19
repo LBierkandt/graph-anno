@@ -18,8 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class GraphController
-	attr_reader :params, :request, :response,
-		:graph, :display, :searchresult, :graph_file
+	attr_writer :sinatra
 
 	def initialize
 		@graph = AnnoGraph.new
@@ -31,9 +30,9 @@ class GraphController
 		@sentences_html = ''
 	end
 
-	def root(main)
+	def root
 		check_cookies
-		main.haml(
+		@sinatra.haml(
 			:index,
 			:locals => {
 				:graph => @graph,
@@ -45,13 +44,13 @@ class GraphController
 	end
 	
 	def set_vars(params, request, response)
-		@params = params
-		@request = request
-		@response = response
+		@sinatra.params = params
+		@sinatra.request = request
+		@sinatra.response = response
 	end
 	
 	def draw_graph
-		@display.sentence = @request.cookies['traw_sentence']
+		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => true}.update(satzinfo).to_json
 	end
@@ -63,18 +62,18 @@ class GraphController
 	end
 	
 	def handle_commandline
-		puts @params[:txtcmd]
+		puts @sinatra.params[:txtcmd]
 		set_cmd_cookies
-		if @params[:sentence] == ''
+		if @sinatra.params[:sentence] == ''
 			@display.sentence = nil
 		else
-			@display.sentence = @params[:sentence]
+			@display.sentence = @sinatra.params[:sentence]
 		end
-		execute_command(@params[:txtcmd], @params[:layer])
-		@response.set_cookie('traw_sentence', { :value => @display.sentence, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
+		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
-		if @request.cookies['traw_sentence'] == @display.sentence
+		if @sinatra.request.cookies['traw_sentence'] == @display.sentence
 			sentence_changed = false
 		else
 			sentence_changed = true
@@ -95,16 +94,16 @@ class GraphController
 	
 	def change_sentence
 		set_cmd_cookies
-		@display.sentence = @params[:sentence]
+		@display.sentence = @sinatra.params[:sentence]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => true}.update(satzinfo).to_json
 	end
 	
 	def filter
 		set_filter_cookies
-		mode = @params[:mode].partition(' ')
-		@display.filter = {:cond => @params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
-		@display.sentence = @request.cookies['traw_sentence']
+		mode = @sinatra.params[:mode].partition(' ')
+		@display.filter = {:cond => @sinatra.params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
+		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
 	end
@@ -112,16 +111,16 @@ class GraphController
 	def search
 		set_query_cookies
 		begin
-			@display.found = @graph.teilgraph_suchen(@params[:query])
+			@display.found = @graph.teilgraph_suchen(@sinatra.params[:query])
 			@searchresult = @display.found[:tg].length.to_s + ' matches'
 		rescue StandardError => e
 			@display.found = {:tg => [], :id_type => {}}
 			@searchresult = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
 		end
-		@display.found[:all_nodes] = display.found[:tg].map{|tg| tg.nodes}.flatten.uniq
-		@display.found[:all_edges] = display.found[:tg].map{|tg| tg.edges}.flatten.uniq
-		@display.found[:sentences] = display.found[:all_nodes].map{|k| k.sentence}.uniq
-		@display.sentence = @request.cookies['traw_sentence']
+		@display.found[:all_nodes] = @display.found[:tg].map{|tg| tg.nodes}.flatten.uniq
+		@display.found[:all_edges] = @display.found[:tg].map{|tg| tg.edges}.flatten.uniq
+		@display.found[:sentences] = @display.found[:all_nodes].map{|k| k.sentence}.uniq
+		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {
 			:sentences_html => build_sentence_html,
@@ -137,7 +136,7 @@ class GraphController
 				subgraph['nodes'] += @graph.nodes.values.select{|k| k.sentence == sentence}
 				subgraph['edges'] += @graph.edges.values.select{|k| k.sentence == sentence}
 			end
-			headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
+			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
 		end
 	end
@@ -145,7 +144,7 @@ class GraphController
 	def export_data
 		if @display.found
 			begin
-				anfrage = @params[:query]
+				anfrage = @sinatra.params[:query]
 				@data_table = @display.found.teilgraph_ausgeben(anfrage, :string)
 				return ''
 			rescue StandardError => e
@@ -156,7 +155,7 @@ class GraphController
 	
 	def export_data_table
 		if @data_table
-			headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
+			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return @data_table
 		end
 	end
@@ -493,56 +492,56 @@ class GraphController
 	end
 	
 	def check_cookies
-		if @request.cookies['traw_sentence'].nil?
-			@response.set_cookie('traw_sentence', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_sentence'].nil?
+			@sinatra.response.set_cookie('traw_sentence', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	
-		if @request.cookies['traw_layer'].nil?
-			@response.set_cookie('traw_layer', { :value => 'fs_layer', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_layer'].nil?
+			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	
-		if @request.cookies['traw_cmd'].nil?
-			@response.set_cookie('traw_cmd', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_cmd'].nil?
+			@sinatra.response.set_cookie('traw_cmd', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	
-		if @request.cookies['traw_query'].nil?
-			@response.set_cookie('traw_query', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_query'].nil?
+			@sinatra.response.set_cookie('traw_query', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	end
 	
 	def set_cmd_cookies
-		if @request.cookies['traw_layer'] && @params[:layer]
-			@response.set_cookie('traw_layer', { :value => @params[:layer], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
+			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	
-		if @request.cookies['traw_cmd'] && @params[:txtcmd]
-			@response.set_cookie('traw_cmd', { :value => @params[:txtcmd], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
+			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	
-		if @request.cookies['traw_sentence'] && @params[:sentence]
-			@response.set_cookie('traw_sentence', { :value => @params[:sentence], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
+			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	end
 	
 	def set_filter_cookies
-		#if @request.cookies['traw_filter']
-			@response.set_cookie('traw_filter', { :value => @params[:filter], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		#if @sinatra.request.cookies['traw_filter']
+			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		#end
-		#if @request.cookies['traw_filter_mode']
-			@response.set_cookie('traw_filter_mode', { :value => @params[:mode], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		#if @sinatra.request.cookies['traw_filter_mode']
+			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		#end
 	end
 	
 	def set_query_cookies
-		if @request.cookies['traw_query']
-			@response.set_cookie('traw_query', { :value => @params[:query], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		if @sinatra.request.cookies['traw_query']
+			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 		end
 	end
 	
 	def set_new_layer(words, properties)
 		if new_layer_shortcut = words.select{|w| @display.layer_shortcuts.keys.include?(w)}.last
 			layer = @display.layer_shortcuts[new_layer_shortcut]
-			@response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
 			properties.replace(@display.layer_attributes[layer].to_h)
 			return layer
 		end

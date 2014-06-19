@@ -28,52 +28,52 @@ require './lib/graph_controller'
 controller = GraphController.new
 
 get '/' do
-	controller.set_vars(params, request, response)
-	controller.root(self)
+	controller.sinatra = self
+	controller.root
 end
 
 get '/graph' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.draw_graph
 end
 
 get '/toggle_refs' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.toggle_refs
 end
 
 post '/commandline' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.handle_commandline
 end
 
 post '/sentence' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.change_sentence
 end
 
 post '/filter' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.filter
 end
 
 post '/search' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.search
 end
 
 get '/export/subcorpus.json' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.export_subcorpus
 end
 
 get '/export_data' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.export_data
 end
 
 get '/export/data_table.csv' do
-	controller.set_vars(params, request, response)
+	controller.sinatra = self
 	controller.export_data_table
 end
 
