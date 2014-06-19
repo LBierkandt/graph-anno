@@ -70,7 +70,7 @@ class GraphController
 			@display.sentence = @sinatra.params[:sentence]
 		end
 		execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
-		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence })
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
 		if @sinatra.request.cookies['traw_sentence'] == @display.sentence
@@ -493,55 +493,55 @@ class GraphController
 	
 	def check_cookies
 		if @sinatra.request.cookies['traw_sentence'].nil?
-			@sinatra.response.set_cookie('traw_sentence', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
 		end
 	
 		if @sinatra.request.cookies['traw_layer'].nil?
-			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
 		end
 	
 		if @sinatra.request.cookies['traw_cmd'].nil?
-			@sinatra.response.set_cookie('traw_cmd', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
 		end
 	
 		if @sinatra.request.cookies['traw_query'].nil?
-			@sinatra.response.set_cookie('traw_query', { :value => '', :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_query', { :value => '' })
 		end
 	end
 	
 	def set_cmd_cookies
 		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
-			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer] })
 		end
 	
 		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
-			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd] })
 		end
 	
 		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
-			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence] })
 		end
 	end
 	
 	def set_filter_cookies
 		#if @sinatra.request.cookies['traw_filter']
-			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
 		#end
 		#if @sinatra.request.cookies['traw_filter_mode']
-			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
 		#end
 	end
 	
 	def set_query_cookies
 		if @sinatra.request.cookies['traw_query']
-			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query], :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query] })
 		end
 	end
 	
 	def set_new_layer(words, properties)
 		if new_layer_shortcut = words.select{|w| @display.layer_shortcuts.keys.include?(w)}.last
 			layer = @display.layer_shortcuts[new_layer_shortcut]
-			@sinatra.response.set_cookie('traw_layer', { :value => layer, :domain => '', :path => '/', :expires => Time.now + (60 * 60 * 24 * 30) })
+			@sinatra.response.set_cookie('traw_layer', { :value => layer })
 			properties.replace(@display.layer_attributes[layer].to_h)
 			return layer
 		end
