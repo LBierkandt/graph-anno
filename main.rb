@@ -28,51 +28,52 @@ require './lib/graph_controller'
 controller = GraphController.new
 
 get '/' do
-	controller.check_cookies(params, request, response)
-	haml(
-		:index,
-		:locals => {
-			:graph => controller.graph,
-			:display => controller.display,
-			:searchresult => controller.searchresult,
-			:graph_file => controller.graph_file
-		}
-	)
+	controller.set_vars(params, request, response)
+	controller.root(self)
 end
 
 get '/graph' do
-	controller.draw_graph(request)
+	controller.set_vars(params, request, response)
+	controller.draw_graph
 end
 
 get '/toggle_refs' do
+	controller.set_vars(params, request, response)
 	controller.toggle_refs
 end
 
 post '/commandline' do
-	controller.handle_commandline(params, request, response)
+	controller.set_vars(params, request, response)
+	controller.handle_commandline
 end
 
 post '/sentence' do
-	controller.change_sentence(params, request, response)
+	controller.set_vars(params, request, response)
+	controller.change_sentence
 end
 
 post '/filter' do
-	controller.filter(params, request, response)
+	controller.set_vars(params, request, response)
+	controller.filter
 end
 
 post '/search' do
-	controller.search(params, request, response)
+	controller.set_vars(params, request, response)
+	controller.search
 end
 
 get '/export/subcorpus.json' do
+	controller.set_vars(params, request, response)
 	controller.export_subcorpus
 end
 
 get '/export_data' do
-	controller.export_data(params)
+	controller.set_vars(params, request, response)
+	controller.export_data
 end
 
 get '/export/data_table.csv' do
+	controller.set_vars(params, request, response)
 	controller.export_data_table
 end
 
