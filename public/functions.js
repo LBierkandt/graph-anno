@@ -233,11 +233,8 @@ function sendSearch() {
 function sendDataExport() {
 	var query = document.search.query.value;
 	var anfrage = new XMLHttpRequest();
-	var params = 'query=' + encodeURIComponent(query);
-	anfrage.open('GET', '/export_data');
-	anfrage.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-	anfrage.setRequestHeader("Content-length", params.length);
-	anfrage.setRequestHeader("Connection", "close");
+	var params = '?query=' + encodeURIComponent(query);
+	anfrage.open('GET', '/export_data' + params);
 	anfrage.onreadystatechange = function () {
 		if (anfrage.readyState == 4 && anfrage.status == 200) {
 			if (anfrage.responseText == '') {
