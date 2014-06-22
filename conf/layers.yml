@@ -1,18 +1,21 @@
 default_color: '#7f7f7f'
 edge_weight: 1
 layers:
-  func_layer:
+  -
+    name: func_layer
     attr: f-layer
     shortcut: f
     color: '#00cc00'
     weight: 1
-  synt_layer:
+  -
+    name: synt_layer
     attr: s-layer
     shortcut: s
     color: '#0000ff'
     weight: 10
 combinations:
-  fs_layer:
+  -
+    name: fs_layer
     shortcut: fs
     color: '#000000'
     weight: 10

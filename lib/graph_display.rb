@@ -44,17 +44,19 @@ class GraphDisplay
 	end
 
 	def layers_and_layer_combinations
-		@conf['layers'].merge(@conf['combinations'])
+		@conf['layers'] + @conf['combinations']
 	end
 
 	def layer_shortcuts
-		layers_and_layer_combinations.map{|k, v| {v['shortcut'] => k}}.reduce{|m, h| m.merge(h)}
+		layers_and_layer_combinations.map{|l| {l['shortcut'] => l['name']}}.reduce{|m, h| m.merge(h)}
 	end
 
 	def layer_attributes
-		layers_and_layer_combinations.map_hash do |k, v|
-			[*v['attr']].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
+		h = {}
+		layers_and_layer_combinations.map do |l|
+			h[l['name']] = [*l['attr']].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
 		end
+		return h
 	end
 
 	def draw_graph(format, path)
@@ -116,10 +118,10 @@ class GraphDisplay
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 				color = @conf['filtered_color']
 			else
-				@conf['layers'].values.each do |l|
+				@conf['layers'].each do |l|
 					if node[l['attr']] == 't' then color = l['color'] end
 				end
-				@conf['combinations'].values.sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
+				@conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
 					if c['attr'].all?{|a| node[a] == 't'}
 						color = c['color']
 					end
@@ -145,13 +147,13 @@ class GraphDisplay
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				color = @conf['filtered_color']
 			else
-				@conf['layers'].values.each do |l|
+				@conf['layers'].each do |l|
 					if edge[l['attr']] == 't'
 						color = l['color']
 						weight = l['weight']
 					end
 				end
-				@conf['combinations'].values.sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
+				@conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
 					if c['attr'].all?{|a| edge[a] == 't'}
 						color = c['color']
 						weight = c['weight']
@@ -186,7 +188,7 @@ class GraphDisplay
 
 	def build_label(e, i = nil)
 		label = ''
-		display_attr = e.attr.reject{|k,v| (@conf['layers'].map{|n,l| l['attr']} + ['sentence']).include?(k)}
+		display_attr = e.attr.reject{|k,v| (@conf['layers'].map{|l| l['attr']} + ['sentence']).include?(k)}
 		if e.kind_of?(Node)
 			if e.cat == 'meta'
 				display_attr.each do |key,value|

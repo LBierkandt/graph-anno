@@ -192,7 +192,7 @@ class GraphController
 			
 			when 'a' # annotate elements
 				if @display.sentence
-					@display.layers.map{|k,v| v['attr']}.each do |a|
+					@display.layers.map{|l| l['attr']}.each do |a|
 						properties.delete(a)
 					end
 					
