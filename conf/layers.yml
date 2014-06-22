@@ -1,4 +1,5 @@
 default_color: '#7f7f7f'
+edge_weight: 1
 layers:
   func_layer:
     attr: f-layer
