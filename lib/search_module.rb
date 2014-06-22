@@ -49,7 +49,7 @@ class Graph
 		# Validität der Anfrage prüfen
 		# mindestens eine node-, edge- oder oder text-Klausel
 		if operationen['node'] + operationen['edge'].select{|o| !(o[:start] or o[:end])} + operationen['text'] == []
-			raise 'Die Anfrage muß mindest eine node-, edge- oder oder text-Klausel enthalten.'
+			raise 'A query must contain at least one node clause, edge clause or text clause.'
 		end
 		# keine nicht definierten IDs als Start und Ziel bzw. in Bedingungen
 		erlaubte_start_end_ids =
@@ -61,17 +61,17 @@ class Graph
 		als_referenz_benutzte_ids = operationen['cond'].map{|o| o[:ids].values}.flatten
 		benutzte_start_end_ids.each do |id|
 			if not erlaubte_start_end_ids.include?(id)
-				raise "Die ID #{id} wurde als Start oder Ziel verwendet, ist aber nicht definiert."
+				raise "The ID #{id} is used as start or end, but is not defined."
 			end
 		end
 		als_referenz_benutzte_ids.each do |id|
 			if not als_referenz_erlaubte_ids.include?(id)
-				raise "Die ID #{id} wurde in cond verwendet, ist aber nicht definiert."
+				raise "The ID #{id} is used in cond clause, but is not defined."
 			end
 		end
 		# Zusammenhängendes Graphfragment?
 		if benutzte_start_end_ids.length > 0 and !erlaubte_start_end_ids.any?{|id| benutzte_start_end_ids.include?(id)}
-			raise "Kein zusammenh\u00E4ngendes Graphfragment."
+			raise "Defined graph fragment is not coherent."
 		end
 		
 		# edge in link umwandeln, wenn Start und Ziel gegeben
@@ -760,7 +760,7 @@ class Hash
 				begin
 					vergleich = op[:lambda].call(a) <=> op[:lambda].call(b)
 				rescue StandardError => e
-					raise e.message + " in Zeile:\n" + op[:string]
+					raise e.message + " in line:\n" + op[:string]
 				end
 				if vergleich != 0
 					break vergleich
@@ -787,7 +787,7 @@ class Hash
 				end
 			end
 			if datei.class == String
-				puts 'Schreibe Ausgabe in Datei "' + datei + '.csv".'
+				puts 'Writing output to file "' + datei + '.csv".'
 				open(datei + '.csv', 'wb') do |file|
 					file.write(rueck)
 				end
@@ -800,7 +800,7 @@ class Hash
 					begin
 						puts op[:title] + ': ' + op[:lambda].call(tg).to_s
 					rescue StandardError
-						raise "Fehler in Zeile:\n" + op[:string]
+						raise "Error in line:\n" + op[:string]
 					end
 				end
 			end
@@ -842,7 +842,7 @@ def evallambda(op, id_index)
 		rueck = eval(string)
 	rescue SyntaxError
 		rueck = eval('lambda{|tg| "error!"}')
-		raise "Syntaxfehler in Zeile:\n#{op[:operator]} #{op[:title] ? op[:title] : ''} #{op[:string]}"
+		raise "Syntax error in line:\n#{op[:operator]} #{op[:title] ? op[:title] : ''} #{op[:string]}"
 	end
 	return rueck
 end
