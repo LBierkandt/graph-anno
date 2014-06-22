@@ -277,8 +277,8 @@ function makeAnfrage(anfrage, params) {
 				setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 				setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
-				if (antworthash['searchresult'] != undefined) {
-					document.getElementById('searchresult').innerHTML = antworthash['searchresult'];
+				if (antworthash['search_result'] != undefined) {
+					document.getElementById('searchresult').innerHTML = antworthash['search_result'];
 					query.focus();
 				} else if (antworthash['filter_applied'] != undefined) {
 					filterfield.focus();

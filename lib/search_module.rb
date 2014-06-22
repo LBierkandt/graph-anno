@@ -17,11 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Graph
-# Suchmethoden
+require 'unicode_utils/downcase'
+require 'csv'
+require_relative 'parser_module'
 
-	require 'unicode_utils/downcase'
-	require 'csv'
+class SearchableGraph < Graph
+	include(Parser)
+	
+	def initialize
+		super
+		load_makros
+	end
 
 	def teilgraph_suchen(anfrage)
 		operationen = parse_query(anfrage)
@@ -841,5 +847,3 @@ def evallambda(op, id_index)
 	end
 	return rueck
 end
-
-require_relative 'parser_module'

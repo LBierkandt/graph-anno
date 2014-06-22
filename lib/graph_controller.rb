@@ -120,6 +120,7 @@ class GraphController
 		@display.found[:sentences] = @display.found[:all_nodes].map{|k| k.sentence}.uniq
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		puts '"' + @search_result + '"'
 		return {
 			:sentences_html => @display.build_sentence_html(@sentence_list),
 			:search_result => @search_result,

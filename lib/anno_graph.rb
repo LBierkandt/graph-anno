@@ -207,7 +207,7 @@ class AnnoEdge < Edge
 
 end
 
-class AnnoGraph < Graph
+class AnnoGraph < SearchableGraph
 
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file

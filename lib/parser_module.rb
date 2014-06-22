@@ -89,8 +89,7 @@ end
 
 module Parser
 
-	def initialize
-		super
+	def load_makros
 		@makros = []
 		if File.exists?('conf/search_makros.txt')
 			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
@@ -99,11 +98,11 @@ module Parser
 		end
 	end
 
-	def parse_query(string, makros = @makros)
+	def parse_query(string)
 		ops = {
 			'col'=>[],
 			'cond'=>[],
-			'def'=>makros,
+			'def'=>@makros,
 			'edge'=>[],
 			'link'=>[],
 			'meta'=>[],
@@ -124,14 +123,14 @@ module Parser
 					ops[op[:operator]] << op
 				end
 			rescue StandardError => e
-				raise e.message + " in line:\n" + line
+				raise e.message + " on line:\n" + line
 			end
 		end
 		
 		return ops
 	end
 
-	def parse_line(obj)
+	def parse_line(obj, makros)
 		if obj.class == String
 			p = obj.strip.partition('#')[0].split(/\s/)
 			if ['cond', 'sort'].include?(p[0])
@@ -139,7 +138,7 @@ module Parser
 			elsif p[0] == 'col'
 				return {:operator => p[0], :title => p[1]}.merge(parse_eval((p[2..-1] * ' ')))
 			else
-				return parse_line(obj.lex_ql)
+				return parse_line(obj.lex_ql, makros)
 			end
 		else
 			if obj.length == 0 then return nil end
@@ -347,16 +346,16 @@ module Parser
 		length = 1
 		if obj[1] and obj[1][:cl] == :operator && obj[1][:str] == '('
 			if op[:operator] == 'link'
-				p = obj[2..-1].parse_link
+				p = parse_link(obj[2..-1])
 				op[:arg] = p[:op]
 			else
-				p = obj[2..-1].parse_attributes
+				p = parse_attributes(obj[2..-1])
 				op[:cond] = p[:op]
 			end
 			length += p[:length] + 1
 		end
 		if ['in', 'out', 'link'].include?(op[:operator]) and obj[length] and obj[length][:cl] == :quantor
-			op = obj[length][:str].parse_quantor(op)
+			op = parse_quantor(obj[length][:str], op)
 			length += 1
 		end
 		if obj[length] and obj[length][:cl] == :id
@@ -519,8 +518,4 @@ module Parser
 		return op
 	end
 
-end
-
-class Graph
-	include(Parser)
 end
