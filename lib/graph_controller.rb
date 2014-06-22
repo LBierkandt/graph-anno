@@ -19,13 +19,14 @@
 
 class GraphController
 	attr_writer :sinatra
+	attr_reader :display, :sentence_list, :graph_file, :search_result
 
 	def initialize
 		@graph = AnnoGraph.new
 		@display = GraphDisplay.new(@graph)
 		@graph_file = ''
 		@data_table = nil
-		@searchresult = ''
+		@search_result = ''
 		@sentence_list = []
 		@sentences_html = ''
 	end
@@ -35,10 +36,7 @@ class GraphController
 		@sinatra.haml(
 			:index,
 			:locals => {
-				:graph => @graph,
-				:display => @display,
-				:searchresult => @searchresult,
-				:graph_file => @graph_file
+				:controller => self
 			}
 		)
 	end
@@ -62,7 +60,7 @@ class GraphController
 	end
 	
 	def handle_commandline
-		puts @sinatra.params[:txtcmd]
+		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
 		if @sinatra.params[:sentence] == ''
 			@display.sentence = nil
@@ -81,7 +79,7 @@ class GraphController
 		# prüfen, ob sich die Satzliste geändert hat (und nur dann neue Liste fürs select-Feld erstellen)
 		if (new_sentence_list = @graph.sentences) != @sentence_list
 			@sentence_list = new_sentence_list
-			@sentences_html = build_sentence_html
+			@sentences_html = @display.build_sentence_html(@sentence_list)
 		else
 			@sentences_html = nil
 		end
@@ -112,10 +110,10 @@ class GraphController
 		set_query_cookies
 		begin
 			@display.found = @graph.teilgraph_suchen(@sinatra.params[:query])
-			@searchresult = @display.found[:tg].length.to_s + ' matches'
+			@search_result = @display.found[:tg].length.to_s + ' matches'
 		rescue StandardError => e
 			@display.found = {:tg => [], :id_type => {}}
-			@searchresult = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
+			@search_result = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
 		end
 		@display.found[:all_nodes] = @display.found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@display.found[:all_edges] = @display.found[:tg].map{|tg| tg.edges}.flatten.uniq
@@ -123,8 +121,8 @@ class GraphController
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {
-			:sentences_html => build_sentence_html,
-			:searchresult => @searchresult,
+			:sentences_html => @display.build_sentence_html(@sentence_list),
+			:search_result => @search_result,
 			:sentence_changed => false
 		}.update(satzinfo).to_json
 	end
@@ -470,25 +468,6 @@ class GraphController
 			else
 				return nil
 		end
-	end
-	
-	def build_sentence_html
-		puts 'Generating formatted sentence list ...'
-		sentence_string = ''
-		if @display.found
-			@sentence_list.each do |n|
-				if @display.found[:sentences].include?(n)
-					sentence_string += '<option value="' + n + '" class="found_sentence">' + n + '</option>'
-				else
-					sentence_string += '<option value="' + n + '">' + n + '</option>'
-				end
-			end
-		else
-			@sentence_list.each do |n|
-				sentence_string += '<option value="' + n + '">' + n + '</option>'
-			end
-		end
-		return sentence_string
 	end
 	
 	def check_cookies

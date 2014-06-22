@@ -18,17 +18,13 @@
         %form{ :action => "/commandline", :method => "post",  :name => "cmd" }
           %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
           %select{ :name => "layer", :id => "layer" }
-            - display.layers_and_layer_combinations.each do |l|
+            - controller.display.layers_and_layer_combinations.each do |l|
               %option{ :value => l['name'] }= l['name']
             %option{ :value => "none" }= "none"
           %select{ :name => "sentence", :id => "sentence" }
-            - graph.sentences.each do |n|
-              - if display.found && display.found[:sentences].include?(n)
-                %option{ :value => n, :class => "found_sentence" }= n
-              - else
-                %option{ :value => n }= n
+            = controller.display.build_sentence_html(controller.sentence_list)
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
-          %div{ :id => "active_file" } #{if graph_file != '' then 'file: ' + graph_file else '' end}
+          %div{ :id => "active_file" } #{if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end}
 
     %script{ :type => "text/javascript", :language => "JavaScript" }
       setSelectedIndex(document.getElementById('sentence'),'#{request.cookies['traw_sentence']}');
@@ -42,7 +38,7 @@
         %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export/subcorpus.json'" }
         %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
       %div{ :id => "searchresult" }
-        #{searchresult}
+        #{controller.search_result}
     
     %div{ :id => "filter" }
       %form{ :action => "/filter", :method => "post", :name => "filter" }

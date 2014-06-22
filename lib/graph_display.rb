@@ -239,4 +239,24 @@ class GraphDisplay
 		end
 		return label
 	end
+	
+	def build_sentence_html(sentence_list)
+		puts 'Generating formatted sentence list ...'
+		sentence_string = ''
+		if @found
+			sentence_list.each do |n|
+				if @found[:sentences].include?(n)
+					sentence_string += '<option value="' + n + '" class="found_sentence">' + n + '</option>'
+				else
+					sentence_string += '<option value="' + n + '">' + n + '</option>'
+				end
+			end
+		else
+			sentence_list.each do |n|
+				sentence_string += '<option value="' + n + '">' + n + '</option>'
+			end
+		end
+		return sentence_string
+	end
+
 end
