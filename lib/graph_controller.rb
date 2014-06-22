@@ -100,7 +100,7 @@ class GraphController
 	def filter
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
-		@display.filter = {:cond => @sinatra.params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
+		@display.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
