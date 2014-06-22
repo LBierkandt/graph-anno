@@ -43,7 +43,7 @@ class Array
 				end
 			end
 		else #Fehler!
-			raise "Unbekanntes Schl\u00FCsselwort \"#{arr[0][:str]}\""
+			raise "Undefined command \"#{arr[0][:str]}\""
 		end
 		case op[:operator]
 			when 'node', 'nodes'
@@ -78,7 +78,7 @@ class Array
 				elsif ids.length == 3
 					op[:id], op[:start], op[:end] = ids
 				else #Fehler!
-					raise 'Zu viele IDs in edge-Klausel (max. drei)'
+					raise 'Too many IDs in edge clause (max. three)'
 				end
 				op[:cond] = arr.parse_attributes(makros)[:op]
 			when 'link'
@@ -96,7 +96,7 @@ class Array
 				if ids.length == 2
 					op[:start], op[:end] = ids
 				else #Fehler!
-					raise 'Keine zwei IDs in link-Klausel'
+					raise 'There must be two IDs in link clause'
 				end
 				p = arr.parse_link(makros)
 				op[:arg] = p[:op]
@@ -108,7 +108,7 @@ class Array
 					op[:name] = arr.shift[:str]
 					op[:arg] = arr
 				else # Fehler
-					raise "def-Klausel mu\u00DF einen Namen haben"
+					raise "def clause needs a name"
 				end
 		end
 		return op
@@ -125,7 +125,7 @@ class Array
 					terms << p[:op]
 					i += p[:length] - 1
 				when :qstring
-					raise "Undefinierte Zeichenkette \"#{tok[:str]}\""
+					raise "Undefined string \"#{tok[:str]}\""
 				when :bstring
 					p = self[i..-1].parse_element(makros)
 					if ['in', 'out', 'start', 'end', 'link', 'quant'].include?(p[:op][:operator])
@@ -134,7 +134,7 @@ class Array
 						m = makros.select{|m| m[:name] == tok[:str]}[-1][:arg].parse_attributes
 						terms << m[:op]
 					else #Fehler!
-						raise "Undefinierte Zeichenkette \"#{tok[:str]}\""
+						raise "Undefined string \"#{tok[:str]}\""
 					end
 					i += p[:length] - 1
 				when :operator
@@ -176,7 +176,7 @@ class Array
 						}
 						value_expected = false
 					else # Fehler
-						raise "Mehrfache M\u00F6glichkeiten f\u00FCr Attributwert falsch angegeben"
+						raise "Wrong syntax in declaration of multiple possibilities for attribute value"
 					end
 				when :operator
 					if value_expected
@@ -342,7 +342,7 @@ class Array
 			end
 		end
 		if terms.length > 1
-			raise "Attribute nicht durch Operator verbunden"
+			raise "Attributes not linked by operator"
 		end
 		return terms[0]
 	end
@@ -403,7 +403,7 @@ class String
 			elsif m = str.match(r[:variable])
 				rueck << {:cl => :variable, :str => m[0]}
 			else
-				raise 'Syntaxfehler'
+				raise 'Syntax error'
 			end
 		
 			if m
@@ -431,7 +431,7 @@ class String
 		}
 		lines = self.split("\n")
 		
-		puts 'Parse Eingabe:'
+		puts 'Parsing input:'
 		lines.each{|z| puts '  ' + z}
 		puts
 		
@@ -441,7 +441,7 @@ class String
 					ops[op[:operator]] << op
 				end
 			rescue StandardError => e
-				raise e.message + " in Zeile:\n" + line
+				raise e.message + " in line:\n" + line
 			end
 		end
 		
