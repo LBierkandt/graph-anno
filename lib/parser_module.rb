@@ -18,7 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Array
-	def parse_line(makros = $makros)
+	def parse_line(makros)
 		if self.length == 0 then return nil end
 		arr = self.clone
 		operators = [
@@ -114,7 +114,7 @@ class Array
 		return op
 	end
 
-	def parse_attributes(makros = $makros)
+	def parse_attributes(makros)
 		op = {}
 		terms = []
 		i = 0
@@ -210,7 +210,7 @@ class Array
 		return {:op => op, :length => i}
 	end
 
-	def parse_element(makros = $makros)
+	def parse_element(makros)
 		op = {:operator => self[0][:str]}
 		length = 1
 		if self[1] and self[1][:cl] == :operator && self[1][:str] == '('
@@ -234,7 +234,7 @@ class Array
 		return {:op => op, :length => length}
 	end
 
-	def parse_word(makros = $makros)
+	def parse_word(makros)
 		op = {
 			:operator => 'attr',
 			:key => 'token',
@@ -251,7 +251,7 @@ class Array
 		return {:op => op, :length => length}
 	end
 
-	def parse_link(makros = $makros)
+	def parse_link(makros)
 		op = {}
 		terms = []
 		ids = []
@@ -290,7 +290,7 @@ class Array
 		return {:op => terms.parse_term_sequence, :length => i, :ids => ids}
 	end
 
-	def parse_text_search(makros = $makros)
+	def parse_text_search(makros)
 		op = {}
 		terms = []
 		ids = []
@@ -416,11 +416,25 @@ class String
 		return rueck
 	end
 	
-	def parse_query
+end
+
+module Parser
+
+	def initialize
+		super
+		@makros = []
+		if File.exists?('conf/search_makros.txt')
+			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
+				@makros = datei.read.parse_query['def']
+			end
+		end
+	end
+
+	def parse_query(string, makros = @makros)
 		ops = {
 			'col'=>[],
 			'cond'=>[],
-			'def'=>$makros,
+			'def'=>makros,
 			'edge'=>[],
 			'link'=>[],
 			'meta'=>[],
@@ -429,7 +443,7 @@ class String
 			'sort'=>[],
 			'text'=>[]
 		}
-		lines = self.split("\n")
+		lines = string.split("\n")
 		
 		puts 'Parsing input:'
 		lines.each{|z| puts '  ' + z}
@@ -437,7 +451,7 @@ class String
 		
 		lines.each do |line|
 			begin
-				if op = line.parse_line(ops['def'])
+				if op = parse_line(line, ops['def'])
 					ops[op[:operator]] << op
 				end
 			rescue StandardError => e
@@ -456,7 +470,7 @@ class String
 		return rueck
 	end
 
-	def parse_line(makros = $makros)
+	def parse_line(makros = @makros)
 		p = self.strip.partition('#')[0].split(/\s/)
 		if ['cond', 'sort'].include?(p[0])
 			return {:operator => p[0]}.merge((p[1..-1] * ' ').parse_eval)
@@ -467,7 +481,7 @@ class String
 		end
 	end
 	
-	def parse_attributes(makros = $makros)
+	def parse_attributes(makros = @makros)
 		return self.lex_ql.parse_attributes(makros)
 	end
 	
@@ -475,15 +489,15 @@ class String
 		return self.lex_ql.parse_attribute
 	end
 	
-	def parse_link(makros = $makros)
+	def parse_link(makros = @makros)
 		return self.lex_ql.parse_link(makros)
 	end
 
-	def parse_text_search(makros = $makros)
+	def parse_text_search(makros = @makros)
 		return self.lex_ql.parse_text_search(makros)
 	end
 
-	def parse_quantor(argument)
+	def parse_quantor(argument = @makros)
 		op = {:operator => 'quant', :arg => argument}
 		case self[0]
 		when '{'
@@ -509,20 +523,6 @@ class String
 
 end
 
-$makros = []
-if File.exists?('conf/search_makros.txt')
-	File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
-		$makros = datei.read.parse_query['def']
-	end
+class Graph
+	include(Parser)
 end
-
-
-
-
-
-
-
-
-
-
-

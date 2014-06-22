@@ -17,16 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative 'parser_module'
-
 class Graph
 # Suchmethoden
 
 	require 'unicode_utils/downcase'
 	require 'csv'
 
+	def initialize
+		super
+		load_search_makros
+	end
+	
 	def teilgraph_suchen(anfrage)
-		operationen = anfrage.parse_query
+		operationen = anfrage.parse_query(@makros)
 		
 		puts 'Searching for graph fragment ...'
 		startzeit = Time.new
@@ -744,7 +747,7 @@ end
 
 class Hash
 	def teilgraph_ausgeben(befehle, datei = :console)
-		operationen = befehle.parse_query
+		operationen = befehle.parse_query(@makros)
 		
 		# Sortieren
 		self[:tg].each do |tg|
@@ -847,3 +850,4 @@ def evallambda(op, id_index)
 	return rueck
 end
 
+require_relative 'parser_module'
