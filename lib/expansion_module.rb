@@ -30,10 +30,10 @@ module Expansion
 	def load_expansion_rules(file = nil)
 		if !file then file = 'conf/expansion.yml' end
 		exp = File::open(file){|yf| YAML::load(yf)}
-		exp[:args] = exp[:args].parse_link[:op]
-		exp[:co] = exp[:co].parse_link[:op]
-		exp[:s] = exp[:s].parse_attributes[:op]
-		exp[:rp] = exp[:rp].parse_attributes[:op]
+		exp[:args] = parse_link(exp[:args])[:op]
+		exp[:co] = parse_link(exp[:co])[:op]
+		exp[:s] = parse_attributes(exp[:s])[:op]
+		exp[:rp] = parse_attributes(exp[:rp])[:op]
 		@expansion_rules = exp
 	end
 
@@ -120,7 +120,7 @@ module Expansion
 		if sentence then searchgraph.filter!('sentence:"'+sentence+'"') end
 		@expansion_rules[:shortcuts].each do |sc|
 			search = sc[:search]
-			exec = sc[:exec].parse_eval
+			exec = parse_eval(sc[:exec])
 			
 			found = searchgraph.teilgraph_suchen(search)
 			found[:tg].each do |tg|
@@ -153,9 +153,9 @@ module Expansion
 	def load_projection_rules(file = nil)
 		if !file then file = 'conf/feature_projection.yml' end
 		pr = File::open(file){|yf| YAML::load(yf)}
-		pr[:root] = pr[:root].to_s.parse_attributes[:op]
+		pr[:root] = parse_attributes(pr[:root].to_s)[:op]
 		pr[:edges].each do |r|
-			r[:edge] = r[:edge].to_s.parse_attributes[:op]
+			r[:edge] = parse_attributes(r[:edge].to_s)[:op]
 		end
 		return pr
 	end

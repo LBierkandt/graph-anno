@@ -143,7 +143,7 @@ class GraphController
 		if @display.found
 			begin
 				anfrage = @sinatra.params[:query]
-				@data_table = @display.found.teilgraph_ausgeben(anfrage, :string)
+				@data_table = teilgraph_ausgeben(@display.found, anfrage, :string)
 				return ''
 			rescue StandardError => e
 				return e.message

@@ -23,13 +23,8 @@ class Graph
 	require 'unicode_utils/downcase'
 	require 'csv'
 
-	def initialize
-		super
-		load_search_makros
-	end
-	
 	def teilgraph_suchen(anfrage)
-		operationen = anfrage.parse_query(@makros)
+		operationen = parse_query(anfrage)
 		
 		puts 'Searching for graph fragment ...'
 		startzeit = Time.new
@@ -340,13 +335,77 @@ class Graph
 		end
 	end
 
+	def teilgraph_ausgeben(found, befehle, datei = :console)
+		operationen = parse_query(befehle)
+		
+		# Sortieren
+		found[:tg].each do |tg|
+			tg.ids.values.each{|arr| arr.sort!{|a,b| a.ID.to_i <=> b.ID.to_i}}
+		end
+		operationen['sort'].each do |op|
+			op[:lambda] = evallambda(op, found[:id_type])
+		end
+		found[:tg].sort! do |a,b|
+			# Hierarchie der sort-Befehle abarbeiten
+			vergleich = 0
+			operationen['sort'].reject{|op| !op}.each do |op|
+				begin
+					vergleich = op[:lambda].call(a) <=> op[:lambda].call(b)
+				rescue StandardError => e
+					raise e.message + " in line:\n" + op[:string]
+				end
+				if vergleich != 0
+					break vergleich
+				end
+			end
+			vergleich
+		end
+		
+		# Ausgabe
+		operationen['col'].each{|op| op[:lambda] = evallambda(op, found[:id_type])}
+		if datei.class == String or datei == :string
+			rueck = CSV.generate(:col_sep => "\t") do |csv|
+				csv << ['match_no'] + operationen['col'].map{|o| o[:title]}
+				found[:tg].each_with_index do |tg, i|
+					csv << [i+1] + operationen['col'].map do |op|
+						begin
+							op[:lambda].call(tg)
+						rescue StandardError => e
+							raise e.message + " in Zeile:\n" + op[:string]
+							puts tg
+							'error!'
+						end
+					end
+				end
+			end
+			if datei.class == String
+				puts 'Writing output to file "' + datei + '.csv".'
+				open(datei + '.csv', 'wb') do |file|
+					file.write(rueck)
+				end
+			elsif datei == :string
+				return rueck
+			end
+		elsif datei == :console
+			found[:tg].each_with_index do |tg, i|
+				operationen['col'].each do |op|
+					begin
+						puts op[:title] + ': ' + op[:lambda].call(tg).to_s
+					rescue StandardError
+						raise "Error in line:\n" + op[:string]
+					end
+				end
+			end
+		end
+	end
+
 end
 
 class NodeOrEdge
 
 	def fulfil?(bedingung)
 		if bedingung.class == String
-			bedingung = bedingung.parse_attributes[:op]
+			bedingung = parse_attributes(bedingung)[:op]
 		end
 		if not bedingung then return true end
 		satzzeichen = '.,;:?!"'
@@ -423,7 +482,7 @@ class Node
 
 	def links(pfad_oder_automat, zielknotenbedingung = nil)
 		if pfad_oder_automat.class == String
-			automat = Automat.create(pfad_oder_automat.parse_link[:op])
+			automat = Automat.create(parse_link(pfad_oder_automat)[:op])
 			automat.bereinigen
 		elsif pfad_oder_automat.class == Automat
 			automat = pfad_oder_automat
@@ -471,7 +530,7 @@ class Node
 	end
 
 	def nodes(link, zielknotenbedingung = '')
-		return links(link, zielknotenbedingung.parse_attributes[:op]).map{|node_and_link| node_and_link[0]}.uniq
+		return links(link, parse_attributes(zielknotenbedingung)[:op]).map{|node_and_link| node_and_link[0]}.uniq
 	end
 
 end
@@ -490,7 +549,7 @@ class Automat
 		when 'redge'
 			return Automat.new(Zustand.new('redge', nil, operation[:cond], ids))
 		when 'boundary'
-			return Automat.new(Zustand.new('node', nil, ('cat:"boundary" & level:'+operation[:level]).parse_attributes[:op]))
+			return Automat.new(Zustand.new('node', nil, parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
 		when 'or'
 			folgeautomaten = [Automat.create(operation[:arg][0], ids), Automat.create(operation[:arg][1], ids)]
 			automat = Automat.new(Zustand.new('split', [], ids))
@@ -743,73 +802,6 @@ class Teilgraph
 		'Nodes: ' + @nodes.to_s + ', Edges: ' + @edges.to_s + ', IDs: ' + @ids.to_s
 	end
 	
-end
-
-class Hash
-	def teilgraph_ausgeben(befehle, datei = :console)
-		operationen = befehle.parse_query(@makros)
-		
-		# Sortieren
-		self[:tg].each do |tg|
-			tg.ids.values.each{|arr| arr.sort!{|a,b| a.ID.to_i <=> b.ID.to_i}}
-		end
-		operationen['sort'].each do |op|
-			op[:lambda] = evallambda(op, self[:id_type])
-		end
-		self[:tg].sort! do |a,b|
-			# Hierarchie der sort-Befehle abarbeiten
-			vergleich = 0
-			operationen['sort'].reject{|op| !op}.each do |op|
-				begin
-					vergleich = op[:lambda].call(a) <=> op[:lambda].call(b)
-				rescue StandardError => e
-					raise e.message + " in line:\n" + op[:string]
-				end
-				if vergleich != 0
-					break vergleich
-				end
-			end
-			vergleich
-		end
-		
-		# Ausgabe
-		operationen['col'].each{|op| op[:lambda] = evallambda(op, self[:id_type])}
-		if datei.class == String or datei == :string
-			rueck = CSV.generate(:col_sep => "\t") do |csv|
-				csv << ['match_no'] + operationen['col'].map{|o| o[:title]}
-				self[:tg].each_with_index do |tg, i|
-					csv << [i+1] + operationen['col'].map do |op|
-						begin
-							op[:lambda].call(tg)
-						rescue StandardError => e
-							raise e.message + " in Zeile:\n" + op[:string]
-							puts tg
-							'error!'
-						end
-					end
-				end
-			end
-			if datei.class == String
-				puts 'Writing output to file "' + datei + '.csv".'
-				open(datei + '.csv', 'wb') do |file|
-					file.write(rueck)
-				end
-			elsif datei == :string
-				return rueck
-			end
-		elsif datei == :console
-			self[:tg].each_with_index do |tg, i|
-				operationen['col'].each do |op|
-					begin
-						puts op[:title] + ': ' + op[:lambda].call(tg).to_s
-					rescue StandardError
-						raise "Error in line:\n" + op[:string]
-					end
-				end
-			end
-		end
-	end
-
 end
 
 class String
