@@ -227,17 +227,20 @@ class AnnoGraph < SearchableGraph
 		file = open(path, 'r:utf-8')
 		nodes_and_edges = JSON.parse(file.read)
 		file.close
-			# 'knoten' -> 'nodes', 'kanten' -> 'edges'
-			if nodes_and_edges['version'].to_i < 4
-				nodes_and_edges['nodes'] = nodes_and_edges['knoten']
-				nodes_and_edges['edges'] = nodes_and_edges['kanten']
-				nodes_and_edges.delete('knoten')
-				nodes_and_edges.delete('kanten')
-			end
+		# 'knoten' -> 'nodes', 'kanten' -> 'edges'
+		if nodes_and_edges['version'].to_i < 4
+			nodes_and_edges['nodes'] = nodes_and_edges['knoten']
+			nodes_and_edges['edges'] = nodes_and_edges['kanten']
+			nodes_and_edges.delete('knoten')
+			nodes_and_edges.delete('kanten')
+		end
 		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
 		end
 		self.add_hash(nodes_and_edges)
+		if nodes_and_edges['version'].to_i >= 6
+			@conf.merge!(nodes_and_edges['conf'])
+		end
 		
 		# ggf. Format aktualisieren
 		if nodes_and_edges['version'].to_i < 5
