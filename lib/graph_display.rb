@@ -35,8 +35,7 @@ class GraphDisplay
 		@show_refs = true
 		@found = nil
 		@filter = {:mode => 'unfilter'}
-		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
-		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+		@conf = graph.conf
 	end
 
 	def layers

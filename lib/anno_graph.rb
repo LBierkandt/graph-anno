@@ -208,6 +208,15 @@ class AnnoEdge < Edge
 end
 
 class AnnoGraph < SearchableGraph
+	attr_reader :conf
+
+	# extend the super class initialize method by reading in of display and layer configuration
+	def initialize
+		super
+		# load default configuration
+		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
+		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+	end
 
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file
