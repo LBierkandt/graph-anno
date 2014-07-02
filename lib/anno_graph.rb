@@ -304,7 +304,7 @@ class AnnoGraph < SearchableGraph
 
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
 	def to_h
-		super.merge('version' => '5')
+		super.merge('version' => '6').merge('conf' => @conf)
 	end
 
 	def sentences
