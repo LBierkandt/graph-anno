@@ -100,7 +100,7 @@ class GraphController
 	def filter
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
-		@display.filter = {:cond => @sinatra.params[:filter].parse_attributes[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
+		@display.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
@@ -120,6 +120,7 @@ class GraphController
 		@display.found[:sentences] = @display.found[:all_nodes].map{|k| k.sentence}.uniq
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		puts '"' + @search_result + '"'
 		return {
 			:sentences_html => @display.build_sentence_html(@sentence_list),
 			:search_result => @search_result,
@@ -143,7 +144,7 @@ class GraphController
 		if @display.found
 			begin
 				anfrage = @sinatra.params[:query]
-				@data_table = @display.found.teilgraph_ausgeben(anfrage, :string)
+				@data_table = @graph.teilgraph_ausgeben(@display.found, anfrage, :string)
 				return ''
 			rescue StandardError => e
 				return e.message

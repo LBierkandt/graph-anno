@@ -17,337 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Array
-	def parse_line(makros = $makros)
-		if self.length == 0 then return nil end
-		arr = self.clone
-		operators = [
-			'node',
-			'nodes',
-			'edge',
-			'link',
-			'text',
-			'meta',
-			'cond',
-			'def',
-			'sort', 
-			'col'
-		]
-		if arr[0] and arr[0][:cl] == :bstring and operators.include?(arr[0][:str])
-			op = {:operator => arr.shift[:str]}
-			# Leerzeichen am Anfang entfernen:
-			while true
-				if arr[0] and arr[0][:cl] == :operator and arr[0][:str] == ' '
-					arr.shift
-				else break
-				end
-			end
-		else #Fehler!
-			raise "Undefined command \"#{arr[0][:str]}\""
-		end
-		case op[:operator]
-			when 'node', 'nodes'
-				if arr[0] and arr[0][:cl] == :id
-					op[:id] = arr.shift[:str]
-				end
-				op[:cond] = arr.parse_attributes(makros)[:op]
-			when 'text'
-				if arr[0] and arr[0][:cl] == :id
-					op[:id] = arr.shift[:str]
-				end
-				p = arr.parse_text_search(makros)
-				op[:arg] = p[:op]
-				op[:ids] = p[:ids]
-			when 'edge'
-				ids = []
-				while arr[0]
-					if arr[0][:cl] == :operator and arr[0][:str] == ' '
-						arr.shift
-					elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
-						arr.shift
-					elsif arr[0][:cl] == :id
-						ids << arr.shift[:str]
-					else break
-					end
-				end
-				if ids.length == 0
-				elsif ids.length == 1
-					op[:id] = ids[0]
-				elsif ids.length == 2
-					op[:start], op[:end] = ids
-				elsif ids.length == 3
-					op[:id], op[:start], op[:end] = ids
-				else #Fehler!
-					raise 'Too many IDs in edge clause (max. three)'
-				end
-				op[:cond] = arr.parse_attributes(makros)[:op]
-			when 'link'
-				ids = []
-				while arr[0]
-					if arr[0][:cl] == :operator and arr[0][:str] == ' '
-						arr.shift
-					elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
-						arr.shift
-					elsif arr[0][:cl] == :id
-						ids << arr.shift[:str]
-					else break
-					end
-				end
-				if ids.length == 2
-					op[:start], op[:end] = ids
-				else #Fehler!
-					raise 'There must be two IDs in link clause'
-				end
-				p = arr.parse_link(makros)
-				op[:arg] = p[:op]
-				op[:ids] = p[:ids]
-			when 'meta'
-				op[:cond] = arr.parse_attributes(makros)[:op]
-			when 'def'
-				if [:bstring, :qstring].include?(arr[0][:cl])
-					op[:name] = arr.shift[:str]
-					op[:arg] = arr
-				else # Fehler
-					raise "def clause needs a name"
-				end
-		end
-		return op
-	end
-
-	def parse_attributes(makros = $makros)
-		op = {}
-		terms = []
-		i = 0
-		while tok = self[i]
-			case tok[:cl]
-				when :key
-					p = self[i..-1].parse_attribute
-					terms << p[:op]
-					i += p[:length] - 1
-				when :qstring
-					raise "Undefined string \"#{tok[:str]}\""
-				when :bstring
-					p = self[i..-1].parse_element(makros)
-					if ['in', 'out', 'start', 'end', 'link', 'quant'].include?(p[:op][:operator])
-						terms << p[:op]
-					elsif makros.map{|m| m[:name]}.include?(tok[:str])
-						m = makros.select{|m| m[:name] == tok[:str]}[-1][:arg].parse_attributes
-						terms << m[:op]
-					else #Fehler!
-						raise "Undefined string \"#{tok[:str]}\""
-					end
-					i += p[:length] - 1
-				when :operator
-					if ['!', '&', '|'].include?(tok[:str])
-						terms << {'!'=>'not', '&'=>'and', '|'=>'or'}[tok[:str]]
-					elsif tok[:str] == '('
-						p = self[i+1..-1].parse_attributes(makros)
-						terms << p[:op]
-						i += p[:length]
-					elsif tok[:str] == ')'
-						i += 1
-						break
-					end
-			end
-			i += 1
-		end
-		# 'in', 'out' und 'link' ggf. in Quantor {1,1} einbetten
-		terms.each_with_index do |t, i|
-			if t.class == Hash && (['in', 'out', 'link'].include?(t[:operator]))
-				terms[i] = {:operator => 'quant', :arg => t, :min => 1, :max => -1}
-			end
-		end
-		return {:op => terms.parse_term_sequence, :length => i}
-	end
-
-	def parse_attribute
-		key = self[0][:str]
-		i = 0
-		op = {:operator => 'attr', :key => key}
-		values = []
-		value_expected = true
-		while tok = self[i]
-			case tok[:cl]
-				when :bstring, :qstring, :regex
-					if value_expected
-						values << {
-							:value => tok[:str],
-							:method => {:bstring=>'insens', :qstring=>'plain', :regex=>'regex'}[tok[:cl]]
-						}
-						value_expected = false
-					else # Fehler
-						raise "Wrong syntax in declaration of multiple possibilities for attribute value"
-					end
-				when :operator
-					if value_expected
-						values << {:value => '', :method => 'plain'} # oder sollte hier ":value=>nil"? Dann müßte aber fulfil anders definiert sein!
-						value_expected = false
-						break
-					else
-						if tok[:str] == '|'
-							value_expected = true
-						else
-							value_expected = false
-							break
-						end
-					end
-			end
-			i += 1
-		end
-		if value_expected then values << {:value => '', :method => 'plain'} end
-		# build operation
-		op.merge!(values.pop)
-		while values.length > 0
-			old_op = op.clone
-			op = {
-				:operator => 'or',
-				:arg => [
-					{:operator => 'attr', :key => key}.merge(values.pop),
-					old_op
-				]
-			}
-		end
-		return {:op => op, :length => i}
-	end
-
-	def parse_element(makros = $makros)
-		op = {:operator => self[0][:str]}
-		length = 1
-		if self[1] and self[1][:cl] == :operator && self[1][:str] == '('
-			if op[:operator] == 'link'
-				p = self[2..-1].parse_link(makros)
-				op[:arg] = p[:op]
-			else
-				p = self[2..-1].parse_attributes(makros)
-				op[:cond] = p[:op]
-			end
-			length += p[:length] + 1
-		end
-		if ['in', 'out', 'link'].include?(op[:operator]) and self[length] and self[length][:cl] == :quantor
-			op = self[length][:str].parse_quantor(op)
-			length += 1
-		end
-		if self[length] and self[length][:cl] == :id
-			op[:id] = self[length][:str]
-			length += 1
-		end
-		return {:op => op, :length => length}
-	end
-
-	def parse_word(makros = $makros)
-		op = {
-			:operator => 'attr',
-			:key => 'token',
-			:value => self[0][:str],
-			:method => {:bstring=>'insens', :qstring=>'plain', :regex=>'regex'}[self[0][:cl]]
-		}
-		length = 1
-		if self[1] and self[1][:cl] == :operator and self[1][:str] == '('
-			p = self[2..-1].parse_attributes(makros)
-			op = {:operator => 'and', :arg => [op, p[:op]]}
-			length += p[:length] + 1
-		end
-		op = {:operator => 'node', :cond => op}
-		return {:op => op, :length => length}
-	end
-
-	def parse_link(makros = $makros)
-		op = {}
-		terms = []
-		ids = []
-		i = 0
-		while tok = self[i]
-			case tok[:cl]
-				when :bstring, :qstring
-					if terms[-1].class == Hash then terms << 'seq' end
-					p = self[i..-1].parse_element(makros)
-					if ['node', 'edge', 'redge'].include?(p[:op][:operator])
-						terms << p[:op]
-						if p[:op][:id] then ids << p[:op][:id] end
-					elsif makros.map{|m| m[:name]}.include?(tok[:str])
-						m = makros.select{|m| m[:name] == tok[:str]}[-1][:arg].parse_link
-						terms << m[:op]
-						if m[:op][:id] then ids << m[:op][:id] end
-					end
-					i += p[:length] - 1
-				when :quantor
-					terms[-1] = tok[:str].parse_quantor(terms[-1])
-				when :operator
-					if tok[:str] == '|'
-						terms << 'or'
-					elsif tok[:str] == '('
-						if terms[-1].class == Hash then terms << 'seq' end
-						p = self[i+1..-1].parse_link(makros)
-						terms << p[:op]
-						i += p[:length]
-					elsif tok[:str] == ')'
-						i += 1
-						break
-					end
-			end
-			i += 1
-		end
-		return {:op => terms.parse_term_sequence, :length => i, :ids => ids}
-	end
-
-	def parse_text_search(makros = $makros)
-		op = {}
-		terms = []
-		ids = []
-		i = 0
-		while tok = self[i]
-			case tok[:cl]
-				when :bstring, :qstring, :regex
-					if terms[-1].class == Hash then terms << 'seq' end
-					p = self[i..-1].parse_word(makros)
-					terms << p[:op]
-					i += p[:length] - 1
-				when :quantor
-					terms[-1] = tok[:str].parse_quantor(terms[-1])
-				when :id
-					terms[-1][:id] = tok[:str]
-					ids << tok[:str]
-				when :operator
-					if tok[:str] == '|'
-						terms << 'or'
-					elsif tok[:str] == '('
-						if terms[-1].class == Hash then terms << 'seq' end
-						p = self[i+1..-1].parse_text_search(makros)
-						terms << p[:op]
-						ids += p[:ids]
-						i += p[:length]
-					elsif tok[:str] == ')'
-						i += 1
-						break
-					end
-				when :boundary
-					if terms[-1].class == Hash then terms << 'seq' end
-					terms << {:operator => 'boundary', :level => tok[:str]}
-			end
-			i += 1
-		end
-		return {:op => terms.parse_term_sequence, :length => i, :ids => ids}
-	end
-
-	def parse_term_sequence
-		terms = self.map{|e| e.clone}
-		while i = terms.rindex('not')
-			terms[i] = {:operator => 'not', :arg => terms.slice!(i+1)}
-		end
-		['seq', 'and', 'or'].each do |operator|
-			while i = terms.rindex(operator)
-				terms[i] = {:operator => operator, :arg => [terms[i-1], terms[i+1]]}
-				terms.delete_at(i+1)
-				terms.delete_at(i-1)
-			end
-		end
-		if terms.length > 1
-			raise "Attributes not linked by operator"
-		end
-		return terms[0]
-	end
-end
-
 class String
 
 	def lex_ql
@@ -416,11 +85,24 @@ class String
 		return rueck
 	end
 	
-	def parse_query
+end
+
+module Parser
+
+	def load_makros
+		@makros = []
+		if File.exists?('conf/search_makros.txt')
+			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
+				@makros = parse_query(datei.read)['def']
+			end
+		end
+	end
+
+	def parse_query(string)
 		ops = {
 			'col'=>[],
 			'cond'=>[],
-			'def'=>$makros,
+			'def'=>@makros,
 			'edge'=>[],
 			'link'=>[],
 			'meta'=>[],
@@ -429,7 +111,7 @@ class String
 			'sort'=>[],
 			'text'=>[]
 		}
-		lines = self.split("\n")
+		lines = string.split("\n")
 		
 		puts 'Parsing input:'
 		lines.each{|z| puts '  ' + z}
@@ -437,57 +119,386 @@ class String
 		
 		lines.each do |line|
 			begin
-				if op = line.parse_line(ops['def'])
+				if op = parse_line(line, ops['def'])
 					ops[op[:operator]] << op
 				end
 			rescue StandardError => e
-				raise e.message + " in line:\n" + line
+				raise e.message + " on line:\n" + line
 			end
 		end
 		
 		return ops
 	end
 
-	def parse_eval
-		rueck = {:ids => {}, :string => self}
-		self.scan(/@[_[:alnum:]]+/) do |id|
+	def parse_line(obj, makros)
+		if obj.class == String
+			p = obj.strip.partition('#')[0].split(/\s/)
+			if ['cond', 'sort'].include?(p[0])
+				return {:operator => p[0]}.merge(parse_eval((p[1..-1] * ' ')))
+			elsif p[0] == 'col'
+				return {:operator => p[0], :title => p[1]}.merge(parse_eval((p[2..-1] * ' ')))
+			else
+				return parse_line(obj.lex_ql, makros)
+			end
+		else
+			if obj.length == 0 then return nil end
+			arr = obj.clone
+			operators = [
+				'node',
+				'nodes',
+				'edge',
+				'link',
+				'text',
+				'meta',
+				'cond',
+				'def',
+				'sort', 
+				'col'
+			]
+			if arr[0] and arr[0][:cl] == :bstring and operators.include?(arr[0][:str])
+				op = {:operator => arr.shift[:str]}
+				# Leerzeichen am Anfang entfernen:
+				while true
+					if arr[0] and arr[0][:cl] == :operator and arr[0][:str] == ' '
+						arr.shift
+					else break
+					end
+				end
+			else #Fehler!
+				raise "Undefined command \"#{arr[0][:str]}\""
+			end
+			case op[:operator]
+				when 'node', 'nodes'
+					if arr[0] and arr[0][:cl] == :id
+						op[:id] = arr.shift[:str]
+					end
+					op[:cond] = parse_attributes(arr)[:op]
+				when 'text'
+					if arr[0] and arr[0][:cl] == :id
+						op[:id] = arr.shift[:str]
+					end
+					p = parse_text_search(arr)
+					op[:arg] = p[:op]
+					op[:ids] = p[:ids]
+				when 'edge'
+					ids = []
+					while arr[0]
+						if arr[0][:cl] == :operator and arr[0][:str] == ' '
+							arr.shift
+						elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
+							arr.shift
+						elsif arr[0][:cl] == :id
+							ids << arr.shift[:str]
+						else break
+						end
+					end
+					if ids.length == 0
+					elsif ids.length == 1
+						op[:id] = ids[0]
+					elsif ids.length == 2
+						op[:start], op[:end] = ids
+					elsif ids.length == 3
+						op[:id], op[:start], op[:end] = ids
+					else #Fehler!
+						raise 'Too many IDs in edge clause (max. three)'
+					end
+					op[:cond] = parse_attributes(arr)[:op]
+				when 'link'
+					ids = []
+					while arr[0]
+						if arr[0][:cl] == :operator and arr[0][:str] == ' '
+							arr.shift
+						elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
+							arr.shift
+						elsif arr[0][:cl] == :id
+							ids << arr.shift[:str]
+						else break
+						end
+					end
+					if ids.length == 2
+						op[:start], op[:end] = ids
+					else #Fehler!
+						raise 'There must be two IDs in link clause'
+					end
+					p = parse_link(arr)
+					op[:arg] = p[:op]
+					op[:ids] = p[:ids]
+				when 'meta'
+					op[:cond] = parse_attributes(arr)[:op]
+				when 'def'
+					if [:bstring, :qstring].include?(arr[0][:cl])
+						op[:name] = arr.shift[:str]
+						op[:arg] = arr
+					else # Fehler
+						raise "def clause needs a name"
+					end
+			end
+			return op
+		end
+	end
+
+	def parse_attributes(obj)
+		if obj.class == String
+			return parse_attributes(obj.lex_ql)
+		else
+			op = {}
+			terms = []
+			i = 0
+			while tok = obj[i]
+				case tok[:cl]
+					when :key
+						p = parse_attribute(obj[i..-1])
+						terms << p[:op]
+						i += p[:length] - 1
+					when :qstring
+						raise "Undefined string \"#{tok[:str]}\""
+					when :bstring
+						p = parse_element(obj[i..-1])
+						if ['in', 'out', 'start', 'end', 'link', 'quant'].include?(p[:op][:operator])
+							terms << p[:op]
+						elsif @makros.map{|m| m[:name]}.include?(tok[:str])
+							m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
+							terms << m[:op]
+						else #Fehler!
+							raise "Undefined string \"#{tok[:str]}\""
+						end
+						i += p[:length] - 1
+					when :operator
+						if ['!', '&', '|'].include?(tok[:str])
+							terms << {'!'=>'not', '&'=>'and', '|'=>'or'}[tok[:str]]
+						elsif tok[:str] == '('
+							p = parse_attributes(obj[i+1..-1])
+							terms << p[:op]
+							i += p[:length]
+						elsif tok[:str] == ')'
+							i += 1
+							break
+						end
+				end
+				i += 1
+			end
+			# 'in', 'out' und 'link' ggf. in Quantor {1,1} einbetten
+			terms.each_with_index do |t, i|
+				if t.class == Hash && (['in', 'out', 'link'].include?(t[:operator]))
+					terms[i] = {:operator => 'quant', :arg => t, :min => 1, :max => -1}
+				end
+			end
+			return {:op => parse_term_sequence(terms), :length => i}
+		end
+	end
+
+	def parse_attribute(obj)
+		if obj.class == String
+			return parse_attribute(obj.lex_ql)
+		else
+			key = obj[0][:str]
+			i = 0
+			op = {:operator => 'attr', :key => key}
+			values = []
+			value_expected = true
+			while tok = obj[i]
+				case tok[:cl]
+					when :bstring, :qstring, :regex
+						if value_expected
+							values << {
+								:value => tok[:str],
+								:method => {:bstring=>'insens', :qstring=>'plain', :regex=>'regex'}[tok[:cl]]
+							}
+							value_expected = false
+						else # Fehler
+							raise "Wrong syntax in declaration of multiple possibilities for attribute value"
+						end
+					when :operator
+						if value_expected
+							values << {:value => '', :method => 'plain'} # oder sollte hier ":value=>nil"? Dann müßte aber fulfil anders definiert sein!
+							value_expected = false
+							break
+						else
+							if tok[:str] == '|'
+								value_expected = true
+							else
+								value_expected = false
+								break
+							end
+						end
+				end
+				i += 1
+			end
+			if value_expected then values << {:value => '', :method => 'plain'} end
+			# build operation
+			op.merge!(values.pop)
+			while values.length > 0
+				old_op = op.clone
+				op = {
+					:operator => 'or',
+					:arg => [
+						{:operator => 'attr', :key => key}.merge(values.pop),
+						old_op
+					]
+				}
+			end
+			return {:op => op, :length => i}
+		end
+	end
+
+	def parse_element(obj)
+		op = {:operator => obj[0][:str]}
+		length = 1
+		if obj[1] and obj[1][:cl] == :operator && obj[1][:str] == '('
+			if op[:operator] == 'link'
+				p = parse_link(obj[2..-1])
+				op[:arg] = p[:op]
+			else
+				p = parse_attributes(obj[2..-1])
+				op[:cond] = p[:op]
+			end
+			length += p[:length] + 1
+		end
+		if ['in', 'out', 'link'].include?(op[:operator]) and obj[length] and obj[length][:cl] == :quantor
+			op = parse_quantor(obj[length][:str], op)
+			length += 1
+		end
+		if obj[length] and obj[length][:cl] == :id
+			op[:id] = obj[length][:str]
+			length += 1
+		end
+		return {:op => op, :length => length}
+	end
+
+	def parse_word(obj)
+		op = {
+			:operator => 'attr',
+			:key => 'token',
+			:value => obj[0][:str],
+			:method => {:bstring=>'insens', :qstring=>'plain', :regex=>'regex'}[obj[0][:cl]]
+		}
+		length = 1
+		if obj[1] and obj[1][:cl] == :operator and obj[1][:str] == '('
+			p = parse_attributes(obj[2..-1])
+			op = {:operator => 'and', :arg => [op, p[:op]]}
+			length += p[:length] + 1
+		end
+		op = {:operator => 'node', :cond => op}
+		return {:op => op, :length => length}
+	end
+
+	def parse_link(obj)
+		if obj.class == String
+			return parse_link(obj.lex_ql)
+		else
+			op = {}
+			terms = []
+			ids = []
+			i = 0
+			while tok = obj[i]
+				case tok[:cl]
+					when :bstring, :qstring
+						if terms[-1].class == Hash then terms << 'seq' end
+						p = parse_element(obj[i..-1])
+						if ['node', 'edge', 'redge'].include?(p[:op][:operator])
+							terms << p[:op]
+							if p[:op][:id] then ids << p[:op][:id] end
+						elsif @makros.map{|m| m[:name]}.include?(tok[:str])
+							m = parse_link(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
+							terms << m[:op]
+							if m[:op][:id] then ids << m[:op][:id] end
+						end
+						i += p[:length] - 1
+					when :quantor
+						terms[-1] = parse_quantor(tok[:str], terms[-1])
+					when :operator
+						if tok[:str] == '|'
+							terms << 'or'
+						elsif tok[:str] == '('
+							if terms[-1].class == Hash then terms << 'seq' end
+							p = parse_link(obj[i+1..-1])
+							terms << p[:op]
+							i += p[:length]
+						elsif tok[:str] == ')'
+							i += 1
+							break
+						end
+				end
+				i += 1
+			end
+			return {:op => parse_term_sequence(terms), :length => i, :ids => ids}
+		end
+	end
+
+	def parse_text_search(obj)
+		if obj.class == String
+			return parse_text_search(obj.lex_ql)
+		else
+			op = {}
+			terms = []
+			ids = []
+			i = 0
+			while tok = obj[i]
+				case tok[:cl]
+					when :bstring, :qstring, :regex
+						if terms[-1].class == Hash then terms << 'seq' end
+						p = parse_word(obj[i..-1])
+						terms << p[:op]
+						i += p[:length] - 1
+					when :quantor
+						terms[-1] = parse_quantor(tok[:str], terms[-1])
+					when :id
+						terms[-1][:id] = tok[:str]
+						ids << tok[:str]
+					when :operator
+						if tok[:str] == '|'
+							terms << 'or'
+						elsif tok[:str] == '('
+							if terms[-1].class == Hash then terms << 'seq' end
+							p = parse_text_search(obj[i+1..-1])
+							terms << p[:op]
+							ids += p[:ids]
+							i += p[:length]
+						elsif tok[:str] == ')'
+							i += 1
+							break
+						end
+					when :boundary
+						if terms[-1].class == Hash then terms << 'seq' end
+						terms << {:operator => 'boundary', :level => tok[:str]}
+				end
+				i += 1
+			end
+			return {:op => parse_term_sequence(terms), :length => i, :ids => ids}
+		end
+	end
+
+	def parse_term_sequence(obj)
+		terms = obj.map{|e| e.clone}
+		while i = terms.rindex('not')
+			terms[i] = {:operator => 'not', :arg => terms.slice!(i+1)}
+		end
+		['seq', 'and', 'or'].each do |operator|
+			while i = terms.rindex(operator)
+				terms[i] = {:operator => operator, :arg => [terms[i-1], terms[i+1]]}
+				terms.delete_at(i+1)
+				terms.delete_at(i-1)
+			end
+		end
+		if terms.length > 1
+			raise "Attributes not linked by operator"
+		end
+		return terms[0]
+	end
+
+	def parse_eval(string)
+		rueck = {:ids => {}, :string => string}
+		string.scan(/@[_[:alnum:]]+/) do |id|
 			rueck[:ids][$`.length..$`.length+$&.length-1] = id
 		end
 		return rueck
 	end
 
-	def parse_line(makros = $makros)
-		p = self.strip.partition('#')[0].split(/\s/)
-		if ['cond', 'sort'].include?(p[0])
-			return {:operator => p[0]}.merge((p[1..-1] * ' ').parse_eval)
-		elsif p[0] == 'col'
-			return {:operator => p[0], :title => p[1]}.merge((p[2..-1] * ' ').parse_eval)
-		else
-			return self.lex_ql.parse_line(makros)
-		end
-	end
-	
-	def parse_attributes(makros = $makros)
-		return self.lex_ql.parse_attributes(makros)
-	end
-	
-	def parse_attribute
-		return self.lex_ql.parse_attribute
-	end
-	
-	def parse_link(makros = $makros)
-		return self.lex_ql.parse_link(makros)
-	end
-
-	def parse_text_search(makros = $makros)
-		return self.lex_ql.parse_text_search(makros)
-	end
-
-	def parse_quantor(argument)
+	def parse_quantor(string, argument)
 		op = {:operator => 'quant', :arg => argument}
-		case self[0]
+		case string[0]
 		when '{'
-			m = self.match(/{\s*(-?\d*)\s*(,\s*(-?\d*)\s*)?}/)
+			m = string.match(/{\s*(-?\d*)\s*(,\s*(-?\d*)\s*)?}/)
 			op[:min] = [0, m[1].to_i].max
 			if m[2]
 				op[:max] = if m[3] == '' then -1 else m[3].to_i end
@@ -508,21 +519,3 @@ class String
 	end
 
 end
-
-$makros = []
-if File.exists?('conf/search_makros.txt')
-	File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
-		$makros = datei.read.parse_query['def']
-	end
-end
-
-
-
-
-
-
-
-
-
-
-
