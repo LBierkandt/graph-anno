@@ -213,10 +213,16 @@ class AnnoGraph < SearchableGraph
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
 		super
-		# load default configuration
+		load_conf
+		load_makros
+	end
+
+	def load_conf
 		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
 		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
-		# load search makros
+	end
+	
+	def load_makros
 		if File.exists?('conf/search_makros.txt')
 			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
 				@makros_plain = datei.readlines.map{|line| line.strip}
@@ -226,7 +232,7 @@ class AnnoGraph < SearchableGraph
 		end
 		@makros = parse_query(@makros_plain * "\n")['def']
 	end
-
+	
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file
 	def read_json_file(path)
@@ -355,6 +361,11 @@ class AnnoGraph < SearchableGraph
 		return token_collection
 	end
 
+	def clear
+		super
+		load_conf
+		load_makros
+	end
 end
 
 class Array
