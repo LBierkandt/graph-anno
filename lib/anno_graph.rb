@@ -362,14 +362,14 @@ class AnnoGraph < SearchableGraph
 	end
 	
 	def load_makros
+		@makros_plain = []
+		makros_strings = []
 		if File.exists?('conf/search_makros.txt')
 			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
-				@makros_plain = datei.readlines.map{|line| line.strip}
+				makros_strings = datei.readlines.map{|line| line.strip}
 			end
-		else
-			@makros_plain = []
 		end
-		@makros = parse_query(@makros_plain * "\n")['def']
+		@makros = parse_query(makros_strings * "\n")['def']
 	end
 	
 	def create_layer_makros
