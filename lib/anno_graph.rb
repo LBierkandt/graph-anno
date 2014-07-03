@@ -214,25 +214,10 @@ class AnnoGraph < SearchableGraph
 	def initialize
 		super
 		load_conf
+		create_layer_makros
 		load_makros
 	end
 
-	def load_conf
-		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
-		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
-	end
-	
-	def load_makros
-		if File.exists?('conf/search_makros.txt')
-			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
-				@makros_plain = datei.readlines.map{|line| line.strip}
-			end
-		else
-			@makros_plain = []
-		end
-		@makros = parse_query(@makros_plain * "\n")['def']
-	end
-	
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file
 	def read_json_file(path)
@@ -255,6 +240,7 @@ class AnnoGraph < SearchableGraph
 		self.add_hash(nodes_and_edges)
 		if nodes_and_edges['version'].to_i >= 6
 			@conf.merge!(nodes_and_edges['conf'])
+			create_layer_makros
 			@makros_plain << nodes_and_edges['search_makros']
 			@makros << parse_query(@makros_plain * "\n")
 		end
@@ -361,11 +347,39 @@ class AnnoGraph < SearchableGraph
 		return token_collection
 	end
 
+	# extend clear method: reset layer configuration and search makros
 	def clear
 		super
 		load_conf
 		load_makros
 	end
+
+	private
+
+	def load_conf
+		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
+		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+	end
+	
+	def load_makros
+		if File.exists?('conf/search_makros.txt')
+			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
+				@makros_plain = datei.readlines.map{|line| line.strip}
+			end
+		else
+			@makros_plain = []
+		end
+		@makros = parse_query(@makros_plain * "\n")['def']
+	end
+	
+	def create_layer_makros
+		layer_makros_array = (@conf['layers'] + @conf['combinations']).map do |layer|
+			attributes_string = [*layer['attr']].map{|a| a + ':t'} * ' & '
+			"def #{layer['shortcut']} #{attributes_string}"
+		end
+		@makros << parse_query(layer_makros_array * "\n")
+	end
+
 end
 
 class Array
