@@ -210,12 +210,21 @@ end
 class AnnoGraph < SearchableGraph
 	attr_reader :conf
 
-	# extend the super class initialize method by reading in of display and layer configuration
+	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
 		super
 		# load default configuration
 		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
 		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+		# load search makros
+		if File.exists?('conf/search_makros.txt')
+			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
+				@makros_plain = datei.readlines.map{|line| line.strip}
+			end
+		else
+			@makros_plain = []
+		end
+		@makros = parse_query(@makros_plain * "\n")['def']
 	end
 
 	# reads a graph JSON file into self, clearing self before
@@ -240,6 +249,8 @@ class AnnoGraph < SearchableGraph
 		self.add_hash(nodes_and_edges)
 		if nodes_and_edges['version'].to_i >= 6
 			@conf.merge!(nodes_and_edges['conf'])
+			@makros_plain << nodes_and_edges['search_makros']
+			@makros << parse_query(@makros_plain * "\n")
 		end
 		
 		# ggf. Format aktualisieren
@@ -307,7 +318,7 @@ class AnnoGraph < SearchableGraph
 
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
 	def to_h
-		super.merge('version' => '6').merge('conf' => @conf)
+		super.merge('version' => '6').merge('conf' => @conf).merge('search_makros' => @makros_plain)
 	end
 
 	def sentences

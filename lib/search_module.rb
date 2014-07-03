@@ -26,7 +26,7 @@ class SearchableGraph < Graph
 	
 	def initialize
 		super
-		load_makros
+		@makros = []
 	end
 
 	def teilgraph_suchen(anfrage)

@@ -89,15 +89,6 @@ end
 
 module Parser
 
-	def load_makros
-		@makros = []
-		if File.exists?('conf/search_makros.txt')
-			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
-				@makros = parse_query(datei.read)['def']
-			end
-		end
-	end
-
 	def parse_query(string)
 		ops = {
 			'col'=>[],
