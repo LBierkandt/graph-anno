@@ -113,6 +113,9 @@ function taste(tast) {
 			document.forms['cmd'].elements['txtcmd'].select();
 		}
 	}
+	else if (tast.which == 118) {
+		tast.preventDefault();
+	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
 		var sentenceField = document.getElementById('sentence');
