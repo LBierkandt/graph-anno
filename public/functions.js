@@ -316,7 +316,8 @@ function changeSentence() {
 function sendConfig() {
 	$('#config').css('display', 'none');
 	$.ajax({
+		type: 'POST',
 		url: '/config',
-		data: $(this).serialize('#config_form')
+		data: $('#config_form').serialize()
 	});
 }

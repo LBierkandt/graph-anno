@@ -132,12 +132,18 @@ class GraphController
 		@sinatra.haml(
 			:config_form,
 			:locals => {
-				:controller => self
+				:graph => @graph
 			}
 		)
 	end
 	
 	def save_config
+		@graph.conf.merge!(@sinatra.params) do |k, ov, nv|
+			k == 'edge_weight' ? nv.to_i : nv
+		end
+		@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
+			layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
+		end
 	end
 	
 	def export_subcorpus

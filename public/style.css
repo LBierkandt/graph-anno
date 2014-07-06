@@ -41,6 +41,11 @@ textarea {
 	font-size: 95%;
 }
 
+th {
+	text-align: left;
+	font-weight: bold;
+}
+
 #graphdiv {
 	position: absolute;
 	top: 0px;

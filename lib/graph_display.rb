@@ -35,15 +35,14 @@ class GraphDisplay
 		@show_refs = true
 		@found = nil
 		@filter = {:mode => 'unfilter'}
-		@conf = graph.conf
 	end
 
 	def layers
-		@conf['layers']
+		@graph.conf['layers']
 	end
 
 	def layers_and_layer_combinations
-		@conf['layers'] + @conf['combinations']
+		@graph.conf['layers'] + @graph.conf['combinations']
 	end
 
 	def layer_shortcuts
@@ -89,21 +88,21 @@ class GraphDisplay
 		end
 	
 		@tokens.each_with_index do |token, i|
-			color = @conf['token_color']
-			fontcolor = @conf['token_color']
+			color = @graph.conf['token_color']
+			fontcolor = @graph.conf['token_color']
 			if @found && @found[:all_nodes].include?(token)
-				color = @conf['found_color']
+				color = @graph.conf['found_color']
 				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
 			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
-				color = @conf['filtered_color']
-				fontcolor = @conf['filtered_color']
+				color = @graph.conf['filtered_color']
+				fontcolor = @graph.conf['filtered_color']
 				satzinfo[:textline] += '<span class="hidden_word">' + token.token + '</span> '
 			else
 				satzinfo[:textline] += token.token + ' '
 			end
 			token_graph.add_nodes(
 				token.ID,
-				:fontname => @conf['font'],
+				:fontname => @graph.conf['font'],
 				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
 				:style => 'bold',
@@ -113,14 +112,14 @@ class GraphDisplay
 		end
 	
 		@nodes.each_with_index do |node, i|
-			color = @conf['default_color']
+			color = @graph.conf['default_color']
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
-				color = @conf['filtered_color']
+				color = @graph.conf['filtered_color']
 			else
-				@conf['layers'].each do |l|
+				@graph.conf['layers'].each do |l|
 					if node[l['attr']] == 't' then color = l['color'] end
 				end
-				@conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
+				@graph.conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
 					if c['attr'].all?{|a| node[a] == 't'}
 						color = c['color']
 					end
@@ -128,11 +127,11 @@ class GraphDisplay
 			end
 			fontcolor = color
 			if @found && @found[:all_nodes].include?(node)
-				color = @conf['found_color']
+				color = @graph.conf['found_color']
 			end
 			viz_graph.add_nodes(
 				node.ID,
-				:fontname => @conf['font'],
+				:fontname => @graph.conf['font'],
 				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
 				:color => color,
@@ -141,18 +140,18 @@ class GraphDisplay
 		end
 	
 		@edges.each_with_index do |edge, i|
-			color = @conf['default_color']
-			weight = @conf['edge_weight']
+			color = @graph.conf['default_color']
+			weight = @graph.conf['edge_weight']
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
-				color = @conf['filtered_color']
+				color = @graph.conf['filtered_color']
 			else
-				@conf['layers'].each do |l|
+				@graph.conf['layers'].each do |l|
 					if edge[l['attr']] == 't'
 						color = l['color']
 						weight = l['weight']
 					end
 				end
-				@conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
+				@graph.conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
 					if c['attr'].all?{|a| edge[a] == 't'}
 						color = c['color']
 						weight = c['weight']
@@ -161,12 +160,12 @@ class GraphDisplay
 			end
 			fontcolor = color
 			if @found && @found[:all_edges].include?(edge)
-				color = @conf['found_color']
+				color = @graph.conf['found_color']
 			end
 			viz_graph.add_edges(
 				edge.start.ID,
 				edge.end.ID,
-				:fontname => @conf['font'],
+				:fontname => @graph.conf['font'],
 				:label => HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil),
 				:hexadecimal),
 				:color=> color,
@@ -187,7 +186,7 @@ class GraphDisplay
 
 	def build_label(e, i = nil)
 		label = ''
-		display_attr = e.attr.reject{|k,v| (@conf['layers'].map{|l| l['attr']} + ['sentence']).include?(k)}
+		display_attr = e.attr.reject{|k,v| (@graph.conf['layers'].map{|l| l['attr']} + ['sentence']).include?(k)}
 		if e.kind_of?(Node)
 			if e.cat == 'meta'
 				display_attr.each do |key,value|

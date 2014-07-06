@@ -1,3 +1,50 @@
 %form{ :id => 'config_form', :action => '/config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;' }
-  %input{ :type => 'text', :size => '50', :name => 'peter' }
-  %input{ :type => 'submit', :value => 'Save' }
+  %table
+    %tr
+      %th{ :colspan => 2 } General Settings
+    %tr
+      %td Default color
+      %td
+        %input{ :name => 'default_color', :type => 'color', :value => graph.conf['default_color'] }
+    %tr
+      %td Token color
+      %td
+        %input{ :name => 'token_color', :type => 'color', :value => graph.conf['token_color'] }
+    %tr
+      %td Found color
+      %td
+        %input{ :name => 'found_color', :type => 'color', :value => graph.conf['found_color'] }
+    %tr
+      %td Filtered color
+      %td
+        %input{ :name => 'filtered_color', :type => 'color', :value => graph.conf['filtered_color'] }
+    %tr
+      %td Edge weight
+      %td
+        %input{ :name => 'edge_weight', :type => 'number', :value => graph.conf['edge_weight'] }
+    %tr
+      %th{ :colspan => 2 } Layers
+    - graph.conf['layers'].each_with_index do |layer, i|
+      %tr
+        %td Name
+        %td
+          %input{ :name => "layers[#{i}[name]]", :type => 'text', :value => layer['name'] }
+      %tr
+        %td Attributes
+        %td
+          %input{ :name => "layers[#{i}[attr]]", :type => 'text', :value => layer['attr'] }
+      %tr
+        %td Shortcut
+        %td
+          %input{ :name => "layers[#{i}[shortcut]]", :type => 'text', :value => layer['shortcut'] }
+      %tr
+        %td Color
+        %td
+          %input{ :name => "layers[#{i}[color]]", :type => 'color', :value => layer['color'] }
+      %tr
+        %td Edge weight
+        %td
+          %input{ :name => "layers[#{i}[weight]]", :type => 'number', :value => layer['weight'] }
+    %tr
+      %td{ :colspan => 2, :style => 'text-align: right' }
+        %input{ :type => 'submit', :value => 'Save' }
