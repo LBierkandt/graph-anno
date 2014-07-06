@@ -113,8 +113,18 @@ function taste(tast) {
 			document.forms['cmd'].elements['txtcmd'].select();
 		}
 	}
-	else if (tast.which == 118) {
+	else if (tast.which == 119) {
 		tast.preventDefault();
+		var anfrage = new XMLHttpRequest();
+		anfrage.open('GET', '/config');
+		anfrage.onreadystatechange = function () {
+			if (anfrage.readyState == 4 && anfrage.status == 200) {
+				var configDiv = document.getElementById('config');
+				configDiv.innerHTML = anfrage.responseText;
+				configDiv.style['display'] = 'block';
+			}
+		}
+		anfrage.send(null);
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
@@ -302,4 +312,7 @@ function changeSentence() {
 	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
 	anfrage.open('POST', '/sentence');
 	makeAnfrage(anfrage, params);
+}
+function sendConfig() {
+	document.getElementById('config').style['display'] = 'none';
 }

@@ -62,6 +62,16 @@ post '/search' do
 	controller.search
 end
 
+get '/config' do
+	controller.sinatra = self
+	controller.config_form
+end
+
+post '/config' do
+	controller.sinatra = self
+	controller.save_config
+end
+
 get '/export/subcorpus.json' do
 	controller.sinatra = self
 	controller.export_subcorpus

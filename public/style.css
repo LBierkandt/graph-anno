@@ -121,6 +121,12 @@ textarea {
 	width: 100%;
 }
 
+#config {
+	position: absolute;
+	display: none;
+	z-index: 40;
+}
+
 #help {
 	display: none;
 	position: fixed;

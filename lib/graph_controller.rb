@@ -127,6 +127,18 @@ class GraphController
 			:sentence_changed => false
 		}.update(satzinfo).to_json
 	end
+
+	def config_form
+		@sinatra.haml(
+			:config_form,
+			:locals => {
+				:controller => self
+			}
+		)
+	end
+	
+	def save_config
+	end
 	
 	def export_subcorpus
 		if @display.found
