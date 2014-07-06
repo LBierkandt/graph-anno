@@ -314,5 +314,9 @@ function changeSentence() {
 	makeAnfrage(anfrage, params);
 }
 function sendConfig() {
-	document.getElementById('config').style['display'] = 'none';
+	$('#config').css('display', 'none');
+	$.ajax({
+		url: '/config',
+		data: $(this).serialize('#config_form')
+	});
 }
