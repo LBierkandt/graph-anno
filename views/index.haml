@@ -6,15 +6,15 @@
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }  
 
   %body
-    %div{ :id => "graphdiv" }
+    #graphdiv
       %object{ :id => "graph", :type => "image/svg+xml" }
       /%div{ :id => "loadinginfo" }
       /  Loading graph image ...
 
-    %div{ :id => "bottom" }
-      %div{ :id => "textline" }
-      %div{ :id => "meta" }
-      %div{ :id => "cmddiv" }
+    #bottom
+      #textline
+      #meta
+      #cmddiv
         %form{ :action => "/commandline", :method => "post",  :name => "cmd" }
           %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
           %select{ :name => "layer", :id => "layer" }
@@ -24,25 +24,27 @@
           %select{ :name => "sentence", :id => "sentence" }
             = controller.display.build_sentence_html(controller.sentence_list)
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
-          %div{ :id => "active_file" } #{if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end}
+          #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end
 
     %script{ :type => "text/javascript", :language => "JavaScript" }
       setSelectedIndex(document.getElementById('sentence'),'#{request.cookies['traw_sentence']}');
       setSelectedIndex(document.getElementById('layer'),'#{request.cookies['traw_layer']}');
     
-    %div{ :id => "search" }
+    #search
       %form{ :action => "/search", :method => "post", :name => "search" }
-        %textarea{ :cols => "50", :rows => "20", :name => "query", :id => "query" } #{request.cookies['traw_query'].to_s}
+        %textarea{ :cols => "50", :rows => "20", :name => "query", :id => "query" }
+          = request.cookies['traw_query'].to_s
         %br
         %input{ :type => "button", :value => "Search", :onclick => "sendSearch()" }
         %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export/subcorpus.json'" }
         %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
-      %div{ :id => "searchresult" }
-        #{controller.search_result}
+      #searchresult
+        = controller.search_result
     
-    %div{ :id => "filter" }
+    #filter
       %form{ :action => "/filter", :method => "post", :name => "filter" }
-        %textarea{ :cols => "50", :rows => "4", :name => "filterfield", :id => "filterfield" } #{request.cookies['traw_filter'].to_s}
+        %textarea{ :cols => "50", :rows => "4", :name => "filterfield", :id => "filterfield" }
+          = request.cookies['traw_filter'].to_s
         %br
         %table
           %tr
@@ -59,10 +61,10 @@
             %td{ :colspan => "2" }
               %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
     
-    %div{ :id => "documentation" }
+    #documentation
       %a{ :href => "/doc/GAST-Dokumentation.pdf"} Documentation
     
-    %div{ :id => "help" }
+    #help
       %h3 key commands
       %ul
         %li scale the graph: ctrl + shift + -/+/0
