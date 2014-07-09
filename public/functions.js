@@ -1,13 +1,5 @@
 window.onload = function() {
-	var anfrage = new XMLHttpRequest();
-	anfrage.open('GET', '/graph');
-	anfrage.onreadystatechange = function () {
-		if (anfrage.readyState == 4 && anfrage.status == 200) {
-			var antworthash = JSON.parse(anfrage.responseText);
-			loadGraph(antworthash);
-		}
-	}
-	anfrage.send(null);
+	loadGraph();
 	
 	window.onkeydown = taste;
 	document.getElementById('sentence').onchange = changeSentence;
@@ -17,6 +9,17 @@ window.onload = function() {
 }
 window.onresize = graphdivEinpassen;
 
+function loadGraph() {
+	var anfrage = new XMLHttpRequest();
+	anfrage.open('GET', '/graph', false);
+	anfrage.onreadystatechange = function () {
+		if (anfrage.readyState == 4 && anfrage.status == 200) {
+			var antworthash = JSON.parse(anfrage.responseText);
+			updateView(antworthash);
+		}
+	}
+	anfrage.send(null);
+}
 function graphdivEinpassen() {
 	var graphdiv = document.getElementById('graphdiv');
 	var bottom   = document.getElementById('bottom');
@@ -82,7 +85,7 @@ function taste(tast) {
 		anfrage.onreadystatechange = function () {
 			if (anfrage.readyState == 4 && anfrage.status == 200) {
 				var antworthash = JSON.parse(anfrage.responseText);
-				loadGraph(antworthash);
+				updateView(antworthash);
 			}
 		}
 		anfrage.send(null);
@@ -178,7 +181,7 @@ function verschiebeBild(richtung) {
 		case 'u': div.scrollTop  += 50; break;
 	}
 }
-function loadGraph(antworthash) {
+function updateView(antworthash) {
 	document.getElementById('textline').innerHTML = antworthash['textline'];
 	document.getElementById('meta').innerHTML = antworthash['meta'];
 	graphdivEinpassen();
@@ -299,7 +302,7 @@ function makeAnfrage(anfrage, params) {
 					txtcmd.focus();
 					txtcmd.select();
 				}
-				loadGraph(antworthash);
+				updateView(antworthash);
 			}
 		}
 		anfrage.send(params);
@@ -324,6 +327,7 @@ function sendConfig() {
 	.done(function(data) {
 		if (data == true) {
 			closeConfig();
+			loadGraph();
 		} else {
 			$('#config_warning').html('Invalid values – check your input!');
 			$('#config_form td').removeClass('error_message');
