@@ -144,6 +144,7 @@ class GraphController
 		@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
 			layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
 		end
+		return true.to_json
 	end
 	
 	def export_subcorpus

@@ -1,4 +1,5 @@
-%form{ :id => 'config_form', :action => '/config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;' }
+%form{ :id => 'config_form', :action => '/config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeConfig(); return false;' }
+  #config_warning.error_message
   %table
     %tr
       %th{ :colspan => 2 } General Settings
@@ -47,4 +48,5 @@
           %input{ :name => "layers[#{i}[weight]]", :type => 'number', :value => layer['weight'] }
     %tr
       %td{ :colspan => 2, :style => 'text-align: right' }
+        %input{ :type => 'reset', :value => 'Cancel' }
         %input{ :type => 'submit', :value => 'Save' }

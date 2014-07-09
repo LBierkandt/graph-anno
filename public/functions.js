@@ -314,10 +314,21 @@ function changeSentence() {
 	makeAnfrage(anfrage, params);
 }
 function sendConfig() {
-	$('#config').css('display', 'none');
 	$.ajax({
 		type: 'POST',
 		url: '/config',
+		async: true,
+		dataType: 'json',
 		data: $('#config_form').serialize()
+	})
+	.done(function(data) {
+		if (data == true) {
+			closeConfig();
+		} else {
+			$('#config_warning').html(data);
+		}
 	});
+}
+function closeConfig() {
+	$('#config').css('display', 'none');
 }
