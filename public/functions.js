@@ -325,7 +325,11 @@ function sendConfig() {
 		if (data == true) {
 			closeConfig();
 		} else {
-			$('#config_warning').html(data);
+			$('#config_warning').html('Invalid values – check your input!');
+			$('#config_form td').removeClass('error_message');
+			for (var i = 0; i < data.length; i++) {
+				$('td[for="' + data[i] + '"]').addClass('error_message');
+			}
 		}
 	});
 }

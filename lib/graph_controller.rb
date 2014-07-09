@@ -138,13 +138,15 @@ class GraphController
 	end
 	
 	def save_config
-		@graph.conf.merge!(@sinatra.params) do |k, ov, nv|
-			k == 'edge_weight' ? nv.to_i : nv
+		if result = validate_config(@sinatra.params)
+			@graph.conf.merge!(@sinatra.params) do |k, ov, nv|
+				k == 'edge_weight' ? nv.to_i : nv
+			end
+			@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
+				layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
+			end
 		end
-		@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
-			layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
-		end
-		return true.to_json
+		return result.to_json
 	end
 	
 	def export_subcorpus
@@ -546,6 +548,30 @@ class GraphController
 		end
 	end
 
+	private
+	
+	def validate_config(data)
+		result = []
+		data.each do |k, v|
+			if k.match(/_color$/)
+				result << k unless v.is_hex_color?
+			elsif k.match(/weight$/)
+				result << k unless v.is_number?
+			elsif k == 'layers'
+				v.each do |i, layer|
+					layer.each do |k, v|
+						if k == 'color'
+							result << "layers[#{i}[#{k}]]" unless v.is_hex_color?
+						elsif k == 'weight'
+							result << "layers[#{i}[#{k}]]" unless v.is_number?
+						end
+					end
+				end
+			end
+		end
+		return result.empty? ? true : result
+	end
+	
 end
 
 class String
@@ -623,4 +649,13 @@ class String
 		
 		return h
 	end
+
+	def is_hex_color?
+		self.match(/^#[0-9a-fA-F]{6}$/)
+	end
+
+	def is_number?
+		self.match(/^\s*-?[0-9]+\s*$/)
+	end
+	
 end
