@@ -138,7 +138,7 @@ class GraphController
 	end
 	
 	def save_config
-		if result = validate_config(@sinatra.params)
+		if (result = validate_config(@sinatra.params)) == true
 			@graph.conf.merge!(@sinatra.params) do |k, ov, nv|
 				k == 'edge_weight' ? nv.to_i : nv
 			end
