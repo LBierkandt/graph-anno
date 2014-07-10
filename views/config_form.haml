@@ -5,46 +5,56 @@
     %tr
       %th{ :colspan => 2 } General Settings
     %tr
-      %td{:for => "default_color"} Default color
+      %td
+        %label{:for => "default_color"} Default color
       %td
         %input{ :name => 'default_color', :type => 'color', :value => graph.conf['default_color'] }
     %tr
-      %td{:for => "token_color"} Token color
+      %td
+        %label{:for => "token_color"} Token color
       %td
         %input{ :name => 'token_color', :type => 'color', :value => graph.conf['token_color'] }
     %tr
-      %td{:for => "found_color"} Found color
+      %td
+        %label{:for => "found_color"} Found color
       %td
         %input{ :name => 'found_color', :type => 'color', :value => graph.conf['found_color'] }
     %tr
-      %td{:for => "filtered_color"} Filtered color
+      %td
+        %label{:for => "filtered_color"} Filtered color
       %td
         %input{ :name => 'filtered_color', :type => 'color', :value => graph.conf['filtered_color'] }
     %tr
-      %td{:for => "edge_weight"} Edge weight
+      %td
+        %label{:for => "edge_weight"} Edge weight
       %td
         %input{ :name => 'edge_weight', :type => 'number', :value => graph.conf['edge_weight'] }
     %tr
       %th{ :colspan => 2 } Layers
     - graph.conf['layers'].each_with_index do |layer, i|
       %tr
-        %td{:for => "layers[#{i}[name]]"} Name
+        %td
+          %label{:for => "layers[#{i}[name]]"} Name
         %td
           %input{ :name => "layers[#{i}[name]]", :type => 'text', :value => layer['name'] }
       %tr
-        %td{:for => "layers[#{i}[attr]]"} Attributes
+        %td
+          %label{:for => "layers[#{i}[attr]]"} Attributes
         %td
           %input{ :name => "layers[#{i}[attr]]", :type => 'text', :value => layer['attr'] }
       %tr
-        %td{:for => "layers[#{i}[shortcut]]"} Shortcut
+        %td
+          %label{:for => "layers[#{i}[shortcut]]"} Shortcut
         %td
           %input{ :name => "layers[#{i}[shortcut]]", :type => 'text', :value => layer['shortcut'] }
       %tr
-        %td{:for => "layers[#{i}[color]]"} Color
+        %td
+          %label{:for => "layers[#{i}[color]]"} Color
         %td
           %input{ :name => "layers[#{i}[color]]", :type => 'color', :value => layer['color'] }
       %tr
-        %td{:for => "layers[#{i}[weight]]"} Edge weight
+        %td
+          %label{:for => "layers[#{i}[weight]]"} Edge weight
         %td
           %input{ :name => "layers[#{i}[weight]]", :type => 'number', :value => layer['weight'] }
     %tr
