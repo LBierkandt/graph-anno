@@ -154,6 +154,17 @@ class GraphController
 			@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
 				layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
 			end
+			@graph.conf['combinations'] = @sinatra.params['combinations'].values.map do |combination|
+				combination.map_hash do |k, v|
+					if k == 'weight'
+						v.to_i
+					elsif k == 'attr'
+						v.values
+					else
+						v
+					end
+				end
+			end
 		end
 		return result.to_json
 	end
@@ -573,6 +584,16 @@ class GraphController
 							result << "layers[#{i}[#{k}]]" unless v.is_hex_color?
 						elsif k == 'weight'
 							result << "layers[#{i}[#{k}]]" unless v.is_number?
+						end
+					end
+				end
+			elsif k == 'combinations'
+				v.each do |i, combination|
+					combination.each do |k, v|
+						if k == 'color'
+							result << "combinations[#{i}[#{k}]]" unless v.is_hex_color?
+						elsif k == 'weight'
+							result << "combinations[#{i}[#{k}]]" unless v.is_number?
 						end
 					end
 				end
