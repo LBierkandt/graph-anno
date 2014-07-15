@@ -290,7 +290,7 @@ function makeAnfrage(anfrage, params) {
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
 				if (antworthash['sentences_html'] != undefined) document.cmd.sentence.innerHTML = antworthash['sentences_html'];
-				setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
+				updateLayerOptions();
 				setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
 				if (antworthash['search_result'] != undefined) {
@@ -327,6 +327,7 @@ function sendConfig() {
 	.done(function(data) {
 		if (data == true) {
 			closeConfig();
+			updateLayerOptions();
 			loadGraph();
 		} else {
 			$('#config_warning').html('Invalid values – check your input!');
@@ -339,4 +340,14 @@ function sendConfig() {
 }
 function closeConfig() {
 	$('#config').css('display', 'none');
+}
+function updateLayerOptions() {
+	$.ajax({
+		type: 'GET',
+		url: '/layer_options'
+	})
+	.done(function(data) {
+		$('#layer').html(data);
+		setSelectedIndex(document.getElementById('sentence'), getCookie('traw_layer'));
+	});
 }

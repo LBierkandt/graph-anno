@@ -59,6 +59,15 @@ class GraphController
 		return {:sentence_changed => false}.update(satzinfo).to_json
 	end
 	
+	def layer_options
+		@sinatra.haml(
+			:layer_options,
+			:locals => {
+				:controller => self
+			}
+		)
+	end
+	
 	def handle_commandline
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies

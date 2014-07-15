@@ -42,6 +42,11 @@ get '/toggle_refs' do
 	controller.toggle_refs
 end
 
+get '/layer_options' do
+	controller.sinatra = self
+	controller.layer_options
+end
+
 post '/commandline' do
 	controller.sinatra = self
 	controller.handle_commandline
