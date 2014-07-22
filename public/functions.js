@@ -331,7 +331,10 @@ function sendConfig() {
 			loadGraph();
 		} else {
 			$('#config_warning').html('Invalid values – check your input!');
-			$('#config_form td').removeClass('error_message');
+			$('#config_form label').removeClass('error_message');
+			if (data['makros'] != 'undefined') {
+				$('label[for="makros"]').html(data['makros']);
+			}
 			for (var i in data) {
 				$('label[for="' + i + '"]').addClass('error_message');
 			}
