@@ -209,6 +209,7 @@ end
 
 class AnnoGraph < SearchableGraph
 	attr_reader :conf
+	attr_accessor :makros_plain, :makros
 
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
@@ -242,7 +243,7 @@ class AnnoGraph < SearchableGraph
 			@conf.merge!(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain << nodes_and_edges['search_makros']
-			@makros << parse_query(@makros_plain * "\n")
+			@makros += parse_query(@makros_plain * "\n")['def']
 		end
 		
 		# ggf. Format aktualisieren
@@ -377,7 +378,7 @@ class AnnoGraph < SearchableGraph
 			attributes_string = [*layer['attr']].map{|a| a + ':t'} * ' & '
 			"def #{layer['shortcut']} #{attributes_string}"
 		end
-		@makros << parse_query(layer_makros_array * "\n")
+		@makros += parse_query(layer_makros_array * "\n")['def']
 	end
 
 end

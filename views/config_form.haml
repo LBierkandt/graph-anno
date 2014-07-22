@@ -7,29 +7,29 @@
         %th{ :colspan => 2 } General Settings
       %tr
         %td
-          %label{:for => "default_color"} Default color
+          %label{:for => "general[default_color]"} Default color
         %td
-          %input{ :name => 'default_color', :type => 'color', :value => graph.conf['default_color'] }
+          %input{ :name => 'general[default_color]', :type => 'color', :value => graph.conf['default_color'] }
       %tr
         %td
-          %label{:for => "token_color"} Token color
+          %label{:for => "general[token_color]"} Token color
         %td
-          %input{ :name => 'token_color', :type => 'color', :value => graph.conf['token_color'] }
+          %input{ :name => 'general[token_color]', :type => 'color', :value => graph.conf['token_color'] }
       %tr
         %td
-          %label{:for => "found_color"} Found color
+          %label{:for => "general[found_color]"} Found color
         %td
-          %input{ :name => 'found_color', :type => 'color', :value => graph.conf['found_color'] }
+          %input{ :name => 'general[found_color]', :type => 'color', :value => graph.conf['found_color'] }
       %tr
         %td
-          %label{:for => "filtered_color"} Filtered color
+          %label{:for => "general[filtered_color]"} Filtered color
         %td
-          %input{ :name => 'filtered_color', :type => 'color', :value => graph.conf['filtered_color'] }
+          %input{ :name => 'general[filtered_color]', :type => 'color', :value => graph.conf['filtered_color'] }
       %tr
         %td
-          %label{:for => "edge_weight"} Edge weight
+          %label{:for => "general[edge_weight]"} Edge weight
         %td
-          %input{ :name => 'edge_weight', :type => 'number', :value => graph.conf['edge_weight'] }
+          %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf['edge_weight'] }
   %div
     %table
       %tr
@@ -95,6 +95,16 @@
             %label{:for => "combinations[#{i}[weight]]"} Edge weight
           %td
             %input{ :name => "combinations[#{i}[weight]]", :type => 'number', :value => combination['weight'] }
+
+  %div
+    %table
+      %tr
+        %th{:colspan => 2} Search makros
+      %tr
+        %td{:colspan => 2}
+          %textarea{:name => "makros"}
+            = graph.makros_plain * "\n"
+
   %div
     %input{ :type => 'reset', :value => 'Cancel' }
     %input{ :type => 'submit', :value => 'Save' }

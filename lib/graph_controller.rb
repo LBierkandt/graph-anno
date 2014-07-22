@@ -148,7 +148,7 @@ class GraphController
 	
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
-			@graph.conf.merge!(@sinatra.params) do |k, ov, nv|
+			@graph.conf.merge!(@sinatra.params['general']) do |k, ov, nv|
 				k == 'edge_weight' ? nv.to_i : nv
 			end
 			@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
@@ -165,6 +165,8 @@ class GraphController
 					end
 				end
 			end
+			@graph.makros_plain = @sinatra.params['makros'].split("\n").map{|s| s.strip}
+			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
 		end
 		return result.to_json
 	end
