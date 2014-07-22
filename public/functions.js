@@ -118,16 +118,18 @@ function taste(tast) {
 	}
 	else if (tast.which == 119) {
 		tast.preventDefault();
-		var anfrage = new XMLHttpRequest();
-		anfrage.open('GET', '/config');
-		anfrage.onreadystatechange = function () {
-			if (anfrage.readyState == 4 && anfrage.status == 200) {
-				var configDiv = document.getElementById('config');
-				configDiv.innerHTML = anfrage.responseText;
-				configDiv.style['display'] = 'block';
-			}
+		if ($('#config').css('display') != 'block') {
+			$.ajax({
+				type: 'GET',
+				url: '/config'
+			})
+			.done(function(data) {
+				$('#config').html(data);
+				$('#config').show();
+			});
+		} else {
+			$('#config').hide();
 		}
-		anfrage.send(null);
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();

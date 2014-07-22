@@ -167,8 +167,10 @@ th {
 	float: left;
 	padding: 10px;
 }
-#config_submit {
+#config #config_submit {
 	width: 100%;
+	padding-left: 0px;
+	padding-right: 0px;
 	text-align: center;
 	background-color: #bbb;
 }
