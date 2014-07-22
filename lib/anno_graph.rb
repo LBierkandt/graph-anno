@@ -311,7 +311,10 @@ class AnnoGraph < SearchableGraph
 
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
 	def to_h
-		super.merge('version' => '6').merge('conf' => @conf).merge('search_makros' => @makros_plain)
+		super.
+			merge('version' => '6').
+			merge('conf' => @conf.reject{|k,v| k == 'font'}).
+			merge('search_makros' => @makros_plain)
 	end
 
 	def sentences
