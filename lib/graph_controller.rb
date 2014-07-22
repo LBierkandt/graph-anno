@@ -573,23 +573,23 @@ class GraphController
 	private
 	
 	def validate_config(data)
-		result = []
+		result = {}
 		data.each do |k, v|
 			if k == 'general'
 				v.each do |attr, value|
 					if attr.match(/_color$/)
-						result << "general[#{attr}]" unless value.is_hex_color?
+						result["general[#{attr}]"] = '' unless value.is_hex_color?
 					elsif attr.match(/weight$/)
-						result << "general[#{attr}]" unless value.is_number?
+						result["general[#{attr}]"] = '' unless value.is_number?
 					end
 				end
 			elsif k == 'layers'
 				v.each do |i, layer|
 					layer.each do |k, v|
 						if k == 'color'
-							result << "layers[#{i}[#{k}]]" unless v.is_hex_color?
+							result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
 						elsif k == 'weight'
-							result << "layers[#{i}[#{k}]]" unless v.is_number?
+							result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
 						end
 					end
 				end
@@ -597,9 +597,9 @@ class GraphController
 				v.each do |i, combination|
 					combination.each do |k, v|
 						if k == 'color'
-							result << "combinations[#{i}[#{k}]]" unless v.is_hex_color?
+							result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
 						elsif k == 'weight'
-							result << "combinations[#{i}[#{k}]]" unless v.is_number?
+							result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
 						end
 					end
 				end
@@ -607,8 +607,7 @@ class GraphController
 				begin
 					@graph.parse_query(v)
 				rescue StandardError => e
-					result << k
-					puts e.message
+					result[k] = e.message
 				end
 			end
 		end

@@ -332,8 +332,8 @@ function sendConfig() {
 		} else {
 			$('#config_warning').html('Invalid values – check your input!');
 			$('#config_form td').removeClass('error_message');
-			for (var i = 0; i < data.length; i++) {
-				$('label[for="' + data[i] + '"]').addClass('error_message');
+			for (var i in data) {
+				$('label[for="' + i + '"]').addClass('error_message');
 			}
 		}
 	});
