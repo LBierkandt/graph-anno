@@ -575,10 +575,14 @@ class GraphController
 	def validate_config(data)
 		result = []
 		data.each do |k, v|
-			if k.match(/_color$/)
-				result << k unless v.is_hex_color?
-			elsif k.match(/weight$/)
-				result << k unless v.is_number?
+			if k == 'general'
+				v.each do |attr, value|
+					if attr.match(/_color$/)
+						result << "general[#{attr}]" unless value.is_hex_color?
+					elsif attr.match(/weight$/)
+						result << "general[#{attr}]" unless value.is_number?
+					end
+				end
 			elsif k == 'layers'
 				v.each do |i, layer|
 					layer.each do |k, v|
@@ -598,6 +602,13 @@ class GraphController
 							result << "combinations[#{i}[#{k}]]" unless v.is_number?
 						end
 					end
+				end
+			elsif k == 'makros'
+				begin
+					@graph.parse_query(v)
+				rescue StandardError => e
+					result << k
+					puts e.message
 				end
 			end
 		end
