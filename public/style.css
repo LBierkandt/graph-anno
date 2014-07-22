@@ -167,6 +167,11 @@ th {
 	float: left;
 	padding: 10px;
 }
+#config_submit {
+	width: 100%;
+	text-align: center;
+	background-color: #bbb;
+}
 
 .hidden_word {
 	color: #888;
