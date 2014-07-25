@@ -156,22 +156,28 @@ th {
 	font-weight: bold;
 }
 
-#config {
+#config-background {
 	position: absolute;
 	display: none;
 	width: 100%;
-	z-index: 40;
-	background-color: #ddd;
+	height: 100%;
+	background-color: rgba(0,0,0,0.5);
 }
-#config div {
+#config-content {
+	margin: 20px auto;
+	width: 96%;
+	background-color: #ddd;
+	overflow: hidden;
+}
+#config-content div:not(#config-submit) {
 	float: left;
 	padding: 10px;
 }
-#config #config_submit {
-	width: 100%;
-	padding-left: 0px;
-	padding-right: 0px;
-	text-align: center;
+#config-submit {
+	clear: both;
+	padding: 10px;
+	width: auto;
+	text-align: right;
 	background-color: #bbb;
 }
 

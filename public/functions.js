@@ -308,14 +308,14 @@ function changeSentence() {
 	makeAnfrage(anfrage, params);
 }
 function openConfig() {
-	if ($('#config').css('display') != 'block') {
+	if ($('#config-background').css('display') != 'block') {
 		$.ajax({
 			type: 'GET',
 			url: '/config'
 		})
 		.done(function(data) {
-			$('#config').html(data);
-			$('#config').show();
+			$('#config-content').html(data);
+			$('#config-background').show();
 			window.onkeydown = configKeys;
 		});
 	}
@@ -326,7 +326,7 @@ function sendConfig() {
 		url: '/config',
 		async: true,
 		dataType: 'json',
-		data: $('#config_form').serialize()
+		data: $('#config-form').serialize()
 	})
 	.done(function(data) {
 		if (data == true) {
@@ -334,8 +334,8 @@ function sendConfig() {
 			updateLayerOptions();
 			loadGraph();
 		} else {
-			$('#config_warning').html('Invalid values – check your input!');
-			$('#config_form label').removeClass('error_message');
+			$('#config-warning').html('Invalid values – check your input!');
+			$('#config-form label').removeClass('error_message');
 			if (data['makros'] != 'undefined') {
 				$('label[for="makros"]').html(data['makros']);
 			}
@@ -346,7 +346,7 @@ function sendConfig() {
 	});
 }
 function closeConfig() {
-	$('#config').hide();
+	$('#config-background').hide();
 	window.onkeydown = taste;
 }
 function updateLayerOptions() {
