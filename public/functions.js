@@ -118,18 +118,7 @@ function taste(tast) {
 	}
 	else if (tast.which == 119) {
 		tast.preventDefault();
-		if ($('#config').css('display') != 'block') {
-			$.ajax({
-				type: 'GET',
-				url: '/config'
-			})
-			.done(function(data) {
-				$('#config').html(data);
-				$('#config').show();
-			});
-		} else {
-			$('#config').hide();
-		}
+		openConfig();
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
@@ -318,6 +307,19 @@ function changeSentence() {
 	anfrage.open('POST', '/sentence');
 	makeAnfrage(anfrage, params);
 }
+function openConfig() {
+	if ($('#config').css('display') != 'block') {
+		$.ajax({
+			type: 'GET',
+			url: '/config'
+		})
+		.done(function(data) {
+			$('#config').html(data);
+			$('#config').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
 function sendConfig() {
 	$.ajax({
 		type: 'POST',
@@ -344,7 +346,8 @@ function sendConfig() {
 	});
 }
 function closeConfig() {
-	$('#config').css('display', 'none');
+	$('#config').hide();
+	window.onkeydown = taste;
 }
 function updateLayerOptions() {
 	$.ajax({
@@ -355,4 +358,10 @@ function updateLayerOptions() {
 		$('#layer').html(data);
 		setSelectedIndex(document.getElementById('sentence'), getCookie('traw_layer'));
 	});
+}
+function configKeys(tast) {
+	if (tast.which == 27 || tast.which == 119) {
+		tast.preventDefault();
+		closeConfig();
+	}
 }
