@@ -389,12 +389,27 @@ end
 class AnnoLayer
 	attr_accessor :name, :attr, :shortcut, :color, :weight
  
-	def initialize(h)
+	def initialize(h = {})
 		@name = h[:name] ? h[:name] : ''
 		@attr = h[:attr] ? h[:attr] : ''
 		@shortcut = h[:shortcut] ? h[:shortcut] : ''
 		@color = h[:color] ? h[:color] : '#000000'
-		@name = h[:weight] ? h[:weight] : '1'
+		@weight = h[:weight] ? h[:weight] : '1'
+		@graph = h[:graph] ? h[:graph] : nil
+	end
+	
+	def [](attr)
+		self.send(attr)
+	end
+	
+	def to_h
+		{
+			'name' => @name,
+			'attr' => @attr,
+			'shortcut' => @shortcut,
+			'color' => @color,
+			'weight' => @weight
+		}
 	end
 end
 

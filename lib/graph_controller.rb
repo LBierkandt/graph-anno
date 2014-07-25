@@ -170,7 +170,28 @@ class GraphController
 		end
 		return result.to_json
 	end
-	
+
+	def new_layer(i)
+		@sinatra.haml(
+			:layer_form_segment,
+			:locals => {
+				:layer => AnnoLayer.new,
+				:i => i
+			}
+		)
+	end
+
+	def new_combination(i)
+		@sinatra.haml(
+			:combination_form_segment,
+			:locals => {
+				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
+				:i => i,
+				:layers => graph.conf['layers']
+			}
+		)
+	end
+
 	def export_subcorpus
 		if @display.found
 			subgraph = {'nodes' => [], 'edges' => []}

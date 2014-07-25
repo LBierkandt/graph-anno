@@ -316,9 +316,17 @@ function openConfig() {
 		.done(function(data) {
 			$('#config-content').html(data);
 			$('#new-layer').click(function() {
+				$.ajax({
+					url: '/new_layer'
+				}).done(function() {
+				});
 				return false;
 			});
 			$('#new-combination').click(function() {
+				$.ajax({
+					url: '/new_combination'
+				}).done(function() {
+				});
 				return false;
 			});
 			$('#config-background').show();

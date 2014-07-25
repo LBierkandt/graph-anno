@@ -77,6 +77,11 @@ post '/config' do
 	controller.save_config
 end
 
+get '/new_layer/:i' do
+	controller.sinatra = self
+	controller.new_layer(params[:i])
+end
+
 get '/export/subcorpus.json' do
 	controller.sinatra = self
 	controller.export_subcorpus
