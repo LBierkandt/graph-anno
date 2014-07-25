@@ -386,6 +386,18 @@ class AnnoGraph < SearchableGraph
 
 end
 
+class AnnoLayer
+	attr_accessor :name, :attr, :shortcut, :color, :weight
+ 
+	def initialize(h)
+		@name = h[:name] ? h[:name] : ''
+		@attr = h[:attr] ? h[:attr] : ''
+		@shortcut = h[:shortcut] ? h[:shortcut] : ''
+		@color = h[:color] ? h[:color] : '#000000'
+		@name = h[:weight] ? h[:weight] : '1'
+	end
+end
+
 class Array
 
 	def text
