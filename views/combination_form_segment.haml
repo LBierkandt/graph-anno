@@ -1,0 +1,33 @@
+%tr
+  %td
+    %label{:for => "combinations[#{i}[name]]"} Name
+  %td
+    %input{ :name => "combinations[#{i}[name]]", :type => 'text', :value => combination['name'] }
+%tr
+  %td
+    %label{:for => "combinations[#{i}[attr]]"} Attributes
+  %td
+    - layers.each_with_index do |layer, ii|
+      - if combination['attr'].include?(layer['attr'])
+        %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer['attr'], :checked => 'checked' }= layer['attr']
+      - else
+        %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer['attr'] }= layer['attr']
+      %br
+%tr
+  %td
+    %label{:for => "combinations[#{i}[shortcut]]"} Shortcut
+  %td
+    %input{ :name => "combinations[#{i}[shortcut]]", :type => 'text', :value => combination['shortcut'] }
+%tr
+  %td
+    %label{:for => "combinations[#{i}[color]]"} Color
+  %td
+    %input{ :name => "combinations[#{i}[color]]", :type => 'color', :value => combination['color'] }
+%tr
+  %td
+    %label{:for => "combinations[#{i}[weight]]"} Edge weight
+  %td
+    %input{ :name => "combinations[#{i}[weight]]", :type => 'number', :value => combination['weight'] }
+%tr
+  %td{:colspan => 2}
+    %hr
