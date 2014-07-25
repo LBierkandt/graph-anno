@@ -315,6 +315,12 @@ function openConfig() {
 		})
 		.done(function(data) {
 			$('#config-content').html(data);
+			$('#new-layer').click(function() {
+				return false;
+			});
+			$('#new-combination').click(function() {
+				return false;
+			});
 			$('#config-background').show();
 			window.onkeydown = configKeys;
 		});

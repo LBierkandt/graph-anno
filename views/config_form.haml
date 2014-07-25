@@ -60,6 +60,13 @@
             %label{:for => "layers[#{i}[weight]]"} Edge weight
           %td
             %input{ :name => "layers[#{i}[weight]]", :type => 'number', :value => layer['weight'] }
+        %tr
+          %td{:colspan => 2}
+            %hr
+      %tr
+        %td{:colspan => 2}
+          %button#new-layer New layer
+
   %div
     %table
       %tr
@@ -95,6 +102,12 @@
             %label{:for => "combinations[#{i}[weight]]"} Edge weight
           %td
             %input{ :name => "combinations[#{i}[weight]]", :type => 'number', :value => combination['weight'] }
+        %tr
+          %td{:colspan => 2}
+            %hr
+      %tr
+        %td{:colspan => 2}
+          %button#new-combination New combination
 
   %div
     %table
