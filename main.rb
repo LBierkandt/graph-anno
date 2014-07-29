@@ -82,6 +82,11 @@ get '/new_layer/:i' do
 	controller.new_layer(params[:i])
 end
 
+get '/new_combination/:i' do
+	controller.sinatra = self
+	controller.new_combination(params[:i])
+end
+
 get '/export/subcorpus.json' do
 	controller.sinatra = self
 	controller.export_subcorpus

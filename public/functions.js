@@ -317,15 +317,17 @@ function openConfig() {
 			$('#config-content').html(data);
 			$('#new-layer').click(function() {
 				$.ajax({
-					url: '/new_layer'
-				}).done(function() {
+					url: '/new_layer/' + (parseInt($(this).closest('tbody').prev().attr('no')) + 1)
+				}).done(function(data) {
+					$('#new-layer').closest('tbody').before(data);
 				});
 				return false;
 			});
 			$('#new-combination').click(function() {
 				$.ajax({
-					url: '/new_combination'
-				}).done(function() {
+					url: '/new_combination/' + (parseInt($(this).closest('tbody').prev().attr('no')) + 1)
+				}).done(function(data) {
+					$('#new-combination').closest('tbody').before(data);
 				});
 				return false;
 			});

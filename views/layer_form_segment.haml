@@ -1,28 +1,29 @@
-%tr
-  %td
-    %label{:for => "layers[#{i}[name]]"} Name
-  %td
-    %input{ :name => "layers[#{i}[name]]", :type => 'text', :value => layer['name'] }
-%tr
-  %td
-    %label{:for => "layers[#{i}[attr]]"} Attributes
-  %td
-    %input{ :name => "layers[#{i}[attr]]", :type => 'text', :value => layer['attr'] }
-%tr
-  %td
-    %label{:for => "layers[#{i}[shortcut]]"} Shortcut
-  %td
-    %input{ :name => "layers[#{i}[shortcut]]", :type => 'text', :value => layer['shortcut'] }
-%tr
-  %td
-    %label{:for => "layers[#{i}[color]]"} Color
-  %td
-    %input{ :name => "layers[#{i}[color]]", :type => 'color', :value => layer['color'] }
-%tr
-  %td
-    %label{:for => "layers[#{i}[weight]]"} Edge weight
-  %td
-    %input{ :name => "layers[#{i}[weight]]", :type => 'number', :value => layer['weight'] }
-%tr
-  %td{:colspan => 2}
-    %hr
+%tbody{:no => i}
+  %tr
+    %td
+      %label{:for => "layers[#{i}[name]]"} Name
+    %td
+      %input{ :name => "layers[#{i}[name]]", :type => 'text', :value => layer['name'] }
+  %tr
+    %td
+      %label{:for => "layers[#{i}[attr]]"} Attributes
+    %td
+      %input{ :name => "layers[#{i}[attr]]", :type => 'text', :value => layer['attr'] }
+  %tr
+    %td
+      %label{:for => "layers[#{i}[shortcut]]"} Shortcut
+    %td
+      %input{ :name => "layers[#{i}[shortcut]]", :type => 'text', :value => layer['shortcut'] }
+  %tr
+    %td
+      %label{:for => "layers[#{i}[color]]"} Color
+    %td
+      %input{ :name => "layers[#{i}[color]]", :type => 'color', :value => layer['color'] }
+  %tr
+    %td
+      %label{:for => "layers[#{i}[weight]]"} Edge weight
+    %td
+      %input{ :name => "layers[#{i}[weight]]", :type => 'number', :value => layer['weight'] }
+  %tr
+    %td{:colspan => 2}
+      %hr

@@ -187,7 +187,7 @@ class GraphController
 			:locals => {
 				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
 				:i => i,
-				:layers => graph.conf['layers']
+				:layers => @graph.conf['layers']
 			}
 		)
 	end

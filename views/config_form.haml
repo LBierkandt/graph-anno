@@ -32,23 +32,27 @@
           %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf['edge_weight'] }
   %div
     %table
-      %tr
-        %th{ :colspan => 2 } Layers
+      %thead
+        %tr
+          %th{ :colspan => 2 } Layers
       - graph.conf['layers'].each_with_index do |layer, i|
         = haml :layer_form_segment, :locals => {:layer => layer, :i => i}
-      %tr
-        %td{:colspan => 2}
-          %button#new-layer New layer
+      %tbody
+        %tr
+          %td{:colspan => 2}
+            %button#new-layer New layer
 
   %div
     %table
-      %tr
-        %th{ :colspan => 2 } Layer combinations
+      %thead
+        %tr
+          %th{ :colspan => 2 } Layer combinations
       - graph.conf['combinations'].each_with_index do |combination, i|
         = haml :combination_form_segment, :locals => {:combination => combination, :i => i, :layers => graph.conf['layers']}
-      %tr
-        %td{:colspan => 2}
-          %button#new-combination New combination
+      %tbody
+        %tr
+          %td{:colspan => 2}
+            %button#new-combination New combination
 
   %div
     %table
