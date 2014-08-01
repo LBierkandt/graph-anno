@@ -381,3 +381,8 @@ function configKeys(tast) {
 		closeConfig();
 	}
 }
+function setLayerAttributes(field) {
+	var number = field.name.match(/layers\[(\d+)/)[1];
+	var value = field.value;
+	$('input[name^="combinations["][name$="[attr[' + number + ']]]"]').attr('value', value).next().html(value);
+}

@@ -10,9 +10,11 @@
     %td
       - layers.each_with_index do |layer, ii|
         - if combination['attr'].include?(layer['attr'])
-          %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer['attr'], :checked => 'checked' }= layer['attr']
+          %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer['attr'], :checked => 'checked' }
         - else
-          %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer['attr'] }= layer['attr']
+          %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer['attr'] }
+        %label{:for => "combinations[#{i}[attr[#{ii}]]]"}
+          = layer['attr']
         %br
   %tr
     %td
