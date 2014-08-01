@@ -370,6 +370,7 @@ function sendConfig() {
 }
 function closeConfig() {
 	$('#config-background').hide();
+	$('#txtcmd').focus();
 	window.onkeydown = taste;
 }
 function updateLayerOptions() {
