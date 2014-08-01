@@ -148,6 +148,8 @@ class GraphController
 	
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
+			@sinatra.params['layers'] = {} if not @sinatra.params['layers']
+			@sinatra.params['combinations'] = {} if not @sinatra.params['combinations']
 			@graph.conf.merge!(@sinatra.params['general']) do |k, ov, nv|
 				k == 'edge_weight' ? nv.to_i : nv
 			end

@@ -315,6 +315,13 @@ function openConfig() {
 		})
 		.done(function(data) {
 			$('#config-content').html(data);
+			$('.remove-layer').click(function() {
+				$(this).closest('tbody').remove();
+				removeLayerAttributes();
+			});
+			$('.remove-combination').click(function() {
+				$(this).closest('tbody').remove();
+			});
 			$('#new-layer').click(function() {
 				var number = parseInt($(this).closest('tbody').prev().attr('no')) + 1;
 				$.ajax({
@@ -332,6 +339,7 @@ function openConfig() {
 					url: '/new_combination/' + (parseInt($(this).closest('tbody').prev().attr('no')) + 1)
 				}).done(function(data) {
 					$('#new-combination').closest('tbody').before(data);
+					removeLayerAttributes();
 					$('input[name^="layers["][name$="[attr]]"]').each(function(i){
 					  setLayerAttributes(this);
 					});
@@ -393,4 +401,16 @@ function setLayerAttributes(field) {
 	var number = field.name.match(/layers\[(\d+)/)[1];
 	var value = field.value;
 	$('input[name^="combinations["][name$="[attr[' + number + ']]]"]').attr('value', value).next().html(value);
+}
+function removeLayerAttributes(number) {
+	$('table.combinations tbody').each(function() {
+		$(this).find('input[name*="[attr["]').each(function() {
+			var number = this.name.match(/attr\[(\d+)/)[1];
+			if($('table.layers tbody[no='+number+']').length == 0) {
+				$(this).next().remove();
+				$(this).next().remove();
+				$(this).remove();
+			}
+		});
+	});
 }

@@ -31,7 +31,7 @@
         %td
           %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf['edge_weight'] }
   %div
-    %table
+    %table.layers
       %thead
         %tr
           %th{ :colspan => 2 } Layers
@@ -43,7 +43,7 @@
             %button#new-layer New layer
 
   %div
-    %table
+    %table.combinations
       %thead
         %tr
           %th{ :colspan => 2 } Layer combinations
