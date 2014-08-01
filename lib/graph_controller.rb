@@ -155,6 +155,7 @@ class GraphController
 				layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
 			end
 			@graph.conf['combinations'] = @sinatra.params['combinations'].values.map do |combination|
+				combination['attr'] = {} if not combination['attr']
 				combination.map_hash do |k, v|
 					if k == 'weight'
 						v.to_i

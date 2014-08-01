@@ -316,10 +316,14 @@ function openConfig() {
 		.done(function(data) {
 			$('#config-content').html(data);
 			$('#new-layer').click(function() {
+				var number = parseInt($(this).closest('tbody').prev().attr('no')) + 1;
 				$.ajax({
-					url: '/new_layer/' + (parseInt($(this).closest('tbody').prev().attr('no')) + 1)
+					url: '/new_layer/' + (number)
 				}).done(function(data) {
 					$('#new-layer').closest('tbody').before(data);
+					$('label[for^="combinations["][for$="[attr]]"]').closest('td').next().each(function(i){
+						$(this).append("<input name='combinations["+i+"[attr["+number+"]]]' type='checkbox' value=''>\n<label for='combinations["+i+"[attr["+number+"]]]'></label>\n<br>");
+					});
 				});
 				return false;
 			});
