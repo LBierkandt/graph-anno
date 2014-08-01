@@ -328,6 +328,9 @@ function openConfig() {
 					url: '/new_combination/' + (parseInt($(this).closest('tbody').prev().attr('no')) + 1)
 				}).done(function(data) {
 					$('#new-combination').closest('tbody').before(data);
+					$('input[name^="layers["][name$="[attr]]"]').each(function(i){
+					  setLayerAttributes(this);
+					});
 				});
 				return false;
 			});
