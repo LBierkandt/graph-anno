@@ -169,16 +169,22 @@ th {
 	background-color: #ddd;
 	overflow: hidden;
 }
-#config-content div:not(#config-submit) {
+#config-content .config-form-element {
 	float: left;
 	padding: 10px;
 }
 #config-submit {
 	clear: both;
-	padding: 10px;
 	width: auto;
+	padding: 10px;
 	text-align: right;
 	background-color: #bbb;
+}
+#config-warning {
+	padding: 10px;
+}
+#config-warning:empty {
+	padding: 0px;
 }
 
 .hidden_word {

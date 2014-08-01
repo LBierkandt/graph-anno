@@ -1,8 +1,7 @@
 %form#config-form{ :action => '/config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeConfig(); return false;' }
-  %div
+  #config-warning.error_message 
+  %div.config-form-element
     %table
-      %tr
-        %th#config-warning.error_message{ :colspan => 2 } 
       %tr
         %th{ :colspan => 2 } General Settings
       %tr
@@ -30,7 +29,8 @@
           %label{:for => "general[edge_weight]"} Edge weight
         %td
           %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf['edge_weight'] }
-  %div
+
+  %div.config-form-element
     %table.layers
       %thead
         %tr
@@ -42,7 +42,7 @@
           %td{:colspan => 2}
             %button#new-layer New layer
 
-  %div
+  %div.config-form-element
     %table.combinations
       %thead
         %tr
@@ -54,7 +54,7 @@
           %td{:colspan => 2}
             %button#new-combination New combination
 
-  %div
+  %div.config-form-element
     %table
       %tr
         %th{:colspan => 2} Search makros
