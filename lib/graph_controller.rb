@@ -598,42 +598,61 @@ class GraphController
 	
 	def validate_config(data)
 		result = {}
-		data.each do |k, v|
-			if k == 'general'
-				v.each do |attr, value|
-					if attr.match(/_color$/)
-						result["general[#{attr}]"] = '' unless value.is_hex_color?
-					elsif attr.match(/weight$/)
-						result["general[#{attr}]"] = '' unless value.is_number?
-					end
-				end
-			elsif k == 'layers'
-				v.each do |i, layer|
-					layer.each do |k, v|
-						if k == 'color'
-							result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
-						elsif k == 'weight'
-							result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
-						end
-					end
-				end
-			elsif k == 'combinations'
-				v.each do |i, combination|
-					combination.each do |k, v|
-						if k == 'color'
-							result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
-						elsif k == 'weight'
-							result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
-						end
-					end
-				end
-			elsif k == 'makros'
-				begin
-					@graph.parse_query(v)
-				rescue StandardError => e
-					result[k] = e.message
+		data['general'].each do |attr, value|
+			if attr.match(/_color$/)
+				result["general[#{attr}]"] = '' unless value.is_hex_color?
+			elsif attr.match(/weight$/)
+				result["general[#{attr}]"] = '' unless value.is_number?
+			end
+		end
+		data['layers'].each do |i, layer|
+			layer.each do |k, v|
+				if k == 'color'
+					result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+				elsif k == 'weight'
+					result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
+				elsif ['name', 'attr', 'shortcut'].include?(k)
+					result["layers[#{i}[#{k}]]"] = '' unless v != ''
 				end
 			end
+			['name', 'attr', 'shortcut'].each do |key|
+				data['layers'].each do |i2, l2|
+					if !layer.equal?(l2) and layer[key] == l2[key]
+						result["layers[#{i}[#{key}]]"] = ''
+						result["layers[#{i2}[#{key}]]"] = ''
+					end
+				end
+				data['combinations'].each do |i2, c|
+					if layer[key] == c[key]
+						result["layers[#{i}[#{key}]]"] = ''
+						result["combinations[#{i2}[#{key}]]"] = ''
+					end
+				end
+			end
+		end
+		data['combinations'].each do |i, combination|
+			combination.each do |k, v|
+				if k == 'color'
+					result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+				elsif k == 'weight'
+					result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
+				elsif ['name', 'attr', 'shortcut'].include?(k)
+					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
+				end
+			end
+			['name', 'attr', 'shortcut'].each do |key|
+				data['combinations'].each do |i2, c2|
+					if !combination.equal?(c2) and combination[key] == c2[key]
+						result["combinations[#{i}[#{key}]]"] = ''
+						result["combinations[#{i2}[#{key}]]"] = ''
+					end
+				end
+			end
+		end
+		begin
+			@graph.parse_query(data['makros'])
+		rescue StandardError => e
+			result['makros'] = e.message
 		end
 		return result.empty? ? true : result
 	end

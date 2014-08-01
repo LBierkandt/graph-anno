@@ -6,7 +6,7 @@
       %input{ :name => "layers[#{i}[name]]", :type => 'text', :value => layer['name'] }
   %tr
     %td
-      %label{:for => "layers[#{i}[attr]]"} Attributes
+      %label{:for => "layers[#{i}[attr]]"} Attribute
     %td
       %input{ :name => "layers[#{i}[attr]]", :type => 'text', :value => layer['attr'], :onchange => 'setLayerAttributes(this);' }
   %tr
