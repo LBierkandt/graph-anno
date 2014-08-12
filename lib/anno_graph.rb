@@ -358,6 +358,31 @@ class AnnoGraph < SearchableGraph
 		load_makros
 	end
 
+	# import corpus from pre-formatted text
+	# @param text [String] The text to be imported
+	# @param format [{:tokens => {:regex => /.../, :anno => '...'}, :sentences => {:sep => /.../}}] The information for the segmentation
+	def import_text(text, format)
+		sentences = text.split(format[:sentences][:sep])
+		id_length = sentences.length.to_s.length
+		parameters = format[:tokens][:anno].parse_parameters
+		annotation = parameters[:attributes].map_hash{|k, v| v.match(/^\$\d+$/) ? v.match(/^\$(\d+)$/)[1].to_i - 1 : v}
+		sentences.each_with_index do |s, i|
+			sentence_id = "%0#{id_length}d" % i
+			sentence_node = add_node(:attr => {'sentence' => sentence_id})
+			words = s.scan(format[:tokens][:regex])
+			tokens = build_tokens([''] * words.length, sentence_id)
+			tokens.each_with_index do |t, i|
+				annotation.each do |k, v|
+					if v.class == Fixnum
+						t[k] = words[i][v]
+					else
+						t[k] = v
+					end
+				end
+			end
+		end
+	end
+	
 	private
 
 	def load_conf
@@ -417,6 +442,84 @@ class Array
 
 	def text
 		self.map{|n| n.text} * ' '
+	end
+
+end
+
+class String
+	def parse_parameters
+		str = self.strip
+		h = {
+			:attributes => {},
+			:keys => [],
+			:elements => [],
+			:words => [],
+			:all_nodes => [],
+			:meta => [],
+			:nodes => [],
+			:edges => [],
+			:tokens => []
+		}
+		
+		r = {}
+		r[:ctrl] = '(\s|:)'
+		r[:bstring] = '[^\s:"]+'
+		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
+		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
+		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
+		r[:attribute] = r[:string] + ':' + r[:string] + '?'
+		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
+		
+		while str != ''
+			m = nil
+			if m = str.match(r[:ctrl])
+			elsif m = str.match(r[:attribute])
+				key = m[2] ? m[2].gsub('\"', '"') : m[1]
+				val = m[6] ? m[6].gsub('\"', '"') : m[5]
+				if val == nil
+					h[:keys] << key
+				else
+					h[:attributes][key] = val
+				end
+			elsif m = str.match(r[:string])
+				word = m[2] ? m[2].gsub('\"', '"') : m[1]
+				h[:words] << word
+				if word.match(/^(([ent]\d+)|m)$/)
+					h[:elements] << word
+					case word[0]
+						when 'm'
+							h[:meta] << word
+						when 'n'
+							h[:nodes] << word
+							h[:all_nodes] << word
+						when 't'
+							h[:tokens] << word
+							h[:all_nodes] << word
+						when 'e'
+							h[:edges] << word
+					end
+				elsif mm = word.match(/^([ent])(\d+)\.\.\1(\d+)$/)
+					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
+						h[:elements] << mm[1] + n.to_s
+						case word[0]
+							when 'n'
+								h[:nodes] << mm[1] + n.to_s
+								h[:all_nodes] << mm[1] + n.to_s
+							when 't'
+								h[:tokens] << mm[1] + n.to_s
+								h[:all_nodes] << mm[1] + n.to_s
+							when 'e'
+								h[:edges] << mm[1] + n.to_s
+						end
+					end
+				end
+			else
+				break
+			end
+			str = str[m[0].length..-1]
+		end
+		
+		return h
 	end
 
 end
