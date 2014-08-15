@@ -77,6 +77,16 @@ post '/config' do
 	controller.save_config
 end
 
+get '/import' do
+	controller.sinatra = self
+	controller.import_form
+end
+
+post '/import' do
+	controller.sinatra = self
+	controller.import_text
+end
+
 get '/new_layer/:i' do
 	controller.sinatra = self
 	controller.new_layer(params[:i])

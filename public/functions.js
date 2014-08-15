@@ -203,8 +203,8 @@ function updateView(antworthash) {
 	}
 	bild.data = '/graph.svg?v=' + new Date().getTime();
 }
-function sendCmd() {
-	var txtcmd = document.cmd.txtcmd.value;
+function sendCmd(txtcmd) {
+	if (txtcmd == undefined) txtcmd = document.cmd.txtcmd.value;
 	var layer = document.cmd.layer.value;
 	var sentence = document.cmd.sentence.value;
 	var anfrage = new XMLHttpRequest();
@@ -278,6 +278,10 @@ function makeAnfrage(anfrage, params) {
 		anfrage.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
 				var antworthash = JSON.parse(this.responseText);
+				if (antworthash['modal'] == 'import') {
+					openImport();
+					return;
+				}
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
 				if (antworthash['sentences_html'] != undefined) document.cmd.sentence.innerHTML = antworthash['sentences_html'];
@@ -308,13 +312,13 @@ function changeSentence() {
 	makeAnfrage(anfrage, params);
 }
 function openConfig() {
-	if ($('#config-background').css('display') != 'block') {
+	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
 			type: 'GET',
 			url: '/config'
 		})
 		.done(function(data) {
-			$('#config-content').html(data);
+			$('#modal-content').html(data);
 			$('.remove-layer').click(function() {
 				$(this).closest('tbody').remove();
 				removeLayerAttributes();
@@ -346,7 +350,7 @@ function openConfig() {
 				});
 				return false;
 			});
-			$('#config-background').show();
+			$('#modal-background').show();
 			window.onkeydown = configKeys;
 		});
 	}
@@ -357,16 +361,16 @@ function sendConfig() {
 		url: '/config',
 		async: true,
 		dataType: 'json',
-		data: $('#config-form').serialize()
+		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
 		if (data == true) {
-			closeConfig();
+			closeModal();
 			updateLayerOptions();
 			loadGraph();
 		} else {
-			$('#config-warning').html('Invalid values – check your input!');
-			$('#config-form label').removeClass('error_message');
+			$('#modal-warning').html('Invalid values – check your input!');
+			$('#modal-form label').removeClass('error_message');
 			if (data['makros'] != 'undefined') {
 				$('label[for="makros"]').html(data['makros']);
 			}
@@ -376,8 +380,8 @@ function sendConfig() {
 		}
 	});
 }
-function closeConfig() {
-	$('#config-background').hide();
+function closeModal() {
+	$('#modal-background').hide();
 	$('#txtcmd').focus();
 	window.onkeydown = taste;
 }
@@ -394,7 +398,7 @@ function updateLayerOptions() {
 function configKeys(tast) {
 	if (tast.which == 27 || tast.which == 119) {
 		tast.preventDefault();
-		closeConfig();
+		closeModal();
 	}
 }
 function setLayerAttributes(field) {
@@ -412,5 +416,51 @@ function removeLayerAttributes(number) {
 				$(this).remove();
 			}
 		});
+	});
+}
+function openImport() {
+	$.ajax({
+		type: 'GET',
+		url: '/import'
+	})
+	.done(function(data) {
+		$('#modal-content').html(data);
+		$('#modal-background').show();
+		window.onkeydown = importKeys;
+	});
+}
+function importKeys(tast) {
+	if (tast.which == 27) {
+		tast.preventDefault();
+		closeModal();
+	}
+}
+function sendImport() {
+	var formData = new FormData($('#modal-form')[0]);
+	$.ajax({
+			url: '/import',
+			type: 'POST',
+			data: formData,
+			dataType: 'json',
+			//Options to tell jQuery not to process data or worry about content-type.
+			cache: false,
+			contentType: false,
+			processData: false
+	})
+	.done(function(data) {
+		if (data == true) {
+			closeModal();
+			updateLayerOptions();
+			sendCmd('');
+		} else {
+			$('#modal-warning').html('Invalid values – check your input!');
+			$('#modal-form label').removeClass('error_message');
+			for (var i in data) {
+				$('label[for="' + i + '"]').addClass('error_message');
+			}
+		}
+	})
+	.error(function(data) {
+		alert('Could not upload file.');
 	});
 }

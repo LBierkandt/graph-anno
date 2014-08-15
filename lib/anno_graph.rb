@@ -360,16 +360,16 @@ class AnnoGraph < SearchableGraph
 
 	# import corpus from pre-formatted text
 	# @param text [String] The text to be imported
-	# @param format [{:tokens => {:regex => /.../, :anno => '...'}, :sentences => {:sep => /.../}}] The information for the segmentation
-	def import_text(text, format)
-		sentences = text.split(format[:sentences][:sep])
+	# @param options [{'tokens' => {'regex' => /.../, 'anno' => '...'}, 'sentences' => {'sep' => /.../}}] The inoptionsion for the segmentation
+	def import_text(text, options)
+		sentences = text.split(options['sentences']['sep'])
 		id_length = sentences.length.to_s.length
-		parameters = format[:tokens][:anno].parse_parameters
+		parameters = options['tokens']['anno'].parse_parameters
 		annotation = parameters[:attributes].map_hash{|k, v| v.match(/^\$\d+$/) ? v.match(/^\$(\d+)$/)[1].to_i - 1 : v}
 		sentences.each_with_index do |s, i|
 			sentence_id = "%0#{id_length}d" % i
-			sentence_node = add_node(:attr => {'sentence' => sentence_id})
-			words = s.scan(format[:tokens][:regex])
+			sentence_node = add_node(:attr => {'cat' => 'meta', 'sentence' => sentence_id})
+			words = s.scan(options['tokens']['regex'])
 			tokens = build_tokens([''] * words.length, sentence_id)
 			tokens.each_with_index do |t, i|
 				annotation.each do |k, v|

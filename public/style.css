@@ -156,34 +156,37 @@ th {
 	font-weight: bold;
 }
 
-#config-background {
+#modal-background {
 	position: absolute;
 	display: none;
 	width: 100%;
 	height: 100%;
 	background-color: rgba(0,0,0,0.5);
 }
-#config-content {
+#modal-content {
 	margin: 20px auto;
 	width: 96%;
 	background-color: #ddd;
 	overflow: hidden;
 }
-#config-content .config-form-element {
+#modal-content .modal-form-element {
 	float: left;
 	padding: 10px;
 }
-#config-submit {
+#modal-form.import input[type='text'] {
+	width: 30em;
+}
+#modal-submit {
 	clear: both;
 	width: auto;
 	padding: 10px;
 	text-align: right;
 	background-color: #bbb;
 }
-#config-warning {
+#modal-warning {
 	padding: 10px;
 }
-#config-warning:empty {
+#modal-warning:empty {
 	padding: 0px;
 }
 

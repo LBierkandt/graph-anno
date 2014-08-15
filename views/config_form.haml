@@ -1,6 +1,6 @@
-%form#config-form{ :action => '/config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeConfig(); return false;' }
-  #config-warning.error_message 
-  %div.config-form-element
+%form#modal-form.config{ :action => '/config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeModal(); return false;' }
+  #modal-warning.error_message 
+  %div.modal-form-element
     %table
       %tr
         %th{ :colspan => 2 } General Settings
@@ -30,7 +30,7 @@
         %td
           %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf['edge_weight'] }
 
-  %div.config-form-element
+  %div.modal-form-element
     %table.layers
       %thead
         %tr
@@ -42,7 +42,7 @@
           %td{:colspan => 2}
             %button#new-layer New layer
 
-  %div.config-form-element
+  %div.modal-form-element
     %table.combinations
       %thead
         %tr
@@ -54,7 +54,7 @@
           %td{:colspan => 2}
             %button#new-combination New combination
 
-  %div.config-form-element
+  %div.modal-form-element
     %table
       %tr
         %th{:colspan => 2} Search makros
@@ -66,6 +66,6 @@
           %textarea{:name => "makros"}
             = graph.makros_plain * "\r"
 
-  #config-submit
+  #modal-submit
     %input{ :type => 'reset', :value => 'Cancel' }
     %input{ :type => 'submit', :value => 'Save' }

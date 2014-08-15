@@ -76,7 +76,8 @@ class GraphController
 		else
 			@display.sentence = @sinatra.params[:sentence]
 		end
-		execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
+		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
+		if value then return value.to_json end
 		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence })
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
@@ -193,6 +194,27 @@ class GraphController
 				:layers => @graph.conf['layers']
 			}
 		)
+	end
+
+	def import_form
+		@sinatra.haml(
+			:import_form,
+			:locals => {
+				:graph => @graph
+			}
+		)
+	end
+	
+	def import_text
+		text = @sinatra.params['file'][:tempfile].read.force_encoding('utf-8')
+		options = @sinatra.params.select{|k, v| ['tokens', 'sentences'].include?(k)}
+		options['sentences']['sep'].de_escape!
+		options['tokens']['regex'] = Regexp.new(options['tokens']['regex'])
+		@graph.clear
+		@graph_file.replace('')
+		@display.sentence = nil
+		@graph.import_text(text, options)
+		return true.to_json
 	end
 
 	def export_subcorpus
@@ -408,7 +430,10 @@ class GraphController
 						require_relative 'salt_exporter'
 						@graph.export_saltxml(name)
 				end
-	
+			
+			when 'import' # open text import window
+				return {:modal => 'import'}
+			
 			when 'import_toolbox' # import Toolbox data
 				@graph_file.replace('')
 				@graph.clear
@@ -520,6 +545,7 @@ class GraphController
 				#end
 	
 		end
+		return nil
 	end
 
 	def element_by_identifier(identifier)
@@ -668,5 +694,30 @@ class String
 	def is_number?
 		self.match(/^\s*-?[0-9]+\s*$/)
 	end
-	
+
+	def de_escape!
+		self.gsub!(/\\(.)/) do |s|
+			case $1
+			when '"'
+				"\""
+			when '\\'
+				"\\"
+			when 'a'
+				"\a"
+			when 'b'
+				"\b"
+			when 'n'
+				"\n"
+			when 'r'
+				"\r"
+			when 's'
+				"\s"
+			when 't'
+				"\t"
+			else
+				$&
+			end
+		end
+	end
+
 end
