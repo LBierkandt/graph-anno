@@ -624,6 +624,8 @@ class GraphController
 	
 	def validate_config(data)
 		result = {}
+		if not data['layers'] then data['layers'] = {} end
+		if not data['combinations'] then data['combinations'] = {} end
 		data['general'].each do |attr, value|
 			if attr.match(/_color$/)
 				result["general[#{attr}]"] = '' unless value.is_hex_color?
