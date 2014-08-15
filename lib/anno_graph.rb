@@ -19,6 +19,7 @@
 
 require_relative 'graph'
 require_relative 'search_module'
+require_relative 'nlp_module'
 
 class NodeOrEdge
 
