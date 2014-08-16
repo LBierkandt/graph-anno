@@ -425,6 +425,7 @@ function openImport() {
 	})
 	.done(function(data) {
 		$('#modal-content').html(data);
+		disable_import_form_fields();
 		$('#modal-background').show();
 		window.onkeydown = importKeys;
 	});
@@ -463,4 +464,20 @@ function sendImport() {
 	.error(function(data) {
 		alert('Could not upload file.');
 	});
+}
+function disable_import_form_fields() {
+	if($('input[value="file"]').is(':checked')){
+		$('input[name="paste"]').attr('disabled', true);
+		$('input[name="file"]').removeAttr('disabled');
+	} else {
+		$('input[name="file"]').attr('disabled', true);
+		$('input[name="paste"]').removeAttr('disabled');
+	}
+	if($('input[value="regex"]').is(':checked')){
+		$('input[name="language"]').attr('disabled', true);
+		$('input[name^="sentences"], input[name^="tokens"]').removeAttr('disabled');
+	} else {
+		$('input[name^="sentences"], input[name^="tokens"]').attr('disabled', true);
+		$('input[name="language"]').removeAttr('disabled');
+	}
 }

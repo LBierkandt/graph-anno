@@ -6,7 +6,7 @@
         %th{ :colspan => 2 } Text
       %tr
         %td
-          %input{:name => 'input_method', :type => 'radio', :value => 'file', :checked => true}
+          %input{:name => 'input_method', :type => 'radio', :value => 'file', :checked => true, :onclick => 'disable_import_form_fields();'}
         %td File
       %tr
         %td
@@ -14,7 +14,7 @@
           %input{:name => 'file', :type => 'file'}
       %tr
         %td
-          %input{:name => 'input_method', :type => 'radio', :value => 'paste'}
+          %input{:name => 'input_method', :type => 'radio', :value => 'paste', :onclick => 'disable_import_form_fields();'}
         %td Paste
       %tr
         %td
@@ -27,7 +27,7 @@
         %th{:colspan => 3} Processing
       %tr
         %td
-          %input{:name => 'processing_method', :type => 'radio', :value => 'regex', :checked => true}
+          %input{:name => 'processing_method', :type => 'radio', :value => 'regex', :checked => true, :onclick => 'disable_import_form_fields();'}
         %td{:colspan => 2} Regular expressions
       %tr
         %td
@@ -49,7 +49,7 @@
           %input{ :name => 'tokens[anno]', :type => 'text', :value => 'token:$1 pos:$2' }
       %tr
         %td
-          %input{:name => 'processing_method', :type => 'radio', :value => 'segmenter'}
+          %input{:name => 'processing_method', :type => 'radio', :value => 'segmenter', :onclick => 'disable_import_form_fields();'}
         %td{:colspan => 2} Punkt segmenter
       %tr
         %td
