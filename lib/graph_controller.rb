@@ -200,7 +200,7 @@ class GraphController
 		@sinatra.haml(
 			:import_form,
 			:locals => {
-				:graph => @graph
+				:nlp => NLP
 			}
 		)
 	end
