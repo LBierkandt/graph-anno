@@ -389,7 +389,7 @@ class AnnoGraph < SearchableGraph
 					end
 				end
 			when 'punkt'
-				words = s.tokenize
+				words = NLP.tokenize(s)
 				tokens = build_tokens(words, sentence_id)
 			end
 		end

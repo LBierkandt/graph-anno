@@ -41,9 +41,6 @@ class NLP
 		'swedish',
 	]
 	@@params = {}
-	@@languages.each do |l|
-		@@params[l] = YAML.load(File.read("conf/nlp-params/#{l}.yaml"))
-	end
 
 	SentEndChars = ['.', '?', '!']
 	ReSentEndChars = /[.?!]/
@@ -60,12 +57,13 @@ class NLP
 		@@languages
 	end
 	
-	def segment(s, lang)
+	def self.segment(s, lang)
+		@@params[lang] = YAML.load(File.read("conf/nlp-params/#{lang}.yaml")) unless @@params[lang]
 		segmenter = Punkt::SentenceTokenizer.new(@@params[lang])
 		return segmenter.sentences_from_text(s, :output => :sentences_text)
 	end
 	
-	def tokenize(s)
+	def self.tokenize(s)
 		tokens = []
 		raw_tokens = s.scan(ReWordTokenizer)
 		raw_tokens.each_with_index do |token, i|
