@@ -206,10 +206,20 @@ class GraphController
 	end
 	
 	def import_text
-		text = @sinatra.params['file'][:tempfile].read.force_encoding('utf-8')
-		options = @sinatra.params.select{|k, v| ['tokens', 'sentences'].include?(k)}
-		options['sentences']['sep'].de_escape!
-		options['tokens']['regex'] = Regexp.new(options['tokens']['regex'])
+		case @sinatra.params['input_method']
+		when 'file'
+			text = @sinatra.params['file'][:tempfile].read.force_encoding('utf-8')
+		when 'paste'
+			text = @sinatra.params['paste']
+		end
+		case @sinatra.params['processing_method']
+		when 'regex'
+			options = @sinatra.params.select{|k, v| ['processing_method', 'tokens', 'sentences'].include?(k)}
+			options['sentences']['sep'].de_escape!
+			options['tokens']['regex'] = Regexp.new(options['tokens']['regex'])
+		when 'punkt'
+			options = @sinatra.params.select{|k, v| ['processing_method', 'language'].include?(k)}
+		end
 		@graph.clear
 		@graph_file.replace('')
 		@display.sentence = nil
