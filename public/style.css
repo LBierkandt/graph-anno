@@ -176,6 +176,9 @@ th {
 #modal-form.import input[type='text'] {
 	width: 30em;
 }
+#modal-form textarea {
+	width: 100%;
+}
 #modal-submit {
 	clear: both;
 	width: auto;

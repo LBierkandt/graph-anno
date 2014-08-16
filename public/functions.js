@@ -462,16 +462,16 @@ function sendImport() {
 		}
 	})
 	.error(function(data) {
-		alert('Could not upload file.');
+		alert('An error occurred while importing.');
 	});
 }
 function disable_import_form_fields() {
 	if($('input[value="file"]').is(':checked')){
-		$('input[name="paste"]').attr('disabled', true);
+		$('textarea[name="paste"]').attr('disabled', true);
 		$('input[name="file"]').removeAttr('disabled');
 	} else {
 		$('input[name="file"]').attr('disabled', true);
-		$('input[name="paste"]').removeAttr('disabled');
+		$('textarea[name="paste"]').removeAttr('disabled');
 	}
 	if($('input[value="regex"]').is(':checked')){
 		$('input[name="language"]').attr('disabled', true);

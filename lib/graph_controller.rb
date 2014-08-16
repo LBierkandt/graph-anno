@@ -210,7 +210,7 @@ class GraphController
 		when 'file'
 			text = @sinatra.params['file'][:tempfile].read.force_encoding('utf-8')
 		when 'paste'
-			text = @sinatra.params['paste']
+			text = @sinatra.params['paste'].gsub("\r\n", "\n").gsub("\r", "\n")
 		end
 		case @sinatra.params['processing_method']
 		when 'regex'
