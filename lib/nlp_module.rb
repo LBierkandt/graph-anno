@@ -27,9 +27,23 @@ require "punkt-segmenter/frequency_distribution"
 require "punkt-segmenter/punkt"
 
 class NLP
+	@@languages = [
+		'dutch',
+		'english',
+		'french',
+		'german',
+		'greek',
+		'italian',
+		'polish',
+		'portuguese',
+		'russian',
+		'spanish',
+		'swedish',
+	]
 	@@params = {}
-	@@params[:en] = YAML.load(File.read('conf/nlp-params/english.yaml'))
-	@@params[:de] = YAML.load(File.read('conf/nlp-params/german.yaml'))
+	@@languages.each do |l|
+		@@params[l] = YAML.load(File.read("conf/nlp-params/#{l}.yaml"))
+	end
 
 	SentEndChars = ['.', '?', '!']
 	ReSentEndChars = /[.?!]/
@@ -38,9 +52,14 @@ class NLP
 	ReWordStart = /[^\(\"\'{\[:;&\#\*@\)}\]\-,]/
 	ReNonWordChars = /(?:[?!)\";}\]\*:@\'\({\[])/
 	ReMultiCharPunct = /(?:\-{2,}|\.{2,}|(?:\.\s){2,}\.|–|—)/
+	# soll es eine Wahlmöglichkeit geben, ob am Apostroph getrennt werden soll oder nicht?
 	ReApostrophedPart = /(?:[’\']\S+?)/
 	ReWordTokenizer = /#{ReMultiCharPunct}|(?=#{ReWordStart})\S+?#{ReApostrophedPart}?(?=\s|$|#{ReNonWordChars}|#{ReMultiCharPunct}|,(?=$|\s|#{ReNonWordChars}|#{ReMultiCharPunct}))|\S/
 
+	def self.languages
+		@@languages
+	end
+	
 	def segment(s, lang)
 		segmenter = Punkt::SentenceTokenizer.new(@@params[lang])
 		return segmenter.sentences_from_text(s, :output => :sentences_text)
