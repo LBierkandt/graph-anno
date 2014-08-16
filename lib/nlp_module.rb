@@ -46,12 +46,13 @@ class NLP
 	ReSentEndChars = /[.?!]/
 	InternalPunctuation = [',', ':', ';']
 	ReBoundaryRealignment = /^["\')\]}]+?(?:\s+|(?=--)|$)/m
-	ReWordStart = /[^\(\"\'{\[:;&\#\*@\)}\]\-,]/
-	ReNonWordChars = /(?:[?!)\";}\]\*:@\'\({\[])/
+	ReWordStart = /[^\(\"\'„“”»«{\[:;&\#\*@\)}\]\-,]/
+	ReNonWordChars = /(?:[?!)\"„“”»«;}\]\*:@\'’\({\[])/
 	ReMultiCharPunct = /(?:\-{2,}|\.{2,}|(?:\.\s){2,}\.|–|—)/
 	# soll es eine Wahlmöglichkeit geben, ob am Apostroph getrennt werden soll oder nicht?
-	ReApostrophedPart = /(?:[’\']\S+?)/
-	ReWordTokenizer = /#{ReMultiCharPunct}|(?=#{ReWordStart})\S+?#{ReApostrophedPart}?(?=\s|$|#{ReNonWordChars}|#{ReMultiCharPunct}|,(?=$|\s|#{ReNonWordChars}|#{ReMultiCharPunct}))|\S/
+	# ReApostrophedPart = /(?:[’\']\S+?)/
+	# ReWordTokenizer = /#{ReMultiCharPunct}|(?=#{ReWordStart})\S+?#{ReApostrophedPart}?(?=\s|$|#{ReNonWordChars}|#{ReMultiCharPunct}|,(?=$|\s|#{ReNonWordChars}|#{ReMultiCharPunct}))|\S/
+	ReWordTokenizer = /#{ReMultiCharPunct}|(?=#{ReWordStart})\S+?(?=\s|$|#{ReNonWordChars}|#{ReMultiCharPunct}|,(?=$|\s|#{ReNonWordChars}|#{ReMultiCharPunct}))|\S/
 
 	def self.languages
 		@@languages
