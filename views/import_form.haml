@@ -59,7 +59,10 @@
         %tr
           %td
           %td
-            %input{:name => 'language', :type => 'radio', :value => lang}= lang
+            - if lang == 'english'
+              %input{:name => 'language', :type => 'radio', :value => lang, :checked => true}= lang
+            - else
+              %input{:name => 'language', :type => 'radio', :value => lang}= lang
 
   #modal-submit
     %input{ :type => 'reset', :value => 'Cancel' }
