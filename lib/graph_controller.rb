@@ -264,7 +264,7 @@ class GraphController
 		command = command_line.partition(' ')[0]
 		string = command_line.partition(' ')[2]
 		parameters = string.parse_parameters
-		properties = @display.layer_attributes[layer].to_h
+		properties = @display.layer_attributes[layer]
 	
 		case command
 			when 'n' # new node
