@@ -17,11 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
+require 'yaml'
+require 'graphviz'
+	require 'open3'
+require 'htmlentities'
+
 class GraphDisplay
-	require 'yaml'
-	require 'graphviz'
-	require 'htmlentities'
-	
 	attr_reader :graph, :nodes, :edges, :meta, :tokens
 	attr_accessor :sentence, :show_refs, :found, :filter
 	

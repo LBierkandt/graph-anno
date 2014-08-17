@@ -434,10 +434,8 @@ class GraphController
 				name2 = parameters[:words][2]
 				case format
 					when 'paula'
-						require_relative 'paula_exporter'
 						@graph.export_paula(name, name2 ? name2 : nil)
 					when 'salt'
-						require_relative 'salt_exporter'
 						@graph.export_saltxml(name)
 				end
 			

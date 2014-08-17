@@ -21,11 +21,15 @@ require 'sinatra'
 require 'haml'
 
 require './lib/anno_graph'
+require './lib/paula_exporter'
+require './lib/salt_exporter'
 require './lib/expansion_module'
 require './lib/graph_display'
 require './lib/graph_controller'
 
 controller = GraphController.new
+
+set :root, Dir.pwd
 
 get '/' do
 	controller.sinatra = self
@@ -113,6 +117,5 @@ get '/export/data_table.csv' do
 end
 
 get '/doc/:filename' do
-	headers "Content-Type" => "data:Application/octet-stream; charset=utf8"
 	send_file 'doc/' + params[:filename]
 end
