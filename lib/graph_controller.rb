@@ -672,8 +672,11 @@ class GraphController
 					result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
 				elsif k == 'weight'
 					result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
-				elsif ['name', 'attr', 'shortcut'].include?(k)
+				elsif ['name', 'shortcut'].include?(k)
 					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
+				end
+				if not combination['attr'] or combination['attr'].length == 1
+					result["combinations[#{i}[attr]]"] = ''
 				end
 			end
 			['name', 'attr', 'shortcut'].each do |key|
