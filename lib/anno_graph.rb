@@ -209,8 +209,7 @@ class AnnoEdge < Edge
 end
 
 class AnnoGraph < SearchableGraph
-	attr_reader :conf
-	attr_accessor :makros_plain, :makros
+	attr_accessor :conf, :makros_plain, :makros
 
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
@@ -409,7 +408,7 @@ class AnnoGraph < SearchableGraph
 	end
 
 	def create_layer_makros
-		layer_makros_array = (@conf.layers + @conf.combinations).map do |layer|
+		layer_makros_array = (@conf.layers_and_combinations).map do |layer|
 			attributes_string = [*layer.attr].map{|a| a + ':t'} * ' & '
 			"def #{layer.shortcut} #{attributes_string}"
 		end
@@ -422,12 +421,12 @@ class AnnoLayer
 	attr_accessor :name, :attr, :shortcut, :color, :weight
 
 	def initialize(h = {})
-		@name = h[:name] || ''
-		@attr = h[:attr] || ''
-		@shortcut = h[:shortcut] || ''
-		@color = h[:color] || '#000000'
-		@weight = h[:weight] || '1'
-		@graph = h[:graph] || nil
+		@name = h['name'] || ''
+		@attr = h['attr'] || ''
+		@shortcut = h['shortcut'] || ''
+		@color = h['color'] || '#000000'
+		@weight = h['weight'] || '1'
+		@graph = h['graph'] || nil
 	end
 
 	def to_h
@@ -442,7 +441,7 @@ class AnnoLayer
 end
 
 class AnnoGraphConf
-	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :layers, :combinations,
+	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :layers, :combinations
 
 	def initialize(h = {})
 		default = File::open('conf/display.yml'){|f| YAML::load(f)}
@@ -454,8 +453,16 @@ class AnnoGraphConf
 		@found_color = h['found_color'] || default['found_color']
 		@filtered_color = h['filtered_color'] || default['filtered_color']
 		@edge_weight = h['edge_weight'] || default['edge_weight']
-		@layers = h['layers'] || default['layers']
-		@combinations = h['combinations'] || default['combinations']
+		if h['layers']
+			@layers = h['layers'].map{|l| AnnoLayer.new(l)}
+		else
+			@layers = default['layers'].map{|l| AnnoLayer.new(l)}
+		end
+		if h['layers']
+			@combinations = h['combinations'].map{|c| AnnoLayer.new(c)}
+		else
+			@combinations = default['combinations'].map{|c| AnnoLayer.new(c)}
+		end
 	end
 
 	def +(other)

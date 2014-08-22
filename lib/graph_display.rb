@@ -69,21 +69,21 @@ class GraphDisplay
 		end
 
 		@tokens.each_with_index do |token, i|
-			color = @graph.conf['token_color']
-			fontcolor = @graph.conf['token_color']
+			color = @graph.conf.token_color
+			fontcolor = @graph.conf.token_color
 			if @found && @found[:all_nodes].include?(token)
-				color = @graph.conf['found_color']
+				color = @graph.conf.found_color
 				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
 			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
-				color = @graph.conf['filtered_color']
-				fontcolor = @graph.conf['filtered_color']
+				color = @graph.conf.filtered_color
+				fontcolor = @graph.conf.filtered_color
 				satzinfo[:textline] += '<span class="hidden_word">' + token.token + '</span> '
 			else
 				satzinfo[:textline] += token.token + ' '
 			end
 			token_graph.add_nodes(
 				token.ID,
-				:fontname => @graph.conf['font'],
+				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
 				:style => 'bold',
@@ -93,9 +93,9 @@ class GraphDisplay
 		end
 
 		@nodes.each_with_index do |node, i|
-			color = @graph.conf['default_color']
+			color = @graph.conf.default_color
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
-				color = @graph.conf['filtered_color']
+				color = @graph.conf.filtered_color
 			else
 				@graph.conf.layers.each do |l|
 					if node[l.attr] == 't' then color = l.color end
@@ -108,11 +108,11 @@ class GraphDisplay
 			end
 			fontcolor = color
 			if @found && @found[:all_nodes].include?(node)
-				color = @graph.conf['found_color']
+				color = @graph.conf.found_color
 			end
 			viz_graph.add_nodes(
 				node.ID,
-				:fontname => @graph.conf['font'],
+				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
 				:color => color,
@@ -121,10 +121,10 @@ class GraphDisplay
 		end
 
 		@edges.each_with_index do |edge, i|
-			color = @graph.conf['default_color']
-			weight = @graph.conf['edge_weight']
+			color = @graph.conf.default_color
+			weight = @graph.conf.edge_weight
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
-				color = @graph.conf['filtered_color']
+				color = @graph.conf.filtered_color
 			else
 				@graph.conf.layers.each do |l|
 					if edge[l.attr] == 't'

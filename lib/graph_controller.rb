@@ -19,7 +19,7 @@
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :display, :sentence_list, :graph_file, :search_result
+	attr_reader :graph, :display, :sentence_list, :graph_file, :search_result
 
 	def initialize
 		@graph = AnnoGraph.new
@@ -171,8 +171,8 @@ class GraphController
 						else
 							v
 						end
-					)
-				end
+					end
+				)
 			end
 			@graph.makros_plain = @sinatra.params['makros'].split("\n").map{|s| s.strip}
 			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
