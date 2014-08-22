@@ -240,7 +240,7 @@ class AnnoGraph < SearchableGraph
 		end
 		self.add_hash(nodes_and_edges)
 		if nodes_and_edges['version'].to_i >= 6
-			@conf = GraphAnnoConfig.new(nodes_and_edges['conf'])
+			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain << nodes_and_edges['search_makros']
 			@makros += parse_query(@makros_plain * "\n")['def']
@@ -463,7 +463,7 @@ class AnnoGraphConf
 		else
 			@layers = default['layers'].map{|l| AnnoLayer.new(l)}
 		end
-		if h['layers']
+		if h['combinations']
 			@combinations = h['combinations'].map{|c| AnnoLayer.new(c)}
 		else
 			@combinations = default['combinations'].map{|c| AnnoLayer.new(c)}
@@ -491,8 +491,8 @@ class AnnoGraphConf
 			'found_color' => @found_color,
 			'filtered_color' => @filtered_color,
 			'edge_weight' => @edge_weight,
-			'layers' => @layers,
-			'combinations' => @combinations
+			'layers' => @layers.map{|l| l.to_h},
+			'combinations' => @combinations.map{|c| c.to_h}
 		}
 	end
 
