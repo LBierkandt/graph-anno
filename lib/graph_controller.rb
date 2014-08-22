@@ -269,7 +269,7 @@ class GraphController
 		command = command_line.partition(' ')[0]
 		string = command_line.partition(' ')[2]
 		parameters = string.parse_parameters
-		properties = @display.layer_attributes[layer]
+		properties = @graph.conf.layer_attributes[layer]
 
 		case command
 			when 'n' # new node
@@ -295,7 +295,7 @@ class GraphController
 
 			when 'a' # annotate elements
 				if @display.sentence
-					@display.layers.map{|l| l.attr}.each do |a|
+					@graph.conf.layers.map{|l| l.attr}.each do |a|
 						properties.delete(a)
 					end
 
@@ -625,10 +625,10 @@ class GraphController
 	end
 
 	def set_new_layer(words, properties)
-		if new_layer_shortcut = words.select{|w| @display.layer_shortcuts.keys.include?(w)}.last
-			layer = @display.layer_shortcuts[new_layer_shortcut]
+		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
+			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
 			@sinatra.response.set_cookie('traw_layer', { :value => layer })
-			properties.replace(@display.layer_attributes[layer].to_h)
+			properties.replace(@graph.conf.layer_attributes[layer].to_h)
 			return layer
 		end
 	end

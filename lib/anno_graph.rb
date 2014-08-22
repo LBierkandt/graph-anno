@@ -481,6 +481,23 @@ class AnnoGraphConf
 			'combinations' => @combinations
 		}
 	end
+
+	def layers_and_combinations
+		@layers + @combinations
+	end
+
+	def layer_shortcuts
+		layers_and_combinations.map{|l| {l.shortcut => l.name}}.reduce{|m, h| m.merge(h)}
+	end
+
+	def layer_attributes
+		h = {}
+		layers_and_combinations.map do |l|
+			h[l.name] = [*l.attr].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
+		end
+		return h
+	end
+
 end
 
 class Array
