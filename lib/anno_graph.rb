@@ -1,25 +1,26 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require_relative 'graph'
 require_relative 'search_module'
 require_relative 'nlp_module'
+require_relative 'toolbox_module'
 
 class NodeOrEdge
 
@@ -225,7 +226,7 @@ class AnnoGraph < SearchableGraph
 	def read_json_file(path)
 		puts 'Reading file "' + path + '" ...'
 		self.clear
-		
+
 		file = open(path, 'r:utf-8')
 		nodes_and_edges = JSON.parse(file.read)
 		file.close
@@ -246,7 +247,7 @@ class AnnoGraph < SearchableGraph
 			@makros_plain << nodes_and_edges['search_makros']
 			@makros += parse_query(@makros_plain * "\n")['def']
 		end
-		
+
 		# ggf. Format aktualisieren
 		if nodes_and_edges['version'].to_i < 5
 			puts 'Updating graph format ...'
@@ -281,7 +282,7 @@ class AnnoGraph < SearchableGraph
 				end
 			end
 		end
-		
+
 		puts 'Read "' + path + '".'
 	end
 
@@ -394,14 +395,14 @@ class AnnoGraph < SearchableGraph
 			end
 		end
 	end
-	
+
 	private
 
 	def load_conf
 		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
 		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
 	end
-	
+
 	def load_makros
 		@makros_plain = []
 		makros_strings = []
@@ -412,7 +413,7 @@ class AnnoGraph < SearchableGraph
 		end
 		@makros = parse_query(makros_strings * "\n")['def']
 	end
-	
+
 	def create_layer_makros
 		layer_makros_array = (@conf['layers'] + @conf['combinations']).map do |layer|
 			attributes_string = [*layer['attr']].map{|a| a + ':t'} * ' & '
@@ -425,7 +426,7 @@ end
 
 class AnnoLayer
 	attr_accessor :name, :attr, :shortcut, :color, :weight
- 
+
 	def initialize(h = {})
 		@name = h[:name] ? h[:name] : ''
 		@attr = h[:attr] ? h[:attr] : ''
@@ -434,11 +435,11 @@ class AnnoLayer
 		@weight = h[:weight] ? h[:weight] : '1'
 		@graph = h[:graph] ? h[:graph] : nil
 	end
-	
+
 	def [](attr)
 		self.send(attr)
 	end
-	
+
 	def to_h
 		{
 			'name' => @name,
@@ -472,7 +473,7 @@ class String
 			:edges => [],
 			:tokens => []
 		}
-		
+
 		r = {}
 		r[:ctrl] = '(\s|:)'
 		r[:bstring] = '[^\s:"]+'
@@ -481,7 +482,7 @@ class String
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
-		
+
 		while str != ''
 			m = nil
 			if m = str.match(r[:ctrl])
@@ -530,7 +531,7 @@ class String
 			end
 			str = str[m[0].length..-1]
 		end
-		
+
 		return h
 	end
 
