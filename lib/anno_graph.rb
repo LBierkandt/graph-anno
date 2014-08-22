@@ -1,19 +1,19 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -215,7 +215,7 @@ class AnnoGraph < SearchableGraph
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
 		super
-		load_conf
+		@conf = AnnoGraphConf.new
 		create_layer_makros
 		load_makros
 	end
@@ -225,7 +225,7 @@ class AnnoGraph < SearchableGraph
 	def read_json_file(path)
 		puts 'Reading file "' + path + '" ...'
 		self.clear
-		
+
 		file = open(path, 'r:utf-8')
 		nodes_and_edges = JSON.parse(file.read)
 		file.close
@@ -241,12 +241,12 @@ class AnnoGraph < SearchableGraph
 		end
 		self.add_hash(nodes_and_edges)
 		if nodes_and_edges['version'].to_i >= 6
-			@conf.merge!(nodes_and_edges['conf'])
+			@conf = GraphAnnoConfig.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain << nodes_and_edges['search_makros']
 			@makros += parse_query(@makros_plain * "\n")['def']
 		end
-		
+
 		# ggf. Format aktualisieren
 		if nodes_and_edges['version'].to_i < 5
 			puts 'Updating graph format ...'
@@ -281,7 +281,7 @@ class AnnoGraph < SearchableGraph
 				end
 			end
 		end
-		
+
 		puts 'Read "' + path + '".'
 	end
 
@@ -314,7 +314,7 @@ class AnnoGraph < SearchableGraph
 	def to_h
 		super.
 			merge('version' => '6').
-			merge('conf' => @conf.reject{|k,v| k == 'font'}).
+			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('search_makros' => @makros_plain)
 	end
 
@@ -355,7 +355,7 @@ class AnnoGraph < SearchableGraph
 	# extend clear method: reset layer configuration and search makros
 	def clear
 		super
-		load_conf
+		@conf = AnnoGraphConf.new
 		load_makros
 	end
 
@@ -394,14 +394,9 @@ class AnnoGraph < SearchableGraph
 			end
 		end
 	end
-	
+
 	private
 
-	def load_conf
-		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
-		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
-	end
-	
 	def load_makros
 		@makros_plain = []
 		makros_strings = []
@@ -412,11 +407,11 @@ class AnnoGraph < SearchableGraph
 		end
 		@makros = parse_query(makros_strings * "\n")['def']
 	end
-	
+
 	def create_layer_makros
-		layer_makros_array = (@conf['layers'] + @conf['combinations']).map do |layer|
-			attributes_string = [*layer['attr']].map{|a| a + ':t'} * ' & '
-			"def #{layer['shortcut']} #{attributes_string}"
+		layer_makros_array = (@conf.layers + @conf.combinations).map do |layer|
+			attributes_string = [*layer.attr].map{|a| a + ':t'} * ' & '
+			"def #{layer.shortcut} #{attributes_string}"
 		end
 		@makros += parse_query(layer_makros_array * "\n")['def']
 	end
@@ -425,20 +420,16 @@ end
 
 class AnnoLayer
 	attr_accessor :name, :attr, :shortcut, :color, :weight
- 
+
 	def initialize(h = {})
-		@name = h[:name] ? h[:name] : ''
-		@attr = h[:attr] ? h[:attr] : ''
-		@shortcut = h[:shortcut] ? h[:shortcut] : ''
-		@color = h[:color] ? h[:color] : '#000000'
-		@weight = h[:weight] ? h[:weight] : '1'
-		@graph = h[:graph] ? h[:graph] : nil
+		@name = h[:name] || ''
+		@attr = h[:attr] || ''
+		@shortcut = h[:shortcut] || ''
+		@color = h[:color] || '#000000'
+		@weight = h[:weight] || '1'
+		@graph = h[:graph] || nil
 	end
-	
-	def [](attr)
-		self.send(attr)
-	end
-	
+
 	def to_h
 		{
 			'name' => @name,
@@ -446,6 +437,48 @@ class AnnoLayer
 			'shortcut' => @shortcut,
 			'color' => @color,
 			'weight' => @weight
+		}
+	end
+end
+
+class AnnoGraphConf
+	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :layers, :combinations,
+
+	def initialize(h = {})
+		default = File::open('conf/display.yml'){|f| YAML::load(f)}
+		default.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+
+		@font = h['font'] || default['font']
+		@default_color = h['default_color'] || default['default_color']
+		@token_color = h['token_color'] || default['token_color']
+		@found_color = h['found_color'] || default['found_color']
+		@filtered_color = h['filtered_color'] || default['filtered_color']
+		@edge_weight = h['edge_weight'] || default['edge_weight']
+		@layers = h['layers'] || default['layers']
+		@combinations = h['combinations'] || default['combinations']
+	end
+
+	def +(other)
+		#@font = other.font
+		#@default_color = other.default_color
+		#@token_color = other.token_color
+		#@found_color = other.found_color
+		#@filtered_color = other.filtered_color
+		#@edge_weight = other.edge_weight
+		#@layers = other.layers
+		#@combinations = other.combinations
+	end
+
+	def to_h
+		{
+			'font' => @font,
+			'default_color' => @default_color,
+			'token_color' => @token_color,
+			'found_color' => @found_color,
+			'filtered_color' => @filtered_color,
+			'edge_weight' => @edge_weight,
+			'layers' => @layers,
+			'combinations' => @combinations
 		}
 	end
 end
@@ -472,7 +505,7 @@ class String
 			:edges => [],
 			:tokens => []
 		}
-		
+
 		r = {}
 		r[:ctrl] = '(\s|:)'
 		r[:bstring] = '[^\s:"]+'
@@ -481,7 +514,7 @@ class String
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
-		
+
 		while str != ''
 			m = nil
 			if m = str.match(r[:ctrl])
@@ -530,7 +563,7 @@ class String
 			end
 			str = str[m[0].length..-1]
 		end
-		
+
 		return h
 	end
 
