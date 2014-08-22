@@ -317,6 +317,11 @@ class AnnoGraph < SearchableGraph
 			merge('search_makros' => @makros_plain)
 	end
 
+	def merge!(other)
+		super
+		@conf.merge!(other.conf)
+	end
+
 	def sentences
 		@nodes.values.map{|n| n.sentence}.uniq.sort
 	end
@@ -465,15 +470,17 @@ class AnnoGraphConf
 		end
 	end
 
-	def +(other)
-		#@font = other.font
-		#@default_color = other.default_color
-		#@token_color = other.token_color
-		#@found_color = other.found_color
-		#@filtered_color = other.filtered_color
-		#@edge_weight = other.edge_weight
-		#@layers = other.layers
-		#@combinations = other.combinations
+	def merge!(other)
+		other.layers.each do |layer|
+			if not @layers.map{|l| l.attr}.include?(layer.attr)
+				@layers << layer
+			end
+		end
+		other.combinations.each do |combination|
+			if not @combinations.map{|c| c.attr}.include?(combination.attr)
+				@combinations << combination
+			end
+		end
 	end
 
 	def to_h

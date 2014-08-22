@@ -306,7 +306,7 @@ class Graph
 
 	# merges self with another graph (in place)
 	# @param other_graph [Graph] the graph to be added to self
-	def update(other_graph)
+	def merge!(other_graph)
 		new_nodes = {}
 		other_graph.nodes.each do |id,n|
 			new_nodes[id] = self.add_node(:attr => n.attr)
@@ -317,7 +317,6 @@ class Graph
 			end
 		end
 	end
-	alias_method :merge!, :update
 
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)

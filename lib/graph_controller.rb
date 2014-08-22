@@ -50,13 +50,13 @@ class GraphController
 	def draw_graph
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => true}.update(satzinfo).to_json
+		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
 	def toggle_refs
 		@display.show_refs = !@display.show_refs
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => false}.update(satzinfo).to_json
+		return {:sentence_changed => false}.merge(satzinfo).to_json
 	end
 
 	def layer_options
@@ -97,14 +97,14 @@ class GraphController
 			:sentences_html => @sentences_html,
 			:sentence_changed => sentence_changed,
 			:graph_file => @graph_file
-		}.update(satzinfo).to_json
+		}.merge(satzinfo).to_json
 	end
 
 	def change_sentence
 		set_cmd_cookies
 		@display.sentence = @sinatra.params[:sentence]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => true}.update(satzinfo).to_json
+		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
 	def filter
@@ -113,7 +113,7 @@ class GraphController
 		@display.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
+		return {:sentence_changed => false, :filter_applied => true}.merge(satzinfo).to_json
 	end
 
 	def search
@@ -135,7 +135,7 @@ class GraphController
 			:sentences_html => @display.build_sentence_html(@sentence_list),
 			:search_result => @search_result,
 			:sentence_changed => false
-		}.update(satzinfo).to_json
+		}.merge(satzinfo).to_json
 	end
 
 	def config_form
@@ -411,7 +411,7 @@ class GraphController
 				@graph_file.replace('')
 				addgraph = AnnoGraph.new
 				addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
-				@graph.update(addgraph)
+				@graph.merge!(addgraph)
 
 			when 'save', 'speichern' # save workspace to corpus file
 				if parameters[:words][0] then @graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) end
