@@ -39,21 +39,21 @@ class GraphDisplay
 	end
 
 	def layers
-		@graph.conf['layers']
+		@graph.conf.layers
 	end
 
 	def layers_and_layer_combinations
-		@graph.conf['layers'] + @graph.conf['combinations']
+		@graph.conf.layers + @graph.conf.combinations
 	end
 
 	def layer_shortcuts
-		layers_and_layer_combinations.map{|l| {l['shortcut'] => l['name']}}.reduce{|m, h| m.merge(h)}
+		layers_and_layer_combinations.map{|l| {l.shortcut => l.name}}.reduce{|m, h| m.merge(h)}
 	end
 
 	def layer_attributes
 		h = {}
 		layers_and_layer_combinations.map do |l|
-			h[l['name']] = [*l['attr']].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
+			h[l.name] = [*l.attr].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
 		end
 		return h
 	end
@@ -117,12 +117,12 @@ class GraphDisplay
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 				color = @graph.conf['filtered_color']
 			else
-				@graph.conf['layers'].each do |l|
-					if node[l['attr']] == 't' then color = l['color'] end
+				@graph.conf.layers.each do |l|
+					if node[l.attr] == 't' then color = l.color end
 				end
-				@graph.conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
-					if c['attr'].all?{|a| node[a] == 't'}
-						color = c['color']
+				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
+					if c.attr.all?{|a| node[a] == 't'}
+						color = c.color
 					end
 				end
 			end
@@ -146,27 +146,27 @@ class GraphDisplay
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				color = @graph.conf['filtered_color']
 			else
-				@graph.conf['layers'].each do |l|
-					if edge[l['attr']] == 't'
-						color = l['color']
-						weight = l['weight']
+				@graph.conf.layers.each do |l|
+					if edge[l.attr] == 't'
+						color = l.color
+						weight = l.weight
 					end
 				end
-				@graph.conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
-					if c['attr'].all?{|a| edge[a] == 't'}
-						color = c['color']
-						weight = c['weight']
+				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
+					if c.attr.all?{|a| edge[a] == 't'}
+						color = c.color
+						weight = c.weight
 					end
 				end
 			end
 			fontcolor = color
 			if @found && @found[:all_edges].include?(edge)
-				color = @graph.conf['found_color']
+				color = @graph.conf.found_color
 			end
 			viz_graph.add_edges(
 				edge.start.ID,
 				edge.end.ID,
-				:fontname => @graph.conf['font'],
+				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil),
 				:hexadecimal),
 				:color=> color,
@@ -187,7 +187,7 @@ class GraphDisplay
 
 	def build_label(e, i = nil)
 		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf['layers'].map{|l| l['attr']} + ['sentence']).include?(k)}
+		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr} + ['sentence']).include?(k)}
 		if e.kind_of?(Node)
 			if e.cat == 'meta'
 				display_attr.each do |key,value|
