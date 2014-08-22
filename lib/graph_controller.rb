@@ -1,19 +1,19 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -40,25 +40,25 @@ class GraphController
 			}
 		)
 	end
-	
+
 	def set_vars(params, request, response)
 		@sinatra.params = params
 		@sinatra.request = request
 		@sinatra.response = response
 	end
-	
+
 	def draw_graph
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => true}.update(satzinfo).to_json
 	end
-	
+
 	def toggle_refs
 		@display.show_refs = !@display.show_refs
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => false}.update(satzinfo).to_json
 	end
-	
+
 	def layer_options
 		@sinatra.haml(
 			:layer_options,
@@ -67,7 +67,7 @@ class GraphController
 			}
 		)
 	end
-	
+
 	def handle_commandline
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
@@ -99,14 +99,14 @@ class GraphController
 			:graph_file => @graph_file
 		}.update(satzinfo).to_json
 	end
-	
+
 	def change_sentence
 		set_cmd_cookies
 		@display.sentence = @sinatra.params[:sentence]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => true}.update(satzinfo).to_json
 	end
-	
+
 	def filter
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
@@ -115,7 +115,7 @@ class GraphController
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
 	end
-	
+
 	def search
 		set_query_cookies
 		begin
@@ -146,27 +146,32 @@ class GraphController
 			}
 		)
 	end
-	
+
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
-			@sinatra.params['layers'] = {} if not @sinatra.params['layers']
-			@sinatra.params['combinations'] = {} if not @sinatra.params['combinations']
-			@graph.conf.merge!(@sinatra.params['general']) do |k, ov, nv|
-				k == 'edge_weight' ? nv.to_i : nv
+			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
+			@sinatra.params['combinations'] = @sinatra.params['combinations'] || {}
+			@graph.conf = AnnoGraphConf.new(
+				@sinatra.params['general'].inject({}) do |h, (k, v)|
+					k == 'edge_weight' ? h[k] = v.to_i : h[k] = v
+					h
+				end
+			)
+			@graph.conf.layers = @sinatra.params['layers'].values.map do |layer|
+				AnnoLayer.new(layer.map_hash{|k, v| k == 'weight' ? v.to_i : v})
 			end
-			@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
-				layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
-			end
-			@graph.conf['combinations'] = @sinatra.params['combinations'].values.map do |combination|
-				combination['attr'] = {} if not combination['attr']
-				combination.map_hash do |k, v|
-					if k == 'weight'
-						v.to_i
-					elsif k == 'attr'
-						v.values
-					else
-						v
-					end
+			@graph.conf.combinations = @sinatra.params['combinations'].values.map do |combination|
+				combination['attr'] = combination['attr'] || {}
+				AnnoLayer.new(
+					combination.map_hash do |k, v|
+						if k == 'weight'
+							v.to_i
+						elsif k == 'attr'
+							v.values
+						else
+							v
+						end
+					)
 				end
 			end
 			@graph.makros_plain = @sinatra.params['makros'].split("\n").map{|s| s.strip}
@@ -191,7 +196,7 @@ class GraphController
 			:locals => {
 				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
 				:i => i,
-				:layers => @graph.conf['layers']
+				:layers => @graph.conf.layers
 			}
 		)
 	end
@@ -204,7 +209,7 @@ class GraphController
 			}
 		)
 	end
-	
+
 	def import_text
 		case @sinatra.params['input_method']
 		when 'file'
@@ -238,7 +243,7 @@ class GraphController
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
 		end
 	end
-	
+
 	def export_data
 		if @display.found
 			begin
@@ -250,7 +255,7 @@ class GraphController
 			end
 		end
 	end
-	
+
 	def export_data_table
 		if @data_table
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
@@ -265,7 +270,7 @@ class GraphController
 		string = command_line.partition(' ')[2]
 		parameters = string.parse_parameters
 		properties = @display.layer_attributes[layer]
-	
+
 		case command
 			when 'n' # new node
 				if @display.sentence
@@ -274,7 +279,7 @@ class GraphController
 					properties.merge!(parameters[:attributes])
 					@graph.add_node(:attr => properties)
 				end
-			
+
 			when 'e' # new edge
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
@@ -287,15 +292,15 @@ class GraphController
 						:attr => properties
 					)
 				end
-			
+
 			when 'a' # annotate elements
 				if @display.sentence
-					@display.layers.map{|l| l['attr']}.each do |a|
+					@display.layers.map{|l| l.attr}.each do |a|
 						properties.delete(a)
 					end
-					
+
 					properties.merge!(parameters[:attributes])
-					
+
 					parameters[:elements].each do |element_id|
 						if element = element_by_identifier(element_id)
 							element.attr.merge!(properties)
@@ -303,7 +308,7 @@ class GraphController
 						end
 					end
 				end
-			
+
 			when 'd' # delete elements
 				if @display.sentence
 					(parameters[:meta] + parameters[:nodes] + parameters[:edges]).each do |el|
@@ -317,10 +322,10 @@ class GraphController
 						end
 					end
 				end
-			
+
 			when 'l' # set layer
 				layer = set_new_layer(parameters[:words], properties)
-	
+
 			when 'p', 'g' # group under new parent node
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
@@ -337,7 +342,7 @@ class GraphController
 						end
 					end
 				end
-			
+
 			when 'c', 'h' # attach new child node
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
@@ -354,72 +359,72 @@ class GraphController
 						end
 					end
 				end
-	
+
 			when 'ns' # create new sentence
 				metaknoten = @graph.nodes.values.select{|k| k.cat == 'meta'}
-				
+
 				parameters[:words].each do |ns|
 					if metaknoten.select{|k| k.sentence == ns}.empty?
 						@graph.add_node(:attr => {'cat' => 'meta', 'sentence' => ns})
 					end
 				end
-				
+
 				@display.sentence = parameters[:words][0]
-	
+
 			when 't' # build tokens and append them
 				if @display.sentence
 					@graph.build_tokens(parameters[:words], @display.sentence)
 				end
-				
-			when 'ti' # build tokens and insert them 
+
+			when 'ti' # build tokens and insert them
 				if @display.sentence
 					knoten = element_by_identifier(parameters[:tokens][0])
 					@graph.build_tokens(parameters[:words][1..-1], @display.sentence, knoten)
 				end
-				
+
 			when 's' # change sentence
 				@display.sentence = parameters[:words][0]
-	
+
 			when 'del' # delete sentence
 				if @display.sentence
 					saetze = @graph.sentences
 					index = saetze.index(@display.sentence) + 1
 					if index == saetze.length then index -= 2 end
-					
+
 					@graph.nodes.values.select{|k| k.sentence == @display.sentence}.each{|k| k.delete}
 					@graph.edges.values.select{|k| k.sentence == @display.sentence}.each{|k| k.delete}
-					
+
 					# change to next sentence
 					@display.sentence = saetze[index]
 				end
-	
+
 			when 'load', 'laden' # clear workspace and load corpus file
 				@graph_file.replace('data/' + parameters[:words][0] + '.json')
-				
+
 				@graph.read_json_file(@graph_file)
 				saetze = @graph.sentences
 				if not saetze.include?(@display.sentence)
 					@display.sentence = saetze[0]
 				end
-			
+
 			when 'add' # load corpus file and add it to the workspace
 				@graph_file.replace('')
 				addgraph = AnnoGraph.new
 				addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
 				@graph.update(addgraph)
-			
+
 			when 'save', 'speichern' # save workspace to corpus file
 				if parameters[:words][0] then @graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) end
 				if !File.exist?('data') then Dir.mkdir('data') end
 				if @display.sentence
 					@graph.write_json_file(@graph_file)
 				end
-			
+
 			when 'clear', 'leeren' # clear workspace
 				@graph_file.replace('')
 				@graph.clear
 				@display.sentence = nil
-	
+
 			when 'image' # export sentence as graphics file
 				if @display.sentence
 					format = parameters[:words][0]
@@ -427,7 +432,7 @@ class GraphController
 					if !File.exist?('images') then Dir.mkdir('images') end
 					@display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
 				end
-			
+
 			when 'export' # export corpus in other format
 				format = parameters[:words][0]
 				name = parameters[:words][1]
@@ -438,10 +443,10 @@ class GraphController
 					when 'salt'
 						@graph.export_saltxml(name)
 				end
-			
+
 			when 'import' # open text import window
 				return {:modal => 'import'}
-			
+
 			when 'import_toolbox' # import Toolbox data
 				@graph_file.replace('')
 				@graph.clear
@@ -457,13 +462,13 @@ class GraphController
 					format = JSON.parse(formatbeschreibung)
 				end
 				@graph.toolbox_einlesen(datei, format)
-	
+
 			# all following commands are related to annotation @graph expansion -- Experimental!
 			when 'project'
 				@graph.merkmale_projizieren(@display.sentence)
 			when 'reduce'
 				@graph.merkmale_reduzieren(@display.sentence)
-	
+
 			when 'adv'
 				nodes = (parameters[:all_nodes]).map{|n| element_by_identifier(n)}
 				@graph.add_predication(:args=>nodes[0..-2], :anno=>{'sem'=>'caus'}, :clause=>nodes[-1])
@@ -475,8 +480,8 @@ class GraphController
 				@graph.de_sem(parameters[:elements].map{|n| element_by_identifier(n)})
 			when 'sc'
 				@graph.apply_shortcuts(@display.sentence)
-			
-			
+
+
 			when 'exp'
 				@graph.expandieren(@display.sentence)
 			when 'exp1'
@@ -490,7 +495,7 @@ class GraphController
 				@graph.praedikationen_einfuehren(@display.sentence)
 				@graph.referenten_einfuehren(@display.sentence)
 				@graph.argumente_einfuehren(@display.sentence)
-				@graph.argumente_entfernen(@display.sentence)	
+				@graph.argumente_entfernen(@display.sentence)
 				@graph.merkmale_projizieren(@display.sentence)
 			when 'exp-praed'
 				#@graph.praedikationen_einfuehren(@display.sentence)
@@ -532,7 +537,7 @@ class GraphController
 					k.gesammelte_merkmale = nil
 					k.unreduzierte_merkmale = nil
 				end
-	
+
 			when 'komp'
 				@graph.komprimieren(@display.sentence)
 			when 'komp-arg'
@@ -551,7 +556,7 @@ class GraphController
 				#	k.gesammelte_merkmale = nil
 				#	k.unreduzierte_merkmale = nil
 				#end
-	
+
 		end
 		return nil
 	end
@@ -571,39 +576,39 @@ class GraphController
 				return nil
 		end
 	end
-	
+
 	def check_cookies
 		if @sinatra.request.cookies['traw_sentence'].nil?
 			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
 		end
-	
+
 		if @sinatra.request.cookies['traw_layer'].nil?
 			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
 		end
-	
+
 		if @sinatra.request.cookies['traw_cmd'].nil?
 			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
 		end
-	
+
 		if @sinatra.request.cookies['traw_query'].nil?
 			@sinatra.response.set_cookie('traw_query', { :value => '' })
 		end
 	end
-	
+
 	def set_cmd_cookies
 		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
 			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer] })
 		end
-	
+
 		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
 			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd] })
 		end
-	
+
 		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
 			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence] })
 		end
 	end
-	
+
 	def set_filter_cookies
 		#if @sinatra.request.cookies['traw_filter']
 			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
@@ -612,13 +617,13 @@ class GraphController
 			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
 		#end
 	end
-	
+
 	def set_query_cookies
 		if @sinatra.request.cookies['traw_query']
 			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query] })
 		end
 	end
-	
+
 	def set_new_layer(words, properties)
 		if new_layer_shortcut = words.select{|w| @display.layer_shortcuts.keys.include?(w)}.last
 			layer = @display.layer_shortcuts[new_layer_shortcut]
@@ -629,11 +634,11 @@ class GraphController
 	end
 
 	private
-	
+
 	def validate_config(data)
 		result = {}
-		if not data['layers'] then data['layers'] = {} end
-		if not data['combinations'] then data['combinations'] = {} end
+		data['layers'] = data['layers'] || {}
+		data['combinations'] = data['combinations'] || {}
 		data['general'].each do |attr, value|
 			if attr.match(/_color$/)
 				result["general[#{attr}]"] = '' unless value.is_hex_color?
@@ -695,7 +700,7 @@ class GraphController
 		end
 		return result.empty? ? true : result
 	end
-	
+
 end
 
 class String
