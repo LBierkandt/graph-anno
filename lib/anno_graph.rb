@@ -210,13 +210,12 @@ class AnnoEdge < Edge
 end
 
 class AnnoGraph < SearchableGraph
-	attr_reader :conf
-	attr_accessor :makros_plain, :makros
+	attr_accessor :conf, :makros_plain, :makros
 
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
 		super
-		load_conf
+		@conf = AnnoGraphConf.new
 		create_layer_makros
 		load_makros
 	end
@@ -242,7 +241,7 @@ class AnnoGraph < SearchableGraph
 		end
 		self.add_hash(nodes_and_edges)
 		if nodes_and_edges['version'].to_i >= 6
-			@conf.merge!(nodes_and_edges['conf'])
+			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain << nodes_and_edges['search_makros']
 			@makros += parse_query(@makros_plain * "\n")['def']
@@ -315,8 +314,13 @@ class AnnoGraph < SearchableGraph
 	def to_h
 		super.
 			merge('version' => '6').
-			merge('conf' => @conf.reject{|k,v| k == 'font'}).
+			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('search_makros' => @makros_plain)
+	end
+
+	def merge!(other)
+		super
+		@conf.merge!(other.conf)
 	end
 
 	def sentences
@@ -356,7 +360,7 @@ class AnnoGraph < SearchableGraph
 	# extend clear method: reset layer configuration and search makros
 	def clear
 		super
-		load_conf
+		@conf = AnnoGraphConf.new
 		load_makros
 	end
 
@@ -398,11 +402,6 @@ class AnnoGraph < SearchableGraph
 
 	private
 
-	def load_conf
-		@conf = File::open('conf/display.yml'){|f| YAML::load(f)}
-		@conf.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
-	end
-
 	def load_makros
 		@makros_plain = []
 		makros_strings = []
@@ -415,9 +414,9 @@ class AnnoGraph < SearchableGraph
 	end
 
 	def create_layer_makros
-		layer_makros_array = (@conf['layers'] + @conf['combinations']).map do |layer|
-			attributes_string = [*layer['attr']].map{|a| a + ':t'} * ' & '
-			"def #{layer['shortcut']} #{attributes_string}"
+		layer_makros_array = (@conf.layers_and_combinations).map do |layer|
+			attributes_string = [*layer.attr].map{|a| a + ':t'} * ' & '
+			"def #{layer.shortcut} #{attributes_string}"
 		end
 		@makros += parse_query(layer_makros_array * "\n")['def']
 	end
@@ -428,16 +427,12 @@ class AnnoLayer
 	attr_accessor :name, :attr, :shortcut, :color, :weight
 
 	def initialize(h = {})
-		@name = h[:name] ? h[:name] : ''
-		@attr = h[:attr] ? h[:attr] : ''
-		@shortcut = h[:shortcut] ? h[:shortcut] : ''
-		@color = h[:color] ? h[:color] : '#000000'
-		@weight = h[:weight] ? h[:weight] : '1'
-		@graph = h[:graph] ? h[:graph] : nil
-	end
-
-	def [](attr)
-		self.send(attr)
+		@name = h['name'] || ''
+		@attr = h['attr'] || ''
+		@shortcut = h['shortcut'] || ''
+		@color = h['color'] || '#000000'
+		@weight = h['weight'] || '1'
+		@graph = h['graph'] || nil
 	end
 
 	def to_h
@@ -449,6 +444,75 @@ class AnnoLayer
 			'weight' => @weight
 		}
 	end
+end
+
+class AnnoGraphConf
+	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :layers, :combinations
+
+	def initialize(h = {})
+		default = File::open('conf/display.yml'){|f| YAML::load(f)}
+		default.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+
+		@font = h['font'] || default['font']
+		@default_color = h['default_color'] || default['default_color']
+		@token_color = h['token_color'] || default['token_color']
+		@found_color = h['found_color'] || default['found_color']
+		@filtered_color = h['filtered_color'] || default['filtered_color']
+		@edge_weight = h['edge_weight'] || default['edge_weight']
+		if h['layers']
+			@layers = h['layers'].map{|l| AnnoLayer.new(l)}
+		else
+			@layers = default['layers'].map{|l| AnnoLayer.new(l)}
+		end
+		if h['combinations']
+			@combinations = h['combinations'].map{|c| AnnoLayer.new(c)}
+		else
+			@combinations = default['combinations'].map{|c| AnnoLayer.new(c)}
+		end
+	end
+
+	def merge!(other)
+		other.layers.each do |layer|
+			if not @layers.map{|l| l.attr}.include?(layer.attr)
+				@layers << layer
+			end
+		end
+		other.combinations.each do |combination|
+			if not @combinations.map{|c| c.attr}.include?(combination.attr)
+				@combinations << combination
+			end
+		end
+	end
+
+	def to_h
+		{
+			'font' => @font,
+			'default_color' => @default_color,
+			'token_color' => @token_color,
+			'found_color' => @found_color,
+			'filtered_color' => @filtered_color,
+			'edge_weight' => @edge_weight,
+			'layers' => @layers.map{|l| l.to_h},
+			'combinations' => @combinations.map{|c| c.to_h}
+		}
+	end
+
+	def layers_and_combinations
+		@layers + @combinations
+	end
+
+	def layer_shortcuts
+		layers_and_combinations.map{|l| {l.shortcut => l.name}}.reduce{|m, h| m.merge(h)}
+	end
+
+	def layer_attributes
+		h = {}
+		layers_and_combinations.map do |l|
+			h[l.name] = [*l.attr].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
+		end
+		return h
+	end
+
 end
 
 class Array

@@ -1,19 +1,19 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,7 +25,7 @@ require 'htmlentities'
 class GraphDisplay
 	attr_reader :graph, :nodes, :edges, :meta, :tokens
 	attr_accessor :sentence, :show_refs, :found, :filter
-	
+
 	def initialize(graph)
 		@graph = graph
 		@sentence = nil
@@ -38,29 +38,9 @@ class GraphDisplay
 		@filter = {:mode => 'unfilter'}
 	end
 
-	def layers
-		@graph.conf['layers']
-	end
-
-	def layers_and_layer_combinations
-		@graph.conf['layers'] + @graph.conf['combinations']
-	end
-
-	def layer_shortcuts
-		layers_and_layer_combinations.map{|l| {l['shortcut'] => l['name']}}.reduce{|m, h| m.merge(h)}
-	end
-
-	def layer_attributes
-		h = {}
-		layers_and_layer_combinations.map do |l|
-			h[l['name']] = [*l['attr']].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
-		end
-		return h
-	end
-
 	def draw_graph(format, path)
 		puts 'Generating graph ...'
-	
+
 		viz_graph = GraphViz.new(
 			:G,
 			:type => 'digraph',
@@ -69,41 +49,41 @@ class GraphDisplay
 			:ranksep => '.3'
 		)
 		token_graph = viz_graph.subgraph(:rank => 'same')
-	
+
 		satzinfo = {:textline => '', :meta => ''}
-		
+
 		nodes = @graph.nodes.values.select{|n| n.sentence == @sentence}
 		@meta = nodes.select{|n| n.cat == 'meta'}[0]
 		@tokens = if tok = nodes.select{|n| n.token}[0] then tok.sentence_tokens else [] end
 		@nodes = nodes.select{|n| !n.token && n.cat != 'meta'}
 		@edges = (@tokens.map{|t| t.in + t.out} + @nodes.map{|n| n.in + n.out}).flatten.uniq.select{|e| e.type == 'g'}
 		t_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 't'}
-	
+
 		if @filter[:mode] == 'filter'
 			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
 			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
 		end
-		
+
 		if @meta
 			satzinfo[:meta] = build_label(@meta)
 		end
-	
+
 		@tokens.each_with_index do |token, i|
-			color = @graph.conf['token_color']
-			fontcolor = @graph.conf['token_color']
+			color = @graph.conf.token_color
+			fontcolor = @graph.conf.token_color
 			if @found && @found[:all_nodes].include?(token)
-				color = @graph.conf['found_color']
+				color = @graph.conf.found_color
 				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
 			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
-				color = @graph.conf['filtered_color']
-				fontcolor = @graph.conf['filtered_color']
+				color = @graph.conf.filtered_color
+				fontcolor = @graph.conf.filtered_color
 				satzinfo[:textline] += '<span class="hidden_word">' + token.token + '</span> '
 			else
 				satzinfo[:textline] += token.token + ' '
 			end
 			token_graph.add_nodes(
 				token.ID,
-				:fontname => @graph.conf['font'],
+				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
 				:style => 'bold',
@@ -111,62 +91,62 @@ class GraphDisplay
 				:fontcolor => fontcolor
 			)
 		end
-	
+
 		@nodes.each_with_index do |node, i|
-			color = @graph.conf['default_color']
+			color = @graph.conf.default_color
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
-				color = @graph.conf['filtered_color']
+				color = @graph.conf.filtered_color
 			else
-				@graph.conf['layers'].each do |l|
-					if node[l['attr']] == 't' then color = l['color'] end
+				@graph.conf.layers.each do |l|
+					if node[l.attr] == 't' then color = l.color end
 				end
-				@graph.conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
-					if c['attr'].all?{|a| node[a] == 't'}
-						color = c['color']
+				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
+					if c.attr.all?{|a| node[a] == 't'}
+						color = c.color
 					end
 				end
 			end
 			fontcolor = color
 			if @found && @found[:all_nodes].include?(node)
-				color = @graph.conf['found_color']
+				color = @graph.conf.found_color
 			end
 			viz_graph.add_nodes(
 				node.ID,
-				:fontname => @graph.conf['font'],
+				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
 				:color => color,
 				:fontcolor => fontcolor
 			)
 		end
-	
+
 		@edges.each_with_index do |edge, i|
-			color = @graph.conf['default_color']
-			weight = @graph.conf['edge_weight']
+			color = @graph.conf.default_color
+			weight = @graph.conf.edge_weight
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
-				color = @graph.conf['filtered_color']
+				color = @graph.conf.filtered_color
 			else
-				@graph.conf['layers'].each do |l|
-					if edge[l['attr']] == 't'
-						color = l['color']
-						weight = l['weight']
+				@graph.conf.layers.each do |l|
+					if edge[l.attr] == 't'
+						color = l.color
+						weight = l.weight
 					end
 				end
-				@graph.conf['combinations'].sort{|a,b| a['attr'].length <=> b['attr'].length}.each do |c|
-					if c['attr'].all?{|a| edge[a] == 't'}
-						color = c['color']
-						weight = c['weight']
+				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
+					if c.attr.all?{|a| edge[a] == 't'}
+						color = c.color
+						weight = c.weight
 					end
 				end
 			end
 			fontcolor = color
 			if @found && @found[:all_edges].include?(edge)
-				color = @graph.conf['found_color']
+				color = @graph.conf.found_color
 			end
 			viz_graph.add_edges(
 				edge.start.ID,
 				edge.end.ID,
-				:fontname => @graph.conf['font'],
+				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil),
 				:hexadecimal),
 				:color=> color,
@@ -174,20 +154,20 @@ class GraphDisplay
 				:weight => weight
 			)
 		end
-		
+
 		t_edges.each do |edge|
 			#len => 0
 			viz_graph.add_edges(edge.start.ID, edge.end.ID, :style => 'invis', :weight => 100)
 		end
-		
+
 		viz_graph.output(format => '"'+path+'"')
-	
+
 		return satzinfo
 	end
 
 	def build_label(e, i = nil)
 		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf['layers'].map{|l| l['attr']} + ['sentence']).include?(k)}
+		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr} + ['sentence']).include?(k)}
 		if e.kind_of?(Node)
 			if e.cat == 'meta'
 				display_attr.each do |key,value|
@@ -238,7 +218,7 @@ class GraphDisplay
 		end
 		return label
 	end
-	
+
 	def build_sentence_html(sentence_list)
 		puts 'Generating formatted sentence list ...'
 		sentence_string = ''

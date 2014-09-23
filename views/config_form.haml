@@ -8,34 +8,34 @@
         %td
           %label{:for => "general[default_color]"} Default color
         %td
-          %input{ :name => 'general[default_color]', :type => 'color', :value => graph.conf['default_color'] }
+          %input{ :name => 'general[default_color]', :type => 'color', :value => graph.conf.default_color }
       %tr
         %td
           %label{:for => "general[token_color]"} Token color
         %td
-          %input{ :name => 'general[token_color]', :type => 'color', :value => graph.conf['token_color'] }
+          %input{ :name => 'general[token_color]', :type => 'color', :value => graph.conf.token_color }
       %tr
         %td
           %label{:for => "general[found_color]"} Found color
         %td
-          %input{ :name => 'general[found_color]', :type => 'color', :value => graph.conf['found_color'] }
+          %input{ :name => 'general[found_color]', :type => 'color', :value => graph.conf.found_color }
       %tr
         %td
           %label{:for => "general[filtered_color]"} Filtered color
         %td
-          %input{ :name => 'general[filtered_color]', :type => 'color', :value => graph.conf['filtered_color'] }
+          %input{ :name => 'general[filtered_color]', :type => 'color', :value => graph.conf.filtered_color }
       %tr
         %td
           %label{:for => "general[edge_weight]"} Edge weight
         %td
-          %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf['edge_weight'] }
+          %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf.edge_weight }
 
   %div.modal-form-element
     %table.layers
       %thead
         %tr
           %th{ :colspan => 2 } Layers
-      - graph.conf['layers'].each_with_index do |layer, i|
+      - graph.conf.layers.each_with_index do |layer, i|
         = haml :layer_form_segment, :locals => {:layer => layer, :i => i}
       %tbody
         %tr
@@ -47,8 +47,8 @@
       %thead
         %tr
           %th{ :colspan => 2 } Layer combinations
-      - graph.conf['combinations'].each_with_index do |combination, i|
-        = haml :combination_form_segment, :locals => {:combination => combination, :i => i, :layers => graph.conf['layers']}
+      - graph.conf.combinations.each_with_index do |combination, i|
+        = haml :combination_form_segment, :locals => {:combination => combination, :i => i, :layers => graph.conf.layers}
       %tbody
         %tr
           %td{:colspan => 2}

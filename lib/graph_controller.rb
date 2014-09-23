@@ -19,7 +19,7 @@
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :display, :sentence_list, :graph_file, :search_result
+	attr_reader :graph, :display, :sentence_list, :graph_file, :search_result
 
 	def initialize
 		@graph = AnnoGraph.new
@@ -50,13 +50,13 @@ class GraphController
 	def draw_graph
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => true}.update(satzinfo).to_json
+		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
 	def toggle_refs
 		@display.show_refs = !@display.show_refs
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => false}.update(satzinfo).to_json
+		return {:sentence_changed => false}.merge(satzinfo).to_json
 	end
 
 	def layer_options
@@ -97,14 +97,14 @@ class GraphController
 			:sentences_html => @sentences_html,
 			:sentence_changed => sentence_changed,
 			:graph_file => @graph_file
-		}.update(satzinfo).to_json
+		}.merge(satzinfo).to_json
 	end
 
 	def change_sentence
 		set_cmd_cookies
 		@display.sentence = @sinatra.params[:sentence]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => true}.update(satzinfo).to_json
+		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
 	def filter
@@ -113,7 +113,7 @@ class GraphController
 		@display.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => false, :filter_applied => true}.update(satzinfo).to_json
+		return {:sentence_changed => false, :filter_applied => true}.merge(satzinfo).to_json
 	end
 
 	def search
@@ -135,7 +135,7 @@ class GraphController
 			:sentences_html => @display.build_sentence_html(@sentence_list),
 			:search_result => @search_result,
 			:sentence_changed => false
-		}.update(satzinfo).to_json
+		}.merge(satzinfo).to_json
 	end
 
 	def config_form
@@ -149,25 +149,30 @@ class GraphController
 
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
-			@sinatra.params['layers'] = {} if not @sinatra.params['layers']
-			@sinatra.params['combinations'] = {} if not @sinatra.params['combinations']
-			@graph.conf.merge!(@sinatra.params['general']) do |k, ov, nv|
-				k == 'edge_weight' ? nv.to_i : nv
-			end
-			@graph.conf['layers'] = @sinatra.params['layers'].values.map do |layer|
-				layer.map_hash{|k, v| k == 'weight' ? v.to_i : v}
-			end
-			@graph.conf['combinations'] = @sinatra.params['combinations'].values.map do |combination|
-				combination['attr'] = {} if not combination['attr']
-				combination.map_hash do |k, v|
-					if k == 'weight'
-						v.to_i
-					elsif k == 'attr'
-						v.values
-					else
-						v
-					end
+			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
+			@sinatra.params['combinations'] = @sinatra.params['combinations'] || {}
+			@graph.conf = AnnoGraphConf.new(
+				@sinatra.params['general'].inject({}) do |h, (k, v)|
+					k == 'edge_weight' ? h[k] = v.to_i : h[k] = v
+					h
 				end
+			)
+			@graph.conf.layers = @sinatra.params['layers'].values.map do |layer|
+				AnnoLayer.new(layer.map_hash{|k, v| k == 'weight' ? v.to_i : v})
+			end
+			@graph.conf.combinations = @sinatra.params['combinations'].values.map do |combination|
+				combination['attr'] = combination['attr'] || {}
+				AnnoLayer.new(
+					combination.map_hash do |k, v|
+						if k == 'weight'
+							v.to_i
+						elsif k == 'attr'
+							v.values
+						else
+							v
+						end
+					end
+				)
 			end
 			@graph.makros_plain = @sinatra.params['makros'].split("\n").map{|s| s.strip}
 			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
@@ -191,7 +196,7 @@ class GraphController
 			:locals => {
 				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
 				:i => i,
-				:layers => @graph.conf['layers']
+				:layers => @graph.conf.layers
 			}
 		)
 	end
@@ -264,7 +269,7 @@ class GraphController
 		command = command_line.partition(' ')[0]
 		string = command_line.partition(' ')[2]
 		parameters = string.parse_parameters
-		properties = @display.layer_attributes[layer]
+		properties = @graph.conf.layer_attributes[layer]
 
 		case command
 			when 'n' # new node
@@ -290,7 +295,7 @@ class GraphController
 
 			when 'a' # annotate elements
 				if @display.sentence
-					@display.layers.map{|l| l['attr']}.each do |a|
+					@graph.conf.layers.map{|l| l.attr}.each do |a|
 						properties.delete(a)
 					end
 
@@ -406,7 +411,7 @@ class GraphController
 				@graph_file.replace('')
 				addgraph = AnnoGraph.new
 				addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
-				@graph.update(addgraph)
+				@graph.merge!(addgraph)
 
 			when 'save', 'speichern' # save workspace to corpus file
 				if parameters[:words][0] then @graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) end
@@ -619,10 +624,10 @@ class GraphController
 	end
 
 	def set_new_layer(words, properties)
-		if new_layer_shortcut = words.select{|w| @display.layer_shortcuts.keys.include?(w)}.last
-			layer = @display.layer_shortcuts[new_layer_shortcut]
+		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
+			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
 			@sinatra.response.set_cookie('traw_layer', { :value => layer })
-			properties.replace(@display.layer_attributes[layer].to_h)
+			properties.replace(@graph.conf.layer_attributes[layer].to_h)
 			return layer
 		end
 	end
@@ -631,8 +636,8 @@ class GraphController
 
 	def validate_config(data)
 		result = {}
-		if not data['layers'] then data['layers'] = {} end
-		if not data['combinations'] then data['combinations'] = {} end
+		data['layers'] = data['layers'] || {}
+		data['combinations'] = data['combinations'] || {}
 		data['general'].each do |attr, value|
 			if attr.match(/_color$/)
 				result["general[#{attr}]"] = '' unless value.is_hex_color?
