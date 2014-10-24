@@ -453,12 +453,6 @@ function sendImport(type) {
 			closeModal();
 			updateLayerOptions();
 			sendCmd('');
-		} else {
-			$('#modal-warning').html('Invalid values – check your input!');
-			$('#modal-form label').removeClass('error_message');
-			for (var i in data) {
-				$('label[for="' + i + '"]').addClass('error_message');
-			}
 		}
 	})
 	.error(function(data) {

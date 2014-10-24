@@ -81,7 +81,7 @@ get '/import/:type' do |type|
 end
 
 post '/import/:type' do |type|
-	controller.send('import_' + type)
+	controller.import(type)
 end
 
 get '/new_layer/:i' do |i|

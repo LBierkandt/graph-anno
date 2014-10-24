@@ -41,12 +41,6 @@ class GraphController
 		)
 	end
 
-	def set_vars(params, request, response)
-		@sinatra.params = params
-		@sinatra.request = request
-		@sinatra.response = response
-	end
-
 	def draw_graph
 		@display.sentence = @sinatra.request.cookies['traw_sentence']
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
@@ -211,37 +205,34 @@ class GraphController
 		)
 	end
 
-	def import_text
-		case @sinatra.params['input_method']
-		when 'file'
-			text = @sinatra.params['file'][:tempfile].read.force_encoding('utf-8')
-		when 'paste'
-			text = @sinatra.params['paste'].gsub("\r\n", "\n").gsub("\r", "\n")
-		end
-		case @sinatra.params['processing_method']
-		when 'regex'
-			options = @sinatra.params.select{|k, v| ['processing_method', 'tokens', 'sentences'].include?(k)}
-			options['sentences']['sep'].de_escape!
-			options['tokens']['regex'] = Regexp.new(options['tokens']['regex'])
-		when 'punkt'
-			options = @sinatra.params.select{|k, v| ['processing_method', 'language'].include?(k)}
-		end
-		@graph.clear
-		@graph_file.replace('')
-		@display.sentence = nil
-		@graph.import_text(text, options)
-		return true.to_json
-	end
-
-	def import_toolbox
+	def import(type)
 		@graph_file.replace('')
 		@graph.clear
-		file = @sinatra.params['file']
-		format_description = @sinatra.params['format_description']
-		puts 'format description:'
-		puts format_description
-		format = JSON.parse(format_description)
-		@graph.toolbox_einlesen(file, format)
+		case type
+		when 'text'
+			case @sinatra.params['input_method']
+			when 'file'
+				text = @sinatra.params['file'][:tempfile].read.force_encoding('utf-8')
+			when 'paste'
+				text = @sinatra.params['paste'].gsub("\r\n", "\n").gsub("\r", "\n")
+			end
+			case @sinatra.params['processing_method']
+			when 'regex'
+				options = @sinatra.params.select{|k, v| ['processing_method', 'tokens', 'sentences'].include?(k)}
+				options['sentences']['sep'].de_escape!
+				options['tokens']['regex'] = Regexp.new(options['tokens']['regex'])
+			when 'punkt'
+				options = @sinatra.params.select{|k, v| ['processing_method', 'language'].include?(k)}
+			end
+			@graph.import_text(text, options)
+		when 'toolbox'
+			file = @sinatra.params['file']
+			format_description = @sinatra.params['format_description']
+			puts 'format description:'
+			puts format_description
+			format = JSON.parse(format_description)
+			@graph.toolbox_einlesen(file, format)
+		end
 		return true.to_json
 	end
 
