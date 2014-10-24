@@ -21,6 +21,7 @@ require 'sinatra'
 require 'haml'
 
 require './lib/anno_graph'
+require './lib/toolbox_module'
 require './lib/paula_exporter'
 require './lib/salt_exporter'
 require './lib/expansion_module'
