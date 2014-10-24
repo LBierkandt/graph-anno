@@ -425,7 +425,7 @@ function openImport(type) {
 	})
 	.done(function(data) {
 		$('#modal-content').html(data);
-		disable_import_form_fields();
+		disable_import_form_fields(type);
 		$('#modal-background').show();
 		window.onkeydown = importKeys;
 	});
@@ -465,7 +465,8 @@ function sendImport(type) {
 		alert('An error occurred while importing.');
 	});
 }
-function disable_import_form_fields() {
+function disable_import_form_fields(type) {
+	if(type == 'toolbox') return;
 	if($('input[value="file"]').is(':checked')){
 		$('textarea[name="paste"]').attr('disabled', true);
 		$('input[name="file"]').removeAttr('disabled');

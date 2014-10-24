@@ -237,7 +237,7 @@ class GraphController
 		@graph_file.replace('')
 		@graph.clear
 		file = @sinatra.params['file']
-		format_description= params['format_description']
+		format_description = @sinatra.params['format_description']
 		puts format_description
 		begin
 			# Ruby format: allows simple quotes
@@ -247,6 +247,7 @@ class GraphController
 			format = JSON.parse(format_description)
 		end
 		@graph.toolbox_einlesen(file, format)
+		return true.to_json
 	end
 
 	def export_subcorpus
