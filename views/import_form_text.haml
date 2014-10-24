@@ -1,4 +1,4 @@
-%form#modal-form.import{ :action => '/import', :method => 'post', :name => 'import', :enctype => 'multipart/form-data', :onsubmit => 'sendImport(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.import{ :action => '/import', :method => 'post', :name => 'import', :enctype => 'multipart/form-data', :onsubmit => 'sendImport("text"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message
   %div.modal-form-element
     %table

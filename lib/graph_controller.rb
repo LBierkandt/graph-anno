@@ -201,9 +201,10 @@ class GraphController
 		)
 	end
 
-	def import_form
+	def import_form(type)
+		modal = "import_form_#{type}".to_sym
 		@sinatra.haml(
-			:import_form,
+			modal,
 			:locals => {
 				:nlp => NLP
 			}
@@ -230,6 +231,22 @@ class GraphController
 		@display.sentence = nil
 		@graph.import_text(text, options)
 		return true.to_json
+	end
+
+	def import_toolbox
+		@graph_file.replace('')
+		@graph.clear
+		file = @sinatra.params['file']
+		format_description= params['format_description']
+		puts format_description
+		begin
+			# Ruby format: allows simple quotes
+			format = instance_eval(format_description)
+		rescue
+			# for hash: ":" instead of "=>"
+			format = JSON.parse(format_description)
+		end
+		@graph.toolbox_einlesen(file, format)
 	end
 
 	def export_subcorpus
@@ -445,22 +462,11 @@ class GraphController
 				end
 
 			when 'import' # open text import window
-				return {:modal => 'import'}
-
-			when 'import_toolbox' # import Toolbox data
-				@graph_file.replace('')
-				@graph.clear
-				datei = parameters[:words][0]
-				formatbeschreibung = string.sub(datei, '').strip.sub(/^""/, '')
-				puts formatbeschreibung
-				begin
-					# Ruby format: allows simple qoutes
-					format = instance_eval(formatbeschreibung)
-				rescue
-					# for hash: ":" instead of "=>"
-					format = JSON.parse(formatbeschreibung)
+				if parameters[:words].first == 'toolbox'
+					return {:modal => 'import', :type => 'toolbox'}
+				else
+					return {:modal => 'import', :type => 'text'}
 				end
-				@graph.toolbox_einlesen(datei, format)
 
 			# all following commands are related to annotation @graph expansion -- Experimental!
 			when 'project'

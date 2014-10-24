@@ -19,7 +19,7 @@
 
 class AnnoGraph
 
-	def toolbox_einlesen(quelldatei, korpusformat)
+	def toolbox_einlesen(file, korpusformat)
 		# korpusformat:
 		# [[marker_0, ..., marker_n], ..., [marker_0, ..., marker_p]]
 		# Marker für Tokentext: * voranstellen; Tokeneben wird dadurch ebenfalls festgelegt
@@ -45,7 +45,7 @@ class AnnoGraph
 			end
 		end
 		
-		puts "reading #{quelldatei}"
+		puts "reading #{file[:name]}"
 		puts 'record ID marker: ' + @recmarker
 		puts 'token layer: ' + @tokenebene.to_s
 		puts 'text marker: ' + @textmarker
@@ -59,7 +59,7 @@ class AnnoGraph
 		
 		
 		##### Einlesen
-		datei = open(quelldatei, 'r:iso-8859-1')
+		datei = open(file[:tempfile], 'r:iso-8859-1')
 		dateitext = datei.readlines * ''
 		datei.close
 		

@@ -279,7 +279,7 @@ function makeAnfrage(anfrage, params) {
 			if (this.readyState == 4 && this.status == 200) {
 				var antworthash = JSON.parse(this.responseText);
 				if (antworthash['modal'] == 'import') {
-					openImport();
+					openImport(antworthash['type']);
 					return;
 				}
 				var txtcmd = document.getElementById('txtcmd');
@@ -418,10 +418,10 @@ function removeLayerAttributes(number) {
 		});
 	});
 }
-function openImport() {
+function openImport(type) {
 	$.ajax({
 		type: 'GET',
-		url: '/import'
+		url: '/import/' + type
 	})
 	.done(function(data) {
 		$('#modal-content').html(data);
@@ -436,10 +436,10 @@ function importKeys(tast) {
 		closeModal();
 	}
 }
-function sendImport() {
+function sendImport(type) {
 	var formData = new FormData($('#modal-form')[0]);
 	$.ajax({
-			url: '/import',
+			url: '/import/' + type,
 			type: 'POST',
 			data: formData,
 			dataType: 'json',

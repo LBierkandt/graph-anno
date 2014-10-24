@@ -76,12 +76,12 @@ post '/config' do
 	controller.save_config
 end
 
-get '/import' do
-	controller.import_form
+get '/import/:type' do |type|
+	controller.import_form(type)
 end
 
-post '/import' do
-	controller.import_text
+post '/import/:type' do |type|
+	controller.send('import_' + type)
 end
 
 get '/new_layer/:i' do |i|
