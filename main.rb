@@ -1,19 +1,19 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -84,12 +84,12 @@ post '/import' do
 	controller.import_text
 end
 
-get '/new_layer/:i' do
-	controller.new_layer(params[:i])
+get '/new_layer/:i' do |i|
+	controller.new_layer(i)
 end
 
-get '/new_combination/:i' do
-	controller.new_combination(params[:i])
+get '/new_combination/:i' do |i|
+	controller.new_combination(i)
 end
 
 get '/export/subcorpus.json' do
@@ -104,6 +104,6 @@ get '/export/data_table.csv' do
 	controller.export_data_table
 end
 
-get '/doc/:filename' do
-	send_file 'doc/' + params[:filename]
+get '/doc/:filename' do |filename|
+	send_file 'doc/' + filename
 end
