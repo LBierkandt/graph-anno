@@ -45,10 +45,10 @@ class AnnoGraph
 			end
 		end
 		
-		puts "reading #{file[:name]}"
 		puts 'record ID marker: ' + @recmarker
 		puts 'token layer: ' + @tokenebene.to_s
 		puts 'text marker: ' + @textmarker
+		puts "reading #{file[:name]}"
 		
 		# zusätzliche Variablen zur Formatbeschreibung generieren
 		@korpusformat = korpusformat

@@ -238,14 +238,9 @@ class GraphController
 		@graph.clear
 		file = @sinatra.params['file']
 		format_description = @sinatra.params['format_description']
+		puts 'format description:'
 		puts format_description
-		begin
-			# Ruby format: allows simple quotes
-			format = instance_eval(format_description)
-		rescue
-			# for hash: ":" instead of "=>"
-			format = JSON.parse(format_description)
-		end
+		format = JSON.parse(format_description)
 		@graph.toolbox_einlesen(file, format)
 		return true.to_json
 	end
