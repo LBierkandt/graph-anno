@@ -4,14 +4,8 @@ Um GraphAnno zu benutzen wird benötigt:
 1) Graphviz (http://www.graphviz.org/)
 
 2) Ruby (http://www.ruby-lang.org/)
-   (GraphAnno wurde mit Version 2.0 entwickelt, 1.9 müßte aber auch noch funktionieren)
-   benötigte Rubygems (installieren per 'gem install ...'):
-     sinatra
-     haml
-     ruby-graphviz
-     htmlentities
-     unicode_utils
-   Oder installieren per Bundler (ggf. vorher ausführen: 'gem install bundler'):
+   (GraphAnno wurde mit Version 2.0 entwickelt, 1.9 müßte aber auch noch funktionieren);
+   benötigte Rubygems per Bundler (ggf. vorher ausführen: 'gem install bundler') installieren:
      1. gehe ins GraphAnno-Hauptverzeichnis
      2. führe aus 'bundle install'
 
@@ -21,7 +15,7 @@ Um GraphAnno zu benutzen wird benötigt:
 
 Programm benutzen:
 
-1) starte 'main.rb' im GraphAnno-Hauptverzeichnis ('ruby main.rb')
+1) starte 'main.rb' im GraphAnno-Hauptverzeichnis ('bundle exec ruby main.rb')
 
 2) navigiere zu folgener Adresse im Browser: 'http://localhost:4567/'
 
