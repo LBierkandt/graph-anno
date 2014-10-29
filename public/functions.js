@@ -392,7 +392,6 @@ function updateLayerOptions() {
 	})
 	.done(function(data) {
 		$('#layer').html(data);
-		setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 	});
 }
 function configKeys(tast) {
@@ -449,10 +448,11 @@ function sendImport(type) {
 			processData: false
 	})
 	.done(function(data) {
-		if (data == true) {
+		if (data['sentences_html'] != undefined) {
+			$('#sentence').html(data['sentences_html']);
 			closeModal();
 			updateLayerOptions();
-			sendCmd('');
+			loadGraph();
 		}
 	})
 	.error(function(data) {

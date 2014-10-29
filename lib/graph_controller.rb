@@ -80,13 +80,7 @@ class GraphController
 		else
 			sentence_changed = true
 		end
-		# prüfen, ob sich die Satzliste geändert hat (und nur dann neue Liste fürs select-Feld erstellen)
-		if (new_sentence_list = @graph.sentences) != @sentence_list
-			@sentence_list = new_sentence_list
-			@sentences_html = @display.build_sentence_html(@sentence_list)
-		else
-			@sentences_html = nil
-		end
+		set_sentences_html
 		return {
 			:sentences_html => @sentences_html,
 			:sentence_changed => sentence_changed,
@@ -99,6 +93,16 @@ class GraphController
 		@display.sentence = @sinatra.params[:sentence]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => true}.merge(satzinfo).to_json
+	end
+
+	def set_sentences_html
+		# prüfen, ob sich die Satzliste geändert hat (und nur dann neue Liste fürs select-Feld erstellen)
+		if (new_sentence_list = @graph.sentences) != @sentence_list
+			@sentence_list = new_sentence_list
+			@sentences_html = @display.build_sentence_html(@sentence_list)
+		else
+			@sentences_html = nil
+		end
 	end
 
 	def filter
@@ -233,7 +237,10 @@ class GraphController
 			format = JSON.parse(format_description)
 			@graph.toolbox_einlesen(file, format)
 		end
-		return true.to_json
+		set_sentences_html
+		@display.sentence = @sentence_list.first
+		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence, :path => '/' })
+		return {:sentences_html => @sentences_html}.to_json
 	end
 
 	def export_subcorpus

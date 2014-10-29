@@ -39,7 +39,7 @@ class GraphDisplay
 	end
 
 	def draw_graph(format, path)
-		puts 'Generating graph ...'
+		puts "Generating graph for sentence \"#{@sentence}\"..."
 
 		viz_graph = GraphViz.new(
 			:G,
