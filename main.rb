@@ -96,7 +96,7 @@ get '/export/subcorpus.json' do
 	controller.export_subcorpus
 end
 
-get '/export_data' do
+post '/export_data' do
 	controller.export_data
 end
 
