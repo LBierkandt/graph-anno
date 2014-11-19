@@ -392,6 +392,7 @@ function updateLayerOptions() {
 	})
 	.done(function(data) {
 		$('#layer').html(data);
+		setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 	});
 }
 function configKeys(tast) {
