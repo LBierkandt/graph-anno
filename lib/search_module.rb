@@ -411,7 +411,7 @@ class NodeOrEdge
 
 	def fulfil?(bedingung)
 		if bedingung.class == String
-			bedingung = parse_attributes(bedingung)[:op]
+			bedingung = @graph.parse_attributes(bedingung)[:op]
 		end
 		if not bedingung then return true end
 		satzzeichen = '.,;:?!"'
@@ -488,7 +488,7 @@ class Node
 
 	def links(pfad_oder_automat, zielknotenbedingung = nil)
 		if pfad_oder_automat.class == String
-			automat = Automat.create(parse_link(pfad_oder_automat)[:op])
+			automat = Automat.create(@graph.parse_link(pfad_oder_automat)[:op])
 			automat.bereinigen
 		elsif pfad_oder_automat.class == Automat
 			automat = pfad_oder_automat
@@ -536,7 +536,7 @@ class Node
 	end
 
 	def nodes(link, zielknotenbedingung = '')
-		return links(link, parse_attributes(zielknotenbedingung)[:op]).map{|node_and_link| node_and_link[0]}.uniq
+		return links(link, @graph.parse_attributes(zielknotenbedingung)[:op]).map{|node_and_link| node_and_link[0]}.uniq
 	end
 
 end
@@ -555,7 +555,7 @@ class Automat
 		when 'redge'
 			return Automat.new(Zustand.new('redge', nil, operation[:cond], ids))
 		when 'boundary'
-			return Automat.new(Zustand.new('node', nil, parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
+			return Automat.new(Zustand.new('node', nil, SearchableGraph.new.parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
 		when 'or'
 			folgeautomaten = [Automat.create(operation[:arg][0], ids), Automat.create(operation[:arg][1], ids)]
 			automat = Automat.new(Zustand.new('split', [], ids))
