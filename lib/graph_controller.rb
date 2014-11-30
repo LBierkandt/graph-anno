@@ -310,6 +310,7 @@ class GraphController
 						properties.delete(a)
 					end
 
+					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(parameters[:attributes])
 
 					parameters[:elements].each do |element_id|
