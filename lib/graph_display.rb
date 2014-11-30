@@ -123,6 +123,7 @@ class GraphDisplay
 		@edges.each_with_index do |edge, i|
 			color = @graph.conf.default_color
 			weight = @graph.conf.edge_weight
+			constraint = true
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				color = @graph.conf.filtered_color
 			else
@@ -130,6 +131,7 @@ class GraphDisplay
 					if edge[l.attr] == 't'
 						color = l.color
 						weight = l.weight
+						constraint = false if weight == 0
 					end
 				end
 				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
@@ -151,7 +153,8 @@ class GraphDisplay
 				:hexadecimal),
 				:color=> color,
 				:fontcolor => fontcolor,
-				:weight => weight
+				:weight => weight,
+				:constraint => constraint
 			)
 		end
 
