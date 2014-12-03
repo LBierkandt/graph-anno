@@ -22,6 +22,17 @@ require_relative 'search_module'
 require_relative 'nlp_module'
 
 class NodeOrEdge
+	attr_accessor :type
+
+	def initialize(h)
+		super
+		@type = h[:type]
+	end
+
+	# @return [Hash] the element transformed into a hash with all values casted to strings
+	def to_h
+		super.merge(:type => @type)
+	end
 
 	def cat
 		@attr['cat']
@@ -189,17 +200,6 @@ class AnnoNode < Node
 end
 
 class AnnoEdge < Edge
-	attr_accessor :type
-
-	def initialize(h)
-		super
-		@type = h[:type]
-	end
-
-	# @return [Hash] the edge transformed into a hash with all values casted to strings
-	def to_h
-		super.merge(:type => @type)
-	end
 
 	def fulfil?(bedingung)
 		if @type != 'g' then return false end
@@ -228,8 +228,9 @@ class AnnoGraph < SearchableGraph
 		file = open(path, 'r:utf-8')
 		nodes_and_edges = JSON.parse(file.read)
 		file.close
+		version = nodes_and_edges['version'].to_i
 		# 'knoten' -> 'nodes', 'kanten' -> 'edges'
-		if nodes_and_edges['version'].to_i < 4
+		if version < 4
 			nodes_and_edges['nodes'] = nodes_and_edges['knoten']
 			nodes_and_edges['edges'] = nodes_and_edges['kanten']
 			nodes_and_edges.delete('knoten')
@@ -239,7 +240,7 @@ class AnnoGraph < SearchableGraph
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
 		end
 		self.add_hash(nodes_and_edges)
-		if nodes_and_edges['version'].to_i >= 6
+		if version >= 6
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain << nodes_and_edges['search_makros']
@@ -247,17 +248,11 @@ class AnnoGraph < SearchableGraph
 		end
 
 		# ggf. Format aktualisieren
-		if nodes_and_edges['version'].to_i < 5
+		if version < 5
 			puts 'Updating graph format ...'
 			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
 			(@nodes.values + @edges.values).each do |k|
-				if nodes_and_edges['version'].to_i < 5
-					if k['f-ebene'] == 'y' then k['f-layer'] = 't' end
-					if k['s-ebene'] == 'y' then k['s-layer'] = 't' end
-					k.attr.delete('f-ebene')
-					k.attr.delete('s-ebene')
-				end
-				if nodes_and_edges['version'].to_i < 2
+				if version < 2
 					if k['typ']
 						k['cat'] = k['typ']
 						k.attr.delete('typ')
@@ -268,14 +263,33 @@ class AnnoGraph < SearchableGraph
 					end
 					k.attr.delete('elementid')
 				end
+				if version < 5
+					if k['f-ebene'] == 'y' then k['f-layer'] = 't' end
+					if k['s-ebene'] == 'y' then k['s-layer'] = 't' end
+					k.attr.delete('f-ebene')
+					k.attr.delete('s-ebene')
+				end
+				if version < 7
+					# introduce node types
+					if k.type_of?(Node)
+						if k.token
+							k.type = 't'
+						elsif k['cat'] == 'meta'
+							k.type = 's'
+							k.attr.delete('cat')
+						else
+							k.type = 'a'
+						end
+					end
+				end
 				k.attr.delete('tokenid')
 			end
-			if nodes_and_edges['version'].to_i < 2
+			if version < 2
 				# 'meta'-Node für jeden Satz
-				metaknoten = @nodes.values.select{|k| k.cat == 'meta'}
+				sect_nodes = @nodes.values.select{|k| k.type == 's'}
 				self.sentences.each do |ns|
-					if metaknoten.select{|k| k.sentence == ns}.empty?
-						self.add_node(:attr => {'cat' => 'meta', 'sentence' => ns})
+					if sect_nodes.select{|k| k.sentence == ns}.empty?
+						self.add_node(:type => 's', :attr => {'sentence' => ns})
 					end
 				end
 			end
@@ -285,7 +299,7 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# creates a new node and adds it to self
-	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:type => String, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
 	# @return [Node] the new node
 	def add_node(h)
 		new_id(h, :node)
