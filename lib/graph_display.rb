@@ -56,7 +56,7 @@ class GraphDisplay
 		@meta = nodes.select{|n| n.cat == 'meta'}[0]
 		@tokens = if tok = nodes.select{|n| n.token}[0] then tok.sentence_tokens else [] end
 		@nodes = nodes.select{|n| !n.token && n.cat != 'meta'}
-		@edges = (@tokens.map{|t| t.in + t.out} + @nodes.map{|n| n.in + n.out}).flatten.uniq.select{|e| e.type == 'g'}
+		@edges = (@tokens + @nodes).map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'g'}
 		t_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 't'}
 
 		if @filter[:mode] == 'filter'
