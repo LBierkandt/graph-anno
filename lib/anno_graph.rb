@@ -289,7 +289,7 @@ class AnnoGraph < SearchableGraph
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
 				self.sentences.each do |ns|
 					if sect_nodes.select{|k| k.sentence == ns}.empty?
-						self.add_node(:type => 's', :attr => {'sentence' => ns})
+						self.add_sect_node(:attr => {'sentence' => ns})
 					end
 				end
 			end
@@ -304,6 +304,27 @@ class AnnoGraph < SearchableGraph
 	def add_node(h)
 		new_id(h, :node)
 		@nodes[h[:ID]] = AnnoNode.new(h.merge(:graph => self))
+	end
+
+	# creates a new anno node and adds it to self
+	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @return [Node] the new node
+	def add_anno_node(h)
+		add_node(h.merge(:type => 'a'))
+	end
+
+	# creates a new token node and adds it to self
+	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @return [Node] the new node
+	def add_token_node(h)
+		add_node(h.merge(:type => 't'))
+	end
+
+	# creates a new section node and adds it to self
+	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @return [Node] the new node
+	def add_sect_node(h)
+		add_node(h.merge(:type => 's'))
 	end
 
 	# creates a new edge and adds it to self
@@ -357,7 +378,7 @@ class AnnoGraph < SearchableGraph
 			last_token = self.sentence_tokens(sentence)[-1]
 		end
 		words.each do |word|
-			token_collection << self.add_node(:attr => {'token' => word, 'sentence' => sentence})
+			token_collection << self.add_token_node(:attr => {'token' => word, 'sentence' => sentence})
 		end
 		# This creates relationships between the tokens in the form of 1->2->3->4
 		token_collection[0..-2].each_with_index do |token, index|
@@ -392,7 +413,7 @@ class AnnoGraph < SearchableGraph
 		id_length = sentences.length.to_s.length
 		sentences.each_with_index do |s, i|
 			sentence_id = "%0#{id_length}d" % i
-			sentence_node = add_node(:type => 's', :attr => {'sentence' => sentence_id})
+			sentence_node = add_sect_node(:attr => {'sentence' => sentence_id})
 			case options['processing_method']
 			when 'regex'
 				words = s.scan(options['tokens']['regex'])

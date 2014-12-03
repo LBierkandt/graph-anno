@@ -284,11 +284,11 @@ class SearchableGraph < Graph
 		grenzknoten = []
 		@nodes.values.select{|k| k.token}.each do |tok|
 			if !tok.token_before
-				grenzknoten << self.add_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
+				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
 				self.add_edge(:type => 't', :start => grenzknoten.last, :end => tok)
 			end
 			if !tok.token_after
-				grenzknoten << self.add_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
+				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
 				self.add_edge(:type => 't', :start => tok, :end => grenzknoten.last)
 			end
 		end

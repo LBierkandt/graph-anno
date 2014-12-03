@@ -288,7 +288,7 @@ class GraphController
 					layer = set_new_layer(parameters[:words], properties)
 					properties['sentence'] = @display.sentence
 					properties.merge!(parameters[:attributes])
-					@graph.add_node(:attr => properties)
+					@graph.add_anno_node(:attr => properties)
 				end
 
 			when 'e' # new edge
@@ -342,7 +342,7 @@ class GraphController
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
 					properties['sentence'] = @display.sentence
-					mother = @graph.add_node(:attr => properties.merge(parameters[:attributes]))
+					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]))
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_edge(
@@ -359,7 +359,7 @@ class GraphController
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
 					properties['sentence'] = @display.sentence
-					daughter = @graph.add_node(:attr => properties.merge(parameters[:attributes]))
+					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]))
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_edge(
@@ -377,7 +377,7 @@ class GraphController
 
 				parameters[:words].each do |ns|
 					if sentence_nodes.select{|k| k.sentence == ns}.empty?
-						@graph.add_node(:type => 's', :attr => {'sentence' => ns})
+						@graph.add_sect_node(:attr => {'sentence' => ns})
 					end
 				end
 
