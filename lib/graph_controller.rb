@@ -296,8 +296,7 @@ class GraphController
 					layer = set_new_layer(parameters[:words], properties)
 					properties['sentence'] = @display.sentence
 					properties.merge!(parameters[:attributes])
-					@graph.add_edge(
-						:type => 'g',
+					@graph.add_anno_edge(
 						:start => element_by_identifier(parameters[:all_nodes][0]),
 						:end => element_by_identifier(parameters[:all_nodes][1]),
 						:attr => properties
@@ -345,8 +344,7 @@ class GraphController
 					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]))
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
-							@graph.add_edge(
-								:type => 'g',
+							@graph.add_anno_edge(
 								:start => mother,
 								:end => element,
 								:attr => properties.clone
@@ -362,8 +360,7 @@ class GraphController
 					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]))
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
-							@graph.add_edge(
-								:type => 'g',
+							@graph.add_anno_edge(
 								:start => element,
 								:end => daughter,
 								:attr => properties.clone

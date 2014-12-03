@@ -191,7 +191,7 @@ class AnnoNode < Node
 		if self.token
 			s = self.sentence
 			if self.token_before && self.token_after
-				@graph.add_edge(:type => 't', :start => self.token_before, :end => self.token_after, :attr => {'sentence' => s})
+				@graph.add_order_edge(:start => self.token_before, :end => self.token_after, :attr => {'sentence' => s})
 			end
 			self.delete
 		end
@@ -335,6 +335,27 @@ class AnnoGraph < SearchableGraph
 		@edges[h[:ID]] = AnnoEdge.new(h.merge(:graph => self))
 	end
 
+	# creates a new anno edge and adds it to self
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @return [Edge] the new edge
+	def add_anno_edge(h)
+		add_edge(h.merge(:type => 'g'))
+	end
+
+	# creates a new order edge and adds it to self
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @return [Edge] the new edge
+	def add_order_edge(h)
+		add_edge(h.merge(:type => 't'))
+	end
+
+	# creates a new sect edge and adds it to self
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @return [Edge] the new edge
+	def add_sect_edge(h)
+		add_edge(h.merge(:type => 's'))
+	end
+
 	def filter!(bedingung)
 		@nodes.each do |id,node|
 			if !node.fulfil?(bedingung) then @nodes.delete(id) end
@@ -382,11 +403,11 @@ class AnnoGraph < SearchableGraph
 		end
 		# This creates relationships between the tokens in the form of 1->2->3->4
 		token_collection[0..-2].each_with_index do |token, index|
-			self.add_edge(:type => 't', :start => token, :end => token_collection[index+1], :attr => {'sentence' => sentence})
+			self.add_order_edge(:start => token, :end => token_collection[index+1], :attr => {'sentence' => sentence})
 		end
 		# If there are already tokens, append the new ones
-		if last_token then self.add_edge(:type => 't', :start => last_token, :end => token_collection[0], :attr => {'sentence' => sentence}) end
-		if next_token then self.add_edge(:type => 't', :start => token_collection[-1], :end => next_token, :attr => {'sentence' => sentence}) end
+		if last_token then self.add_order_edge(:start => last_token, :end => token_collection[0], :attr => {'sentence' => sentence}) end
+		if next_token then self.add_order_edge(:start => token_collection[-1], :end => next_token, :attr => {'sentence' => sentence}) end
 		if last_token && next_token then self.edges_between(last_token, next_token){|e| e.type == 't'}[0].delete end
 		return token_collection
 	end

@@ -122,7 +122,7 @@ class AnnoGraph
 			element['sentence'] = sentence
 			neuer_knoten = self.add_node(:type => type, :attr => element.reject{|s,w| s == 'toechter'})
 			if ebene == @tokenebene
-				if letztes_token[0] then self.add_edge(:type => 't', :start => letztes_token[0], :end => neuer_knoten, :attr => {'sentence'=>sentence}) end
+				if letztes_token[0] then self.add_order_edge(:start => letztes_token[0], :end => neuer_knoten, :attr => {'sentence'=>sentence}) end
 				letztes_token[0] = neuer_knoten
 			end
 			# Kanten erstellen
@@ -131,7 +131,7 @@ class AnnoGraph
 				kantenattribute['sentence'] = sentence
 				kantenattribute['s-layer'] = 't'
 				kantenattribute['f-layer'] = 't'
-				self.add_edge(:type => 'g', :start => mutter, :end => neuer_knoten, :attr => kantenattribute)
+				self.add_anno_edge(:start => mutter, :end => neuer_knoten, :attr => kantenattribute)
 			end
 			if element['toechter']
 				if ebene != @tokenebene
