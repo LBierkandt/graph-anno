@@ -110,7 +110,7 @@ class AnnoGraph
 			if ns_tokens != [] # nur Satz anlegen, wenn es auch mindestens ein Token gibt
 				sentence_list.add_element('mark', {'id'=>'sentence_'+sentence_no.to_s, 'xlink:href'=>"#xpointer(id('#{elem_ids[ns_tokens.first]}')/range-to(id('#{elem_ids[ns_tokens.last]}')))"})
 				mf = sentence_feat_list.add_element('multiFeat', {'xlink:href'=>'#sentence_'+sentence_no.to_s})
-				if sentence_node = ns_nodes.select{|k| k.cat == 'meta'}[0]
+				if sentence_node = ns_nodes.select{|k| k.type == 's'}[0]
 					sentence_node.attr.each do |k,v|
 						case k
 							when 'cat', 'sentence'
@@ -157,7 +157,7 @@ class AnnoGraph
 			end
 		end
 		# Sem-Knoten anlegen
-		@nodes.values.select{|k| k['s-layer'] != 't' && !k.token && k.cat != 'meta'}.each_with_index do |node,i|
+		@nodes.values.select{|k| k['s-layer'] != 't' && !k.token && k.type != 's'}.each_with_index do |node,i|
 			elem_ids[node] = 'semNode_' + (i+1).to_s
 			semstruct_list.add_element('struct', {'id'=>elem_ids[node]})
 			mf = semstruct_feat_list.add_element('multiFeat', {'xlink:href'=>'#'+elem_ids[node]})

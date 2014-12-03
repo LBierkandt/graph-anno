@@ -53,9 +53,9 @@ class GraphDisplay
 		satzinfo = {:textline => '', :meta => ''}
 
 		nodes = @graph.nodes.values.select{|n| n.sentence == @sentence}
-		@meta = nodes.select{|n| n.cat == 'meta'}[0]
+		@meta = nodes.select{|n| n.type == 's'}[0]
 		@tokens = if tok = nodes.select{|n| n.token}[0] then tok.sentence_tokens else [] end
-		@nodes = nodes.select{|n| !n.token && n.cat != 'meta'}
+		@nodes = nodes.select{|n| n.type != 't' && n.type != 's'}
 		@edges = (@tokens + @nodes).map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'g'}
 		t_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 't'}
 
@@ -172,14 +172,9 @@ class GraphDisplay
 		label = ''
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr} + ['sentence']).include?(k)}
 		if e.kind_of?(Node)
-			if e.cat == 'meta'
+			if e.type == 's'
 				display_attr.each do |key,value|
-					case key
-						when 'cat'
-							label += ''
-						else
-							label += "#{key}: #{value}<br/>"
-					end
+					label += "#{key}: #{value}<br/>"
 				end
 			elsif e.token
 				display_attr.each do |key, value|

@@ -373,11 +373,11 @@ class GraphController
 				end
 
 			when 'ns' # create new sentence
-				metaknoten = @graph.nodes.values.select{|k| k.cat == 'meta'}
+				sentence_nodes = @graph.nodes.values.select{|k| k.type == 's'}
 
 				parameters[:words].each do |ns|
-					if metaknoten.select{|k| k.sentence == ns}.empty?
-						@graph.add_node(:attr => {'cat' => 'meta', 'sentence' => ns})
+					if sentence_nodes.select{|k| k.sentence == ns}.empty?
+						@graph.add_node(:type => 's', :attr => {'sentence' => ns})
 					end
 				end
 

@@ -51,7 +51,7 @@ class NodeOrEdge
 	end
 
 	def meta
-		@graph.nodes.values.select{|n| n.sentence == self.sentence && n.cat == 'meta'}[0]
+		@graph.nodes.values.select{|n| n.sentence == self.sentence && n.type == 's'}[0]
 	end
 
 end
@@ -285,7 +285,7 @@ class AnnoGraph < SearchableGraph
 				k.attr.delete('tokenid')
 			end
 			if version < 2
-				# 'meta'-Node für jeden Satz
+				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
 				self.sentences.each do |ns|
 					if sect_nodes.select{|k| k.sentence == ns}.empty?
@@ -392,7 +392,7 @@ class AnnoGraph < SearchableGraph
 		id_length = sentences.length.to_s.length
 		sentences.each_with_index do |s, i|
 			sentence_id = "%0#{id_length}d" % i
-			sentence_node = add_node(:attr => {'cat' => 'meta', 'sentence' => sentence_id})
+			sentence_node = add_node(:type => 's', :attr => {'sentence' => sentence_id})
 			case options['processing_method']
 			when 'regex'
 				words = s.scan(options['tokens']['regex'])

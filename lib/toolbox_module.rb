@@ -106,19 +106,21 @@ class AnnoGraph
 	def baumlesen(ebene, korpusteil, mutter, satznr, letztes_token, sentence = '')
 		korpusteil.each do |element|
 			if ebene == 0 # Wenn Satzebene:
-				element['cat'] = 'meta'
+				type = 's'
 				satznr += 1
 				sentence = element[@recmarker]
 				letztes_token[0] = nil
 			elsif ebene == @tokenebene
+				type = 't'
 				element['token'] = element[@textmarker]
 				element.delete(@textmarker)
 			else
+				type = 'a'
 				element['s-layer'] = 't'
 				element['f-layer'] = 't'
 			end
 			element['sentence'] = sentence
-			neuer_knoten = self.add_node(:attr => element.reject{|s,w| s == 'toechter'})
+			neuer_knoten = self.add_node(:type => type, :attr => element.reject{|s,w| s == 'toechter'})
 			if ebene == @tokenebene
 				if letztes_token[0] then self.add_edge(:type => 't', :start => letztes_token[0], :end => neuer_knoten, :attr => {'sentence'=>sentence}) end
 				letztes_token[0] = neuer_knoten

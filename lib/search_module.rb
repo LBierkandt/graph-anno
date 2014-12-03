@@ -95,7 +95,7 @@ class SearchableGraph < Graph
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
 		if metabedingung = operation_erzeugen(:op => 'and', :arg => operationen['meta'].map{|op| op[:cond]})
-			metaknoten = @nodes.values.select{|k| k.cat == 'meta' && k.fulfil?(metabedingung)}
+			metaknoten = @nodes.values.select{|k| k.type == 's' && k.fulfil?(metabedingung)}
 			satznamen = metaknoten.map{|k| k.sentence}
 			suchgraph.nodes.select!{|id,k| satznamen.include?(k.sentence)}
 			suchgraph.edges.select!{|id,k| satznamen.include?(k.sentence)}
