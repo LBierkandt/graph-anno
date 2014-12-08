@@ -248,7 +248,7 @@ class AnnoGraph < SearchableGraph
 		end
 
 		# ggf. Format aktualisieren
-		if version < 5
+		if version < 7
 			puts 'Updating graph format ...'
 			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
 			(@nodes.values + @edges.values).each do |k|
@@ -271,7 +271,7 @@ class AnnoGraph < SearchableGraph
 				end
 				if version < 7
 					# introduce node types
-					if k.type_of?(Node)
+					if k.kind_of?(Node)
 						if k.token
 							k.type = 't'
 						elsif k['cat'] == 'meta'
@@ -368,7 +368,7 @@ class AnnoGraph < SearchableGraph
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
 	def to_h
 		super.
-			merge('version' => '6').
+			merge('version' => '7').
 			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('search_makros' => @makros_plain)
 	end
