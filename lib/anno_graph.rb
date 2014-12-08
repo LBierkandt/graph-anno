@@ -24,16 +24,6 @@ require_relative 'nlp_module'
 class NodeOrEdge
 	attr_accessor :type
 
-	def initialize(h)
-		super
-		@type = h[:type]
-	end
-
-	# @return [Hash] the element transformed into a hash with all values casted to strings
-	def to_h
-		super.merge(:type => @type)
-	end
-
 	def cat
 		@attr['cat']
 	end
@@ -57,6 +47,16 @@ class NodeOrEdge
 end
 
 class AnnoNode < Node
+
+	def initialize(h)
+		super
+		@type = h[:type]
+	end
+
+	# @return [Hash] the element transformed into a hash with all values casted to strings
+	def to_h
+		super.merge(:type => @type)
+	end
 
 	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
 		if !link
@@ -200,6 +200,16 @@ class AnnoNode < Node
 end
 
 class AnnoEdge < Edge
+
+	def initialize(h)
+		super
+		@type = h[:type]
+	end
+
+	# @return [Hash] the element transformed into a hash with all values casted to strings
+	def to_h
+		super.merge(:type => @type)
+	end
 
 	def fulfil?(bedingung)
 		if @type != 'g' then return false end
