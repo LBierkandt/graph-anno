@@ -98,7 +98,7 @@ class SearchableGraph < Graph
 			metaknoten = @nodes.values.select{|k| k.type == 's' && k.fulfil?(metabedingung)}
 			satznamen = metaknoten.map{|k| k.sentence}
 			suchgraph.nodes.select!{|id,k| satznamen.include?(k.sentence)}
-			suchgraph.edges.select!{|id,k| satznamen.include?(k.sentence)}
+			suchgraph.edges.select!{|id,k| satznamen.include?(k.start.sentence) || satznamen.include?(k.end.sentence)}
 		end
 		
 		# edge

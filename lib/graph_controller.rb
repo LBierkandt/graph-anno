@@ -248,7 +248,7 @@ class GraphController
 			subgraph = {'nodes' => [], 'edges' => []}
 			@display.found[:sentences].each do |sentence|
 				subgraph['nodes'] += @graph.nodes.values.select{|k| k.sentence == sentence}
-				subgraph['edges'] += @graph.edges.values.select{|k| k.sentence == sentence}
+				subgraph['edges'] += subgraph['nodes'].map{|n| n.in + n.out}.flatten.uniq
 			end
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
@@ -286,15 +286,13 @@ class GraphController
 			when 'n' # new node
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
-					properties['sentence'] = @display.sentence
 					properties.merge!(parameters[:attributes])
-					@graph.add_anno_node(:attr => properties)
+					@graph.add_anno_node(:attr => properties, :sentence => @display.sentence)
 				end
 
 			when 'e' # new edge
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
-					properties['sentence'] = @display.sentence
 					properties.merge!(parameters[:attributes])
 					@graph.add_anno_edge(
 						:start => element_by_identifier(parameters[:all_nodes][0]),
@@ -340,8 +338,7 @@ class GraphController
 			when 'p', 'g' # group under new parent node
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
-					properties['sentence'] = @display.sentence
-					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]))
+					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -356,8 +353,7 @@ class GraphController
 			when 'c', 'h' # attach new child node
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
-					properties['sentence'] = @display.sentence
-					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]))
+					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -374,7 +370,7 @@ class GraphController
 
 				parameters[:words].each do |ns|
 					if sentence_nodes.select{|k| k.sentence == ns}.empty?
-						@graph.add_sect_node(:attr => {'sentence' => ns})
+						@graph.add_sect_node(:sentence => ns)
 					end
 				end
 
@@ -401,7 +397,6 @@ class GraphController
 					if index == saetze.length then index -= 2 end
 
 					@graph.nodes.values.select{|k| k.sentence == @display.sentence}.each{|k| k.delete}
-					@graph.edges.values.select{|k| k.sentence == @display.sentence}.each{|k| k.delete}
 
 					# change to next sentence
 					@display.sentence = saetze[index]

@@ -136,7 +136,6 @@ class AnnoGraph
 			# Attribute
 			attribute = kante.attr.reject do |s,w|
 				[
-					'sentence',
 					'f-layer',
 					's-layer'
 				].include?(s)
@@ -202,7 +201,6 @@ class AnnoGraph
 		# Attribute
 		attribute = knot.attr.reject do |s,w|
 			[
-				'sentence',
 				'token',
 				'f-layer',
 				's-layer',

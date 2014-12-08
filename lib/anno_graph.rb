@@ -32,14 +32,6 @@ class NodeOrEdge
 		@attr['cat'] = arg
 	end
 
-	def sentence
-		@attr['sentence']
-	end
-
-	def sentence=(arg)
-		@attr['sentence'] = arg
-	end
-
 	def meta
 		@graph.nodes.values.select{|n| n.sentence == self.sentence && n.type == 's'}[0]
 	end
@@ -47,15 +39,17 @@ class NodeOrEdge
 end
 
 class AnnoNode < Node
+	attr_accessor :sentence
 
 	def initialize(h)
 		super
 		@type = h[:type]
+		@sentence = h[:sentence]
 	end
 
 	# @return [Hash] the element transformed into a hash with all values casted to strings
 	def to_h
-		super.merge(:type => @type)
+		super.merge(:type => @type, :sentence => @sentence)
 	end
 
 	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
@@ -191,7 +185,7 @@ class AnnoNode < Node
 		if self.token
 			s = self.sentence
 			if self.token_before && self.token_after
-				@graph.add_order_edge(:start => self.token_before, :end => self.token_after, :attr => {'sentence' => s})
+				@graph.add_order_edge(:start => self.token_before, :end => self.token_after)
 			end
 			self.delete
 		end
@@ -290,16 +284,18 @@ class AnnoGraph < SearchableGraph
 						else
 							k.type = 'a'
 						end
+						k.sentence = k['sentence']
 					end
+					k.attr.delete('sentence')
+					k.attr.delete('tokenid')
 				end
-				k.attr.delete('tokenid')
 			end
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
 				self.sentences.each do |ns|
 					if sect_nodes.select{|k| k.sentence == ns}.empty?
-						self.add_sect_node(:attr => {'sentence' => ns})
+						self.add_sect_node(:sentence => ns)
 					end
 				end
 			end
@@ -409,15 +405,15 @@ class AnnoGraph < SearchableGraph
 			last_token = self.sentence_tokens(sentence)[-1]
 		end
 		words.each do |word|
-			token_collection << self.add_token_node(:attr => {'token' => word, 'sentence' => sentence})
+			token_collection << self.add_token_node(:attr => {'token' => word}, :sentence => sentence)
 		end
 		# This creates relationships between the tokens in the form of 1->2->3->4
 		token_collection[0..-2].each_with_index do |token, index|
-			self.add_order_edge(:start => token, :end => token_collection[index+1], :attr => {'sentence' => sentence})
+			self.add_order_edge(:start => token, :end => token_collection[index+1], :sentence => sentence)
 		end
 		# If there are already tokens, append the new ones
-		if last_token then self.add_order_edge(:start => last_token, :end => token_collection[0], :attr => {'sentence' => sentence}) end
-		if next_token then self.add_order_edge(:start => token_collection[-1], :end => next_token, :attr => {'sentence' => sentence}) end
+		if last_token then self.add_order_edge(:start => last_token, :end => token_collection[0], :sentence => sentence) end
+		if next_token then self.add_order_edge(:start => token_collection[-1], :end => next_token, :sentence => sentence) end
 		if last_token && next_token then self.edges_between(last_token, next_token){|e| e.type == 't'}[0].delete end
 		return token_collection
 	end
@@ -444,7 +440,7 @@ class AnnoGraph < SearchableGraph
 		id_length = sentences.length.to_s.length
 		sentences.each_with_index do |s, i|
 			sentence_id = "%0#{id_length}d" % i
-			sentence_node = add_sect_node(:attr => {'sentence' => sentence_id})
+			sentence_node = add_sect_node(:sentence => sentence_id)
 			case options['processing_method']
 			when 'regex'
 				words = s.scan(options['tokens']['regex'])

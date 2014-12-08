@@ -99,7 +99,7 @@ class AnnoGraph
 				mf = tok_feat_list.add_element('multiFeat', {'xlink:href'=>'#'+elem_ids[tok]})
 				tok.attr.each do |k,v|
 					case k
-						when 'token', 'sentence'
+						when 'token'
 						else
 							mf.add_element('feat', {'name' => k, 'value' => v})
 					end
@@ -113,7 +113,7 @@ class AnnoGraph
 				if sentence_node = ns_nodes.select{|k| k.type == 's'}[0]
 					sentence_node.attr.each do |k,v|
 						case k
-							when 'cat', 'sentence'
+							when 'cat'
 							else
 								mf.add_element('feat', {'name' => k, 'value' => v})
 						end
@@ -130,7 +130,7 @@ class AnnoGraph
 			mf = synstruct_feat_list.add_element('multiFeat', {'xlink:href'=>'#'+elem_ids[node]})
 			node.attr.each do |k,v|
 				case k
-					when 'sentence', 's-layer', 'f-layer'
+					when 's-layer', 'f-layer'
 					else
 						mf.add_element('feat', {'name' => k, 'value' => v})
 				end
@@ -149,7 +149,7 @@ class AnnoGraph
 				mf = domrel_feat_list.add_element('multiFeat', {'xlink:href'=>'#rel_'+rel_no.to_s})
 				edge.attr.each do |k,v|
 					case k
-						when 'sentence', 's-layer', 'f-layer'
+						when 's-layer', 'f-layer'
 						else
 							mf.add_element('feat', {'name' => k, 'value' => v})
 					end
@@ -163,7 +163,7 @@ class AnnoGraph
 			mf = semstruct_feat_list.add_element('multiFeat', {'xlink:href'=>'#'+elem_ids[node]})
 			node.attr.each do |k,v|
 				case k
-					when 'sentence', 's-layer', 'f-layer'
+					when 's-layer', 'f-layer'
 					else
 						mf.add_element('feat', {'name' => k, 'value' => v})
 				end
@@ -190,7 +190,7 @@ class AnnoGraph
 			mf = rel_feat_list.add_element('multiFeat', {'xlink:href'=>'#'+rel_id})
 			edge.attr.each do |k,v|
 				case k
-					when 'sentence', 's-layer', 'f-layer'
+					when 's-layer', 'f-layer'
 					else
 						mf.add_element('feat', {'name' => k, 'value' => v})
 				end

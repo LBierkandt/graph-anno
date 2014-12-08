@@ -170,7 +170,7 @@ class GraphDisplay
 
 	def build_label(e, i = nil)
 		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr} + ['sentence']).include?(k)}
+		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
 		if e.kind_of?(Node)
 			if e.type == 's'
 				display_attr.each do |key,value|
