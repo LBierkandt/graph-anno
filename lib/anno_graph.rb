@@ -68,20 +68,24 @@ class AnnoNode < Node
 	end
 
 	def sentence_tokens # Alle Tokens desselben Satzes
-		if @attr['token']
-			tokens = [self]
-			tok = self
-			while tok = tok.node_before
-				tokens.unshift(tok)
-			end
-			tok = self
-			while tok = tok.node_after
-				tokens.push(tok)
-			end
-			return tokens
+		if @type == 't'
+			ordered_sister_nodes
 		else
-			return @graph.sentence_tokens(self.sentence)
+			@graph.sentence_tokens(self.sentence)
 		end
+	end
+
+	def ordered_sister_nodes
+		nodes = [self]
+		node = self
+		while node = node.node_before
+			nodes.unshift(node)
+		end
+		node = self
+		while node = node.node_after
+			nodes.push(node)
+		end
+		return nodes
 	end
 
 	def sentence_text
@@ -302,6 +306,13 @@ class AnnoGraph < SearchableGraph
 					end
 				end
 			end
+			if version < 7
+				# OrderEdges for SectNodes
+				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a.sentence <=> b.sentence}
+				sect_nodes[1..-1].each_with_index do |n, i|
+					add_order_edge(:start => sect_nodes[i - 1], :end => n)
+				end
+			end
 		end
 
 		puts 'Read "' + path + '".'
@@ -397,11 +408,19 @@ class AnnoGraph < SearchableGraph
 		@nodes.values.map{|n| n.sentence}.uniq.sort
 	end
 
-	def sentence_tokens(s)
-		if first_token = @nodes.values.select{|n| n.sentence == s and n.token}[0]
-			return first_token.sentence_tokens
+	def sentence_nodes
+		if first_sect_node = @nodes.values.select{|n| n.type == 's'}[0]
+			first_sect_node.ordered_sister_nodes
 		else
-			return []
+			[]
+		end
+	end
+
+	def sentence_tokens(s)
+		if first_token = @nodes.values.select{|n| n.sentence == s and n.type == 't'}[0]
+			first_token.ordered_sister_nodes
+		else
+			[]
 		end
 	end
 
