@@ -33,7 +33,7 @@ class NodeOrEdge
 	end
 
 	def meta
-		@graph.nodes.values.select{|n| n.sentence == self.sentence && n.type == 's'}[0]
+		@graph.nodes.values.select{|n| n.type == 's' and n.name == self.sentence}[0]
 	end
 
 end
@@ -195,6 +195,11 @@ class AnnoNode < Node
 		end
 	end
 
+	# methods specific for section nodes:
+	
+	def name
+		@sentence
+	end
 end
 
 class AnnoEdge < Edge
@@ -300,15 +305,15 @@ class AnnoGraph < SearchableGraph
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
-				self.sentences.each do |ns|
-					if sect_nodes.select{|k| k.sentence == ns}.empty?
-						self.add_sect_node(:sentence => ns)
+				self.sentences.each do |s|
+					if sect_nodes.select{|k| k.sentence == s}.empty?
+						self.add_sect_node(:sentence => s)
 					end
 				end
 			end
 			if version < 7
 				# OrderEdges for SectNodes
-				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a.sentence <=> b.sentence}
+				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a.name <=> b.name}
 				sect_nodes[1..-1].each_with_index do |n, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => n)
 				end
@@ -405,7 +410,7 @@ class AnnoGraph < SearchableGraph
 	end
 
 	def sentences
-		@nodes.values.map{|n| n.sentence}.uniq.sort
+		sentence_nodes.map{|n| n.name}
 	end
 
 	def sentence_nodes

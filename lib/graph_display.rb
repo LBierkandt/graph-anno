@@ -39,7 +39,7 @@ class GraphDisplay
 	end
 
 	def draw_graph(format, path)
-		puts "Generating graph for sentence \"#{@sentence}\"..."
+		puts "Generating graph for sentence \"#{@sentence.name}\"..."
 
 		viz_graph = GraphViz.new(
 			:G,
@@ -52,7 +52,7 @@ class GraphDisplay
 
 		satzinfo = {:textline => '', :meta => ''}
 
-		nodes = @graph.nodes.values.select{|n| n.sentence == @sentence}
+		nodes = @graph.nodes.values.select{|n| n.sentence == @sentence.name}
 		@meta = nodes.select{|n| n.type == 's'}[0]
 		@tokens = if tok = nodes.select{|n| n.type == 't'}[0] then tok.sentence_tokens else [] end
 		@nodes = nodes.select{|n| n.type != 't' && n.type != 's'}
@@ -222,15 +222,15 @@ class GraphDisplay
 		sentence_string = ''
 		if @found
 			sentence_list.each do |n|
-				if @found[:sentences].include?(n)
-					sentence_string += '<option value="' + n + '" class="found_sentence">' + n + '</option>'
+				if @found[:sentences].include?(n.name)
+					sentence_string += '<option value="' + n.ID + '" class="found_sentence">' + n.name + '</option>'
 				else
-					sentence_string += '<option value="' + n + '">' + n + '</option>'
+					sentence_string += '<option value="' + n.ID+ '">' + n.name + '</option>'
 				end
 			end
 		else
 			sentence_list.each do |n|
-				sentence_string += '<option value="' + n + '">' + n + '</option>'
+				sentence_string += '<option value="' + n.ID + '">' + n.name + '</option>'
 			end
 		end
 		return sentence_string
