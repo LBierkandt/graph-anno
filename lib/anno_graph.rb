@@ -387,6 +387,12 @@ class AnnoGraph < SearchableGraph
 		@conf.merge!(other.conf)
 	end
 
+	def clone
+		new_graph = super
+		new_graph.conf = @conf
+		return new_graph
+	end
+
 	def sentences
 		@nodes.values.map{|n| n.sentence}.uniq.sort
 	end
