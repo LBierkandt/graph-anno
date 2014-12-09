@@ -71,11 +71,11 @@ class AnnoNode < Node
 		if @attr['token']
 			tokens = [self]
 			tok = self
-			while tok = tok.token_before
+			while tok = tok.node_before
 				tokens.unshift(tok)
 			end
 			tok = self
-			while tok = tok.token_after
+			while tok = tok.node_after
 				tokens.push(tok)
 			end
 			return tokens
@@ -159,6 +159,14 @@ class AnnoNode < Node
 		return r
 	end
 
+	def node_before
+		self.parent_nodes{|e| e.type == 'o'}[0]
+	end
+
+	def node_after
+		self.child_nodes{|e| e.type == 'o'}[0]
+	end
+
 	# methods specific for token nodes:
 
 	def token
@@ -173,19 +181,11 @@ class AnnoNode < Node
 		self.sentence_tokens.index(self)
 	end
 
-	def token_before
-		self.parent_nodes{|e| e.type == 't'}[0]
-	end
-
-	def token_after
-		self.child_nodes{|e| e.type == 't'}[0]
-	end
-
 	def remove_token
 		if self.token
 			s = self.sentence
-			if self.token_before && self.token_after
-				@graph.add_order_edge(:start => self.token_before, :end => self.token_after)
+			if self.node_before && self.node_after
+				@graph.add_order_edge(:start => self.node_before, :end => self.node_after)
 			end
 			self.delete
 		end
@@ -206,7 +206,7 @@ class AnnoEdge < Edge
 	end
 
 	def fulfil?(bedingung)
-		if @type != 'g' then return false end
+		if @type != 'a' then return false end
 		super
 	end
 
@@ -285,6 +285,9 @@ class AnnoGraph < SearchableGraph
 							k.type = 'a'
 						end
 						k.sentence = k['sentence']
+					else
+						k.type = 'o' if k.type == 't'
+						k.type = 'a' if k.type == 'g'
 					end
 					k.attr.delete('sentence')
 					k.attr.delete('tokenid')
@@ -345,14 +348,14 @@ class AnnoGraph < SearchableGraph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
 	# @return [Edge] the new edge
 	def add_anno_edge(h)
-		add_edge(h.merge(:type => 'g'))
+		add_edge(h.merge(:type => 'a'))
 	end
 
 	# creates a new order edge and adds it to self
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
 	# @return [Edge] the new edge
 	def add_order_edge(h)
-		add_edge(h.merge(:type => 't'))
+		add_edge(h.merge(:type => 'o'))
 	end
 
 	# creates a new sect edge and adds it to self
@@ -400,7 +403,7 @@ class AnnoGraph < SearchableGraph
 	def build_tokens(words, sentence, next_token = nil)
 		token_collection = []
 		if next_token
-			last_token = next_token.token_before
+			last_token = next_token.node_before
 		else
 			last_token = self.sentence_tokens(sentence)[-1]
 		end
@@ -414,7 +417,7 @@ class AnnoGraph < SearchableGraph
 		# If there are already tokens, append the new ones
 		if last_token then self.add_order_edge(:start => last_token, :end => token_collection[0], :sentence => sentence) end
 		if next_token then self.add_order_edge(:start => token_collection[-1], :end => next_token, :sentence => sentence) end
-		if last_token && next_token then self.edges_between(last_token, next_token){|e| e.type == 't'}[0].delete end
+		if last_token && next_token then self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete end
 		return token_collection
 	end
 

@@ -170,7 +170,7 @@ class AnnoGraph
 			end
 		end
 		# nicht-dominierende Kanten anlegen
-		@edges.values.select{|k| k.type == 'g' && !(k['s-layer'] == 't' && k.start['s-layer'] == 't')}.each_with_index do |edge,i|
+		@edges.values.select{|k| k.type == 'a' && !(k['s-layer'] == 't' && k.start['s-layer'] == 't')}.each_with_index do |edge,i|
 			rel_id = 'rel_' + (i+1).to_s
 			if edge.start.token
 				source = "#{corpus_name}.#{doc_name}.tok.xml##{elem_ids[edge.start]}"

@@ -283,11 +283,11 @@ class SearchableGraph < Graph
 		# Grenzknoten einbauen (das muß natürlich bei einem Graph mit verbundenen Sätzen und mehreren Ebenen anders aussehen)
 		grenzknoten = []
 		@nodes.values.select{|k| k.token}.each do |tok|
-			if !tok.token_before
+			if !tok.node_before
 				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
 				self.add_order_edge(:start => grenzknoten.last, :end => tok)
 			end
-			if !tok.token_after
+			if !tok.node_after
 				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
 				self.add_order_edge(:start => tok, :end => grenzknoten.last)
 			end
@@ -662,7 +662,7 @@ class Automat
 			if neue_zustaende == [] then return nil end
 		
 			# Weiter vorrücken im Text
-			neuer_knoten = neuer_knoten.token_after
+			neuer_knoten = neuer_knoten.node_after
 		end
 	end
 
@@ -740,10 +740,10 @@ class Automat
 		end
 		if nk.kind_of?(Node)
 			tg.nodes << nk
-			nk.out.select{|k| k.type == 'g'}.each do |auskante|
+			nk.out.select{|k| k.type == 'a'}.each do |auskante|
 				liste << {:zustand => naechster_zustand, :tg => tg, :el => auskante, :forward => true}
 			end
-			nk.in.select{|k| k.type == 'g'}.each do |einkante|
+			nk.in.select{|k| k.type == 'a'}.each do |einkante|
 				liste << {:zustand => naechster_zustand, :tg => tg, :el => einkante, :forward => false}
 			end
 		else # wenn nk eine Kante ist
