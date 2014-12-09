@@ -117,7 +117,7 @@ module Expansion
 
 	def apply_shortcuts(sentence = nil, file = nil)
 		searchgraph = self.clone
-		if sentence then searchgraph.filter!('sentence:"'+sentence+'"') end
+		if sentence then searchgraph.nodes.values.each{|n| searchgraph.nodes.delete(n.ID) if n.sentence != sentence} end
 		@expansion_rules[:shortcuts].each do |sc|
 			search = sc[:search]
 			exec = parse_eval(sc[:exec])
