@@ -1,0 +1,766 @@
+\documentclass[12pt]{scrartcl}
+\usepackage{fontspec}
+\usepackage{german}
+\usepackage{linguex}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{framed}
+\usepackage{url}
+\usepackage{xcolor}
+\definecolor{darkblue}{rgb}{0,0,.5}
+\usepackage[pdfpagemode=UseNone, colorlinks=true, allcolors=darkblue]{hyperref}
+
+%\KOMAoptions{BCOR=16mm}
+\KOMAoptions{DIV=10}
+
+
+\setmainfont[WordSpace={1,1.15,1},Numbers=Proportional]{Linux Libertine O}
+\setsansfont[Scale=MatchLowercase]{Linux Biolinum O}
+\setmonofont[Scale=MatchLowercase]{DejaVu Sans Mono}
+
+\textheight22.4cm % 42 Zeilen {\baselinestretch}{1.05}
+% \voffset-4mm
+% %\headsep4mm
+
+
+%\parindent0pt
+%\parsep0ex
+\setkomafont{sectioning}{\rmfamily}%\bfseries}
+%\setcounter{secnumdepth}{1}
+%\setcounter{tocdepth}{2}
+%\qtreecenterfalse
+
+\let\origitemize\itemize
+\def\itemize{\origitemize\itemsep-0.5ex}
+\let\origenumerate\enumerate
+\def\enumerate{\origenumerate\itemsep-0.5ex}
+%\let\origdescr\description
+%\def\description{\origdescr\itemsep-0.5ex}
+\renewcommand{\labelitemi}{–}
+\renewcommand{\labelitemii}{-}
+\newcommand{\anf}[1]{‚#1‘}
+\newcommand{\ti}{\char"223C}
+
+\renewcommand{\textfraction}{0}
+\renewcommand{\topfraction}{1}
+%\renewcommand{\bottomfraction}{1}
+
+\lstset{basicstyle=\renewcommand{\baselinestretch}{1}\tt, aboveskip=0em, belowskip=0em, tabsize=4, xleftmargin=.5em}
+
+
+\title{\LARGE GraphAnno\\ \large Ein Annotations- und Abfragetool\\für graphenbasierte linguistische Annotationen}
+\author{Lennart Bierkandt\\\large Friedrich-Schiller-Universität Jena\\[-.2em]\large post@lennartbierkandt.de}
+\date{Version vom \today}
+
+
+\renewcommand{\glt}{\vspace{-\Extopsep}}
+\renewcommand{\firstrefdash}{}
+\newcommand{\re}{\vspace{-.33\Extopsep}} %{-1.33\Extopsep} für normalen Zeilenabstand bei \ex. mit \gll, 0.66 ohne \gll
+\newcommand{\regll}{\vspace{-\Extopsep}\gll}
+\let\eachwordtwo=\glosse
+\glossglue = 5pt plus 2pt minus 2pt
+
+
+\newenvironment{figurel}{\begin{figure}[htb]\vskip 2ex}{\end{figure}}
+\newenvironment{tablel}{\begin{table}[htb]\vskip 2ex}{\end{table}}
+
+\newenvironment{anmerkung}{\par{\ }\par\sf\color{black!60}\noindent\textbf{Anmerkung:}\par}{\newline\par}
+
+\newcommand{\kommentar}[1]{}
+
+\setlength{\abovecaptionskip}{0ex}
+
+
+
+
+
+
+
+
+\begin{document}
+
+\maketitle
+
+\renewcommand{\baselinestretch}{1.05}\normalsize
+
+\renewcommand{\contentsname}{Inhalt}
+\tableofcontents
+
+
+\section{Graphformat}
+
+Ein Graph in GraphAnno besteht aus einer Menge von Knoten und gerichteten Kanten. Knoten und Kanten haben Attribute in der Form von Schlüssel-Wert-Paaren, die sowohl der linguistischen Annotation als auch der Strukturierung und Darstellung des Graphen in GraphAnno dienen. Kanten tragen zusätzlich ein \texttt{type}-Attribut.
+
+Ein GraphAnno-Graph ist in Sätze eingeteilt – Einheiten die der Strukturierung und Darstellung dienen, aber natürlich nicht unbedingt (wie auch immer definierten) Sätzen entsprechen müssen. Die Information, zu welchem Satz Knoten und Kanten gehören, ist durch das Attribut \texttt{sentence} repräsentiert.
+
+Tokenknoten sind dadurch gekennzeichnet, daß sie ein Attribut \texttt{token} tragen, das den Tokentext enthält. Die Token eines Satzes sind außerdem in ihrer Reihenfolge durch Kanten mit \texttt{type:t} verbunden (andere Kanten sind \texttt{type:g}). Dies dient vor allem der korrekten Darstellung und der Traversierung; für den Benutzer sind diese Kanten unsichtbar, und er kann nicht auf sie zugreifen.
+
+Für Knoten und Kanten gibt es das Attribut \texttt{cat}, das innerhalb von GraphAnno keine besondere Bedeutung trägt, das aber besonders dargestellt wird, nämlich ohne Schlüssel und stets zuoberst.
+Kanten und Knoten tragen keine Nummernattribute. Sie werden für jede generierte Ansicht dynamisch durchnumeriert; diese Nummern dienen der Referenzierung in Annotationsbefehlen und werden in der Form \texttt{t23} für Token, \texttt{n23} für andere Knoten und \texttt{r23} für Kanten angezeigt. 
+
+Ein Satz hat einen Knoten mit dem Attribut \texttt{cat:meta}, der Informationen trägt, die den ganzen Satz betreffen. Hierbei kann es sich z.B. um Angaben von Quelle, Medium, Sprecher etc. handeln. Der Inhalt dieses Knotens wird im hellgrauen Bereich unter dem Annotationsgraphen und unter dem Text des Satzes (blau dargestellt) in schwarzer Schrift angezeigt.
+
+GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Ebenen zuzuordnen. Zur Zeit sind zwei Ebenen implementiert: Eine funktionale/semantische Ebene und eine formale/syntaktische. Zugehörigkeit eines Knoten oder einer Kante zu ersterer wird durch das Attribut \texttt{f-layer:t} wiedergegeben, Zugehörigkeit zu letzterer durch \texttt{s-layer:t}. Elemente, die dem \texttt{f-layer} angehören sind grün dargestellt, Elemente, die dem \texttt{s-layer} angehören, blau, Elemente, die beiden angehören, schwarz und Elemente, die keiner Ebene angehören, grau. Token sind keiner Ebene zugeordnet und werden schwarz dargestellt.
+
+%Schließlich tragen Kanten noch das Attribut \texttt{edgetype}, das – in Anlehnung an andere Korpusformate – den Wert \texttt{p} (für \textit{primär}) oder \texttt{s} (für \textit{sekundär}) annehmen kann. Dieses Attribut dient der Darstellung, und zwar insofern als Kanten mit dem Attribut \texttt{edgetype:p} nach Möglichkeit kürzer dargestellt werden. Die Werte für \texttt{edgetype} sind an die Ebene gekoppelt: Kanten, die der \texttt{s-ebene} angehören sind \texttt{edgetype:p}, alle anderen \texttt{edgetype:s}.
+
+\paragraph*{Die speziellen Attribute im Überblick:}
+\begin{itemize}
+	\item {\tt sentence}: Satz, dem Knoten und Kanten angehören
+	\item {\tt token}: enthält den Text von Tokenknoten
+	\item {\tt cat}: privilegiertes Attribut
+	\item {\tt f-layer}: Zugehörigkeit zur funktionalen/semantischen Ebene
+	\item {\tt s-layer}: Zugehörigkeit zur formalen/syntaktischen Ebene
+	%\item {\tt edgetype}: Kantentyp zur unterschiedlichen Darstellung
+\end{itemize}
+
+
+
+
+
+\section{Tastaturbefehle}
+
+Einige Navigation und Ansicht betreffende Funktionen von GraphAnno werden direkt über Tastenbefehle angesprochen. Nachfolgend eine Tabelle der verfügbaren Befehle:
+
+\begin{center}
+	\begin{tabular*}{\textwidth}{ll}
+		\toprule
+		Tastenkombination & Funktion \\
+		\midrule
+		Navigation & \\
+		\midrule
+			Alt + ←/→ & vorheriger/nächster Satz \\
+			Alt + Pos1/Ende & erster/letzter Satz \\
+		\midrule
+		Graph & \\
+		\midrule
+			Strg + Umschalt + −/+ & Graph verkleinern/vergrößern \\
+			Strg + Umschalt + 0 & Graph einpassen (bzgl. der Höhe) \\
+			Strg + Umschalt + Pfeile & Graph verschieben \\
+			Strg + Umschalt + Pos1/Ende & an den linken/rechten Rand des Graphen \\
+			Strg + Umschalt + Bild↑/Bild↓ & an den oberen/unteren Rand des Graphen \\
+			F4 & Elementnumerierung im Graphen an-/ausschalten\\
+		\midrule
+		Fenster & \\
+		\midrule
+			F1 & Hilfefenster zeigen/verbergen\\
+			F2 & Text und Satzannotationen zeigen/verbergen\\
+			F4 & Knoten- und Kanten-IDS zeigen/verbergen\\
+			F6 & Filterfenster zeigen/verbergen\\
+			F7 & Suchfenster zeigen/verbergen\\
+			F8 & Einstellungsfenster zeigen/verbergen\\
+		\bottomrule
+	\end{tabular*}
+\end{center}
+
+
+
+
+
+\section{Kommandozeilenbefehle}
+
+\subsection{Daten und Navigation}
+
+\subsubsection{Datei laden: \texttt{load}}
+
+Eine Graphdatei wird mit dem Befehl \texttt{load} in den Arbeitsbereich geladen. Der Dateiname wird ohne die Dateiendung \texttt{.json} angegeben (enthält er Leerzeichen, so muß er in doppelte Anführungszeichen eingeschlossen werden: \texttt{\char"0022...\char"0022}). Alle Dateien werden aus dem Verzeichnis \texttt{data} im GraphAnno-Programmordner geladen. Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen dabei verloren.
+Welche Datei geladen wurde, wird neben der Eingabeleiste angezeigt.
+
+
+\subsubsection{Datei laden: \texttt{add}}
+
+Mit dem Befehl \texttt{add} kann wie mit \texttt{load} eine Datei in den Arbeitsbereich geladen werden. Der Unterschied ist, daß der Arbeitsbereich zuvor nicht geleert wird; die neu geladene Datei wird dem Arbeitsbereich hinzugefügt. Achtung: Die Dateien können dann nicht mehr einzeln gespeichert werden, und wenn die gleichen Satznamen sowohl im Arbeitsbereich als auch in der neu geladenen Datei vorhanden sind, werden unter diesen Namen jeweils beide Sätze angezeigt, was zu Problemen bei der weiteren Bearbeitung führt.
+Neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+
+
+\subsubsection{Datei speichern: \texttt{save}}
+
+Mit dem Befehl \texttt{save} wird der gesamte Arbeitsbereich in eine Datei gespeichert. Der Dateiname wird wie beim Laden angegeben, die Datei wird im \texttt{data}-Ordner gespeichert. Wenn neben der Eingabeleiste ein Dateiname angezeigt wird, kann der Arbeitsbereich unter diesem Namen gespeichert werden, ohne den Namen eigens anzugeben.
+
+
+\subsubsection{Arbeitsbereich leeren: \texttt{clear}}
+
+Mit dem Befehl \texttt{clear} werde alle Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen verloren.
+Neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+
+
+\subsubsection{Neuen Satz anlegen: \texttt{ns}}
+
+Mit \texttt{ns} – gefolgt von mit Leerzeichen getrennten anzulegenden Namesräumen – werden ein oder mehrere neue Sätze angelegt. Dabei werden neue Meta-Knoten mit dem entsprechenden \texttt{sentence}-Attribut erstellt. Anschließend wird sofort in den ersten angegebenen Satz gewechselt.
+
+
+\subsubsection{Satz löschen: \texttt{del}}
+
+Mit dem Befehl \texttt{del} werden alle Elemente des gegenwärtig angezeigten Satzes gelöscht.
+
+
+\subsubsection{Gehe zu: \texttt{s}}
+
+Um von Satz zu Satz zu navigieren dient (neben dem Aufklappfeld, das auf Änderungen reagiert) der Befehl \texttt{s}, gefolgt vom Namen des anzuzeigenden Satzes.
+
+
+\subsubsection{Graphik exportieren: \texttt{image}}
+
+Um die Graphik, die GraphAnno für den aktuellen Satz anzeigt, zu exportieren, dient der Befehl \texttt{image}. Als erstes Argument wird das gewünschte Format angegeben. Zur Verfügung stehen alle von Graphviz unterstützten Formate, u.a. \texttt{dot}, \texttt{eps}, \texttt{pdf}, \texttt{png} und \texttt{svg}. Die vollständige Liste ist hier einzusehen: \url{http://www.graphviz.org/content/output-formats}. Das zweite Argument ist der Name der zu erstellenden Datei (ohne Endung; enthält der Name Leerzeichen, so muß er in doppelten Anführungsstrichen angegeben werden). Die Graphik wird im Ordner \texttt{images} gespeichert.
+
+
+\subsubsection{Korpus exportieren: \texttt{export}}
+
+Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige verfügbare Format \texttt{paula}), das zweites Argument ist der Name des Korpus, als drittes Argument kann optional der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
+
+
+\subsubsection{Text importieren}
+
+Texte können mit dem Befehl \texttt{import} importiert werden.
+
+Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+
+\subsubsection{Toolboxdaten importieren}
+
+Toolboxdateien können mit dem Befehl \texttt{import toolbox} importiert werden. Es öffnet sich ein Fenster, in dem die einzulesende Datei ausgewählt und die Formatbeschreibung eingegeben werden kann. Die Formatbeschreibung wird im JSON-Format angegeben und besteht aus einer Liste von Listen von Markern. Die Listen sind nach Ebenen sortiert – die höchste (\textit{record}) zuerst – und enthalten die der entsprechenden Ebene zugehörigen Marker (ohne Schrägstich). Als Record-ID wird der erste Marker der ersten Ebene (im Bsp. unten \texttt{ref}) verwendet. Dem Marker, auf dessen Grundlage die Token erstellt werden sollen, wird ein Stern vorangestellt. Elemente, die unter der Tokenebene liegen, werden zusammengefügt und in die jeweiligen Token integriert.
+
+Eine Formatbeschreibung für eine Toolboxdatei mit drei Ebenen (Record, Wort, Morphem) könnte z.B. folgendermaßen aussehen:
+\begin{verbatim}
+  [["ref", "eng"], ["*gw"], ["mph", "ge", "ps"]]
+\end{verbatim}
+
+Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+
+
+\subsection{Annotationsbefehle}
+
+Die Annotationsbefehle von GraphAnno sind darauf ausgerichtet, daß sie möglichst schnell einzugeben sind. Daher ist ihre Syntax entsprechend reduziert: Sie bestehen aus einem kurzen Befehl (oft nur ein Buchstabe) gefolgt von Parametern, die durch Leerzeichen getrennt sind.
+
+
+\subsubsection{Neuer Knoten: \texttt{n}}
+
+Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\char"0022})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022...\char"0022}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
+Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll. Dazu dienen die auch für den Befehl \texttt{l} (siehe \ref{l}) geltenden Kürzel \texttt{f}, \texttt{s} und \texttt{fs}. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt.
+        %li new node: <i>n key:value key:value ...</i>
+        %ul
+          %li n typ:S ill:decl tns:prs
+
+\paragraph*{Befehl \texttt{n} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_n        =   "n " attribute
+attribute       =   attribute " " attribute
+                    attribut
+                    ebenenschalter
+attribut        =   schlüssel zeichenkette
+schlüssel       =   zeichenkette ":"
+zeichenkette    =   zeichen_außer_steuerzeichen+
+                    """ beliebiges_zeichen* """
+ebenenschalter  =   "f" | "s" | "fs"
+\end{lstlisting}
+\end{framed}
+
+
+\subsubsection{Neue Kante: \texttt{e}}
+
+Der Befehl zum Anlegen einer neuen Kante lautet \texttt{e}, gefolgt vom Start- und Zielknoten der zu erstellenden  Kante und den Attributen, die sie erhalten soll. Auch die Angabe einer Ebene wie bei \texttt{n} ist möglich.
+        %li new edge: <i>e start end key:value key:value ...</i>
+        %ul
+          %li e n2 n4 typ:re level:fct
+
+\paragraph*{Befehl \texttt{e} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_e       =   "e " start_ziel " " start_ziel " " attribute
+start_ziel     =   knotenreferenz
+                   tokenreferenz
+knotenreferenz =   "n" zahl
+tokenreferenz  =   "t" zahl
+\end{lstlisting}
+\end{framed}
+
+
+\subsubsection{Annotieren: \texttt{a}}
+
+Der Befehl zum Annotieren beliebiger Elemente ist \texttt{a}, gefolgt von den zu annotierenden Elementen und Attributen, mit denen sie annotiert werden sollen (alle angegeben Elemente werden mit allen angegebenen Attributen versehen). Die Reihenfolge einzelner Elemente und Attribute ist beliebig. Es können auch Sequenzen von Elementen eines Typs (also \texttt{n}, \texttt{e} oder \texttt{t}) durch Verbinden mit zwei Punkten angegeben werden; beispielsweise werden bei Angabe von \texttt{t3..t7} alle Token von \texttt{t3} bis \texttt{t7} annotiert (die Sequenz kann auch umgekehrt angegeben werden, also \texttt{t7..t3}).
+
+Gleichzeitig können mit dem Befehl \texttt{a} Attribute gelöscht werden. Dazu wird der zu löschende Schlüssel mit Doppelpunkt, aber ohne Wert angegeben.
+        %li annotate: <i>a target target ... key:value key:value ...</i>
+          %li a r2 n21 t4 abc:def ghi:jkl
+          %li a m trans:"Ganz Gallien ist in drei Teile geteilt"
+
+\paragraph*{Befehl \texttt{a} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_a            =   "a " a_parameter
+a_parameter         =   a_parameter " " a_parameter
+                        elementreferenz
+                        attribute
+                        schlüssel
+elementreferenz     =   knotenreferenz
+                        kantenreferenz
+                        tokenreferenz
+                        metaknotenreferenz
+                        elementsequenz
+kantenreferenz      =   "e" zahl
+metaknotenreferenz  =   "m"
+elementsequenz      =   knotensequenz
+                        tokensequenz
+                        kantensequenz
+knotensequenz       =   knotenreferenz ".." knotenreferenz
+tokensequenz        =   tokenreferenz ".." tokenreferenz
+kantensequenz       =   kantenreferenz ".." kantenreferenz
+\end{lstlisting}
+\end{framed}
+
+
+
+
+\subsubsection{Elemente löschen: \texttt{d}}
+
+Gelöscht werden Elemente mit dem Befehl \texttt{d}, gefolgt von den zu löschenden Elementen. Werden Knoten gelöscht, werden Ein- und Ausgehende Kanten dieses Knotens ebenfalls gelöscht. Beim Löschen von Tokenknoten aus der Mitte eines Satzes wird die Verbindung zwischen den Token rechts und links des gelöschten Tokens wieder hergestellt.
+        %li delete: <i>d target target ...</i>
+        %ul
+          %li d n21 r12 t7
+\paragraph*{Befehl \texttt{d} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_d        =   "d " d_parameter
+d_parameter     =   d_parameter " " d_parameter
+                    elementreferenz
+\end{lstlisting}
+\end{framed}
+
+
+\subsubsection{Knoten unter neuem Mutterknoten gruppieren: \texttt{g} oder \texttt{p}}
+
+Der Gruppierbefehl \texttt{g} oder \texttt{p} erstellt einen neuen Mutterknoten für die angegebenen Knoten. D.h. es wird ein neuer Knoten erstellt und Kanten erzeugt, die diesen mit den zu gruppierenden Knoten verbindet. Die Parameter des Befehls sind die zu gruppierenden Knoten und die Attribute, mit denen der neue Knoten annotiert werden soll. Die Reihenfolge von Knoten und Attributen ist irrelevant. Auch die Angabe einer Ebene wie bei \texttt{n} ist möglich.
+        %li group nodes under new mother node: <i>g node node ... key:value key:value ...</i>
+        %ul
+          %li g t1 t2 n0 typ:S tns:prs
+\paragraph*{Befehl \texttt{g} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_g            =   "g " g_parameter
+g_parameter         =   g_parameter " " g_parameter
+                        knotenreferenz
+                        tokenreferenz
+                        knotensequenz
+                        tokensequenz
+                        attribut
+                        ebenenschalter
+\end{lstlisting}
+\end{framed}
+
+
+\subsubsection{Tochterknoten anhängen: \texttt{h} oder \texttt{c}}
+
+Der Befehl \texttt{h}/\texttt{c} funktioniert wie \texttt{g}/\texttt{p}, mit dem Unterschied, daß anstelle eines Mutterknotens ein neuer gemeinsamer Tochterknoten erstellt wird.
+        %li attach new node: <i>h node1 node2 ... key:value key:value ...</i>
+        %ul
+          %li h n2 n4 typ:R
+\paragraph*{Befehl \texttt{h} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_h            =   "h " h_parameter
+h_parameter         =   h_parameter " " h_parameter
+                        knotenreferenz
+                        tokenreferenz
+                        knotensequenz
+                        tokensequenz
+                        attribut
+                        ebenenschalter
+\end{lstlisting}
+\end{framed}
+
+
+\subsubsection{Tokenisieren: \texttt{t} und \texttt{ti}}
+
+Zum Eingeben von Token gibt es die Befehle \texttt{t} und \texttt{ti}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{ti} nimmt als erstes Argument noch eine Tokenreferenz und fügt die neuen Token davor ein.
+
+Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\char"0022}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022...\char"0022}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
+
+\paragraph*{Befehle \texttt{t} und \texttt{ti} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_t        =   "t " wörter
+wörter          =   wörter " " wörter
+                    wort
+wort            =   zeichen_außer_steuerzeichen+
+                    """ beliebiges_zeichen* """
+
+befehl_ti       =   "ti " tokenreferenz " " wörter
+\end{lstlisting}
+\end{framed}
+
+
+\subsubsection{Ebenen setzen: \texttt{l}}\label{l}
+
+Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. \texttt{f} steht hier für die funktionale/semantische Ebene, \texttt{s} für die formale/morphosyntaktische, und \texttt{fs} für beide.
+
+\paragraph*{Befehl \texttt{l} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_l    =   "l " ebenenschalter
+\end{lstlisting}
+\end{framed}
+
+
+
+
+
+
+
+
+
+\section{Abfragesprache}
+
+\subsection{Suche}
+
+Das Prinzip der Graphsuche von GraphAnno besteht darin, mit einer Menge von Klauseln ein Graphfragment zu beschreiben. Bei der Suche werden dann alle Teilgraphen des durchsuchten Korpusgraphen gefunden, die dieser Beschreibung entsprechen.
+Es stehen die Klauseln \texttt{node}, \texttt{nodes}, \texttt{edge}, \texttt{link}, \texttt{text}, \texttt{meta}, \texttt{cond} und \texttt{def} zur Verfügung, wobei eine Anfrage mindestens eine \texttt{node}- oder \texttt{text}-Klausel oder eine unverbundene \texttt{edge}-Klausel enthalten muß. Die Klauseln werden in den folgenden Abschnitten im einzelnen beschrieben.
+
+Die einzelnen Klauseln werden in beliebiger Reihenfolge in jeweils eine eigene Zeile geschrieben; Einrückungen und Leerzeilen werden nicht interpretiert. Kommentare werden durch Voranstellen eines Doppelkreuzes \texttt{\#} markiert.
+
+
+
+\subsubsection{\texttt{node}}\label{node}
+
+Die \texttt{node}-Klausel beschreibt einen Knoten, der im Graphfragment genau einmal vorkommen soll. Die Klausel besteht aus dem Schlüsselwort \texttt{node}, einer optionalen ID und einer Attributbeschreibung.
+
+Die ID besteht aus einem \texttt{@} gefolgt von einer Zeichenkette, die aus alphanumerischen Zeichen und dem Unterstrich besteht. Unter der ID kann der Knoten in anderen Teilen der Suchanfrage referenziert werden.
+
+Die Attributbeschreibung besteht aus Schlüssel-Wert-Paaren der Form \texttt{schlüssel:""wert}, die mit den logischen Operatoren \texttt{!} für „nicht“, \texttt{\&} für „und“ und \texttt{|} für „oder“ (Bindungsstärke: \texttt{!} > \texttt{\&} > \texttt{|}) sowie Klammerung mit runden Klammern verknüpft sind. Als Abkürzung für Disjunktionen von Schlüssel-Wert-Paaren mit dem gleichen Schlüssel steht die Form \texttt{schlüssel:wert1|wert2|...|wertn} zur Verfügung.
+
+Der Schlüssel eines Schlüssel-Wert-Paares kann entweder als einfache Zeichenkette angegeben werden, wenn er keines der in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\"/?+*\{\}@\#\^{}}) enthält, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022xyz\char"0022}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
+
+Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art und Weise angegeben werden können. Die erste Variante sind einfache umarkierte Zeichenketten, die alle Zeichen außer den in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\"/?+*\{\}@\#\^{}}) enthalten dürfen. Diese Zeichenketten werden bei der Suche ohne Beachtung von Groß- und Kleinschreibung verglichen.
+Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{\char"0022xyz\char"0022}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen. 
+Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/} und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit \texttt{//} gefunden werden.
+
+Des weiteren kann die Attributbeschreibung Kriterien für ein- und ausgehende Kanten enthalten. Diese bestehen aus dem Schlüsselwort \texttt{in} bzw. \texttt{out}, einer optionalen Attributbeschreibung in runden Klammern und einem optionalen Quantor. Der Operator \texttt{in} bzw. \texttt{out} findet alle ein- bzw. ausgehenden Kanten mit den angegebenen Attributen, der Quantor gibt an, wieviele Kanten der spezifizierten Art vorhanden sein dürfen und ist (syntaktisch) wie bei regulären Ausdrücken definiert: \texttt{\{m,n\}} für mindestens m-mal, höchstens n-mal; bei Auslassung der ersten Zahl wird 0 angenommen, bei Auslassung der zweiten unendlich. \texttt{\{n\}} steht für genau n mal. Des weiteren gibt es die Abkürzungen \texttt{?} für \texttt{\{0,1\}}, \texttt{*} für \texttt{\{0,\}} und \texttt{+} für \texttt{\{1,\}}.
+Anders als von regulären Ausdrücken gewohnt (und anders als beim Auftreten von Quantoren in anderen Kontexten der GraphAnno-Abfragesprache), wird das Fehlen eines Quantors hier als \texttt{\{1,\}} interpretiert.
+
+Für die Kanten wiederum können – zusätzlich zu den einfachen Attributen – über die Schlüsselwörter \texttt{start} bzw. \texttt{end} und Attributbeschreibungen in runden Klammern auch Eigenschaften des Start- bzw. Zielknoten angegeben werden.
+
+Ähnlich wie \texttt{in} und \texttt{out} funktioniert \texttt{link}, jedoch werden damit nicht nur ein- und ausgehenden Kanten abgefragt, sondern (ggf.) komplexere Verbindungen zu anderen Knoten. Wie diese Verbindungen spezifiziert werden, ist in \ref{link} beschrieben. Auch für \texttt{link} gelten die Regeln für Quantoren, wie für \texttt{in} und \texttt{out} beschrieben.
+
+\paragraph*{Die \texttt{node}-Klausel in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+node-klausel    =   "node" id? " " knotenattribute
+id              =   "@" alphanumerisches_zeichen+
+knotenattribute =   knotenattribute " & " knotenattribute
+                    knotenattribute " | " knotenattribute
+                    "!" knotenattribute
+                    "(" knotenattribute ")"
+                    attribut
+                    kantenkriterium
+attribut        =   zeichenkette ":" attributwert ("|" attributwert)*
+zeichenkette    =   zeichen_außer_steuerzeichen+
+                    """ beliebiges_zeichen* """
+attributwert    =   zeichen_außer_steuerzeichen+
+                    """ beliebiges_zeichen* """
+                    "/" regulärer_ausdruck "/"
+kantenkriterium =   "in" ("(" kantenattribute ")")? quantor?
+                    "out" ("(" kantenattribute ")")? quantor?
+                    "link" ("(" verbindung ")") quantor?
+quantor         =   "?" | "*" | "+" | "{" zahl? ("," zahl?) "}"
+kantenattribute =   kantenattribute " & " kantenattribute
+                    kantenattribute " | " kantenattribute
+                    "!" kantenattribute
+                    "(" kantenattribute ")"
+                    attribut
+                    knotenkriterium
+knotenkriterium =   "start" ("(" knotenattribute ")")
+                    "end" ("(" knotenattribute ")")
+\end{lstlisting}
+\end{framed}
+
+
+\paragraph*{Beispiele:}
+\begin{itemize}
+	\item Suche alle Knoten, die die Kategorie S oder VP haben und keine Token sind:\\
+	{\tt node cat:S|VP \& !token://}
+	\item Suche alle Knoten, die von der Kategorie VP sind oder Token mit dem pos-Wert verb:\\
+	{\tt node cat:VP | token:// \& pos:verb}
+	\item Suche alle Knoten der Kategorie S, die mindestens zwei ausgehende AUX-Kanten haben:\\
+	{\tt node cat:S \& out(cat:AUX)\{2,\}}
+	\item Suche alle Knoten der Kategorie S, die mindestens einen Knoten mit dem pos-Wert pro dominieren:\\
+	{\tt node cat:S \& out(end(pos:pro))}
+\end{itemize}
+
+
+
+\subsubsection{\texttt{nodes}}
+
+Die \texttt{nodes}-Klausel beschreibt eine Menge von Knoten, die im Graphfragment enthalten sein sollen; die Menge kann jedoch auch leer sein. Die \texttt{nodes}-Klausel hat, abgesehen vom Schlüsselwort,  die gleiche Syntax wie die \texttt{node}-Klausel.
+
+\paragraph*{Die \texttt{nodes}-Klausel in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+nodes-klausel    =   "nodes" id? " " knotenattribute
+\end{lstlisting}
+\end{framed}
+
+
+
+
+
+
+\subsubsection{\texttt{edge}}\label{edge}
+
+Die \texttt{edge}-Klausel hat zwei Anwendungen. Zum einen kann sie verwendet werden, um einzelne Kanten zu suchen. Dann besteht die Klausel aus dem Schlüsselwort \texttt{edge}, einer optionalen ID, unter die die Kante in der Ausgabe referenziert werden kann, und einer Attributbeschreibung für Kanten wie in \ref{node} beschrieben. Zum anderen dient die \texttt{edge}-Klausel dazu, anzugeben, daß zwischen zwei Knoten bzw. Knotenmengen des Graphfragments (mit \texttt{node} bzw. \texttt{nodes} spezifiziert) eine Kante mit den angegebenen Eigenschaften existieren soll. Dazu werden nach der (optionalen) ID der Kante die IDs von Start und Ziel der Kante angegeben.
+
+Durch die optionale ID und die verschiedenen Verwendungsmöglichkeiten kann das Schlüsselwort \texttt{edge} von null bis drei IDs gefolgt sein. Die Interpretation dieser IDs ergibt sich aus ihrer Anzahl und der Reihenfolge. Eine ID: ID der Kante selber; zwei IDs: Start und Ziel der Kante; drei IDs: ID der Kante, Start und Ziel.
+
+
+\paragraph*{Die \texttt{edge}-Klausel in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+edge-klausel    =   "edge" id? (id id)? " " kantenattribute
+\end{lstlisting}
+\end{framed}
+
+
+\paragraph*{Beispiele:}
+\begin{itemize}
+	\item Suche alle Kanten die die syntaktische Funktion Subjekt anzeigen:\\
+	{\tt edge synfunc:subj}
+	\item Suche alle Knoten der Kategorie S, jeweils mit der Menge von Knoten der Kategorie NP, die über eine Kante der Kategorie S, A oder P verbunden sind:\\
+	{\tt
+	node @s  cat:S\\[-.4ex]
+	nodes @np cat:NP\\[-.4ex]
+	edge @s@np cat:S|A|P
+	}
+\end{itemize}
+
+
+
+
+
+
+
+\subsubsection{\texttt{link}}\label{link}
+
+Die \texttt{link}-Klausel beschreibt, wie zwei Knoten oder Knotenmengen des Teilgraphen verbunden sein sollen. Dabei kann als Verbindung eine Kette von Knoten und Kanten ähnlich einem regulären Ausdruck beschrieben werden.
+Die \texttt{link}-Klausel besteht aus den Schlüsselwort \texttt{link}, der Angabe von Start- und Endknoten der Verbindung in der Form \texttt{@id1@id2} und der Beschreibung der Verbindung.
+
+Die Verbindungsbeschreibung besteht aus einer Abfolge von \texttt{edge}- und \texttt{node}-""Elementen. Diese bestehen aus dem jeweiligen Schlüsselwort (\texttt{edge} bzw. \texttt{node}) und optional einer Angabe von Bedingungen, die das Element erfüllen muß, in runden Klammern. Dabei handelt es sich um eine Attributbeschreibung wie oben für \texttt{node} angegeben. Gefolgt werden kann die Elementbeschreibung von einer ID, unter der die gefundenen Elemente in der Ausgabe (nicht in der Suche!) referenziert werden können.
+
+Für Alternativen steht der Operator \texttt{|} „oder“ zur Verfügung; bezüglich der Bindungsstärke steht er unter der Abfolge. Klammerung ist mit runden Klammern möglich. Des weiteren können Quantoren verwendet werden. Diese werden weder als gierig noch als genügsam interpretiert; alle  passenden Verbindungen werden gefunden und als separate Treffer gewertet.
+
+Eine Verbindung besteht – der Natur eines Graphen entsprechend – stets aus einem Wechsel von Knoten und Kanten (beginnend und endend mit jeweils einer Kante). Bei der Angabe von einer Verbindung darf jedoch darauf verzichtet werden, stets Knoten und Kanten im Wechsel anzugeben; nur die erste Kante darf nicht ausgelassen werden. Stehen zwei Elemente des gleichen Typs (also \texttt{edge} oder \texttt{node}) hintereinander, so wird bei der Suche dazwischen ein unspezifiziertes Element des jeweils anderen Typs eingeschoben. Die Verbindungsbeschreibung \texttt{edge(a:b) edge(c:d)} beispielsweise findet eine Kante mit dem Attribut \texttt{a:b}, dann einen beliebigen Knoten und dann eine Kante mit dem Attribut \texttt{c:d}.
+
+Wird \texttt{link} als Knotenattribut (z.B. in einer \texttt{node}-Klausel) verwendet, fällt die Angabe von Start- und Endknoten weg. Startknoten ist dann der gesuchte Knoten, Endknoten der letzte in der Verbindung spezifiziert Knoten bzw., wenn die Verbindungsbeschreibung mit einer Kante endet, ein Knoten mit beliebigen Eigenschaften.
+
+
+\paragraph*{Die \texttt{link}-Klausel in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+link-klausel    =   "link" id id " " verbindung
+verbindung      =   verbindung " " verbindung
+                    verbindung "|" verbindung
+                    "(" verbindung ")"
+                    verbindung quantor
+                    "edge" ("(" kantenattribute ")")? id?
+                    "node" ("(" knotenattribute ")")? id?
+\end{lstlisting}
+\end{framed}
+
+
+\paragraph*{Beispiele:}
+\begin{itemize}
+	\item Suche alle Graphfragmente, die aus einem Knoten der Kategorie P und einem der Kategorie S bestehen, wobei ersterer letzteren über eine Kante der Kategorie EX dominiert:\\
+	{\tt
+	node @p cat:P\\[-.4ex]
+	node @s cat:S\\[-.4ex]
+	link @p@s edge(cat:EX)
+	}
+	\item Suche einen Knoten der Kategorie S, alle Knoten der Kategorie NP, die dieser dominiert, und alle Token, die von den NPn dominiert werden:\\
+	{\tt
+	node @s cat:S\\[-.4ex]
+	nodes @vpn cat:NP\\[-.4ex]
+	nodes @tok token://\\[-.4ex]
+	link @s@npn edge+\\[-.4ex]
+	link @npn@tok edge+
+	}
+	\item Suche einen Knoten der Kategorie S und alle Token, die von diesem über einen NP-Knoten dominiert werden (bis auf die IDs äquivalent zum vorigen Beispiel):\\
+	{\tt
+	node @s cat:S\\[-.4ex]
+	nodes @tok token://\\[-.4ex]
+	link @s@tok edge+ node(cat:NP) edge+
+	}
+\end{itemize}
+
+
+
+
+\subsubsection{\texttt{text}}
+
+Die \texttt{text}-Klausel dient dazu, eine Abfolge von Token-Knoten zu finden. Dabei ermöglicht die Textsuche sowohl die Suche nach reinem Text als auch nach weiteren Attributen der Token-Knoten.
+Die \texttt{text}-Klausel besteht aus dem Schlüsselwort \texttt{text}, einer optionalen ID und der Beschreibung eines Textfragments, das mit \texttt{\^{}s} am Anfang bzw. Ende des Textes eines Satzes verankert werden kann.
+
+Die Beschreibung des Textfragments besteht aus einer Abfolge von Wortbeschreibungen, die aus einer Zeichenkette, die den Tokentext beschreibt (drei Varianten wie oben unter \texttt{node} für die Werte in Schlüssel-Wert-Paaren beschrieben), und einer optionalen Angabe von Attributen (Attributebeschreibung wie oben unter \texttt{node}) in runden Klammern zusammengesetzt ist.
+Für die Beschreibung des Textfragments stehen wie bei der Verbindungsbeschreibung der Operator \texttt{|} für „oder“ (Bindungsstärke schwächer als die der Sequenz), Klammerung und Quantoren zur Verfügung, wobei die Quantoren bei der Textsuche genügsam sind. Zusätzlich kann Textfragmenten eine ID nachgestellt werden, um die gefundenen Knoten in anderen Klauseln zu referenzieren. Quantoren und IDs haben eine höhere Bindungsstärke als Sequenz und Disjunktion; die Reihenfolge von Quantor und ID hinter dem selben Textfragment ist beliebig. Die optionale ID nach dem Schlüsselwort gilt für alle Knoten der \texttt{text}-Klausel. Das gesuchte Textfragment kann mit \texttt{\^{}s} am Beginn bzw. Ende eines Textes (Text eines Satzes) verankert werden.
+
+\paragraph*{Die \texttt{text}-Klausel in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+text-klausel    =   "text" id? " " "^s"? textfragment "^s"?
+textfragment    =   textfragment " " textfragment
+                    textfragment "|" textfragment
+                    "(" textfragment ")"
+                    textfragment quantor
+                    textfragment id
+                    wort
+wort            =   attributwert ("(" knotenattribute ")")?
+\end{lstlisting}
+\end{framed}
+
+\paragraph*{Beispiel:}
+\begin{itemize}
+	\item Suche alle Sätze, in denen das Wort das Nomen „Säge“ an dritter Stelle steht:\\
+	{\tt
+	text \^{}s //\{2,2\} Säge(pos:n)
+	}
+	\item Suche zwei Vorkommen von „er“, die von einer beliebigen Anzahl Wörter getrennt sind, wobei das erste „er“ und alle folgenden Wörter bis zum zweiten „er“ von einem Knoten vom cat S dominiert werden:\\
+	{\tt
+	node @s cat:S\\
+	text (er //*)@t er\\
+	link @s@t edge*
+	}
+\end{itemize}
+
+
+
+\subsubsection{\texttt{meta}}
+
+Die \texttt{meta}-Klausel schränkt die Menge der zu durchsuchenden Sätze ein. Über diese Klausel können Eigenschaften angegeben werden, die der \texttt{meta}-Knoten eines Satzes (ein Knoten mit dem entsprechenden \texttt{sentence}-Wert und dem Attribut \texttt{cat:meta}) haben muß. Die Klausel besteht aus dem Schlüsselwort \texttt{meta} und einer Attributbeschreibung wie oben unter \texttt{node} beschrieben.
+
+\paragraph*{Die \texttt{meta}-Klausel in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+text-klausel    =   "meta " attribute
+\end{lstlisting}
+\end{framed}
+
+
+
+\subsubsection{\texttt{cond}}\label{cond}
+
+Die \texttt{cond}-Klausel gibt Bedingung an, die das Graphfragment erfüllen muß und wirkt wie ein Filter. Die Klausel besteht aus dem Schlüsselwort \texttt{cond} und der Bedingung in Ruby-Kode. Die Knoten und Knotenmengen werden dabei durch die vergebenen IDs referenziert. Bei der Referenzierung ist zu beachten, daß es sich bei den mit \texttt{node} und \texttt{edge} gefundenen Knoten und Kanten um einzelne Elemente, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten und Kanten hingegen um Arrays von Elementen handelt.
+
+Auf die Attribute der Knoten wird in der Form \texttt{['schlüssel']} zugegriffen; für die Attribute \texttt{sentence}, \texttt{token} und \texttt{cat} stehen Abkürzungen der Form \texttt{.sentence}, \texttt{.token} und \texttt{.cat} zur Verfügung. Über die Methode \texttt{.meta} kann auf den \texttt{meta}-Knoten des Satzes, zu dem das Elementgehört, zugegriffen werden. Bei der Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen behandelt werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
+
+
+\paragraph*{Beispiele:}
+\begin{itemize}
+	\item Suche zwei S-Knoten, die über eine ad-Kante verbunden sind und den gleichen Wert für tns haben:\\
+	{\tt
+	node @s1 cat:S\\[-.4ex]
+	node @s2 cat:S\\[-.4ex]
+	link @s1@s2 cat:ad\\[-.4ex]
+	cond @s1['tns'] == @s2['tns']
+	}
+	\item Suche alle S-Knoten, die mindestens drei Token dominieren:\\
+	{\tt
+	node @s cat:S\\[-.4ex]
+	nodes @tok token://\\[-.4ex]
+	link @s@tok edge+\\[-.4ex]
+	cond @tok.length >= 3
+	}
+\end{itemize}
+
+
+\subsubsection{\texttt{def}}\label{def}
+
+Mit \texttt{def} besteht die Möglichkeit, für die Suche Makros zu definieren. Dabei wird ein Name angegeben, unter dem das Makro in den Suchklauseln angesprochen werden kann, und eine Attribut- oder Verbindungsbeschreibung, die durch den Namen vertreten wird. Die Attribut-/Verbindungsbeschreibung ist aufgebaut wie für \texttt{node} und \texttt{link} in \ref{node} bzw. \ref{link} beschrieben.
+
+Es ist zu beachten, daß ein Makro quasi automatisch geklammert wird, also stets zuerst ausgewertet wird. Nehmen wir beispielsweise an, man definiert ein Makro als \texttt{cat:S | cat:VP} wie unten im Beispiel und kombiniert es durch den Operator \texttt{\&} mit einer weiteren Bedingung – \texttt{tns:prs} wie beim zweiten Knoten im Beispiel. Dann wird dies nicht als \texttt{cat:S | cat:VP \& tns:prs} ausgewertet, in welchem Falle das \texttt{\&} Präzedenz über das \texttt{|} nähme, sondern als \texttt{(cat:S | cat:VP) \& tns:prs}.
+
+\paragraph*{Die Makrodefinition \texttt{def} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+makrodefinition =   "def " name " " makro
+makro           =   kantenattribute
+                    knotenattribute
+                    verbindung
+name            =   alphanumerisches_zeichen+
+\end{lstlisting}
+%\begin{lstlisting}
+%makrodefinition =   "def " name " " (kantenattribute | knotenattribute)
+%name            =   alphanumerisches_zeichen+
+%\end{lstlisting}
+\end{framed}
+
+
+\paragraph*{Beispiel:}
+\begin{itemize}
+	\item Suche zwei Knoten mit \texttt{cat:S} oder \texttt{cat:VP}, die über eine Kante verbunden sind, und von denen der zweite im Präsens steht:\\
+	{\tt
+	def svp cat:S | cat:VP\\[-.4ex]
+	node @s1 svp\\[-.4ex]
+	node @s2 svp \& tns:prs\\[-.4ex]
+	edge @s1@s2\\[-.4ex]
+	}
+%\begin{itemize}
+%	\item Suche zwei Knoten mit \texttt{lemma:cum} und \texttt{pos:G-}, die über eine Kante verbunden sind, und von denen einer ein Token ist:\\
+%	{\tt
+%	def cum lemma:cum \& pos:G-\\[-.4ex]
+%	node @s1 cum\\[-.4ex]
+%	node @s2 cum \& token://\\[-.4ex]
+%	edge @s1@s2\\[-.4ex]
+%	}
+\end{itemize}
+
+
+
+
+
+
+\subsection{Datenexport}
+
+Die GraphAnno-Abfragesprache biete auch Funktionalität zum Exportieren von Suchergebnissen als CSV-Dateien an. 
+Mit den nachfolgen beschriebenen Klauseln kann angegeben werden, wie Infomationen der in einer zuvor durchgeführten Suche gefundenen Teilgraphen ausgegeben werden sollen.
+Die Daten jedes gefundenen Teilgraphen werden in eine Zeile der CSV-Datei geschrieben, mit \texttt{sort} können die Ergebnisse sortiert werden, mit \texttt{col} wird angegeben, welche Spalten mit welchen Werten angelegt werden sollen. Als erste Spalte wird stets eine fortlaufende Numerierung der Ergebnisse mit ausgegeben.
+
+\subsubsection{\texttt{sort}}
+
+Die \texttt{sort}-Klausel dient dazu, die Ausgabe der gefundenen Teilgraphen zu sortieren. Es können mehrere \texttt{sort}-Klauseln angegeben werden, wobei weiter unten angegeben Klauseln nur ausgewertet werden, wenn  weiter oben angegebenen Klauseln keine Reihenfolge zwischen zwei Teilgraphen ergeben. 
+Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert ergeben, der für die Sortierung verglichen werden soll. Wie bei \texttt{cond} werden die gefundenen Knoten und Kanten über die in der Suche vergebenen IDs referenziert. Bei Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen verglichen werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
+
+\paragraph*{Beispiele:}
+\begin{itemize}
+	\item Sortiere die Ergebnisse nach Satznamen, bzw. nach Tokennummer (die Methode \texttt{.tokenid} gibt die Stelle des Tokens im Satz, beginnend mit 0, aus), wenn sie dem gleichen Satz angehören (durch die Suchanfrage sei gegeben: ein Token mit der ID \texttt{@t1}):\\
+	{\tt
+	sort @t1['sentence']\\[-.4ex]
+	sort @t1.tokenid\\[-.4ex]
+	}
+\end{itemize}
+
+
+
+\subsubsection{\texttt{col}}
+
+Jede \texttt{col}-Klausel steht für eine zu exportierende Spalte. Sie hat als ersten Parameter den Spaltentitel (der keine Leerzeichen enthalten darf), gefolgt von Ruby-Kode, der den auszugebenden Wert ergibt. Knoten und Kanten werden wie gehabt über ihre in der Suche vergebene ID referenziert, dabei ist zu beachten, daß es sich bei den mit \texttt{node} gefundenen Knoten um einzelne Knoten, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten hingegen um Arrays von Knoten handelt.
+
+Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschrieben. Es gibt jedoch noch weitere für die Ausgabe nützliche Methoden: \texttt{.tokens} gibt die über syntaktische Kanten dominierten Token als Liste aus, \texttt{.text} deren Text als Zeichenkette (die einzelnen Tokentexte mit Leerzeichen getrennt). \texttt{.sentence\_tokens} gibt alle Token des Satzes, dem das Element angehört als Liste aus, \texttt{.sentence\_text} wiederum deren Text. \texttt{.position} gibt die Position eines Knotens als Durchschnitt der Positionen seiner dominierten Token aus.
+
+
+
+
+
+
+
+\end{document}
