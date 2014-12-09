@@ -100,9 +100,8 @@ Kanten und Knoten tragen keine Nummernattribute. Sie werden für jede generierte
 
 Ein Satz hat einen Knoten mit dem Attribut \texttt{cat:meta}, der Informationen trägt, die den ganzen Satz betreffen. Hierbei kann es sich z.B. um Angaben von Quelle, Medium, Sprecher etc. handeln. Der Inhalt dieses Knotens wird im hellgrauen Bereich unter dem Annotationsgraphen und unter dem Text des Satzes (blau dargestellt) in schwarzer Schrift angezeigt.
 
-GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Ebenen zuzuordnen. Zur Zeit sind zwei Ebenen implementiert: Eine funktionale/semantische Ebene und eine formale/syntaktische. Zugehörigkeit eines Knoten oder einer Kante zu ersterer wird durch das Attribut \texttt{f-layer:t} wiedergegeben, Zugehörigkeit zu letzterer durch \texttt{s-layer:t}. Elemente, die dem \texttt{f-layer} angehören sind grün dargestellt, Elemente, die dem \texttt{s-layer} angehören, blau, Elemente, die beiden angehören, schwarz und Elemente, die keiner Ebene angehören, grau. Token sind keiner Ebene zugeordnet und werden schwarz dargestellt.
+GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Ebenen zuzuordnen. Zugehörigkeit eines Elements zu einer Ebene wird dadurch ausgedrückt, daß es (unter den Annotationsattributen) das Attribut der entsprechenden Ebene mit dem Wert\texttt{t} (für \textit{true}) trägt. Durch diese Repräsentation können Elemente auch mehreren Ebene angehören, so daß Ebene sich beliebig überlappen können. Knoten und Kanten der unterschiedlichen Ebenen können farblich unterschiedlich dargestellt und unterschiedlich ausgerichtet werden (hierarchisch oder horizontal). Token sind keiner Ebene zugeordnet und werden schwarz dargestellt.
 
-%Schließlich tragen Kanten noch das Attribut \texttt{edgetype}, das – in Anlehnung an andere Korpusformate – den Wert \texttt{p} (für \textit{primär}) oder \texttt{s} (für \textit{sekundär}) annehmen kann. Dieses Attribut dient der Darstellung, und zwar insofern als Kanten mit dem Attribut \texttt{edgetype:p} nach Möglichkeit kürzer dargestellt werden. Die Werte für \texttt{edgetype} sind an die Ebene gekoppelt: Kanten, die der \texttt{s-ebene} angehören sind \texttt{edgetype:p}, alle anderen \texttt{edgetype:s}.
 
 \paragraph*{Die speziellen Attribute im Überblick:}
 \begin{itemize}
@@ -279,7 +278,7 @@ tokenreferenz  =   "t" zahl
 
 \subsubsection{Annotieren: \texttt{a}}
 
-Der Befehl zum Annotieren beliebiger Elemente ist \texttt{a}, gefolgt von den zu annotierenden Elementen und Attributen, mit denen sie annotiert werden sollen (alle angegeben Elemente werden mit allen angegebenen Attributen versehen). Die Reihenfolge einzelner Elemente und Attribute ist beliebig. Es können auch Sequenzen von Elementen eines Typs (also \texttt{n}, \texttt{e} oder \texttt{t}) durch Verbinden mit zwei Punkten angegeben werden; beispielsweise werden bei Angabe von \texttt{t3..t7} alle Token von \texttt{t3} bis \texttt{t7} annotiert (die Sequenz kann auch umgekehrt angegeben werden, also \texttt{t7..t3}).
+Der Befehl zum Annotieren beliebiger Elemente ist \texttt{a}, gefolgt von den zu annotierenden Elementen und Attributen, mit denen sie annotiert werden sollen (alle angegeben Elemente werden mit allen angegebenen Attributen versehen; auch Ebenekürzel wie bei \texttt{n} können verwendet werden). Die Reihenfolge einzelner Elemente und Attribute ist beliebig. Es können auch Sequenzen von Elementen eines Typs (also \texttt{n}, \texttt{e} oder \texttt{t}) durch Verbinden mit zwei Punkten angegeben werden; beispielsweise werden bei Angabe von \texttt{t3..t7} alle Token von \texttt{t3} bis \texttt{t7} annotiert (die Sequenz kann auch umgekehrt angegeben werden, also \texttt{t7..t3}).
 
 Gleichzeitig können mit dem Befehl \texttt{a} Attribute gelöscht werden. Dazu wird der zu löschende Schlüssel mit Doppelpunkt, aber ohne Wert angegeben.
         %li annotate: <i>a target target ... key:value key:value ...</i>
