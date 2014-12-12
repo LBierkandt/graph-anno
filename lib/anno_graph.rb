@@ -399,7 +399,10 @@ class AnnoGraph < SearchableGraph
 	end
 
 	def merge!(other)
+		last_old_sentence_node = sentence_nodes.last
+		first_new_sentence_node = other.sentence_nodes.last
 		super
+		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
 	end
 

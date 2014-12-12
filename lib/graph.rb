@@ -309,11 +309,11 @@ class Graph
 	def merge!(other_graph)
 		new_nodes = {}
 		other_graph.nodes.each do |id,n|
-			new_nodes[id] = self.add_node(:attr => n.attr)
+			new_nodes[id] = add_node(n.to_h.merge(:ID => nil))
 		end
 		other_graph.edges.each do |id,e|
 			if new_nodes[e.start.ID] and new_nodes[e.end.ID]
-				self.add_edge(e.to_h.merge(:start => new_nodes[e.start.ID], :end => new_nodes[e.end.ID]))
+				add_edge(e.to_h.merge(:start => new_nodes[e.start.ID], :end => new_nodes[e.end.ID]))
 			end
 		end
 	end
