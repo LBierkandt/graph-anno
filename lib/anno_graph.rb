@@ -32,10 +32,6 @@ class NodeOrEdge
 		@attr['cat'] = arg
 	end
 
-	def meta
-		@graph.nodes.values.select{|n| n.type == 's' and n.name == self.sentence}[0]
-	end
-
 end
 
 class AnnoNode < Node
@@ -43,12 +39,14 @@ class AnnoNode < Node
 	def initialize(h)
 		super
 		@type = h[:type]
-		@sentence = h[:sentence]
+		if h[:sentence]
+			@graph.add_sect_edge(:start => h[:sentence], :end => self)
+		end
 	end
 
 	# @return [Hash] the element transformed into a hash with all values casted to strings
 	def to_h
-		super.merge(:type => @type, :sentence => @sentence)
+		super.merge(:type => @type)
 	end
 
 	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
@@ -71,28 +69,36 @@ class AnnoNode < Node
 	end
 
 	def sentence_tokens # Alle Tokens desselben Satzes
+		s = sentence
 		if @type == 't'
-			ordered_sister_nodes
+			ordered_sister_nodes{|t| t.sentence === s}
+		elsif @type == 's'
+			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
+				first_token.ordered_sister_nodes{|t| t.sentence === s}
+			else
+				[]
+			end
 		else
-			@graph.sentence_tokens(self.sentence)
+			s.sentence_tokens
 		end
 	end
 
-	def ordered_sister_nodes
+	def ordered_sister_nodes(&block)
+		block ||= lambda{|n| true}
 		nodes = [self]
 		node = self
-		while node = node.node_before
+		while node = node.node_before(&block)
 			nodes.unshift(node)
 		end
 		node = self
-		while node = node.node_after
+		while node = node.node_after(&block)
 			nodes.push(node)
 		end
 		return nodes
 	end
 
 	def sentence_text
-		return self.sentence_tokens.map{|t| t.token} * ' '
+		sentence_tokens.map{|t| t.token} * ' '
 	end
 
 	def position
@@ -166,12 +172,14 @@ class AnnoNode < Node
 		return r
 	end
 
-	def node_before
-		self.parent_nodes{|e| e.type == 'o'}[0]
+	def node_before(&block)
+		block ||= lambda{|n| true}
+		parent_nodes{|e| e.type == 'o'}.select(&block)[0]
 	end
 
-	def node_after
-		self.child_nodes{|e| e.type == 'o'}[0]
+	def node_after(&block)
+		block ||= lambda{|n| true}
+		child_nodes{|e| e.type == 'o'}.select(&block)[0]
 	end
 
 	# methods specific for token nodes:
@@ -313,7 +321,7 @@ class AnnoGraph < SearchableGraph
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
 				@nodes.values.map{|n| n['sentence']}.uniq.each do |s|
 					if sect_nodes.select{|k| k['sentence'] == s}.empty?
-						add_sect_node(:attr => {'sentence' => s})
+						add_sect_node(:name => s)
 					end
 				end
 			end
@@ -360,6 +368,8 @@ class AnnoGraph < SearchableGraph
 	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
 	# @return [Node] the new node
 	def add_sect_node(h)
+		h.merge!(:attr => {}) unless h[:attr]
+		h[:attr].merge!('name' => h[:name]) if h[:name]
 		add_node(h.merge(:type => 's'))
 	end
 
@@ -411,7 +421,7 @@ class AnnoGraph < SearchableGraph
 
 	def merge!(other)
 		last_old_sentence_node = sentence_nodes.last
-		first_new_sentence_node = other.sentence_nodes.last
+		first_new_sentence_node = other.sentence_nodes.first
 		super
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
@@ -423,21 +433,9 @@ class AnnoGraph < SearchableGraph
 		return new_graph
 	end
 
-	def sentences
-		sentence_nodes.map{|n| n.name}
-	end
-
 	def sentence_nodes
 		if first_sect_node = @nodes.values.select{|n| n.type == 's'}[0]
 			first_sect_node.ordered_sister_nodes
-		else
-			[]
-		end
-	end
-
-	def sentence_tokens(s)
-		if first_token = @nodes.values.select{|n| n.sentence == s and n.type == 't'}[0]
-			first_token.ordered_sister_nodes
 		else
 			[]
 		end
@@ -449,7 +447,7 @@ class AnnoGraph < SearchableGraph
 		if next_token
 			last_token = next_token.node_before
 		else
-			last_token = self.sentence_tokens(sentence)[-1]
+			last_token = sentence.sentence_tokens[-1]
 		end
 		words.each do |word|
 			token_collection << self.add_token_node(:attr => {'token' => word}, :sentence => sentence)
@@ -487,11 +485,11 @@ class AnnoGraph < SearchableGraph
 		id_length = sentences.length.to_s.length
 		sentences.each_with_index do |s, i|
 			sentence_id = "%0#{id_length}d" % i
-			sentence_node = add_sect_node(:sentence => sentence_id)
+			sentence_node = add_sect_node(:name => sentence_id)
 			case options['processing_method']
 			when 'regex'
 				words = s.scan(options['tokens']['regex'])
-				tokens = build_tokens([''] * words.length, sentence_id)
+				tokens = build_tokens([''] * words.length, sentence_node)
 				tokens.each_with_index do |t, i|
 					annotation.each do |k, v|
 						if v.class == Fixnum
@@ -503,7 +501,7 @@ class AnnoGraph < SearchableGraph
 				end
 			when 'punkt'
 				words = NLP.tokenize(s)
-				tokens = build_tokens(words, sentence_id)
+				tokens = build_tokens(words, sentence_node)
 			end
 		end
 	end
