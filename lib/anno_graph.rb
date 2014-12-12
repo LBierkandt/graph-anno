@@ -39,7 +39,6 @@ class NodeOrEdge
 end
 
 class AnnoNode < Node
-	attr_accessor :sentence
 
 	def initialize(h)
 		super
@@ -65,6 +64,10 @@ class AnnoNode < Node
 
 	def text(link = nil)
 		self.tokens(link).map{|t| t.token} * ' '
+	end
+
+	def sentence
+		parent_nodes{|e| e.type == 's'}[0]
 	end
 
 	def sentence_tokens # Alle Tokens desselben Satzes
@@ -198,7 +201,11 @@ class AnnoNode < Node
 	# methods specific for section nodes:
 	
 	def name
-		@sentence
+		@attr['name']
+	end
+	
+	def name=(name)
+		@attr['name'] = name
 	end
 end
 
@@ -293,29 +300,33 @@ class AnnoGraph < SearchableGraph
 						else
 							k.type = 'a'
 						end
-						k.sentence = k['sentence']
 					else
 						k.type = 'o' if k.type == 't'
 						k.type = 'a' if k.type == 'g'
+						k.attr.delete('sentence')
 					end
-					k.attr.delete('sentence')
 					k.attr.delete('tokenid')
 				end
 			end
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
-				@nodes.values.map{|n| n.sentence}.uniq.each do |s|
-					if sect_nodes.select{|k| k.sentence == s}.empty?
-						add_sect_node(:sentence => s)
+				@nodes.values.map{|n| n['sentence']}.uniq.each do |s|
+					if sect_nodes.select{|k| k['sentence'] == s}.empty?
+						add_sect_node(:attr => {'sentence' => s})
 					end
 				end
 			end
 			if version < 7
-				# OrderEdges for SectNodes
-				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a.name <=> b.name}
-				sect_nodes[1..-1].each_with_index do |n, i|
-					add_order_edge(:start => sect_nodes[i], :end => n)
+				# OrderEdges and SectEdges for SectNodes
+				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a['sentence'] <=> b['sentence']}
+				sect_nodes.each_with_index do |s, i|
+					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
+					s.name = s.attr.delete('sentence')
+					@nodes.values.select{|n| n['sentence'] == s.name}.each do |n|
+						n.attr.delete('sentence')
+						add_sect_edge(:start => s, :end => n)
+					end
 				end
 			end
 		end
