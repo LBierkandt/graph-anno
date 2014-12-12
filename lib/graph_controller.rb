@@ -72,10 +72,10 @@ class GraphController
 		end
 		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		if value then return value.to_json end
-		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence.name })
+		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence ? @display.sentence.name : nil })
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
-		if @sinatra.request.cookies['traw_sentence'] == @display.sentence.name
+		if @display.sentence and @sinatra.request.cookies['traw_sentence'] == @display.sentence.name
 			sentence_changed = false
 		else
 			sentence_changed = true
