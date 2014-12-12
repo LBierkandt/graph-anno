@@ -40,70 +40,18 @@ get '/' do
 	controller.root
 end
 
-get '/graph' do
-	controller.draw_graph
+get '/:method/?:param?' do |method, param|
+	if param
+		controller.send(method, param)
+	else
+		controller.send(method)
+	end
 end
 
-get '/toggle_refs' do
-	controller.toggle_refs
-end
-
-get '/layer_options' do
-	controller.layer_options
-end
-
-post '/commandline' do
-	controller.handle_commandline
-end
-
-post '/sentence' do
-	controller.change_sentence
-end
-
-post '/filter' do
-	controller.filter
-end
-
-post '/search' do
-	controller.search
-end
-
-get '/config' do
-	controller.config_form
-end
-
-post '/config' do
-	controller.save_config
-end
-
-get '/import/:type' do |type|
-	controller.import_form(type)
-end
-
-post '/import/:type' do |type|
-	controller.import(type)
-end
-
-get '/new_layer/:i' do |i|
-	controller.new_layer(i)
-end
-
-get '/new_combination/:i' do |i|
-	controller.new_combination(i)
-end
-
-get '/export/subcorpus.json' do
-	controller.export_subcorpus
-end
-
-post '/export_data' do
-	controller.export_data
-end
-
-get '/export/data_table.csv' do
-	controller.export_data_table
-end
-
-get '/doc/:filename' do |filename|
-	send_file 'doc/' + filename
+post '/:method/?:param?' do |method, param|
+	if param
+		controller.send(method, param)
+	else
+		controller.send(method)
+	end
 end

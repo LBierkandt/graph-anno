@@ -11,7 +11,7 @@ window.onresize = graphdivEinpassen;
 
 function loadGraph() {
 	var anfrage = new XMLHttpRequest();
-	anfrage.open('GET', '/graph', false);
+	anfrage.open('GET', '/draw_graph', false);
 	anfrage.onreadystatechange = function () {
 		if (anfrage.readyState == 4 && anfrage.status == 200) {
 			var antworthash = JSON.parse(anfrage.responseText);
@@ -209,7 +209,7 @@ function sendCmd(txtcmd) {
 	var sentence = document.cmd.sentence.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
-	anfrage.open('POST', '/commandline');
+	anfrage.open('POST', '/handle_commandline');
 	makeAnfrage(anfrage, params);
 }
 function sendFilter(mode) {
@@ -248,7 +248,7 @@ function sendDataExport() {
 	anfrage.onreadystatechange = function () {
 		if (anfrage.readyState == 4 && anfrage.status == 200) {
 			if (anfrage.responseText == '') {
-				location = "/export/data_table.csv";
+				location = "/export_data_table/data_table.csv";
 			} else {
 				alert(anfrage.responseText);
 			}
@@ -311,14 +311,14 @@ function changeSentence() {
 	var sentence = document.cmd.sentence.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
-	anfrage.open('POST', '/sentence');
+	anfrage.open('POST', '/change_sentence');
 	makeAnfrage(anfrage, params);
 }
 function openConfig() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
 			type: 'GET',
-			url: '/config'
+			url: '/config_form'
 		})
 		.done(function(data) {
 			$('#modal-content').html(data);
@@ -361,7 +361,7 @@ function openConfig() {
 function sendConfig() {
 	$.ajax({
 		type: 'POST',
-		url: '/config',
+		url: '/save_config',
 		async: true,
 		dataType: 'json',
 		data: $('#modal-form').serialize()
@@ -424,7 +424,7 @@ function removeLayerAttributes(number) {
 function openImport(type) {
 	$.ajax({
 		type: 'GET',
-		url: '/import/' + type
+		url: '/import_form/' + type
 	})
 	.done(function(data) {
 		$('#modal-content').html(data);
