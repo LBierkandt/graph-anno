@@ -243,7 +243,7 @@ class GraphController
 		return {:sentences_html => @sentences_html}.to_json
 	end
 
-	def export_subcorpus
+	def export_subcorpus(filename)
 		if @display.found
 			subgraph = {'nodes' => [], 'edges' => []}
 			@display.found[:sentences].each do |sentence|
@@ -267,7 +267,7 @@ class GraphController
 		end
 	end
 
-	def export_data_table
+	def export_data_table(filename)
 		if @data_table
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return @data_table
@@ -626,6 +626,10 @@ class GraphController
 			properties.replace(@graph.conf.layer_attributes[layer].to_h)
 			return layer
 		end
+	end
+
+	def documentation(filename)
+		@sinatra.send_file('doc/' + filename)
 	end
 
 	private

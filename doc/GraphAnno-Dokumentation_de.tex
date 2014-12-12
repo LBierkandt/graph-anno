@@ -103,8 +103,6 @@ GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Eben
 
 
 
-
-
 \section{Tastaturbefehle}
 
 Einige Navigation und Ansicht betreffende Funktionen von GraphAnno werden direkt über Tastenbefehle angesprochen. Nachfolgend eine Tabelle der verfügbaren Befehle:
@@ -196,9 +194,15 @@ Um die Graphik, die GraphAnno für den aktuellen Satz anzeigt, zu exportieren, d
 Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige verfügbare Format \texttt{paula}), das zweites Argument ist der Name des Korpus, als drittes Argument kann optional der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
 
 
+\subsubsection{Text importieren}
+
+Texte können mit dem Befehl \texttt{import} importiert werden.
+
+Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+
 \subsubsection{Toolboxdaten importieren}
 
-Toolboxdateien können mit dem Befehl \texttt{import\_toolbox} importiert werden. Als Parameter werden der komplette Dateiname (wenn die Datei im GraphAnno-Programm\-ordner liegt; ansonsten der relative oder absolute Pfad – enthält der Pfad Doppelpunkt oder Leerzeichen, muß er in doppelten Anführungsstrichen angegeben werden) sowie eine Formatbeschreibung erwartet. Die Formatbeschreibung wird im JSON-Format angegeben und besteht aus einer Liste von Listen von Markern. Die Listen sind nach Ebenen sortiert – die höchste (\textit{record}) zuerst – und enthalten die der entsprechenden Ebene zugehörigen Marker (ohne Schrägstich). Als Record-ID wird der erste Marker der ersten Ebene (im Bsp. unten \texttt{ref}) verwendet. Dem Marker, auf dessen Grundlage die Token erstellt werden sollen, wird ein Stern vorangestellt. Elemente, die unter der Tokenebene liegen, werden zusammengefügt und in die jeweiligen Token integriert.
+Toolboxdateien können mit dem Befehl \texttt{import toolbox} importiert werden. Es öffnet sich ein Fenster, in dem die einzulesende Datei ausgewählt und die Formatbeschreibung eingegeben werden kann. Die Formatbeschreibung wird im JSON-Format angegeben und besteht aus einer Liste von Listen von Markern. Die Listen sind nach Ebenen sortiert – die höchste (\textit{record}) zuerst – und enthalten die der entsprechenden Ebene zugehörigen Marker (ohne Schrägstich). Als Record-ID wird der erste Marker der ersten Ebene (im Bsp. unten \texttt{ref}) verwendet. Dem Marker, auf dessen Grundlage die Token erstellt werden sollen, wird ein Stern vorangestellt. Elemente, die unter der Tokenebene liegen, werden zusammengefügt und in die jeweiligen Token integriert.
 
 Eine Formatbeschreibung für eine Toolboxdatei mit drei Ebenen (Record, Wort, Morphem) könnte z.B. folgendermaßen aussehen:
 \begin{verbatim}
@@ -260,7 +264,7 @@ tokenreferenz  =   "t" zahl
 
 \subsubsection{Annotieren: \texttt{a}}
 
-Der Befehl zum Annotieren beliebiger Elemente ist \texttt{a}, gefolgt von den zu annotierenden Elementen und Attributen, mit denen sie annotiert werden sollen (alle angegeben Elemente werden mit allen angegebenen Attributen versehen). Die Reihenfolge einzelner Elemente und Attribute ist beliebig. Es können auch Sequenzen von Elementen eines Typs (also \texttt{n}, \texttt{e} oder \texttt{t}) durch Verbinden mit zwei Punkten angegeben werden; beispielsweise werden bei Angabe von \texttt{t3..t7} alle Token von \texttt{t3} bis \texttt{t7} annotiert (die Sequenz kann auch umgekehrt angegeben werden, also \texttt{t7..t3}).
+Der Befehl zum Annotieren beliebiger Elemente ist \texttt{a}, gefolgt von den zu annotierenden Elementen und Attributen, mit denen sie annotiert werden sollen (alle angegeben Elemente werden mit allen angegebenen Attributen versehen; auch Ebenekürzel wie bei \texttt{n} können verwendet werden). Die Reihenfolge einzelner Elemente und Attribute ist beliebig. Es können auch Sequenzen von Elementen eines Typs (also \texttt{n}, \texttt{e} oder \texttt{t}) durch Verbinden mit zwei Punkten angegeben werden; beispielsweise werden bei Angabe von \texttt{t3..t7} alle Token von \texttt{t3} bis \texttt{t7} annotiert (die Sequenz kann auch umgekehrt angegeben werden, also \texttt{t7..t3}).
 
 Gleichzeitig können mit dem Befehl \texttt{a} Attribute gelöscht werden. Dazu wird der zu löschende Schlüssel mit Doppelpunkt, aber ohne Wert angegeben.
         %li annotate: <i>a target target ... key:value key:value ...</i>
@@ -274,7 +278,7 @@ Gleichzeitig können mit dem Befehl \texttt{a} Attribute gelöscht werden. Dazu 
 befehl_a            =   "a " a_parameter
 a_parameter         =   a_parameter " " a_parameter
                         elementreferenz
-                        attribut
+                        attribute
                         schlüssel
 elementreferenz     =   knotenreferenz
                         kantenreferenz

@@ -49,6 +49,13 @@ class GraphDisplay
 			:ranksep => '.3'
 		)
 		token_graph = viz_graph.subgraph(:rank => 'same')
+		layer_graphs = {}
+		@graph.conf.combinations.each do |c|
+			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+		end
+		@graph.conf.layers.each do |l|
+			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+		end
 
 		satzinfo = {:textline => '', :meta => ''}
 
@@ -94,15 +101,20 @@ class GraphDisplay
 
 		@nodes.each_with_index do |node, i|
 			color = @graph.conf.default_color
+			add_graphs = []
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 				color = @graph.conf.filtered_color
 			else
 				@graph.conf.layers.each do |l|
-					if node[l.attr] == 't' then color = l.color end
+					if node[l.attr] == 't'
+						color = l.color
+						add_graphs << layer_graphs[l.attr]
+					end
 				end
 				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
 					if c.attr.all?{|a| node[a] == 't'}
 						color = c.color
+						add_graphs << layer_graphs[c.attr]
 					end
 				end
 			end
@@ -118,6 +130,7 @@ class GraphDisplay
 				:color => color,
 				:fontcolor => fontcolor
 			)
+			add_graphs.each{|g| g.add_nodes(node.ID)}
 		end
 
 		@edges.each_with_index do |edge, i|

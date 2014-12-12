@@ -16,7 +16,7 @@
       #textline
       #meta
       #cmddiv
-        %form{ :action => "/commandline", :method => "post",  :name => "cmd" }
+        %form{ :action => "/handle_commandline", :method => "post",  :name => "cmd" }
           %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
           %select{ :name => "layer", :id => "layer" }
             = haml :layer_options, :locals => {:controller => controller}
@@ -35,7 +35,7 @@
           = request.cookies['traw_query'].to_s
         %br
         %input{ :type => "button", :value => "Search", :onclick => "sendSearch()" }
-        %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export/subcorpus.json'" }
+        %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export_subcorpus/subcorpus.json'" }
         %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
       #searchresult
         = controller.search_result
@@ -61,7 +61,7 @@
               %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
     
     #documentation
-      %a{ :href => "/doc/GraphAnno-Dokumentation_de.pdf"} Documentation
+      %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} Documentation
     
     #help
       %h3 key commands

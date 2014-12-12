@@ -1,4 +1,4 @@
-%form#modal-form.config{ :action => '/config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.config{ :action => '/save_config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message 
   %div.modal-form-element
     %table
