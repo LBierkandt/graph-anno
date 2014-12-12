@@ -59,13 +59,13 @@ class GraphDisplay
 
 		satzinfo = {:textline => '', :meta => ''}
 
-		nodes = @sentence ? @graph.nodes.values.select{|n| n.sentence == @sentence.name} : []
-		@meta = nodes.select{|n| n.type == 's'}[0]
-		@tokens = if tok = nodes.select{|n| n.type == 't'}[0] then tok.sentence_tokens else [] end
-		@nodes = nodes.select{|n| n.type != 't' && n.type != 's'}
-		@edges = (@tokens + @nodes).map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'a'}
-		t_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'o'}
-
+		@meta = @sentence
+		@tokens = @sentence ? @sentence.sentence_tokens : []
+		all_nodes = @sentence ? @sentence.sentence_nodes : []
+		@nodes = all_nodes.reject{|n| n.type == 't'} : []
+		@edges = all_nodes.map{|n| n.in + n.out}.flatten.uniq.select{|e| e.type == 'a'}
+		token_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'o'}
+		
 		if @filter[:mode] == 'filter'
 			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
 			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
@@ -171,7 +171,7 @@ class GraphDisplay
 			)
 		end
 
-		t_edges.each do |edge|
+		token_edges.each do |edge|
 			#len => 0
 			viz_graph.add_edges(edge.start.ID, edge.end.ID, :style => 'invis', :weight => 100)
 		end
@@ -189,7 +189,7 @@ class GraphDisplay
 				display_attr.each do |key,value|
 					label += "#{key}: #{value}<br/>"
 				end
-			elsif e.token
+			elsif e.type == 't'
 				display_attr.each do |key, value|
 					case key
 						when 'token'
