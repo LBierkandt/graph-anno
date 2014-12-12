@@ -305,9 +305,9 @@ class AnnoGraph < SearchableGraph
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
-				self.sentences.each do |s|
+				@nodes.values.map{|n| n.sentence}.uniq.each do |s|
 					if sect_nodes.select{|k| k.sentence == s}.empty?
-						self.add_sect_node(:sentence => s)
+						add_sect_node(:sentence => s)
 					end
 				end
 			end
@@ -315,7 +315,7 @@ class AnnoGraph < SearchableGraph
 				# OrderEdges for SectNodes
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a.name <=> b.name}
 				sect_nodes[1..-1].each_with_index do |n, i|
-					add_order_edge(:start => sect_nodes[i - 1], :end => n)
+					add_order_edge(:start => sect_nodes[i], :end => n)
 				end
 			end
 		end
