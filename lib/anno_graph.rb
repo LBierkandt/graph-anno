@@ -212,6 +212,13 @@ class AnnoNode < Node
 	def name=(name)
 		@attr['name'] = name
 	end
+
+	def nodes
+		if @type == 's'
+			child_nodes{|e| e.type == 's'}
+		else
+			[]
+		end
 end
 
 class AnnoEdge < Edge

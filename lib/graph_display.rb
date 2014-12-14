@@ -61,7 +61,7 @@ class GraphDisplay
 
 		@meta = @sentence
 		@tokens = @sentence ? @sentence.sentence_tokens : []
-		all_nodes = @sentence ? @sentence.sentence_nodes : []
+		all_nodes = @sentence ? @sentence.nodes : []
 		@nodes = all_nodes.reject{|n| n.type == 't'} : []
 		@edges = all_nodes.map{|n| n.in + n.out}.flatten.uniq.select{|e| e.type == 'a'}
 		token_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'o'}

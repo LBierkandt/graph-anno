@@ -395,7 +395,7 @@ class GraphController
 					index = saetze.index(@display.sentence) + 1
 					if index == saetze.length then index -= 2 end
 					# delete nodes
-					@display.sentence.sentence_nodes.each{|n| n.delete}
+					@display.sentence.nodes.each{|n| n.delete}
 					@display.sentence.delete
 					# change to next sentence
 					@display.sentence = saetze[index]
