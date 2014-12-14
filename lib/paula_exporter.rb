@@ -87,9 +87,9 @@ class AnnoGraph
 		sentence_no = 0
 		rel_no = 0
 		elem_ids = {}
-		self.sentences.each do |ns| # satzweise vorgehen
-			ns_nodes = @nodes.values.select{|k| k.sentence == ns}
-			ns_tokens = ns_nodes.select{|t| t.token}[0].sentence_tokens rescue []
+		self.sentence_nodes.each do |sentence| # satzweise vorgehen
+			ns_nodes = sentence.nodes
+			ns_tokens = sentence.sentence_tokens
 			sentence_no += 1
 			# Tokens anlegen
 			ns_tokens.each do |tok|
@@ -110,14 +110,8 @@ class AnnoGraph
 			if ns_tokens != [] # nur Satz anlegen, wenn es auch mindestens ein Token gibt
 				sentence_list.add_element('mark', {'id'=>'sentence_'+sentence_no.to_s, 'xlink:href'=>"#xpointer(id('#{elem_ids[ns_tokens.first]}')/range-to(id('#{elem_ids[ns_tokens.last]}')))"})
 				mf = sentence_feat_list.add_element('multiFeat', {'xlink:href'=>'#sentence_'+sentence_no.to_s})
-				if sentence_node = ns_nodes.select{|k| k.type == 's'}[0]
-					sentence_node.attr.each do |k,v|
-						case k
-							when 'cat'
-							else
-								mf.add_element('feat', {'name' => k, 'value' => v})
-						end
-					end
+				sentence.attr.each do |k,v|
+					mf.add_element('feat', {'name' => k, 'value' => v})
 				end
 			end
 		end

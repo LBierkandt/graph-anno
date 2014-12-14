@@ -92,24 +92,25 @@ class AnnoGraph
 
 		
 		##### Korpus in Graph umwandeln
-		letztes_token = []
-		self.baumlesen(0, korpus, nil, -1, letztes_token)
+		letztes_token = nil
+		satzknoten = []
+		self.baumlesen(0, korpus, nil, -1, letztes_token, nil, satzknoten)
 		# Kodierung prüfen
 		@nodes.values.each do |n|
 			n.attr.each do |k, v|
-				if v.sanitize then puts "Encoding error in record \"#{n.sentence}\"" end
+				if v.sanitize then puts "Encoding error in record \"#{n.sentence.name}\"" end
 			end
 		end
 		
 	end
 	
-	def baumlesen(ebene, korpusteil, mutter, satznr, letztes_token, sentence = '')
+	def baumlesen(ebene, korpusteil, mutter, satznr, letztes_token, sentence = nil, satzknoten)
 		korpusteil.each do |element|
 			if ebene == 0 # Wenn Satzebene:
 				type = 's'
 				satznr += 1
-				sentence = element[@recmarker]
-				letztes_token[0] = nil
+				sentence_name = element[@recmarker]
+				letztes_token = nil
 			elsif ebene == @tokenebene
 				type = 't'
 				element['token'] = element[@textmarker]
@@ -119,10 +120,14 @@ class AnnoGraph
 				element['s-layer'] = 't'
 				element['f-layer'] = 't'
 			end
-			neuer_knoten = self.add_node(:type => type, :attr => element.reject{|s,w| s == 'toechter'}, :sentence => sentence)
+			if type == 's'
+				neuer_knoten = add_sect_node(:attr => element.reject{|s,w| s == 'toechter'}, :name => sentence_name)
+				add_order_edge(:start => satzknoten.last, :end => neuer_knoten)
+				satzknoten << neuer_knoten
+			end
 			if ebene == @tokenebene
-				if letztes_token[0] then self.add_order_edge(:start => letztes_token[0], :end => neuer_knoten) end
-				letztes_token[0] = neuer_knoten
+				add_order_edge(:start => letztes_token, :end => neuer_knoten) if letztes_token
+				letztes_token = neuer_knoten
 			end
 			# Kanten erstellen
 			if mutter != nil and ebene > 1
@@ -133,7 +138,7 @@ class AnnoGraph
 			end
 			if element['toechter']
 				if ebene != @tokenebene
-					baumlesen(ebene+1, element['toechter'], neuer_knoten, satznr, letztes_token, sentence)
+					baumlesen(ebene+1, element['toechter'], neuer_knoten, satznr, letztes_token, sentence, satzknoten)
 				else
 					# Subtoken: Verketten
 					element['toechter'].each do |tochter|

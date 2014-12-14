@@ -323,11 +323,11 @@ module Expansion
 		anno = h[:anno]
 		clause = h[:clause]
 		pred = nil
-		ns = clause ? clause.sentence : (args ? args[0].sentence : '')
+		sentence = clause ? clause.sentence : (args ? args[0].sentence : nil)
 		
 		if clause then pred = clause.praedikation end
 		if !pred then
-			pred = add_anno_node(:attr => {'cat' => 'P', 'f-layer' => 't'}, :sentence => ns)
+			pred = add_anno_node(:attr => {'cat' => 'P', 'f-layer' => 't'}, :sentence => sentence)
 			if clause then add_anno_edge(:start => pred, :end => clause, :attr => {'cat' => 'ex', 'f-layer' => 't'}) end
 		end
 		if anno then pred.attr.update(anno) end
@@ -383,16 +383,15 @@ class AnnoNode
 
 	def referent
 		if !@referent
-			ns = self.sentence
 			if self.cat == 'R'
 				@referent = self
 			elsif @referent = self.parent_nodes{|e| e.cat == 'ex'}.select{|n| n.cat == 'R'}[0]
 			elsif self.fulfil?(@graph.expansion_rules[:rp])
-				@referent = @graph.add_anno_node(:attr => {'cat'=>'R', 'f-layer'=>'t'}, :sentence => ns)
+				@referent = @graph.add_anno_node(:attr => {'cat'=>'R', 'f-layer'=>'t'}, :sentence => sentence)
 				@graph.add_anno_edge(:start => @referent, :end => self, :attr => {'cat'=>'ex', 'f-layer'=>'t'})
 			elsif self.cat == 'ARG'
 				if not @referent = self.parent_nodes{|e| e.cat == 'as'}[0]
-					@referent = @graph.add_anno_node(:attr => {'cat'=>'R', 'f-layer'=>'t'}, :sentence => ns)
+					@referent = @graph.add_anno_node(:attr => {'cat'=>'R', 'f-layer'=>'t'}, :sentence => sentence)
 					@graph.add_anno_edge(:start => @referent, :end => self, :attr => {'cat'=>'as', 'f-layer'=>'t'})
 				end
 			elsif self.cat == 'P'
@@ -400,7 +399,7 @@ class AnnoNode
 				# Problem: Korrelativum!!!
 					@referent = self
 				#if not @referent = self.in.select{|k| @graph.expansion_rules[:reifications].include?(k.cat)}.map{|k| k.start}[0] # Achtung: was wenn es mehrere Reifikationen gibt????
-				#	@referent = @graph.add_anno_node(:attr => {'cat'=>'R', 'f-layer'=>'t'}, :sentence => ns)
+				#	@referent = @graph.add_anno_node(:attr => {'cat'=>'R', 'f-layer'=>'t'}, :sentence => sentence)
 				#	@graph.add_anno_edge(:start => @referent, :end => self, :attr => {'cat'=>'re', 'f-layer'=>'t'})
 				#	if self.satz && !@referent.child_nodes{|e| e.cat == 'ex'}.include?(self.satz)
 				#		@graph.add_anno_edge(:start => @referent, :end => self.satz, :attr => {'cat'=>'ex', 'f-layer'=>'t'})
@@ -410,7 +409,7 @@ class AnnoNode
 				@referent = self.praedikation.referent
 			elsif self.token
 				if @eingehende_kanten.map{|k| k.cat} & @graph.expansion_rules[:predications] != [] # oder muß hier noch was bedacht werden? Was ist mit OP?
-					@referent = @graph.add_anno_node(:attr => {'cat'=>'PR', 'f-layer'=>'t'}, :sentence => ns)
+					@referent = @graph.add_anno_node(:attr => {'cat'=>'PR', 'f-layer'=>'t'}, :sentence => sentence)
 					@graph.add_anno_edge(:start => @referent, :end => self, :attr => {'cat'=>'ex', 'f-layer'=>'t'})
 				end
 			else
@@ -429,7 +428,6 @@ class AnnoNode
 
 	def praedikation
 		if !@praedikation
-			ns = self.sentence
 			reifizierungen = @graph.expansion_rules[:reifications]
 			if self.cat == 'P'
 				@praedikation = self
@@ -440,14 +438,14 @@ class AnnoNode
 				reif = self.in.select{|k| reifizierungen.include?(k.cat)}.map{|kante| {:knoten => kante.start, :kante => kante}}
 				if @praedikation = self.parent_nodes{|e| e.cat == 'ex'}.select{|n| n.cat == 'P'}[0]
 				elsif reif != []
-					@praedikation = @graph.add_anno_node(:attr => {'cat'=>'P', 'f-layer'=>'t'}, :sentence => ns)
+					@praedikation = @graph.add_anno_node(:attr => {'cat'=>'P', 'f-layer'=>'t'}, :sentence => sentence)
 					@graph.add_anno_edge(:start => @praedikation, :end => self, :attr => {'cat'=>'ex', 'f-layer'=>'t'})
 					reif.each do |r|
 						@graph.add_anno_edge(:start => r[:knoten], :end => self, :attr => {'cat'=>'ex', 'f-layer'=>'t'})
 						r[:kante].end = @praedikation
 					end
 				else
-					@praedikation = @graph.add_anno_node(:attr => {'cat'=>'P', 'f-layer'=>'t'}, :sentence => ns)
+					@praedikation = @graph.add_anno_node(:attr => {'cat'=>'P', 'f-layer'=>'t'}, :sentence => sentence)
 					@graph.add_anno_edge(:start => @praedikation, :end => self, :attr => {'cat'=>'ex', 'f-layer'=>'t'})
 				end
 			end

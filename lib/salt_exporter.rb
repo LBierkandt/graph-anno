@@ -35,13 +35,7 @@ class AnnoGraph
 }
 
 		# Text/Korpusstring
-		tokens = @nodes.values.select{|k| k.token}.sort do |a,b|
-			if a.sentence != b.sentence
-				a.sentence <=> b.sentence
-			else
-				a.tokenid <=> b.tokenid
-			end
-		end
+		tokens = sentence_nodes.map{|s| s.sentence_tokens}.flatten
 		korpusstring = ''
 		tokens.each do |tok|
 			tok.salt_attr['start'] = korpusstring.length.to_s
@@ -79,8 +73,8 @@ class AnnoGraph
 		
 		# Satzspannen
 		saetzegraph = AnnoGraph.new
-		self.sentences.each_with_index do |ns, index|
-			knot = saetzegraph.add_node(:attr => {'sentenceID' => ns})
+		self.sentence_nodes.each_with_index do |sentence, index|
+			knot = saetzegraph.add_sect_node(:attr => {'sentenceID' => sentence.name})
 			knot.salt_init
 			saltxml += saltXML_knoten_schreiben(knot, :satz, index, graphpfad)
 			knot.salt_attr['index'] = knotenzaehler.to_s
@@ -107,7 +101,7 @@ class AnnoGraph
 		# Satzspannen verbinden
 		satzrelzaehler = 1
 		saetzegraph.nodes.values.each do |satz|
-			tokens = @nodes.values.select{|k| k.token and k.sentence == satz['sentenceID']}
+			tokens = satz.sentence_tokens
 			tokens.each do |tok|
 				name = 'spanningRel' + satzrelzaehler.to_s
 				saltxml += '  <edges xsi:type="sDocumentStructure:SSpanningRelation" source="//@nodes.'+satz.salt_attr['index']+'" target="//@nodes.'+tok.salt_attr['index']+'">'+"\n"
