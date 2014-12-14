@@ -39,9 +39,6 @@ class AnnoNode < Node
 	def initialize(h)
 		super
 		@type = h[:type]
-		if h[:sentence]
-			@graph.add_sect_edge(:start => h[:sentence], :end => self)
-		end
 	end
 
 	# @return [Hash] the element transformed into a hash with all values casted to strings
@@ -354,14 +351,16 @@ class AnnoGraph < SearchableGraph
 	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
 	# @return [Node] the new node
 	def add_anno_node(h)
-		add_node(h.merge(:type => 'a'))
+		n = add_node(h.merge(:type => 'a'))
+		add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 	end
 
 	# creates a new token node and adds it to self
 	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
 	# @return [Node] the new node
 	def add_token_node(h)
-		add_node(h.merge(:type => 't'))
+		n = add_node(h.merge(:type => 't'))
+		add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 	end
 
 	# creates a new section node and adds it to self
