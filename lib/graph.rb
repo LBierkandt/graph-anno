@@ -119,8 +119,8 @@ class Edge < NodeOrEdge
 		end
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
-			@graph.nodes[@start.ID].out << self
-			@graph.nodes[@end.ID].in << self
+			@start.out << self
+			@end.in << self
 		else
 			self.delete
 		end

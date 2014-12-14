@@ -62,7 +62,11 @@ class AnnoNode < Node
 	end
 
 	def sentence
-		parent_nodes{|e| e.type == 's'}[0]
+		if @type == 's'
+			self
+		else
+			parent_nodes{|e| e.type == 's'}[0]
+		end
 	end
 
 	def sentence_tokens # Alle Tokens desselben Satzes
@@ -213,12 +217,18 @@ class AnnoNode < Node
 		@attr['name'] = name
 	end
 
-	def nodes
-		if @type == 's'
-			child_nodes{|e| e.type == 's'}
+	def nodes(link = nil, end_node_condition = '')
+		if link
+			super
 		else
-			[]
+			if @type == 's'
+				child_nodes{|e| e.type == 's'}
+			else
+				sentence.nodes
+			end
 		end
+	end
+
 end
 
 class AnnoEdge < Edge
@@ -360,6 +370,7 @@ class AnnoGraph < SearchableGraph
 	def add_anno_node(h)
 		n = add_node(h.merge(:type => 'a'))
 		add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
+		return n
 	end
 
 	# creates a new token node and adds it to self
@@ -368,6 +379,7 @@ class AnnoGraph < SearchableGraph
 	def add_token_node(h)
 		n = add_node(h.merge(:type => 't'))
 		add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
+		return n
 	end
 
 	# creates a new section node and adds it to self
@@ -456,15 +468,15 @@ class AnnoGraph < SearchableGraph
 			last_token = sentence.sentence_tokens[-1]
 		end
 		words.each do |word|
-			token_collection << self.add_token_node(:attr => {'token' => word}, :sentence => sentence)
+			token_collection << add_token_node(:attr => {'token' => word}, :sentence => sentence)
 		end
 		# This creates relationships between the tokens in the form of 1->2->3->4
 		token_collection[0..-2].each_with_index do |token, index|
-			self.add_order_edge(:start => token, :end => token_collection[index+1], :sentence => sentence)
+			add_order_edge(:start => token, :end => token_collection[index+1])
 		end
 		# If there are already tokens, append the new ones
-		if last_token then self.add_order_edge(:start => last_token, :end => token_collection[0], :sentence => sentence) end
-		if next_token then self.add_order_edge(:start => token_collection[-1], :end => next_token, :sentence => sentence) end
+		if last_token then add_order_edge(:start => last_token, :end => token_collection[0]) end
+		if next_token then add_order_edge(:start => token_collection[-1], :end => next_token) end
 		if last_token && next_token then self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete end
 		return token_collection
 	end
