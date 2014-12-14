@@ -75,7 +75,7 @@ class GraphController
 		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence ? @display.sentence.name : nil })
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
-		if @display.sentence and @sinatra.request.cookies['traw_sentence'] == @display.sentence.name
+		if @display.sentence and @sinatra.request.cookies['traw_sentence'] == @display.sentence.ID
 			sentence_changed = false
 		else
 			sentence_changed = true
@@ -125,7 +125,7 @@ class GraphController
 		end
 		@display.found[:all_nodes] = @display.found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@display.found[:all_edges] = @display.found[:tg].map{|tg| tg.edges}.flatten.uniq
-		@display.found[:sentences] = @display.found[:all_nodes].map{|k| k.sentence}.uniq
+		@display.found[:sentences] = @display.found[:all_nodes].map{|k| k.sentence.name}.uniq
 		@display.sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		puts '"' + @search_result + '"'
@@ -239,7 +239,7 @@ class GraphController
 		end
 		set_sentences_html
 		@display.sentence = @sentence_list.first
-		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence.name, :path => '/' })
+		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence.ID, :path => '/' })
 		return {:sentences_html => @sentences_html}.to_json
 	end
 
@@ -247,7 +247,7 @@ class GraphController
 		if @display.found
 			subgraph = {'nodes' => [], 'edges' => []}
 			@display.found[:sentences].each do |sentence|
-				subgraph['nodes'] += @graph.nodes.values.select{|k| k.sentence == sentence}
+				subgraph['nodes'] += @graph.nodes.values.select{|k| k.sentence.name == sentence}
 				subgraph['edges'] += subgraph['nodes'].map{|n| n.in + n.out}.flatten.uniq
 			end
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
@@ -287,7 +287,7 @@ class GraphController
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(parameters[:attributes])
-					@graph.add_anno_node(:attr => properties, :sentence => @display.sentence.name)
+					@graph.add_anno_node(:attr => properties, :sentence => @display.sentence)
 				end
 
 			when 'e' # new edge
@@ -338,7 +338,7 @@ class GraphController
 			when 'p', 'g' # group under new parent node
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
-					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence.name)
+					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -353,7 +353,7 @@ class GraphController
 			when 'c', 'h' # attach new child node
 				if @display.sentence
 					layer = set_new_layer(parameters[:words], properties)
-					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence.name)
+					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -365,40 +365,38 @@ class GraphController
 					end
 				end
 
-			when 'ns' # create new sentence
-				sentence_nodes = @graph.sentence_nodes
+			when 'ns' # create and append new sentence(s)
+				old_sentence_nodes = @graph.sentence_nodes
 				new_nodes = []
 				parameters[:words].each do |s|
-					if sentence_nodes.select{|k| k.name == s}.empty?
-						new_nodes << @graph.add_sect_node(:sentence => s)
-						@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last)
-					end
+					new_nodes << @graph.add_sect_node(:name => s)
+					@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last)
 				end
-				@graph.add_order_edge(:start => sentence_nodes.last, :end => new_nodes.first)
-				@display.sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
+				@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first)
+				@display.sentence = new_nodes.first
 
 			when 't' # build tokens and append them
 				if @display.sentence
-					@graph.build_tokens(parameters[:words], @display.sentence.name)
+					@graph.build_tokens(parameters[:words], @display.sentence)
 				end
 
 			when 'ti' # build tokens and insert them
 				if @display.sentence
 					knoten = element_by_identifier(parameters[:tokens][0])
-					@graph.build_tokens(parameters[:words][1..-1], @display.sentence.name, knoten)
+					@graph.build_tokens(parameters[:words][1..-1], @display.sentence, knoten)
 				end
 
 			when 's' # change sentence
-				@display.sentence = @graph.nodes.values.select{|n| n.type == 's' and n.name == parameters[:words][0]}[0]
+				@display.sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 			when 'del' # delete sentence
 				if @display.sentence
 					saetze = @graph.sentence_nodes
 					index = saetze.index(@display.sentence) + 1
 					if index == saetze.length then index -= 2 end
-
-					@graph.nodes.values.select{|k| k.sentence == @display.sentence.name}.each{|k| k.delete}
-
+					# delete nodes
+					@display.sentence.sentence_nodes.each{|n| n.delete}
+					@display.sentence.delete
 					# change to next sentence
 					@display.sentence = saetze[index]
 				end
@@ -408,11 +406,10 @@ class GraphController
 
 				@graph.read_json_file(@graph_file)
 				sentence_nodes = @graph.sentence_nodes
-				if @display.sentence and sentence_nodes.map{|n| n.name}.include?(@display.sentence.name)
+				if @display.sentence
 					@display.sentence = sentence_nodes.select{|n| n.name == @display.sentence.name}[0]
-				else
-					@display.sentence = sentence_nodes.first
 				end
+				@display.sentence = sentence_nodes.first unless @display.sentence
 
 			when 'add' # load corpus file and add it to the workspace
 				@graph_file.replace('')
@@ -421,11 +418,9 @@ class GraphController
 				@graph.merge!(addgraph)
 
 			when 'save', 'speichern' # save workspace to corpus file
-				if parameters[:words][0] then @graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) end
-				if !File.exist?('data') then Dir.mkdir('data') end
-				if @display.sentence
-					@graph.write_json_file(@graph_file)
-				end
+				@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]
+				Dir.mkdir('data') unless File.exist?('data')
+				@graph.write_json_file(@graph_file) if @display.sentence
 
 			when 'clear', 'leeren' # clear workspace
 				@graph_file.replace('')
@@ -460,9 +455,9 @@ class GraphController
 
 			# all following commands are related to annotation @graph expansion -- Experimental!
 			when 'project'
-				@graph.merkmale_projizieren(@display.sentence.name)
+				@graph.merkmale_projizieren(@display.sentence)
 			when 'reduce'
-				@graph.merkmale_reduzieren(@display.sentence.name)
+				@graph.merkmale_reduzieren(@display.sentence)
 
 			when 'adv'
 				nodes = (parameters[:all_nodes]).map{|n| element_by_identifier(n)}
@@ -474,33 +469,33 @@ class GraphController
 			when 'desem'
 				@graph.de_sem(parameters[:elements].map{|n| element_by_identifier(n)})
 			when 'sc'
-				@graph.apply_shortcuts(@display.sentence.name)
+				@graph.apply_shortcuts(@display.sentence)
 
 
 			when 'exp'
-				@graph.expandieren(@display.sentence.name)
+				@graph.expandieren(@display.sentence)
 			when 'exp1'
-				@graph.praedikationen_einfuehren(@display.sentence.name)
+				@graph.praedikationen_einfuehren(@display.sentence)
 			when 'exp3'
-				@graph.referenten_einfuehren(@display.sentence.name)
+				@graph.referenten_einfuehren(@display.sentence)
 			when 'exp4'
-				@graph.argumente_einfuehren(@display.sentence.name)
+				@graph.argumente_einfuehren(@display.sentence)
 			when 'expe'
-				@graph.apply_shortcuts(@display.sentence.name)
-				@graph.praedikationen_einfuehren(@display.sentence.name)
-				@graph.referenten_einfuehren(@display.sentence.name)
-				@graph.argumente_einfuehren(@display.sentence.name)
-				@graph.argumente_entfernen(@display.sentence.name)
-				@graph.merkmale_projizieren(@display.sentence.name)
+				@graph.apply_shortcuts(@display.sentence)
+				@graph.praedikationen_einfuehren(@display.sentence)
+				@graph.referenten_einfuehren(@display.sentence)
+				@graph.argumente_einfuehren(@display.sentence)
+				@graph.argumente_entfernen(@display.sentence)
+				@graph.merkmale_projizieren(@display.sentence)
 			when 'exp-praed'
-				#@graph.praedikationen_einfuehren(@display.sentence.name)
-				@graph.praedikationen_einfuehren(@display.sentence.name)
-				@graph.referenten_einfuehren(@display.sentence.name)
-				@graph.argumente_einfuehren(@display.sentence.name)
-				@graph.argumente_entfernen(@display.sentence.name)
-				@graph.referenten_entfernen(@display.sentence.name)
+				#@graph.praedikationen_einfuehren(@display.sentence)
+				@graph.praedikationen_einfuehren(@display.sentence)
+				@graph.referenten_einfuehren(@display.sentence)
+				@graph.argumente_einfuehren(@display.sentence)
+				@graph.argumente_entfernen(@display.sentence)
+				@graph.referenten_entfernen(@display.sentence)
 				# Aufräumen:
-				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence.name}.clone.each do |k|
+				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
 					k.referent = nil
 					k.praedikation = nil
 					k.satz = nil
@@ -508,13 +503,13 @@ class GraphController
 					k.unreduzierte_merkmale = nil
 				end
 			when 'exp-ref'
-				@graph.komprimieren(@display.sentence.name)
-				@graph.praedikationen_einfuehren(@display.sentence.name)
-				@graph.referenten_einfuehren(@display.sentence.name)
-				@graph.argumente_einfuehren(@display.sentence.name)
-				@graph.argumente_entfernen(@display.sentence.name)
+				@graph.komprimieren(@display.sentence)
+				@graph.praedikationen_einfuehren(@display.sentence)
+				@graph.referenten_einfuehren(@display.sentence)
+				@graph.argumente_einfuehren(@display.sentence)
+				@graph.argumente_entfernen(@display.sentence)
 				# Aufräumen:
-				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence.name}.clone.each do |k|
+				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
 					k.referent = nil
 					k.praedikation = nil
 					k.satz = nil
@@ -522,10 +517,10 @@ class GraphController
 					k.unreduzierte_merkmale = nil
 				end
 			when 'exp-arg'
-				@graph.komprimieren(@display.sentence.name)
-				@graph.expandieren(@display.sentence.name)
+				@graph.komprimieren(@display.sentence)
+				@graph.expandieren(@display.sentence)
 				# Aufräumen:
-				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence.name}.clone.each do |k|
+				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
 					k.referent = nil
 					k.praedikation = nil
 					k.satz = nil
@@ -534,17 +529,17 @@ class GraphController
 				end
 
 			when 'komp'
-				@graph.komprimieren(@display.sentence.name)
+				@graph.komprimieren(@display.sentence)
 			when 'komp-arg'
-				@graph.argumente_entfernen(@display.sentence.name)
+				@graph.argumente_entfernen(@display.sentence)
 			when 'komp-ref'
-				@graph.referenten_entfernen(@display.sentence.name)
+				@graph.referenten_entfernen(@display.sentence)
 			when 'komp-praed'
-				@graph.komprimieren(@display.sentence.name)
-				#@graph.praedikationen_entfernen(@display.sentence.name)
-				#@graph.adverbialpraedikationen_entfernen(@display.sentence.name)
+				@graph.komprimieren(@display.sentence)
+				#@graph.praedikationen_entfernen(@display.sentence)
+				#@graph.adverbialpraedikationen_entfernen(@display.sentence)
 				## Aufräumen:
-				#@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence.name}.clone.each do |k|
+				#@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
 				#	k.referent = nil
 				#	k.praedikation = nil
 				#	k.satz = nil
