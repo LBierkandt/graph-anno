@@ -501,9 +501,13 @@ class AnnoGraph < SearchableGraph
 			sentences = NLP.segment(text, options['language'])
 		end
 		id_length = sentences.length.to_s.length
+		sentence_node = nil
+		old_sentence_node = nil
 		sentences.each_with_index do |s, i|
 			sentence_id = "%0#{id_length}d" % i
 			sentence_node = add_sect_node(:name => sentence_id)
+			add_order_edge(:start => old_sentence_node, :end => sentence_node)
+			old_sentence_node = sentence_node
 			case options['processing_method']
 			when 'regex'
 				words = s.scan(options['tokens']['regex'])
