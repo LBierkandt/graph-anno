@@ -3,7 +3,7 @@ window.onload = function() {
 	
 	window.onkeydown = taste;
 	document.getElementById('sentence').onchange = changeSentence;
-	
+
 	document.forms['cmd'].elements['txtcmd'].focus();
 	document.forms['cmd'].elements['txtcmd'].select();
 }
@@ -175,6 +175,8 @@ function verschiebeBild(richtung) {
 function updateView(antworthash) {
 	document.getElementById('textline').innerHTML = antworthash['textline'];
 	document.getElementById('meta').innerHTML = antworthash['meta'];
+	if (antworthash['sentence_list'] != undefined) build_sentence_list(antworthash['sentence_list']);
+	setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 	graphdivEinpassen();
 	var bild = document.getElementById('graph');
 	var scrollLeft = bild.parentNode.scrollLeft;
@@ -258,7 +260,7 @@ function sendDataExport() {
 }
 function setSelectedIndex(s, v) {
 	for ( var i = 0; i < s.options.length; i++ ) {
-		if ( s.options[i].text == v ) {
+		if ( s.options[i].value == v ) {
 			s.options[i].selected = true;
 			return;
 		}
@@ -287,9 +289,7 @@ function makeAnfrage(anfrage, params) {
 				}
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
-				if (antworthash['sentences_html'] != undefined) document.cmd.sentence.innerHTML = antworthash['sentences_html'];
 				updateLayerOptions();
-				setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
 				if (antworthash['search_result'] != undefined) {
 					document.getElementById('searchresult').innerHTML = antworthash['search_result'];
@@ -398,6 +398,17 @@ function updateLayerOptions() {
 		setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 	});
 }
+function build_sentence_list(list) {
+	var sentence_select = $('#sentence');
+	sentence_select.html('');
+	$.each(list, function(sentence){
+		if(this.found){
+			sentence_select.append($('<option />').addClass('found_sentence').val(this.id).text(this.name));
+		} else{
+			sentence_select.append($('<option />').val(this.id).text(this.name));
+		}
+	});
+}
 function configKeys(tast) {
 	if (tast.which == 27 || tast.which == 119) {
 		tast.preventDefault();
@@ -452,8 +463,7 @@ function sendImport(type) {
 			processData: false
 	})
 	.done(function(data) {
-		if (data['sentences_html'] != undefined) {
-			$('#sentence').html(data['sentences_html']);
+		if (data['sentence_list'] != undefined) {
 			closeModal();
 			updateLayerOptions();
 			loadGraph();

@@ -27,8 +27,7 @@ class GraphController
 		@graph_file = ''
 		@data_table = nil
 		@search_result = ''
-		@sentence_list = []
-		@sentences_html = ''
+		@sentence_list = {}
 	end
 
 	def root
@@ -44,7 +43,8 @@ class GraphController
 	def draw_graph
 		@display.sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => true}.merge(satzinfo).to_json
+		set_sentence_list
+		return {:sentence_changed => true, :sentence_list => @sentence_list.values}.merge(satzinfo).to_json
 	end
 
 	def toggle_refs
@@ -72,7 +72,7 @@ class GraphController
 		end
 		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		if value then return value.to_json end
-		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence ? @display.sentence.name : nil })
+		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence ? @display.sentence.ID : nil })
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
 		if @display.sentence and @sinatra.request.cookies['traw_sentence'] == @display.sentence.ID
@@ -80,9 +80,9 @@ class GraphController
 		else
 			sentence_changed = true
 		end
-		set_sentences_html
+		set_sentence_list
 		return {
-			:sentences_html => @sentences_html,
+			:sentence_list => @sentence_list.values,
 			:sentence_changed => sentence_changed,
 			:graph_file => @graph_file
 		}.merge(satzinfo).to_json
@@ -95,13 +95,16 @@ class GraphController
 		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
-	def set_sentences_html
-		# prüfen, ob sich die Satzliste geändert hat (und nur dann neue Liste fürs select-Feld erstellen)
-		if (new_sentence_list = @graph.sentence_nodes) != @sentence_list
-			@sentence_list = new_sentence_list
-			@sentences_html = @display.build_sentence_html(@sentence_list)
+	def set_sentence_list(h = {})
+		if h[:clear]
+			@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
 		else
-			@sentences_html = nil
+			@sentence_list = 	Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
+			if @display.found
+				@display.found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
+					@sentence_list[s][:found] = true
+				end
+			end
 		end
 	end
 
@@ -125,12 +128,15 @@ class GraphController
 		end
 		@display.found[:all_nodes] = @display.found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@display.found[:all_edges] = @display.found[:tg].map{|tg| tg.edges}.flatten.uniq
-		@display.found[:sentences] = @display.found[:all_nodes].map{|k| k.sentence.name}.uniq
+		@sentence_list.each{|id, h| h[:found] = false}
+		@display.found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
+			@sentence_list[s][:found] = true
+		end
 		@display.sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		puts '"' + @search_result + '"'
 		return {
-			:sentences_html => @display.build_sentence_html(@sentence_list),
+			:sentence_list => @sentence_list.values,
 			:search_result => @search_result,
 			:sentence_changed => false
 		}.merge(satzinfo).to_json
@@ -237,16 +243,16 @@ class GraphController
 			format = JSON.parse(format_description)
 			@graph.toolbox_einlesen(file, format)
 		end
-		set_sentences_html
-		@display.sentence = @sentence_list.first
+		set_sentence_list(:clear => true)
+		@display.sentence = @graph.nodes[sentence_list.keys.first]
 		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence.ID, :path => '/' })
-		return {:sentences_html => @sentences_html}.to_json
+		return {:sentence_list => @sentence_list.values}.to_json
 	end
 
 	def export_subcorpus(filename)
 		if @display.found
 			subgraph = {'nodes' => [], 'edges' => []}
-			@display.found[:sentences].each do |sentence|
+			@sentence_list.values.each do |sentence|
 				subgraph['nodes'] += @graph.nodes.values.select{|k| k.sentence.name == sentence}
 				subgraph['edges'] += subgraph['nodes'].map{|n| n.in + n.out}.flatten.uniq
 			end

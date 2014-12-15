@@ -21,7 +21,6 @@
           %select{ :name => "layer", :id => "layer" }
             = haml :layer_options, :locals => {:controller => controller}
           %select{ :name => "sentence", :id => "sentence" }
-            = controller.display.build_sentence_html(controller.sentence_list)
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
           #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end
 
