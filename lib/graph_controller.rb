@@ -71,7 +71,7 @@ class GraphController
 			@display.sentence = @graph.nodes[@sinatra.params[:sentence]]
 		end
 		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
-		if value then return value.to_json end
+		return value.to_json if value
 		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence ? @display.sentence.ID : nil })
 		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
@@ -399,7 +399,7 @@ class GraphController
 				if @display.sentence
 					saetze = @graph.sentence_nodes
 					index = saetze.index(@display.sentence) + 1
-					if index == saetze.length then index -= 2 end
+					index -= 2 if index == saetze.length
 					# delete nodes
 					@display.sentence.nodes.each{|n| n.delete}
 					@display.sentence.delete
@@ -437,7 +437,7 @@ class GraphController
 				if @display.sentence
 					format = parameters[:words][0]
 					name = parameters[:words][1]
-					if !File.exist?('images') then Dir.mkdir('images') end
+					Dir.mkdir('images') if !File.exist?('images')
 					@display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
 				end
 

@@ -10,15 +10,11 @@ window.onload = function() {
 window.onresize = graphdivEinpassen;
 
 function loadGraph() {
-	var anfrage = new XMLHttpRequest();
-	anfrage.open('GET', '/draw_graph', false);
-	anfrage.onreadystatechange = function () {
-		if (anfrage.readyState == 4 && anfrage.status == 200) {
-			var antworthash = JSON.parse(anfrage.responseText);
-			updateView(antworthash);
-		}
-	}
-	anfrage.send(null);
+	$.ajax({
+		url: '/draw_graph',
+		async: false,
+		dataType: 'json'
+	}).done(updateView);
 }
 function graphdivEinpassen() {
 	var graphdiv = document.getElementById('graphdiv');
@@ -80,15 +76,10 @@ function taste(tast) {
 	}
 	else if (tast.which == 115) {
 		tast.preventDefault();
-		var anfrage = new XMLHttpRequest();
-		anfrage.open('GET', '/toggle_refs');
-		anfrage.onreadystatechange = function () {
-			if (anfrage.readyState == 4 && anfrage.status == 200) {
-				var antworthash = JSON.parse(anfrage.responseText);
-				updateView(antworthash);
-			}
-		}
-		anfrage.send(null);
+		$.ajax({
+			url: '/toggle_refs',
+			dataType: 'json'
+		}).done(updateView);
 	}
 	else if (tast.which == 117) {
 		tast.preventDefault();
@@ -317,7 +308,6 @@ function changeSentence() {
 function openConfig() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
-			type: 'GET',
 			url: '/config_form'
 		})
 		.done(function(data) {
@@ -390,7 +380,6 @@ function closeModal() {
 }
 function updateLayerOptions() {
 	$.ajax({
-		type: 'GET',
 		url: '/layer_options'
 	})
 	.done(function(data) {
@@ -434,7 +423,6 @@ function removeLayerAttributes(number) {
 }
 function openImport(type) {
 	$.ajax({
-		type: 'GET',
 		url: '/import_form/' + type
 	})
 	.done(function(data) {

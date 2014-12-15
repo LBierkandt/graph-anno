@@ -24,10 +24,6 @@
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
           #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end
 
-    %script{ :type => "text/javascript", :language => "JavaScript" }
-      setSelectedIndex(document.getElementById('sentence'),'#{request.cookies['traw_sentence']}');
-      setSelectedIndex(document.getElementById('layer'),'#{request.cookies['traw_layer']}');
-    
     #search
       %form{ :action => "/search", :method => "post", :name => "search" }
         %textarea{ :cols => "50", :rows => "20", :name => "query", :id => "query" }
