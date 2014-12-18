@@ -95,9 +95,10 @@ class GraphController
 		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
-	def set_sentences_html
+	def set_sentences_html(force = false)
 		# prüfen, ob sich die Satzliste geändert hat (und nur dann neue Liste fürs select-Feld erstellen)
-		if (new_sentence_list = @graph.sentences) != @sentence_list
+		new_sentence_list = @graph.sentences
+		if force or new_sentence_list != @sentence_list
 			@sentence_list = new_sentence_list
 			@sentences_html = @display.build_sentence_html(@sentence_list)
 		else
@@ -237,7 +238,7 @@ class GraphController
 			format = JSON.parse(format_description)
 			@graph.toolbox_einlesen(file, format)
 		end
-		set_sentences_html
+		set_sentences_html(true)
 		@display.sentence = @sentence_list.first
 		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence, :path => '/' })
 		return {:sentences_html => @sentences_html}.to_json
