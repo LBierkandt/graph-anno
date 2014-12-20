@@ -10,15 +10,14 @@ In order to run GraphAnno you need:
 
 1. An installation of Graphviz (http://www.graphviz.org/)
 
-2. **On all OSs**:
-
-  Ruby (http://www.ruby-lang.org/; GraphAnno has been developed with version 2.0; but 1.9 should work, too);
+2. 
+  * Ruby (http://www.ruby-lang.org/; GraphAnno has been developed with version 2.0; but 1.9 should work, too)
+    
+    install needed Rubygems with bundler (if necessary, run `gem install bundler` before):
+    1. navigate to the GraphAnno main directory
+    2. run `bundle install`
   
-  install needed Rubygems with bundler (if necessary, run `gem install bundler` before):
-  1. navigate to the GraphAnno main directory
-  2. run `bundle install`
-  
-  **For Windows** there is a compiled version of the program for which you don't need Ruby.
+  * For Windows there is a compiled version of the program for which you don't need Ruby.
 
 3. A browser (GraphAnno has been developed with Firefox, it has not been checked whether it works just as well on other browsers)
 
