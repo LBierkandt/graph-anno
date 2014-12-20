@@ -87,7 +87,9 @@
 \tableofcontents
 
 
-\section{Graphformat}
+\section{Der Annotationsgraph}
+
+\subsection{Graphformat}
 
 Ein Graph in GraphAnno besteht aus einer Menge von Knoten und gerichteten Kanten. Knoten und Kanten haben Attribute in der Form von Schlüssel-Wert-Paaren, die sowohl der linguistischen Annotation als auch der Strukturierung und Darstellung des Graphen in GraphAnno dienen. Kanten tragen zusätzlich ein \texttt{type}-Attribut.
 
@@ -111,7 +113,15 @@ GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Eben
 \end{itemize}
 
 
+\subsection{Konfiguration}\label{konfiguration}
 
+Mit F8 wird für den aktuell geladenen Graph das Einstellungsfenster geöffnet. In diesem Fenster können Einstellung zur Darstellung zu den Ebenen vorgenommen werden.
+
+Unter \textit{General settings} werden Einstellungen für Knoten und Kanten, die keiner Ebene angehören, vorgenommen.\footnote{Je nach verwendetem Browser werden die Feldr für Farbeinstellungen als Farbwahlfeld oder als Textfeld dargestellt. Beim Textfeld ist die Farbe als RGB-Hexadezimalwert anzugeben: Ein Rautenzeichen (\texttt{\#})gefolgt von drei zweistelligen Hexadezimalzahlen jeweils für rot, grün und blau. So steht beispielsweise \texttt{\#000000} für schwarz, \texttt{\#ffffff} für weiß, \texttt{\#ff0000} für ein helles Rot etc.} \textit{Default color} gilt für alle Knoten und Kanten, die keine Token sind und keiner Ebene angehören, \textit{token color} gilt für Token, \textit{found color} für die Hervorhebung bei der Suche gefundener Knoten und Kanten (überschreibt dann die für die jeweiligen Elemete sonst geltende Farbe), \textit{filtered color} für die mit der Filterfunktion ausgefilterten Elemente. Die Einstellung \textit{edge weight} ist für Anatomie des Graphen von Belang und zeigt ihre Wirkung erst, wenn es Kanten von unterschiedlichem Gewicht gibt (zu Details siehe folgenden Absatz).
+
+Unter \textit{layers} werden Einstellungen für die Ebenen des Graphen vorgenommen. Der \textit{Name} ist eine beliebige Bezeichnung der Ebene, die im Aufklappfeld für die Ebenenwahl angezeigt wird. Das \textit{Attribut} ist dasjenige Annotationsattribut, dessen Wert auf \texttt{t} gesetzt wird, wenn ein Element der entsprechenden Ebene angehört. Der \textit{Shortcut} ist ein Bezeichner, der für die Annotation von Elementen genutzt werden kann (siehe \ref{befehl-n}); dieses Kürzel darf nur aus alphanumerischen Zeichen bestehen und darf nicht das gleiche Format wie Elementreferenzen aufweisen (also \texttt{t}, \texttt{n} oder \texttt{e} gefolgt von einer Zahl, oder  \texttt{m}; siehe \ref{befehl-a}). \textit{Color} ist die für Elemente der Ebene verwendete Farbe; \textit{edge weight} ist das Gewicht der Kanten der Ebene. Je höher der hier eingegebene Wert (ganzzahlige Werte), desto kürzer versucht der Graphzeichenalgorithmus die Kanten zu zeichnen. Legt man also eine Ebene mit hohem Kantengewicht und eine mit niedrigem an, so wird der Graph so gezeichnet, daß der Graph der ersten Ebene möglichst kompakt ist; die Elemente der zweiten Ebene werden so angeordnet, daß sie den Graph der ersten Ebene wenig verzerren. Wird als Kantengewicht \texttt{0} angegeben, so erzwingen die Kanten der Ebene keine Hierarhcie zwischen den Knoten, die sie verbinden (sonst ist der Startknoten einer Kante stets höher als der Zielknoten angeordnet). Wird ein negativer Wert angegeben, so werden die Knoten der Ebene alle auf einer horizontal Ebene dargestellt.
+
+Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zugleich angehören, Einstellungen vorgenommen werden. Welchen Ebenen ein Element angehören muß, um unter eine Kombinationsdefinition zu fallen, wird über die Auswahlkästchen unter \textit{attributes} angegeben, die anderen Einstellungen funktionieren analog zu denen unter \textit{layers} und überschreiben die dort angegebenen Werte für Elemente, die der Ebenenkombination angehören.
 
 
 \section{Tastaturbefehle}
@@ -232,13 +242,10 @@ Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Impo
 Die Annotationsbefehle von GraphAnno sind darauf ausgerichtet, daß sie möglichst schnell einzugeben sind. Daher ist ihre Syntax entsprechend reduziert: Sie bestehen aus einem kurzen Befehl (oft nur ein Buchstabe) gefolgt von Parametern, die durch Leerzeichen getrennt sind.
 
 
-\subsubsection{Neuer Knoten: \texttt{n}}
+\subsubsection{Neuer Knoten: \texttt{n}}\label{befehl-n}
 
 Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\char"0022})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022...\char"0022}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
-Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll. Dazu dienen die auch für den Befehl \texttt{l} (siehe \ref{l}) geltenden Kürzel \texttt{f}, \texttt{s} und \texttt{fs}. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt.
-        %li new node: <i>n key:value key:value ...</i>
-        %ul
-          %li n typ:S ill:decl tns:prs
+Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll. Dazu dienen die auch für den Befehl \texttt{l} (siehe \ref{l}) geltenden Kürzel, die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellt werden. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt.
 
 \paragraph*{Befehl \texttt{n} in modifizierter BNF:}
 ~
@@ -252,7 +259,7 @@ attribut        =   schlüssel zeichenkette
 schlüssel       =   zeichenkette ":"
 zeichenkette    =   zeichen_außer_steuerzeichen+
                     """ beliebiges_zeichen* """
-ebenenschalter  =   "f" | "s" | "fs"
+ebenenschalter  =   <definiert in der Graphkonfiguration>
 \end{lstlisting}
 \end{framed}
 
@@ -260,9 +267,6 @@ ebenenschalter  =   "f" | "s" | "fs"
 \subsubsection{Neue Kante: \texttt{e}}
 
 Der Befehl zum Anlegen einer neuen Kante lautet \texttt{e}, gefolgt vom Start- und Zielknoten der zu erstellenden  Kante und den Attributen, die sie erhalten soll. Auch die Angabe einer Ebene wie bei \texttt{n} ist möglich.
-        %li new edge: <i>e start end key:value key:value ...</i>
-        %ul
-          %li e n2 n4 typ:re level:fct
 
 \paragraph*{Befehl \texttt{e} in modifizierter BNF:}
 ~
@@ -398,7 +402,7 @@ befehl_ti       =   "ti " tokenreferenz " " wörter
 
 \subsubsection{Ebenen setzen: \texttt{l}}\label{l}
 
-Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. \texttt{f} steht hier für die funktionale/semantische Ebene, \texttt{s} für die formale/morphosyntaktische, und \texttt{fs} für beide.
+Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. Dafür gelten die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellten Kürzel.
 
 \paragraph*{Befehl \texttt{l} in modifizierter BNF:}
 ~
