@@ -412,6 +412,7 @@ module Parser
 				end
 				i += 1
 			end
+			raise 'A link must consist of at least one edge' if terms.length == 0
 			return {:op => parse_term_sequence(terms), :length => i, :ids => ids}
 		end
 	end
