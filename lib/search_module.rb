@@ -50,33 +50,51 @@ class SearchableGraph < Graph
 		# text: Textfragmente
 		# edge/link: node/nodes-TGn und text-TGn kombinieren
 		
-		# Validität der Anfrage prüfen
-		# mindestens eine node-, edge- oder oder text-Klausel
+		# check validity of query
+		text_ids = operationen['text'].map{|o| ([o[:id]] + o[:ids]).flatten.compact}
+		node_ids = operationen['node'].map{|o| o[:id]}
+		nodes_ids = operationen['nodes'].map{|o| o[:id]}
+		edge_start_end_ids = operationen['edge'].map{|o| [o[:start], o[:end]]}
+		link_start_end_ids = operationen['link'].map{|o| [o[:start], o[:end]]}
+		edge_ids = operationen['edge'].map{|o| o[:id]}
+		link_ids = operationen['link'].map{|o| o[:ids]}.flatten
+		# at least one node, edge or text clause
 		if operationen['node'] + operationen['edge'].select{|o| !(o[:start] or o[:end])} + operationen['text'] == []
 			raise 'A query must contain at least one node clause, edge clause or text clause.'
 		end
-		# keine nicht definierten IDs als Start und Ziel bzw. in Bedingungen
-		erlaubte_start_end_ids =
-			operationen['node'].map{|o| o[:id]} + operationen['nodes'].map{|o| o[:id]} + operationen['text'].map{|o| o[:id]} + operationen['text'].map{|o| o[:ids]}.flatten
-		benutzte_start_end_ids =
-			(operationen['edge'].map{|o| [o[:start], o[:end]]} + operationen['link'].map{|o| [o[:start], o[:end]]}).flatten.compact
-		als_referenz_erlaubte_ids = 
-			erlaubte_start_end_ids + operationen['edge'].map{|o| o[:id]} + operationen['link'].map{|o| o[:ids]}.flatten
-		als_referenz_benutzte_ids = operationen['cond'].map{|o| o[:ids].values}.flatten
+		# check for multiply defined IDs
+		error_messages = []
+		all_ids = (text_ids + node_ids + nodes_ids + edge_ids + link_ids).flatten.compact
+		all_ids.select{|id| all_ids.count(id) > 1}.uniq.each do |id|
+			error_messages << "The ID #{id} is multiply defined."
+		end
+		# references to undefined IDs?
+		erlaubte_start_end_ids = node_ids + nodes_ids + text_ids.flatten
+		benutzte_start_end_ids = (edge_start_end_ids + link_start_end_ids).flatten.compact
+		als_referenz_erlaubte_ids = erlaubte_start_end_ids + edge_ids + link_ids
 		benutzte_start_end_ids.each do |id|
-			if not erlaubte_start_end_ids.include?(id)
-				raise "The ID #{id} is used as start or end, but is not defined."
+			error_messages << "The ID #{id} is used as start or end, but is not defined." unless erlaubte_start_end_ids.include?(id)
+		end
+		['cond', 'sort', 'col'].each do |op_type|
+			operationen[op_type].map{|o| o[:ids].values}.flatten.each do |id|
+				if not als_referenz_erlaubte_ids.include?(id)
+					error_messages << "The ID #{id} is used in #{op_type} clause, but is not defined."
+				end
 			end
 		end
-		als_referenz_benutzte_ids.each do |id|
-			if not als_referenz_erlaubte_ids.include?(id)
-				raise "The ID #{id} is used in cond clause, but is not defined."
+		# coherent graph fragment?
+		groups = text_ids + (node_ids + nodes_ids).map{|id| [id]}
+		links = edge_start_end_ids + link_start_end_ids
+		groups.reduce do |all, new|
+			if links.any?{|l| l & all != [] and l & new != []}
+				all += new
+			else
+				error_messages << 'The defined graph fragment is not coherent.'
+				break
 			end
 		end
-		# Zusammenhängendes Graphfragment?
-		if benutzte_start_end_ids.length > 0 and !erlaubte_start_end_ids.any?{|id| benutzte_start_end_ids.include?(id)}
-			raise "Defined graph fragment is not coherent."
-		end
+		raise error_messages * "\n" unless error_messages.empty?
+		
 		
 		# edge in link umwandeln, wenn Start und Ziel gegeben
 		operationen['edge'].clone.each do |operation|
@@ -377,7 +395,7 @@ class SearchableGraph < Graph
 						begin
 							op[:lambda].call(tg)
 						rescue StandardError => e
-							raise e.message + " in Zeile:\n" + op[:string]
+							raise e.message + " in line:\n" + op[:string]
 							puts tg
 							'error!'
 						end
