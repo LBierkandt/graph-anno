@@ -82,6 +82,11 @@ class SearchableGraph < Graph
 				end
 			end
 		end
+		# check for dangling edges
+		if erlaubte_start_end_ids.length > 0 and operationen['edge'].any?{|o| !(o[:start] && o[:end])} or
+			erlaubte_start_end_ids.length == 0 and operationen['edge'].length > 1
+			error_messages << 'There are dangling edges.'
+		end
 		# coherent graph fragment?
 		groups = text_ids + (node_ids + nodes_ids).map{|id| [id]}
 		links = edge_start_end_ids + link_start_end_ids
