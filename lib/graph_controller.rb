@@ -17,17 +17,29 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
+require 'yaml'
+require 'graphviz'
+	require 'open3'
+require 'htmlentities'
+
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :display, :sentence_list, :graph_file, :search_result
+	attr_reader :graph, :sentence_list, :graph_file, :search_result
 
 	def initialize
 		@graph = AnnoGraph.new
-		@display = GraphDisplay.new(@graph)
 		@graph_file = ''
 		@data_table = nil
 		@search_result = ''
 		@sentence_list = {}
+		@sentence = nil
+		@sentence = nil
+		@tokens = []
+		@nodes = []
+		@edges = []
+		@show_refs = true
+		@found = nil
+		@filter = {:mode => 'unfilter'}
 	end
 
 	def root
@@ -41,15 +53,15 @@ class GraphController
 	end
 
 	def draw_graph
-		@display.sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
-		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		set_sentence_list
 		return {:sentence_changed => true, :sentence_list => @sentence_list.values}.merge(satzinfo).to_json
 	end
 
 	def toggle_refs
-		@display.show_refs = !@display.show_refs
-		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		@show_refs = !@show_refs
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => false}.merge(satzinfo).to_json
 	end
 
@@ -65,21 +77,13 @@ class GraphController
 	def handle_commandline
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
-		if @sinatra.params[:sentence] == ''
-			@display.sentence = nil
-		else
-			@display.sentence = @graph.nodes[@sinatra.params[:sentence]]
-		end
+		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
 		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		return value.to_json if value
-		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence ? @display.sentence.ID : nil })
-		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence ? @sentence.ID : nil })
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
-		if @display.sentence and @sinatra.request.cookies['traw_sentence'] == @display.sentence.ID
-			sentence_changed = false
-		else
-			sentence_changed = true
-		end
+		sentence_changed = (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.ID) ? false : true
 		set_sentence_list
 		return {
 			:sentence_list => @sentence_list.values,
@@ -90,8 +94,8 @@ class GraphController
 
 	def change_sentence
 		set_cmd_cookies
-		@display.sentence = @graph.nodes[@sinatra.params[:sentence]]
-		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		@sentence = @graph.nodes[@sinatra.params[:sentence]]
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
@@ -100,8 +104,8 @@ class GraphController
 			@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
 		else
 			@sentence_list = 	Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
-			if @display.found
-				@display.found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
+			if @found
+				@found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
 					@sentence_list[s][:found] = true
 				end
 			end
@@ -111,29 +115,29 @@ class GraphController
 	def filter
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
-		@display.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
-		@display.sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
-		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		@filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
+		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => false, :filter_applied => true}.merge(satzinfo).to_json
 	end
 
 	def search
 		set_query_cookies
 		begin
-			@display.found = @graph.teilgraph_suchen(@sinatra.params[:query])
-			@search_result = @display.found[:tg].length.to_s + ' matches'
+			@found = @graph.teilgraph_suchen(@sinatra.params[:query])
+			@search_result = @found[:tg].length.to_s + ' matches'
 		rescue StandardError => e
-			@display.found = {:tg => [], :id_type => {}}
+			@found = {:tg => [], :id_type => {}}
 			@search_result = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
 		end
-		@display.found[:all_nodes] = @display.found[:tg].map{|tg| tg.nodes}.flatten.uniq
-		@display.found[:all_edges] = @display.found[:tg].map{|tg| tg.edges}.flatten.uniq
+		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
+		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
 		@sentence_list.each{|id, h| h[:found] = false}
-		@display.found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
+		@found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
 			@sentence_list[s][:found] = true
 		end
-		@display.sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
-		satzinfo = @display.draw_graph(:svg, 'public/graph.svg')
+		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		puts '"' + @search_result + '"'
 		return {
 			:sentence_list => @sentence_list.values,
@@ -244,13 +248,13 @@ class GraphController
 			@graph.toolbox_einlesen(file, format)
 		end
 		set_sentence_list(:clear => true)
-		@display.sentence = @graph.nodes[sentence_list.keys.first]
-		@sinatra.response.set_cookie('traw_sentence', { :value => @display.sentence.ID, :path => '/' })
+		@sentence = @graph.nodes[sentence_list.keys.first]
+		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.ID, :path => '/' })
 		return {:sentence_list => @sentence_list.values}.to_json
 	end
 
 	def export_subcorpus(filename)
-		if @display.found
+		if @found
 			subgraph = @graph.subcorpus(@sentence_list.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
@@ -258,10 +262,10 @@ class GraphController
 	end
 
 	def export_data
-		if @display.found
+		if @found
 			begin
 				anfrage = @sinatra.params[:query]
-				@data_table = @graph.teilgraph_ausgeben(@display.found, anfrage, :string)
+				@data_table = @graph.teilgraph_ausgeben(@found, anfrage, :string)
 				return ''
 			rescue StandardError => e
 				return e.message
@@ -286,14 +290,14 @@ class GraphController
 
 		case command
 			when 'n' # new node
-				if @display.sentence
+				if @sentence
 					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(parameters[:attributes])
-					@graph.add_anno_node(:attr => properties, :sentence => @display.sentence)
+					@graph.add_anno_node(:attr => properties, :sentence => @sentence)
 				end
 
 			when 'e' # new edge
-				if @display.sentence
+				if @sentence
 					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(parameters[:attributes])
 					@graph.add_anno_edge(
@@ -304,7 +308,7 @@ class GraphController
 				end
 
 			when 'a' # annotate elements
-				if @display.sentence
+				if @sentence
 					@graph.conf.layers.map{|l| l.attr}.each do |a|
 						properties.delete(a)
 					end
@@ -321,7 +325,7 @@ class GraphController
 				end
 
 			when 'd' # delete elements
-				if @display.sentence
+				if @sentence
 					(parameters[:meta] + parameters[:nodes] + parameters[:edges]).each do |el|
 						if element = element_by_identifier(el)
 							element.delete
@@ -338,9 +342,9 @@ class GraphController
 				layer = set_new_layer(parameters[:words], properties)
 
 			when 'p', 'g' # group under new parent node
-				if @display.sentence
+				if @sentence
 					layer = set_new_layer(parameters[:words], properties)
-					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence)
+					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -353,9 +357,9 @@ class GraphController
 				end
 
 			when 'c', 'h' # attach new child node
-				if @display.sentence
+				if @sentence
 					layer = set_new_layer(parameters[:words], properties)
-					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @display.sentence)
+					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -375,32 +379,32 @@ class GraphController
 					@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last)
 				end
 				@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first)
-				@display.sentence = new_nodes.first
+				@sentence = new_nodes.first
 
 			when 't' # build tokens and append them
-				if @display.sentence
-					@graph.build_tokens(parameters[:words], @display.sentence)
+				if @sentence
+					@graph.build_tokens(parameters[:words], @sentence)
 				end
 
 			when 'ti' # build tokens and insert them
-				if @display.sentence
+				if @sentence
 					knoten = element_by_identifier(parameters[:tokens][0])
-					@graph.build_tokens(parameters[:words][1..-1], @display.sentence, knoten)
+					@graph.build_tokens(parameters[:words][1..-1], @sentence, knoten)
 				end
 
 			when 's' # change sentence
-				@display.sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
+				@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 			when 'del' # delete sentence
-				if @display.sentence
+				if @sentence
 					saetze = @graph.sentence_nodes
-					index = saetze.index(@display.sentence) + 1
+					index = saetze.index(@sentence) + 1
 					index -= 2 if index == saetze.length
 					# delete nodes
-					@display.sentence.nodes.each{|n| n.delete}
-					@display.sentence.delete
+					@sentence.nodes.each{|n| n.delete}
+					@sentence.delete
 					# change to next sentence
-					@display.sentence = saetze[index]
+					@sentence = saetze[index]
 				end
 
 			when 'load', 'laden' # clear workspace and load corpus file
@@ -408,10 +412,10 @@ class GraphController
 
 				@graph.read_json_file(@graph_file)
 				sentence_nodes = @graph.sentence_nodes
-				if @display.sentence
-					@display.sentence = sentence_nodes.select{|n| n.name == @display.sentence.name}[0]
+				if @sentence
+					@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0]
 				end
-				@display.sentence = sentence_nodes.first unless @display.sentence
+				@sentence = sentence_nodes.first unless @sentence
 
 			when 'add' # load corpus file and add it to the workspace
 				@graph_file.replace('')
@@ -422,19 +426,19 @@ class GraphController
 			when 'save', 'speichern' # save workspace to corpus file
 				@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]
 				Dir.mkdir('data') unless File.exist?('data')
-				@graph.write_json_file(@graph_file) if @display.sentence
+				@graph.write_json_file(@graph_file) if @sentence
 
 			when 'clear', 'leeren' # clear workspace
 				@graph_file.replace('')
 				@graph.clear
-				@display.sentence = nil
+				@sentence = nil
 
 			when 'image' # export sentence as graphics file
-				if @display.sentence
+				if @sentence
 					format = parameters[:words][0]
 					name = parameters[:words][1]
 					Dir.mkdir('images') if !File.exist?('images')
-					@display.draw_graph(format.to_sym, 'images/'+name+'.'+format)
+					generate_graph(format.to_sym, 'images/'+name+'.'+format)
 				end
 
 			when 'export' # export corpus in other format
@@ -457,9 +461,9 @@ class GraphController
 
 			# all following commands are related to annotation @graph expansion -- Experimental!
 			when 'project'
-				@graph.merkmale_projizieren(@display.sentence)
+				@graph.merkmale_projizieren(@sentence)
 			when 'reduce'
-				@graph.merkmale_reduzieren(@display.sentence)
+				@graph.merkmale_reduzieren(@sentence)
 
 			when 'adv'
 				nodes = (parameters[:all_nodes]).map{|n| element_by_identifier(n)}
@@ -471,33 +475,33 @@ class GraphController
 			when 'desem'
 				@graph.de_sem(parameters[:elements].map{|n| element_by_identifier(n)})
 			when 'sc'
-				@graph.apply_shortcuts(@display.sentence)
+				@graph.apply_shortcuts(@sentence)
 
 
 			when 'exp'
-				@graph.expandieren(@display.sentence)
+				@graph.expandieren(@sentence)
 			when 'exp1'
-				@graph.praedikationen_einfuehren(@display.sentence)
+				@graph.praedikationen_einfuehren(@sentence)
 			when 'exp3'
-				@graph.referenten_einfuehren(@display.sentence)
+				@graph.referenten_einfuehren(@sentence)
 			when 'exp4'
-				@graph.argumente_einfuehren(@display.sentence)
+				@graph.argumente_einfuehren(@sentence)
 			when 'expe'
-				@graph.apply_shortcuts(@display.sentence)
-				@graph.praedikationen_einfuehren(@display.sentence)
-				@graph.referenten_einfuehren(@display.sentence)
-				@graph.argumente_einfuehren(@display.sentence)
-				@graph.argumente_entfernen(@display.sentence)
-				@graph.merkmale_projizieren(@display.sentence)
+				@graph.apply_shortcuts(@sentence)
+				@graph.praedikationen_einfuehren(@sentence)
+				@graph.referenten_einfuehren(@sentence)
+				@graph.argumente_einfuehren(@sentence)
+				@graph.argumente_entfernen(@sentence)
+				@graph.merkmale_projizieren(@sentence)
 			when 'exp-praed'
-				#@graph.praedikationen_einfuehren(@display.sentence)
-				@graph.praedikationen_einfuehren(@display.sentence)
-				@graph.referenten_einfuehren(@display.sentence)
-				@graph.argumente_einfuehren(@display.sentence)
-				@graph.argumente_entfernen(@display.sentence)
-				@graph.referenten_entfernen(@display.sentence)
+				#@graph.praedikationen_einfuehren(@sentence)
+				@graph.praedikationen_einfuehren(@sentence)
+				@graph.referenten_einfuehren(@sentence)
+				@graph.argumente_einfuehren(@sentence)
+				@graph.argumente_entfernen(@sentence)
+				@graph.referenten_entfernen(@sentence)
 				# Aufräumen:
-				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
+				@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
 					k.referent = nil
 					k.praedikation = nil
 					k.satz = nil
@@ -505,13 +509,13 @@ class GraphController
 					k.unreduzierte_merkmale = nil
 				end
 			when 'exp-ref'
-				@graph.komprimieren(@display.sentence)
-				@graph.praedikationen_einfuehren(@display.sentence)
-				@graph.referenten_einfuehren(@display.sentence)
-				@graph.argumente_einfuehren(@display.sentence)
-				@graph.argumente_entfernen(@display.sentence)
+				@graph.komprimieren(@sentence)
+				@graph.praedikationen_einfuehren(@sentence)
+				@graph.referenten_einfuehren(@sentence)
+				@graph.argumente_einfuehren(@sentence)
+				@graph.argumente_entfernen(@sentence)
 				# Aufräumen:
-				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
+				@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
 					k.referent = nil
 					k.praedikation = nil
 					k.satz = nil
@@ -519,10 +523,10 @@ class GraphController
 					k.unreduzierte_merkmale = nil
 				end
 			when 'exp-arg'
-				@graph.komprimieren(@display.sentence)
-				@graph.expandieren(@display.sentence)
+				@graph.komprimieren(@sentence)
+				@graph.expandieren(@sentence)
 				# Aufräumen:
-				@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
+				@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
 					k.referent = nil
 					k.praedikation = nil
 					k.satz = nil
@@ -531,17 +535,17 @@ class GraphController
 				end
 
 			when 'komp'
-				@graph.komprimieren(@display.sentence)
+				@graph.komprimieren(@sentence)
 			when 'komp-arg'
-				@graph.argumente_entfernen(@display.sentence)
+				@graph.argumente_entfernen(@sentence)
 			when 'komp-ref'
-				@graph.referenten_entfernen(@display.sentence)
+				@graph.referenten_entfernen(@sentence)
 			when 'komp-praed'
-				@graph.komprimieren(@display.sentence)
-				#@graph.praedikationen_entfernen(@display.sentence)
-				#@graph.adverbialpraedikationen_entfernen(@display.sentence)
+				@graph.komprimieren(@sentence)
+				#@graph.praedikationen_entfernen(@sentence)
+				#@graph.adverbialpraedikationen_entfernen(@sentence)
 				## Aufräumen:
-				#@graph.nodes.values.select{|k| @display.sentence == nil || k.sentence == @display.sentence}.clone.each do |k|
+				#@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
 				#	k.referent = nil
 				#	k.praedikation = nil
 				#	k.satz = nil
@@ -557,13 +561,13 @@ class GraphController
 		i = identifier.scan(/\d/).join.to_i
 		case identifier[0]
 			when 'm'
-				return @display.meta
+				return @sentence
 			when 'n'
-				return @display.nodes[i]
+				return @nodes[i]
 			when 'e'
-				return @display.edges[i]
+				return @edges[i]
 			when 't'
-				return @display.tokens[i]
+				return @tokens[i]
 			else
 				return nil
 		end
@@ -695,6 +699,195 @@ class GraphController
 			result['makros'] = e.message
 		end
 		return result.empty? ? true : result
+	end
+
+	def generate_graph(format, path)
+		puts "Generating graph for sentence \"#{@sentence.name}\"..." if @sentence
+
+		viz_graph = GraphViz.new(
+			:G,
+			:type => 'digraph',
+			:rankdir => 'TB',
+			:use => 'dot',
+			:ranksep => '.3'
+		)
+		token_graph = viz_graph.subgraph(:rank => 'same')
+		layer_graphs = {}
+		@graph.conf.combinations.each do |c|
+			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+		end
+		@graph.conf.layers.each do |l|
+			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+		end
+
+		satzinfo = {:textline => '', :meta => ''}
+
+		@tokens = @sentence ? @sentence.sentence_tokens : []
+		all_nodes = @sentence ? @sentence.nodes : []
+		@nodes = all_nodes.reject{|n| n.type == 't'}
+		@edges = all_nodes.map{|n| n.in + n.out}.flatten.uniq.select{|e| e.type == 'a'}
+		token_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'o'}
+		
+		if @filter[:mode] == 'filter'
+			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
+			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
+		end
+
+		satzinfo[:meta] = build_label(@sentence) if @sentence
+
+		@tokens.each_with_index do |token, i|
+			color = @graph.conf.token_color
+			fontcolor = @graph.conf.token_color
+			if @found && @found[:all_nodes].include?(token)
+				color = @graph.conf.found_color
+				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
+			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
+				color = @graph.conf.filtered_color
+				fontcolor = @graph.conf.filtered_color
+				satzinfo[:textline] += '<span class="hidden_word">' + token.token + '</span> '
+			else
+				satzinfo[:textline] += token.token + ' '
+			end
+			token_graph.add_nodes(
+				token.ID,
+				:fontname => @graph.conf.font,
+				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
+				:shape => 'box',
+				:style => 'bold',
+				:color => color,
+				:fontcolor => fontcolor
+			)
+		end
+
+		@nodes.each_with_index do |node, i|
+			color = @graph.conf.default_color
+			add_graphs = []
+			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
+				color = @graph.conf.filtered_color
+			else
+				@graph.conf.layers.each do |l|
+					if node[l.attr] == 't'
+						color = l.color
+						add_graphs << layer_graphs[l.attr]
+					end
+				end
+				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
+					if c.attr.all?{|a| node[a] == 't'}
+						color = c.color
+						add_graphs << layer_graphs[c.attr]
+					end
+				end
+			end
+			fontcolor = color
+			if @found && @found[:all_nodes].include?(node)
+				color = @graph.conf.found_color
+			end
+			viz_graph.add_nodes(
+				node.ID,
+				:fontname => @graph.conf.font,
+				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
+				:shape => 'box',
+				:color => color,
+				:fontcolor => fontcolor
+			)
+			add_graphs.each{|g| g.add_nodes(node.ID)}
+		end
+
+		@edges.each_with_index do |edge, i|
+			color = @graph.conf.default_color
+			weight = @graph.conf.edge_weight
+			constraint = true
+			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
+				color = @graph.conf.filtered_color
+			else
+				@graph.conf.layers.each do |l|
+					if edge[l.attr] == 't'
+						color = l.color
+						weight = l.weight
+						constraint = false if weight == 0
+					end
+				end
+				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
+					if c.attr.all?{|a| edge[a] == 't'}
+						color = c.color
+						weight = c.weight
+					end
+				end
+			end
+			fontcolor = color
+			if @found && @found[:all_edges].include?(edge)
+				color = @graph.conf.found_color
+			end
+			viz_graph.add_edges(
+				edge.start.ID,
+				edge.end.ID,
+				:fontname => @graph.conf.font,
+				:label => HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil),
+				:hexadecimal),
+				:color=> color,
+				:fontcolor => fontcolor,
+				:weight => weight,
+				:constraint => constraint
+			)
+		end
+
+		token_edges.each do |edge|
+			#len => 0
+			viz_graph.add_edges(edge.start.ID, edge.end.ID, :style => 'invis', :weight => 100)
+		end
+
+		viz_graph.output(format => '"'+path+'"')
+
+		return satzinfo
+	end
+
+	def build_label(e, i = nil)
+		label = ''
+		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
+		if e.kind_of?(Node)
+			if e.type == 's'
+				display_attr.each do |key,value|
+					label += "#{key}: #{value}<br/>"
+				end
+			elsif e.type == 't'
+				display_attr.each do |key, value|
+					case key
+						when 'token'
+							label = "#{value}\n#{label}"
+						else
+							label += "#{key}: #{value}\n"
+					end
+				end
+				if i
+					label += "t" + i.to_s
+				end
+			else # normaler Knoten
+				display_attr.each do |key,value|
+					case key
+						when 'cat'
+							label = "#{value}\n#{label}"
+						else
+							label += "#{key}: #{value}\n"
+					end
+				end
+				if i
+					label += "n" + i.to_s
+				end
+			end
+		elsif e.kind_of?(Edge)
+			display_attr.each do |key,value|
+				case key
+					when 'cat'
+						label = "#{value}\n#{label}"
+					else
+						label += "#{key}: #{value}\n"
+				end
+			end
+			if i
+				label += "e" + i.to_s
+			end
+		end
+		return label
 	end
 
 end

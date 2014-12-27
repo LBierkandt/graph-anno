@@ -25,7 +25,6 @@ require './lib/toolbox_module'
 require './lib/paula_exporter'
 require './lib/salt_exporter'
 require './lib/expansion_module'
-require './lib/graph_display'
 require './lib/graph_controller'
 
 controller = GraphController.new
