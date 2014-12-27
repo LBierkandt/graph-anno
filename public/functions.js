@@ -305,6 +305,15 @@ function changeSentence() {
 	anfrage.open('POST', '/change_sentence');
 	makeAnfrage(anfrage, params);
 }
+function setRemoveButtonFunctions() {
+	$('.remove-layer').click(function() {
+		$(this).closest('tbody').remove();
+		removeLayerAttributes();
+	});
+	$('.remove-combination').click(function() {
+		$(this).closest('tbody').remove();
+	});
+}
 function openConfig() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
@@ -312,13 +321,7 @@ function openConfig() {
 		})
 		.done(function(data) {
 			$('#modal-content').html(data);
-			$('.remove-layer').click(function() {
-				$(this).closest('tbody').remove();
-				removeLayerAttributes();
-			});
-			$('.remove-combination').click(function() {
-				$(this).closest('tbody').remove();
-			});
+			setRemoveButtonFunctions();
 			$('#new-layer').click(function() {
 				var number = parseInt($(this).closest('tbody').prev().attr('no')) + 1;
 				$.ajax({
@@ -328,6 +331,7 @@ function openConfig() {
 					$('label[for^="combinations["][for$="[attr]]"]').closest('td').next().each(function(i){
 						$(this).append("<input name='combinations["+i+"[attr["+number+"]]]' type='checkbox' value=''>\n<label for='combinations["+i+"[attr["+number+"]]]'></label>\n<br>");
 					});
+					setRemoveButtonFunctions();
 				});
 				return false;
 			});
@@ -340,6 +344,7 @@ function openConfig() {
 					$('input[name^="layers["][name$="[attr]]"]').each(function(i){
 					  setLayerAttributes(this);
 					});
+					setRemoveButtonFunctions();
 				});
 				return false;
 			});
