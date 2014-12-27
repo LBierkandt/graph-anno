@@ -251,11 +251,7 @@ class GraphController
 
 	def export_subcorpus(filename)
 		if @display.found
-			subgraph = {'nodes' => [], 'edges' => []}
-			@sentence_list.values.each do |sentence|
-				subgraph['nodes'] += @graph.nodes.values.select{|k| k.sentence.name == sentence}
-				subgraph['edges'] += subgraph['nodes'].map{|n| n.in + n.out}.flatten.uniq
-			end
+			subgraph = @graph.subcorpus(@sentence_list.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
 		end

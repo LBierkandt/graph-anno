@@ -447,8 +447,36 @@ class AnnoGraph < SearchableGraph
 
 	def clone
 		new_graph = super
-		new_graph.conf = @conf
+		new_graph.clone_graph_info(self)
 		return new_graph
+	end
+
+	def clone_graph_info(other_graph)
+		@conf = other_graph.conf.clone
+		@makros_plain = other_graph.makros_plain.clone
+		@makros = parse_query(@makros_plain * "\n")['def']
+	end
+
+	# builds a subcorpus (as new graph) from a list of sentence nodes
+	def subcorpus(sentence_list)
+		nodes = sentence_list.map{|s| s.nodes}.flatten
+		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
+		g = AnnoGraph.new
+		g.clone_graph_info(self)
+		last_sentence_node = nil
+		sentence_list.each do |s|
+			ns = g.add_sect_node(:attr => s.attr, :ID => s.ID)
+			g.add_order_edge(:start => last_sentence_node, :end => ns) if last_sentence_node
+			last_sentence_node = ns
+			s.nodes.each do |n|
+				nn = g.add_node(:attr => n.attr, :type => n.type, :ID => n.ID)
+				g.add_sect_edge(:start => ns, :end => nn)
+			end
+		end
+		edges.reject{|e| e.type == 's'}.each do |e|
+			g.add_edge(:attr => e.attr, :type => e.type, :start => e.start.ID, :end => e.end.ID)
+		end
+		return g
 	end
 
 	def sentence_nodes
@@ -597,6 +625,13 @@ class AnnoGraphConf
 		else
 			@combinations = default['combinations'].map{|c| AnnoLayer.new(c)}
 		end
+	end
+
+	def clone
+		new_conf = super
+		new_conf.layers = @layers.map{|l| l.clone}
+		new_conf.combinations = @combinations.map{|c| c.clone}
+		return new_conf
 	end
 
 	def merge!(other)
