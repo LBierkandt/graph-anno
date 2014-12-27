@@ -1,5 +1,0 @@
-GraphAnno is a browser-based and command line-operated tool for creating, editing and querying graph-based linguistic annotations.
-
-GraphAnno needs: Ruby, Graphviz, and a Browser (Firefox). For details please refer to the "install" file.
-
-For how to use GraphAnno, please see the documentation located in the "doc" directory.

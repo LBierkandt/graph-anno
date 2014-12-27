@@ -40,13 +40,13 @@
         %td
           %label{:for => 'tokens[regex]'} Regular expression to match tokens
         %td
-          %input{ :name => 'tokens[regex]', :type => 'text', :value => '(\S+)_(\S+)' }
+          %input{ :name => 'tokens[regex]', :type => 'text', :value => '(\S+)' }
       %tr
         %td
         %td
           %label{:for => 'tokens[regex]'} Token annotation
         %td
-          %input{ :name => 'tokens[anno]', :type => 'text', :value => 'token:$1 pos:$2' }
+          %input{ :name => 'tokens[anno]', :type => 'text', :value => 'token:$1' }
       %tr
         %td
           %input{:name => 'processing_method', :type => 'radio', :value => 'punkt', :onclick => 'disable_import_form_fields();'}

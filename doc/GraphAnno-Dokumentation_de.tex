@@ -87,12 +87,15 @@
 \tableofcontents
 
 
-\section{Graphformat}
+\section{Der Annotationsgraph}
+
+\subsection{Graphformat}
 
 Ein Graph in GraphAnno besteht aus einer Menge von Knoten und gerichteten Kanten. Knoten und Kanten haben Attribute in der Form von Schlüssel-Wert-Paaren, die sowohl der linguistischen Annotation als auch zum Teil der Strukturierung und Darstellung des Graphen in GraphAnno dienen. Diese Attrbiute sind im Datenmodell als Attribut \texttt{attr} zusammengefaßt und sind die einzigen Attribute, die direkt bearbeitet werden können. Diese Attribute werden in diesem Abschnitt als \textit{Annotationsattribute} bezeichnet. Knoten und Kanten tragen weitere Attribute, die nicht direkt bearbeitet werden können. Dazu zählt u.a. das \texttt{type}-Attribut, das die unterschiedliche Typen von Knoten und Kanten (Annotationsknoten, Token, Satzknoten; Annotationskanten, Ordnungskanten, Abschnittskanten) unterscheidet.
 
-Ein GraphAnno-Graph ist in Sätze eingeteilt – Einheiten die der Strukturierung und Darstellung dienen, aber natürlich nicht unbedingt (wie auch immer definierten) Sätzen entsprechen müssen. Die Information, zu welchem Satz Knoten gehören, ist durch das Attribut \texttt{sentence} repräsentiert. Kanten sind keinem Satz zugeordnet; ihre zugehörigkeit ergibt sich durch die Knoten, die sie verbinden.
+Ein GraphAnno-Graph ist in Sätze eingeteilt – Einheiten die der Strukturierung und Darstellung dienen, aber natürlich nicht unbedingt (wie auch immer definierten) Sätzen entsprechen müssen.
 Für jeden Satz existiert ein Satzknoten (mit \texttt{type:s}), der Informationen trägt, die den ganzen Satz betreffen. Hierbei kann es sich z.B. um Angaben von Quelle, Medium, Sprecher etc. handeln. Der Inhalt dieses Knotens wird im hellgrauen Bereich unter dem Annotationsgraphen und unter dem Text des Satzes (blau dargestellt) in schwarzer Schrift angezeigt.
+Die Information, zu welchem Satz ein Knoten gehört, ist durch eine Kante mit \texttt{type:s}, die den Knoten mit seinem Satzknoten verbindet, repräsentiert. Kanten sind keinem Satz zugeordnet; ihre Zugehörigkeit ergibt sich durch die Knoten, die sie verbinden.
 
 Tokenknoten sind neben ihrem \texttt{type:t} dadurch gekennzeichnet, daß sie unter den Annotationsattributen ein Attribut \texttt{token} tragen, das den Tokentext enthält. Die Token eines Satzes sowie die Satzknoten sind außerdem in ihrer Reihenfolge durch Ordnungskanten (mit \texttt{type:o}) verbunden. Dies dient vor allem der korrekten Darstellung und der Traversierung; für den Benutzer sind diese Kanten unsichtbar, und er kann nicht auf sie zugreifen.
 
@@ -101,6 +104,17 @@ Kanten und Knoten tragen keine Nummernattribute. Sie werden für jede generierte
 
 GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Ebenen zuzuordnen. Zugehörigkeit eines Elements zu einer Ebene wird dadurch ausgedrückt, daß es (unter den Annotationsattributen) das Attribut der entsprechenden Ebene mit dem Wert\texttt{t} (für \textit{true}) trägt. Durch diese Repräsentation können Elemente auch mehreren Ebene angehören, so daß Ebene sich beliebig überlappen können. Knoten und Kanten der unterschiedlichen Ebenen können farblich unterschiedlich dargestellt und unterschiedlich ausgerichtet werden (hierarchisch oder horizontal). Token sind keiner Ebene zugeordnet und werden schwarz dargestellt.
 
+
+
+\subsection{Konfiguration}\label{konfiguration}
+
+Mit F8 wird für den aktuell geladenen Graph das Einstellungsfenster geöffnet. In diesem Fenster können Einstellung zur Darstellung zu den Ebenen vorgenommen werden.
+
+Unter \textit{General settings} werden Einstellungen für Knoten und Kanten, die keiner Ebene angehören, vorgenommen.\footnote{Je nach verwendetem Browser werden die Feldr für Farbeinstellungen als Farbwahlfeld oder als Textfeld dargestellt. Beim Textfeld ist die Farbe als RGB-Hexadezimalwert anzugeben: Ein Rautenzeichen (\texttt{\#})gefolgt von drei zweistelligen Hexadezimalzahlen jeweils für rot, grün und blau. So steht beispielsweise \texttt{\#000000} für schwarz, \texttt{\#ffffff} für weiß, \texttt{\#ff0000} für ein helles Rot etc.} \textit{Default color} gilt für alle Knoten und Kanten, die keine Token sind und keiner Ebene angehören, \textit{token color} gilt für Token, \textit{found color} für die Hervorhebung bei der Suche gefundener Knoten und Kanten (überschreibt dann die für die jeweiligen Elemete sonst geltende Farbe), \textit{filtered color} für die mit der Filterfunktion ausgefilterten Elemente. Die Einstellung \textit{edge weight} ist für Anatomie des Graphen von Belang und zeigt ihre Wirkung erst, wenn es Kanten von unterschiedlichem Gewicht gibt (zu Details siehe folgenden Absatz).
+
+Unter \textit{layers} werden Einstellungen für die Ebenen des Graphen vorgenommen. Der \textit{Name} ist eine beliebige Bezeichnung der Ebene, die im Aufklappfeld für die Ebenenwahl angezeigt wird. Das \textit{Attribut} ist dasjenige Annotationsattribut, dessen Wert auf \texttt{t} gesetzt wird, wenn ein Element der entsprechenden Ebene angehört. Der \textit{Shortcut} ist ein Bezeichner, der für die Annotation von Elementen genutzt werden kann (siehe \ref{befehl-n}); dieses Kürzel darf nur aus alphanumerischen Zeichen bestehen und darf nicht das gleiche Format wie Elementreferenzen aufweisen (also \texttt{t}, \texttt{n} oder \texttt{e} gefolgt von einer Zahl, oder  \texttt{m}; siehe \ref{befehl-a}). \textit{Color} ist die für Elemente der Ebene verwendete Farbe; \textit{edge weight} ist das Gewicht der Kanten der Ebene. Je höher der hier eingegebene Wert (ganzzahlige Werte), desto kürzer versucht der Graphzeichenalgorithmus die Kanten zu zeichnen. Legt man also eine Ebene mit hohem Kantengewicht und eine mit niedrigem an, so wird der Graph so gezeichnet, daß der Graph der ersten Ebene möglichst kompakt ist; die Elemente der zweiten Ebene werden so angeordnet, daß sie den Graph der ersten Ebene wenig verzerren. Wird als Kantengewicht \texttt{0} angegeben, so erzwingen die Kanten der Ebene keine Hierarhcie zwischen den Knoten, die sie verbinden (sonst ist der Startknoten einer Kante stets höher als der Zielknoten angeordnet). Wird ein negativer Wert angegeben, so werden die Knoten der Ebene alle auf einer horizontal Ebene dargestellt.
+
+Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zugleich angehören, Einstellungen vorgenommen werden. Welchen Ebenen ein Element angehören muß, um unter eine Kombinationsdefinition zu fallen, wird über die Auswahlkästchen unter \textit{attributes} angegeben, die anderen Einstellungen funktionieren analog zu denen unter \textit{layers} und überschreiben die dort angegebenen Werte für Elemente, die der Ebenenkombination angehören.
 
 
 \section{Tastaturbefehle}
@@ -171,17 +185,17 @@ Neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
 
 \subsubsection{Neuen Satz anlegen: \texttt{ns}}
 
-Mit \texttt{ns} – gefolgt von mit Leerzeichen getrennten anzulegenden Namesräumen – werden ein oder mehrere neue Sätze angelegt. Dabei werden neue Meta-Knoten mit dem entsprechenden \texttt{sentence}-Attribut erstellt. Anschließend wird sofort in den ersten angegebenen Satz gewechselt.
+Mit \texttt{ns} – gefolgt von mit Leerzeichen getrennten anzulegenden Satznamen – werden ein oder mehrere neue Sätze angelegt. Dabei werden neue Meta-Knoten mit dem entsprechenden \texttt{sentence}-Attribut erstellt. Anschließend wird sofort in den ersten angegebenen Satz gewechselt.
 
 
 \subsubsection{Satz löschen: \texttt{del}}
 
-Mit dem Befehl \texttt{del} werden alle Elemente des gegenwärtig angezeigten Satzes gelöscht.
+Mit dem Befehl \texttt{del} wird der gegenwärtig angezeigten Satzes komplett gelöscht.
 
 
 \subsubsection{Gehe zu: \texttt{s}}
 
-Um von Satz zu Satz zu navigieren dient (neben dem Aufklappfeld, das auf Änderungen reagiert) der Befehl \texttt{s}, gefolgt vom Namen des anzuzeigenden Satzes.
+Um von Satz zu Satz zu navigieren dient (neben den Tastenkombinationen und dem Aufklappfeld, das auf Änderungen reagiert) der Befehl \texttt{s}, gefolgt vom Namen des anzuzeigenden Satzes.
 
 
 \subsubsection{Graphik exportieren: \texttt{image}}
@@ -194,13 +208,17 @@ Um die Graphik, die GraphAnno für den aktuellen Satz anzeigt, zu exportieren, d
 Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige verfügbare Format \texttt{paula}), das zweites Argument ist der Name des Korpus, als drittes Argument kann optional der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
 
 
-\subsubsection{Text importieren}
+\subsubsection{Text importieren: \texttt{import text}}
 
-Texte können mit dem Befehl \texttt{import} importiert werden.
-
+Texte können mit dem Befehl \texttt{import} importiert werden. Es öffnet sich ein Fenster, in dem der zu importierende Text eingegeben und Einstellungen zur Verarbeitung vorgenommen werden können.
 Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
 
-\subsubsection{Toolboxdaten importieren}
+Das Import-Fenster bietet zwei Möglichkeiten zur Eingabe von Text: es kann eine Textdatei hochgeladen werden („File“) oder der Text in das Textfenster eingegeben bzw. kopiert werden („Paste“). Die Verarbeitung des Textes kann ebenfalls auf zwei Arten geschehen: Für unbearbeiteten Text empfielt sich die Option „Punkt segmenter“. Diese verwendet einen automatischen Segmentierer, der den Text in Sätze und die Sätze in Token teilt. Hierbei muß zur korrekten Verarbeitung von Abkürzungen etc. die Sprache des Textes angegeben werden.
+
+Die zweite Option zur Verarbeitung ist „Regular expressions“; diese ist für vorformatierte Texte vorgesehen. Hier wird als erstes eine Zeichenkette angegeben, die zur Trennung der Sätze verwendet wird. Voreingestellt ist hier \texttt{{\textbackslash}n} \footnote{\texttt{{\textbackslash}n} steht für einen Zeilenumbruch, \texttt{{\textbackslash}t} für einen Tabstop.} für eine Datei, in der jede Zeile einen Satz darstellt. Als zweites ist ein regulärer Ausdruck anzugeben, der die Token findet. Hier ist \texttt{({\textbackslash}S+)} voreingestellt: dies steht für eine Folge von Nicht-Leerzeichen, findet also als Token alle Wörter, die mit Leerzeichen voneinander getrennt sind. Die Klammern dienen dazu, die gefundenen Zeichenkette in der Variable \texttt{\$1} zu speichern, so daß sie im nächsten Feld verwendet werden kann. Im nächsten Feld ist ein Annotationsbefehl (siehe \ref{befehl-a}) für die Token anzugeben, der von der im vorigen Feld gefunden Zeichenkette gebrauch macht. Voreingestellt ist hier \texttt{token:\$1}. Dies verwendet die als Token gefundene Zeichenkette zur Annotation des Tokentextes. Ein anderes Anwendungsbeispiel wäre ein mit Wortarten getaggter Text, in dem die Wortart für jedes Wort mit einem Unterstrich hinter selbigem angefügt ist. Hier würde man als regulären Ausdruck \texttt{({\textbackslash}S+)\_({\textbackslash}S+)} angeben und als Annotationsbefehl \texttt{token:\$1 pos:\$2}. Der reguläre Ausdruck findet in diesem Fall zwei mit Unterstrich verbundene Zeichenketten aus Nicht-Leerzeichen und speichert sie in den Variablen \texttt{\$1} (das Wort) und \texttt{\$2} (der POS-Tag). Im Annotationsbefehl werden diese Variablen wiederum zur Annotation des Tokentextes und des \texttt{pos}-Attributes verwendet.
+
+
+\subsubsection{Toolboxdaten importieren: \texttt{import toolbox}}
 
 Toolboxdateien können mit dem Befehl \texttt{import toolbox} importiert werden. Es öffnet sich ein Fenster, in dem die einzulesende Datei ausgewählt und die Formatbeschreibung eingegeben werden kann. Die Formatbeschreibung wird im JSON-Format angegeben und besteht aus einer Liste von Listen von Markern. Die Listen sind nach Ebenen sortiert – die höchste (\textit{record}) zuerst – und enthalten die der entsprechenden Ebene zugehörigen Marker (ohne Schrägstich). Als Record-ID wird der erste Marker der ersten Ebene (im Bsp. unten \texttt{ref}) verwendet. Dem Marker, auf dessen Grundlage die Token erstellt werden sollen, wird ein Stern vorangestellt. Elemente, die unter der Tokenebene liegen, werden zusammengefügt und in die jeweiligen Token integriert.
 
@@ -217,13 +235,10 @@ Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Impo
 Die Annotationsbefehle von GraphAnno sind darauf ausgerichtet, daß sie möglichst schnell einzugeben sind. Daher ist ihre Syntax entsprechend reduziert: Sie bestehen aus einem kurzen Befehl (oft nur ein Buchstabe) gefolgt von Parametern, die durch Leerzeichen getrennt sind.
 
 
-\subsubsection{Neuer Knoten: \texttt{n}}
+\subsubsection{Neuer Knoten: \texttt{n}}\label{befehl-n}
 
 Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\char"0022})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022...\char"0022}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
-Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll. Dazu dienen die auch für den Befehl \texttt{l} (siehe \ref{l}) geltenden Kürzel \texttt{f}, \texttt{s} und \texttt{fs}. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt.
-        %li new node: <i>n key:value key:value ...</i>
-        %ul
-          %li n typ:S ill:decl tns:prs
+Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll. Dazu dienen die auch für den Befehl \texttt{l} (siehe \ref{l}) geltenden Kürzel, die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellt werden. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt.
 
 \paragraph*{Befehl \texttt{n} in modifizierter BNF:}
 ~
@@ -237,7 +252,7 @@ attribut        =   schlüssel zeichenkette
 schlüssel       =   zeichenkette ":"
 zeichenkette    =   zeichen_außer_steuerzeichen+
                     """ beliebiges_zeichen* """
-ebenenschalter  =   "f" | "s" | "fs"
+ebenenschalter  =   <definiert in der Graphkonfiguration>
 \end{lstlisting}
 \end{framed}
 
@@ -245,9 +260,6 @@ ebenenschalter  =   "f" | "s" | "fs"
 \subsubsection{Neue Kante: \texttt{e}}
 
 Der Befehl zum Anlegen einer neuen Kante lautet \texttt{e}, gefolgt vom Start- und Zielknoten der zu erstellenden  Kante und den Attributen, die sie erhalten soll. Auch die Angabe einer Ebene wie bei \texttt{n} ist möglich.
-        %li new edge: <i>e start end key:value key:value ...</i>
-        %ul
-          %li e n2 n4 typ:re level:fct
 
 \paragraph*{Befehl \texttt{e} in modifizierter BNF:}
 ~
@@ -262,7 +274,7 @@ tokenreferenz  =   "t" zahl
 \end{framed}
 
 
-\subsubsection{Annotieren: \texttt{a}}
+\subsubsection{Annotieren: \texttt{a}}\label{befehl-a}
 
 Der Befehl zum Annotieren beliebiger Elemente ist \texttt{a}, gefolgt von den zu annotierenden Elementen und Attributen, mit denen sie annotiert werden sollen (alle angegeben Elemente werden mit allen angegebenen Attributen versehen; auch Ebenekürzel wie bei \texttt{n} können verwendet werden). Die Reihenfolge einzelner Elemente und Attribute ist beliebig. Es können auch Sequenzen von Elementen eines Typs (also \texttt{n}, \texttt{e} oder \texttt{t}) durch Verbinden mit zwei Punkten angegeben werden; beispielsweise werden bei Angabe von \texttt{t3..t7} alle Token von \texttt{t3} bis \texttt{t7} annotiert (die Sequenz kann auch umgekehrt angegeben werden, also \texttt{t7..t3}).
 
@@ -383,7 +395,7 @@ befehl_ti       =   "ti " tokenreferenz " " wörter
 
 \subsubsection{Ebenen setzen: \texttt{l}}\label{l}
 
-Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. \texttt{f} steht hier für die funktionale/semantische Ebene, \texttt{s} für die formale/morphosyntaktische, und \texttt{fs} für beide.
+Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. Dafür gelten die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellten Kürzel.
 
 \paragraph*{Befehl \texttt{l} in modifizierter BNF:}
 ~
