@@ -562,7 +562,7 @@ class AnnoGraph < SearchableGraph
 		Dir.mkdir('exports/sql') unless File.exist?('exports/sql')
 		# corpus
 		str = "INSERT INTO `corpora` (`name`, `conf`, `makros`, `info`) VALUES\n"
-		str += "('#{name.gsub("'", "\\\\'")}', '#{@conf.to_json.gsub("'", "\\\\'")}', '#{@makros_plain.to_json.gsub("'", "\\\\'")}', '');\n"
+		str += "('#{name.gsub("'", "\\\\'")}', '#{@conf.to_h.to_json.gsub("'", "\\\\'")}', '#{@makros_plain.to_json.gsub("'", "\\\\'")}', '');\n"
 		str += "SET @corpus_id := LAST_INSERT_ID();\n"
 		# nodes
 		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
