@@ -57,11 +57,11 @@ class Node < NodeOrEdge
 
 	# @return [Hash] the node transformed into a hash with all values casted to strings
 	def to_h
-		esc_attr = @attr.map_hash{|k,v| v.to_s}
-		return {
-			:attr => esc_attr,
+		h = {
+			:attr => @attr,
 			:ID   => @ID
 		}
+		@attr == {} ? h.reject{|k,v| k == :attr} : h
 	end
 
 	# deletes self and all in- and outgoing edges
@@ -136,13 +136,13 @@ class Edge < NodeOrEdge
 
 	# @return [Hash] the edge transformed into a hash with all values casted to strings
 	def to_h
-		esc_attr = @attr.map_hash{|k,v| v.to_s}
-		return {
+		h = {
 			:start => @start.ID,
 			:end   => @end.ID,
-			:attr  => esc_attr,
+			:attr  => @attr,
 			:ID    => @ID
 		}
+		@attr == {} ? h.reject{|k,v| k == :attr} : h
 	end
 
 	def inspect
