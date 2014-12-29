@@ -266,6 +266,7 @@ class Graph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
 	# @return [Edge] the new edge
 	def add_edge(h)
+		return nil unless h[:start] && h[:end]
 		new_id(h, :edge)
 		@edges[h[:ID]] = Edge.new(h.merge(:graph => self))
 	end
