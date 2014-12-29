@@ -285,7 +285,7 @@ class AnnoGraph < SearchableGraph
 		if version >= 6
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
-			@makros_plain << nodes_and_edges['search_makros']
+			@makros_plain += nodes_and_edges['search_makros']
 			@makros += parse_query(@makros_plain * "\n")['def']
 		end
 
