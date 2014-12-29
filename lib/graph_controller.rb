@@ -100,14 +100,10 @@ class GraphController
 	end
 
 	def set_sentence_list(h = {})
-		if h[:clear]
-			@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
-		else
-			@sentence_list = 	Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
-			if @found
-				@found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
-					@sentence_list[s][:found] = true
-				end
+		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
+		if !h[:clear] and @found
+			@found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
+				@sentence_list[s][:found] = true
 			end
 		end
 	end
@@ -434,6 +430,7 @@ class GraphController
 			when 'clear', 'leeren' # clear workspace
 				@graph_file.replace('')
 				@graph.clear
+				@found = nil
 				@sentence = nil
 
 			when 'image' # export sentence as graphics file
