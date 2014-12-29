@@ -122,7 +122,7 @@ class Edge < NodeOrEdge
 			@start.out << self
 			@end.in << self
 		else
-			self.delete
+			raise 'edge needs start and end node'
 		end
 	end
 
