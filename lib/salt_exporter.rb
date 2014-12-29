@@ -20,8 +20,7 @@
 class AnnoGraph
 
 	def export_saltxml(textname)
-		require 'fileutils'
-		pfad = 'exports/' + textname
+		pfad = 'exports/salt/' + textname
 		FileUtils.mkdir_p(pfad + '/corpus')
 		
 		@nodes.values.each{|k| k.salt_init}

@@ -22,14 +22,13 @@ class AnnoGraph
 	def export_paula(corpus_name, doc_name = nil)
 		# einzuführender Parameter: syntaktische Kanten als dominierend ansehen?
 		require 'REXML/document'
-		require 'fileutils'
 		
 		if !doc_name then doc_name = 'doc1' end
 		corpus_name.gsub!(/\s/, '_')
 		doc_name.gsub!(/\s/, '_')
 		puts "generating PAULA corpus document \"#{corpus_name}/#{doc_name}\""
 		
-		corpus_path = 'exports/' + corpus_name
+		corpus_path = 'exports/paula/' + corpus_name
 		doc_path = corpus_path + "/#{doc_name}/"
 		FileUtils.mkdir_p(doc_path)
 		

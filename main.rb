@@ -19,6 +19,7 @@
 
 require 'sinatra'
 require 'haml'
+require 'fileutils'
 
 require './lib/anno_graph'
 require './lib/toolbox_module'
