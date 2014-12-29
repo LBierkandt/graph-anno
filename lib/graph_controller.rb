@@ -400,9 +400,12 @@ class GraphController
 					saetze = @graph.sentence_nodes
 					index = saetze.index(@sentence) + 1
 					index -= 2 if index == saetze.length
+					last_sentence = @sentence.node_before
+					next_sentence = @sentence.node_after
 					# delete nodes
 					@sentence.nodes.each{|n| n.delete}
 					@sentence.delete
+					@graph.add_order_edge(:start => last_sentence, :end => next_sentence)
 					# change to next sentence
 					@sentence = saetze[index]
 				end
