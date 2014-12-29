@@ -21,7 +21,6 @@ class AnnoGraph
 
 	def export_paula(corpus_name, doc_name = nil)
 		# einzuführender Parameter: syntaktische Kanten als dominierend ansehen?
-		require 'REXML/document'
 		
 		if !doc_name then doc_name = 'doc1' end
 		corpus_name.gsub!(/\s/, '_')
