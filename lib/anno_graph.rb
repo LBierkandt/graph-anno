@@ -556,6 +556,29 @@ class AnnoGraph < SearchableGraph
 		end
 	end
 
+	# export corpus as SQL file for import in WebGraphAnno
+	# @param name [String] The name of the corpus, and the name under which the file will be saved
+	def export_sql(name)
+		Dir.mkdir('exports/sql') unless File.exist?('exports/sql')
+		# corpus
+		str = "INSERT INTO `corpora` (`name`, `conf`, `makros`, `info`) VALUES\n"
+		str += "('#{name.gsub("'", "\\\\'")}', '#{@conf.to_json.gsub("'", "\\\\'")}', '#{@makros_plain.to_json.gsub("'", "\\\\'")}', '');\n"
+		str += "SET @corpus_id := LAST_INSERT_ID();\n"
+		# nodes
+		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
+		str += @nodes.values.map do |n|
+			"(#{n.ID}, @corpus_id, '#{n.attr.to_json.gsub("'", "\\\\'")}', '#{n.type}')"
+		end * ",\n" + ";\n"
+		# edges
+		str += "INSERT INTO `edges` (`id`, `corpus_id`, `start_id`, `end_id`, `attr`, `type`) VALUES\n"
+		str += @edges.values.map do |e|
+			"(#{e.ID}, @corpus_id, #{e.start.ID}, #{e.end.ID}, '#{e.attr.to_json.gsub("'", "\\\\'")}', '#{e.type}')"
+		end * ",\n" + ";\n"
+		File.open("exports/sql/#{name}.sql", 'w') do |f|
+			f.write(str)
+		end
+	end
+
 	private
 
 	def load_makros

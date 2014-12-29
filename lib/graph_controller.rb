@@ -442,6 +442,7 @@ class GraphController
 				end
 
 			when 'export' # export corpus in other format
+				Dir.mkdir('exports') unless File.exist?('exports')
 				format = parameters[:words][0]
 				name = parameters[:words][1]
 				name2 = parameters[:words][2]
@@ -450,6 +451,8 @@ class GraphController
 						@graph.export_paula(name, name2 ? name2 : nil)
 					when 'salt'
 						@graph.export_saltxml(name)
+					when 'sql'
+						@graph.export_sql(name)
 				end
 
 			when 'import' # open text import window
