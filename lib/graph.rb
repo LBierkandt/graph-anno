@@ -39,27 +39,27 @@ class NodeOrEdge
 end
 
 class Node < NodeOrEdge
-	attr_accessor :attr, :ID, :in, :out
+	attr_accessor :attr, :id, :in, :out
 
 	# initializes node
-	# @param h [{:graph => Graph, :ID => String, :attr => Hash}]
+	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
 	def initialize(h)
 		@graph = h[:graph]
-		@ID = h[:ID]
+		@id = h[:id]
 		if not @attr = h[:attr] then @attr = {} end
 		@in = []
 		@out = []
 	end
 
 	def inspect
-		'Node' + @ID
+		'Node' + @id
 	end
 
 	# @return [Hash] the node transformed into a hash with all values casted to strings
 	def to_h
 		h = {
 			:attr => @attr,
-			:ID   => @ID
+			:id   => @id
 		}
 		@attr == {} ? h.reject{|k,v| k == :attr} : h
 	end
@@ -69,7 +69,7 @@ class Node < NodeOrEdge
 	def delete
 		Array.new(@out).each{|e| e.delete}
 		Array.new(@in).each{|e| e.delete}
-		@graph.nodes.delete(@ID)
+		@graph.nodes.delete(@id)
 	end
 
 	# returns nodes connected to self by ingoing edges which fulfil the (optional) block
@@ -97,13 +97,13 @@ class Node < NodeOrEdge
 end
 
 class Edge < NodeOrEdge
-	attr_accessor :attr, :ID, :start, :end
+	attr_accessor :attr, :id, :start, :end
 
 	# initializes edge, registering it with start and end node
-	# @param h [{:graph => Graph, :ID => String, :start => Node or String, :end => Node or String, :attr => Hash}]
+	# @param h [{:graph => Graph, :id => String, :start => Node or String, :end => Node or String, :attr => Hash}]
 	def initialize(h)
 		@graph = h[:graph]
-		@ID = h[:ID]
+		@id = h[:id]
 		if h[:start].class == String
 			@start = @graph.nodes[h[:start]]
 		else
@@ -131,22 +131,22 @@ class Edge < NodeOrEdge
 	def delete
 		if @start then @start.out.delete(self) end
 		if @end then @end.in.delete(self) end
-		@graph.edges.delete(@ID)
+		@graph.edges.delete(@id)
 	end
 
 	# @return [Hash] the edge transformed into a hash with all values casted to strings
 	def to_h
 		h = {
-			:start => @start.ID,
-			:end   => @end.ID,
+			:start => @start.id,
+			:end   => @end.id,
 			:attr  => @attr,
-			:ID    => @ID
+			:id    => @id
 		}
 		@attr == {} ? h.reject{|k,v| k == :attr} : h
 	end
 
 	def inspect
-		'Edge' + @ID
+		'Edge' + @id
 	end
 
 	# sets the start node of self
@@ -178,7 +178,7 @@ end
 class Graph
 	protected
 
-	attr_accessor :highest_node_ID, :highest_edge_ID
+	attr_accessor :highest_node_id, :highest_edge_id
 	attr_writer :nodes, :edges
 
 	public
@@ -189,8 +189,8 @@ class Graph
 	def initialize
 		@nodes = {}
 		@edges = {}
-		@highest_node_ID = 0
-		@highest_edge_ID = 0
+		@highest_node_id = 0
+		@highest_edge_id = 0
 	end
 
 	# builds a clone of self, but does not clone the nodes and edges
@@ -199,8 +199,8 @@ class Graph
 		new_graph = self.class.new
 		new_graph.nodes = @nodes.clone
 		new_graph.edges = @edges.clone
-		new_graph.highest_node_ID = @highest_node_ID
-		new_graph.highest_edge_ID = @highest_edge_ID
+		new_graph.highest_node_id = @highest_node_id
+		new_graph.highest_edge_id = @highest_edge_id
 		return new_graph
 	end
 
@@ -212,8 +212,8 @@ class Graph
 	def clear
 		@nodes.clear
 		@edges.clear
-		@highest_node_ID = 0
-		@highest_edge_ID = 0
+		@highest_node_id = 0
+		@highest_edge_id = 0
 	end
 
 	# serializes self in a JSON file
@@ -255,38 +255,38 @@ class Graph
 	end
 
 	# creates a new node and adds it to self
-	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_node(h)
 		new_id(h, :node)
-		@nodes[h[:ID]] = Node.new(h.merge(:graph => self))
+		@nodes[h[:id]] = Node.new(h.merge(:graph => self))
 	end
 
 	# creates a new edge and adds it to self
-	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_edge(h)
 		return nil unless h[:start] && h[:end]
 		new_id(h, :edge)
-		@edges[h[:ID]] = Edge.new(h.merge(:graph => self))
+		@edges[h[:id]] = Edge.new(h.merge(:graph => self))
 	end
 
-	# organizes IDs for new nodes or edges
+	# organizes ids for new nodes or edges
 	# @param h [Hash] hash from which the new element is generated
 	# @param element_type [Symbol] :node or :edge
 	def new_id(h, element_type)
 		case element_type
 			when :node
-				if !h[:ID]
-					h[:ID] = (@highest_node_ID += 1).to_s
+				if !h[:id]
+					h[:id] = (@highest_node_id += 1).to_s
 				else
-					if h[:ID].to_i > @highest_node_ID then @highest_node_ID = h[:ID].to_i end
+					if h[:id].to_i > @highest_node_id then @highest_node_id = h[:id].to_i end
 				end
 			when :edge
-				if !h[:ID]
-					h[:ID] = (@highest_edge_ID += 1).to_s
+				if !h[:id]
+					h[:id] = (@highest_edge_id += 1).to_s
 				else
-					if h[:ID].to_i > @highest_edge_ID then @highest_edge_ID = h[:ID].to_i end
+					if h[:id].to_i > @highest_edge_id then @highest_edge_id = h[:id].to_i end
 				end
 		end
 	end
@@ -310,11 +310,11 @@ class Graph
 	def merge!(other_graph)
 		new_nodes = {}
 		other_graph.nodes.each do |id,n|
-			new_nodes[id] = add_node(n.to_h.merge(:ID => nil))
+			new_nodes[id] = add_node(n.to_h.merge(:id => nil))
 		end
 		other_graph.edges.each do |id,e|
-			if new_nodes[e.start.ID] and new_nodes[e.end.ID]
-				add_edge(e.to_h.merge(:start => new_nodes[e.start.ID], :end => new_nodes[e.end.ID]))
+			if new_nodes[e.start.id] and new_nodes[e.end.id]
+				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id]))
 			end
 		end
 	end
@@ -327,7 +327,7 @@ class Graph
 	# @return [Hash] the graph in hash format: {'nodes' => [...], 'edges' => [...]}
 	def to_h
 		return {
-			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['ID'] == '0'},
+			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
 			'edges' => @edges.values.map{|e| e.to_h}
 		}
 	end

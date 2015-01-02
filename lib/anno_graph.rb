@@ -280,6 +280,7 @@ class AnnoGraph < SearchableGraph
 		end
 		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
+			el[:id] = el[:ID] if version < 7
 		end
 		self.add_hash(nodes_and_edges)
 		if version >= 6
@@ -357,15 +358,15 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# creates a new node and adds it to self
-	# @param h [{:type => String, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:type => String, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_node(h)
 		new_id(h, :node)
-		@nodes[h[:ID]] = AnnoNode.new(h.merge(:graph => self))
+		@nodes[h[:id]] = AnnoNode.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno node and adds it to self
-	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_anno_node(h)
 		n = add_node(h.merge(:type => 'a'))
@@ -374,7 +375,7 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# creates a new token node and adds it to self
-	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_token_node(h)
 		n = add_node(h.merge(:type => 't'))
@@ -383,7 +384,7 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# creates a new section node and adds it to self
-	# @param h [{:attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_sect_node(h)
 		h.merge!(:attr => {}) unless h[:attr]
@@ -392,30 +393,30 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# creates a new edge and adds it to self
-	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_edge(h)
 		return nil unless h[:start] && h[:end]
 		new_id(h, :edge)
-		@edges[h[:ID]] = AnnoEdge.new(h.merge(:graph => self))
+		@edges[h[:id]] = AnnoEdge.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno edge and adds it to self
-	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_anno_edge(h)
 		add_edge(h.merge(:type => 'a'))
 	end
 
 	# creates a new order edge and adds it to self
-	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_order_edge(h)
 		add_edge(h.merge(:type => 'o'))
 	end
 
 	# creates a new sect edge and adds it to self
-	# @param h [{:start => Node, :end => Node, :attr => Hash, :ID => String}] :attr and :ID are optional; the ID should only be used for reading in serialized graphs, otherwise the IDs are cared for automatically
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_sect_edge(h)
 		add_edge(h.merge(:type => 's'))
@@ -466,16 +467,16 @@ class AnnoGraph < SearchableGraph
 		g.clone_graph_info(self)
 		last_sentence_node = nil
 		sentence_list.each do |s|
-			ns = g.add_sect_node(:attr => s.attr, :ID => s.ID)
+			ns = g.add_sect_node(:attr => s.attr, :id => s.id)
 			g.add_order_edge(:start => last_sentence_node, :end => ns) if last_sentence_node
 			last_sentence_node = ns
 			s.nodes.each do |n|
-				nn = g.add_node(:attr => n.attr, :type => n.type, :ID => n.ID)
+				nn = g.add_node(:attr => n.attr, :type => n.type, :id => n.id)
 				g.add_sect_edge(:start => ns, :end => nn)
 			end
 		end
 		edges.reject{|e| e.type == 's'}.each do |e|
-			g.add_edge(:attr => e.attr, :type => e.type, :start => e.start.ID, :end => e.end.ID)
+			g.add_edge(:attr => e.attr, :type => e.type, :start => e.start.id, :end => e.end.id)
 		end
 		return g
 	end
@@ -564,16 +565,16 @@ class AnnoGraph < SearchableGraph
 		# corpus
 		str = "INSERT INTO `corpora` (`name`, `conf`, `makros`, `info`) VALUES\n"
 		str += "('#{name.gsub("'", "\\\\'")}', '#{@conf.to_h.to_json.gsub("'", "\\\\'")}', '#{@makros_plain.to_json.gsub("'", "\\\\'")}', '');\n"
-		str += "SET @corpus_id := LAST_INSERT_ID();\n"
+		str += "SET @corpus_id := LAST_INSERT_id();\n"
 		# nodes
 		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
 		str += @nodes.values.map do |n|
-			"(#{n.ID}, @corpus_id, '#{n.attr.to_json.gsub("'", "\\\\'")}', '#{n.type}')"
+			"(#{n.id}, @corpus_id, '#{n.attr.to_json.gsub("'", "\\\\'")}', '#{n.type}')"
 		end * ",\n" + ";\n"
 		# edges
 		str += "INSERT INTO `edges` (`id`, `corpus_id`, `start_id`, `end_id`, `attr`, `type`) VALUES\n"
 		str += @edges.values.map do |e|
-			"(#{e.ID}, @corpus_id, #{e.start.ID}, #{e.end.ID}, '#{e.attr.to_json.gsub("'", "\\\\'")}', '#{e.type}')"
+			"(#{e.id}, @corpus_id, #{e.start.id}, #{e.end.id}, '#{e.attr.to_json.gsub("'", "\\\\'")}', '#{e.type}')"
 		end * ",\n" + ";\n"
 		File.open("exports/sql/#{name}.sql", 'w') do |f|
 			f.write(str)

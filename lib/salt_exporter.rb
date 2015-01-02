@@ -73,7 +73,7 @@ class AnnoGraph
 		# Satzspannen
 		saetzegraph = AnnoGraph.new
 		self.sentence_nodes.each_with_index do |sentence, index|
-			knot = saetzegraph.add_sect_node(:attr => {'sentenceID' => sentence.name})
+			knot = saetzegraph.add_sect_node(:attr => {'sentenceid' => sentence.name})
 			knot.salt_init
 			saltxml += saltXML_knoten_schreiben(knot, :satz, index, graphpfad)
 			knot.salt_attr['index'] = knotenzaehler.to_s

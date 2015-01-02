@@ -45,7 +45,7 @@ class AnnoGraph
 			end
 		end
 		
-		puts 'record ID marker: ' + @recmarker
+		puts 'record id marker: ' + @recmarker
 		puts 'token layer: ' + @tokenebene.to_s
 		puts 'text marker: ' + @textmarker
 		puts "reading #{file[:name]}"

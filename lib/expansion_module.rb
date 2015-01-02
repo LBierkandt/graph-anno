@@ -117,14 +117,14 @@ module Expansion
 
 	def apply_shortcuts(sentence = nil, file = nil)
 		searchgraph = self.clone
-		if sentence then searchgraph.nodes.values.each{|n| searchgraph.nodes.delete(n.ID) if n.sentence != sentence} end
+		if sentence then searchgraph.nodes.values.each{|n| searchgraph.nodes.delete(n.id) if n.sentence != sentence} end
 		@expansion_rules[:shortcuts].each do |sc|
 			search = sc[:search]
 			exec = parse_eval(sc[:exec])
 			
 			found = searchgraph.teilgraph_suchen(search)
 			found[:tg].each do |tg|
-				# in exec die IDs auflösen:
+				# in exec die ids auflösen:
 				string = exec[:string].clone
 				exec[:ids].keys.sort{|a,b| b.begin <=> a.begin}.each do |stelle|
 					id = exec[:ids][stelle]

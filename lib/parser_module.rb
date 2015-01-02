@@ -191,7 +191,7 @@ module Parser
 					elsif ids.length == 3
 						op[:id], op[:start], op[:end] = ids
 					else #Fehler!
-						raise 'Too many IDs in edge clause (max. three)'
+						raise 'Too many ids in edge clause (max. three)'
 					end
 					op[:cond] = parse_attributes(arr)[:op]
 				when 'link'
@@ -209,7 +209,7 @@ module Parser
 					if ids.length == 2
 						op[:start], op[:end] = ids
 					else #Fehler!
-						raise 'There must be two IDs in link clause'
+						raise 'There must be two ids in link clause'
 					end
 					p = parse_link(arr)
 					op[:arg] = p[:op]

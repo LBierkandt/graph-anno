@@ -80,10 +80,10 @@ class GraphController
 		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
 		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		return value.to_json if value
-		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence ? @sentence.ID : nil })
+		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence ? @sentence.id : nil })
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		# Prüfen, ob sich Satz geändert hat:
-		sentence_changed = (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.ID) ? false : true
+		sentence_changed = (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
 		set_sentence_list
 		return {
 			:sentence_list => @sentence_list.values,
@@ -100,9 +100,9 @@ class GraphController
 	end
 
 	def set_sentence_list(h = {})
-		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.ID, {:id => s.ID, :name => s.name, :found => false}]}]
+		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
 		if !h[:clear] and @found
-			@found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
+			@found[:all_nodes].map{|n| n.sentence.id}.uniq.each do |s|
 				@sentence_list[s][:found] = true
 			end
 		end
@@ -129,7 +129,7 @@ class GraphController
 		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
 		@sentence_list.each{|id, h| h[:found] = false}
-		@found[:all_nodes].map{|n| n.sentence.ID}.uniq.each do |s|
+		@found[:all_nodes].map{|n| n.sentence.id}.uniq.each do |s|
 			@sentence_list[s][:found] = true
 		end
 		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
@@ -245,7 +245,7 @@ class GraphController
 		end
 		set_sentence_list(:clear => true)
 		@sentence = @graph.nodes[sentence_list.keys.first]
-		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.ID, :path => '/' })
+		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
 		return {:sentence_list => @sentence_list.values}.to_json
 	end
 
@@ -752,7 +752,7 @@ class GraphController
 				satzinfo[:textline] += token.token + ' '
 			end
 			token_graph.add_nodes(
-				token.ID,
+				token.id,
 				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
@@ -786,14 +786,14 @@ class GraphController
 				color = @graph.conf.found_color
 			end
 			viz_graph.add_nodes(
-				node.ID,
+				node.id,
 				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
 				:shape => 'box',
 				:color => color,
 				:fontcolor => fontcolor
 			)
-			add_graphs.each{|g| g.add_nodes(node.ID)}
+			add_graphs.each{|g| g.add_nodes(node.id)}
 		end
 
 		@edges.each_with_index do |edge, i|
@@ -822,8 +822,8 @@ class GraphController
 				color = @graph.conf.found_color
 			end
 			viz_graph.add_edges(
-				edge.start.ID,
-				edge.end.ID,
+				edge.start.id,
+				edge.end.id,
 				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil),
 				:hexadecimal),
@@ -836,7 +836,7 @@ class GraphController
 
 		token_edges.each do |edge|
 			#len => 0
-			viz_graph.add_edges(edge.start.ID, edge.end.ID, :style => 'invis', :weight => 100)
+			viz_graph.add_edges(edge.start.id, edge.end.id, :style => 'invis', :weight => 100)
 		end
 
 		viz_graph.output(format => '"'+path+'"')

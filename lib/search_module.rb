@@ -62,23 +62,23 @@ class SearchableGraph < Graph
 		if operationen['node'] + operationen['edge'].select{|o| !(o[:start] or o[:end])} + operationen['text'] == []
 			raise 'A query must contain at least one node clause, edge clause or text clause.'
 		end
-		# check for multiply defined IDs
+		# check for multiply defined ids
 		error_messages = []
 		all_ids = (text_ids + node_ids + nodes_ids + edge_ids + link_ids).flatten.compact
 		all_ids.select{|id| all_ids.count(id) > 1}.uniq.each do |id|
-			error_messages << "The ID #{id} is multiply defined."
+			error_messages << "The id #{id} is multiply defined."
 		end
-		# references to undefined IDs?
+		# references to undefined ids?
 		erlaubte_start_end_ids = node_ids + nodes_ids + text_ids.flatten
 		benutzte_start_end_ids = (edge_start_end_ids + link_start_end_ids).flatten.compact
 		als_referenz_erlaubte_ids = erlaubte_start_end_ids + edge_ids + link_ids
 		benutzte_start_end_ids.each do |id|
-			error_messages << "The ID #{id} is used as start or end, but is not defined." unless erlaubte_start_end_ids.include?(id)
+			error_messages << "The id #{id} is used as start or end, but is not defined." unless erlaubte_start_end_ids.include?(id)
 		end
 		['cond', 'sort', 'col'].each do |op_type|
 			operationen[op_type].map{|o| o[:ids].values}.flatten.each do |id|
 				if not als_referenz_erlaubte_ids.include?(id)
-					error_messages << "The ID #{id} is used in #{op_type} clause, but is not defined."
+					error_messages << "The id #{id} is used in #{op_type} clause, but is not defined."
 				end
 			end
 		end
@@ -235,7 +235,7 @@ class SearchableGraph < Graph
 			tglisten.delete(zielindex)
 			# neue einfügen
 			tglisten[tgindex += 1] = neue_tgl
-			# link-IDs in id_index
+			# link-ids in id_index
 			operation[:ids].each do |id|
 				id_index[id] = {:index => tgindex, :art => operation[:operator]}
 			end
@@ -258,11 +258,11 @@ class SearchableGraph < Graph
 				until tgliste.length == 0
 					referenztg = tgliste.slice!(0)
 					# "node"s/"text"e des Referenz-TG
-					node_knoten = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.ID.to_i <=> b.ID.to_i}}
+					node_knoten = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}}
 					zusammengefasst = Teilgraph.new
 					# TGn aus der Liste nehmen und mit Referenz-TG zusammenführen, wenn gleiche "node"s/"text"e
 					tgliste.clone.each do |tg|
-						if node_knoten == tg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.ID.to_i <=> b.ID.to_i}} # sortieren, damit auch Textfragmente verglichen werden können
+						if node_knoten == tg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}} # sortieren, damit auch Textfragmente verglichen werden können
 							zusammengefasst += tgliste.delete(tg)
 						end
 					end
@@ -368,7 +368,7 @@ class SearchableGraph < Graph
 		
 		# Sortieren
 		found[:tg].each do |tg|
-			tg.ids.values.each{|arr| arr.sort!{|a,b| a.ID.to_i <=> b.ID.to_i}}
+			tg.ids.values.each{|arr| arr.sort!{|a,b| a.id.to_i <=> b.id.to_i}}
 		end
 		operationen['sort'].each do |op|
 			op[:lambda] = evallambda(op, found[:id_type])
@@ -793,7 +793,7 @@ end
 class Teilgraph
 	# @nodes: list of contained nodes
 	# @edges: list of contained edges
-	# @ids: hash of {ID => [Elements with this ID]}
+	# @ids: hash of {id => [Elements with this id]}
 	
 	attr_accessor :nodes, :edges, :ids
 	
@@ -827,7 +827,7 @@ class Teilgraph
 	end
 
 	def to_s
-		'Nodes: ' + @nodes.to_s + ', Edges: ' + @edges.to_s + ', IDs: ' + @ids.to_s
+		'Nodes: ' + @nodes.to_s + ', Edges: ' + @edges.to_s + ', ids: ' + @ids.to_s
 	end
 	
 end
