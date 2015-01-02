@@ -567,9 +567,9 @@ class AnnoGraph < SearchableGraph
 		str += "('#{name.sql_json_escape_quotes}', '#{@conf.to_h.to_json.sql_json_escape_quotes}', '#{@makros_plain.to_json.sql_json_escape_quotes}', '');\n"
 		str += "SET @corpus_id := LAST_INSERT_id();\n"
 		# nodes
-		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
+		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `sentence_id`, `attr`, `type`) VALUES\n"
 		str += @nodes.values.map do |n|
-			"(#{n.id}, @corpus_id, '#{n.attr.to_json.sql_json_escape_quotes}', '#{n.type}')"
+			"(#{n.id}, @corpus_id, '#{n.sentence.id}', '#{n.attr.to_json.sql_json_escape_quotes}', '#{n.type}')"
 		end * ",\n" + ";\n"
 		# edges
 		str += "INSERT INTO `edges` (`id`, `corpus_id`, `start`, `end`, `attr`, `type`) VALUES\n"
