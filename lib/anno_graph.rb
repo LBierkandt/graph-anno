@@ -564,17 +564,17 @@ class AnnoGraph < SearchableGraph
 		Dir.mkdir('exports/sql') unless File.exist?('exports/sql')
 		# corpus
 		str = "INSERT INTO `corpora` (`name`, `conf`, `makros`, `info`) VALUES\n"
-		str += "('#{name.gsub("'", "\\\\'")}', '#{@conf.to_h.to_json.gsub("'", "\\\\'")}', '#{@makros_plain.to_json.gsub("'", "\\\\'")}', '');\n"
+		str += "('#{name.sql_json_escape_quotes}', '#{@conf.to_h.to_json.sql_json_escape_quotes}', '#{@makros_plain.to_json.sql_json_escape_quotes}', '');\n"
 		str += "SET @corpus_id := LAST_INSERT_id();\n"
 		# nodes
 		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
 		str += @nodes.values.map do |n|
-			"(#{n.id}, @corpus_id, '#{n.attr.to_json.gsub("'", "\\\\'")}', '#{n.type}')"
+			"(#{n.id}, @corpus_id, '#{n.attr.to_json.sql_json_escape_quotes}', '#{n.type}')"
 		end * ",\n" + ";\n"
 		# edges
 		str += "INSERT INTO `edges` (`id`, `corpus_id`, `start`, `end`, `attr`, `type`) VALUES\n"
 		str += @edges.values.map do |e|
-			"(#{e.id}, @corpus_id, '#{e.start.id}', '#{e.end.id}', '#{e.attr.to_json.gsub("'", "\\\\'")}', '#{e.type}')"
+			"(#{e.id}, @corpus_id, '#{e.start.id}', '#{e.end.id}', '#{e.attr.to_json.sql_json_escape_quotes}', '#{e.type}')"
 		end * ",\n" + ";\n"
 		File.open("exports/sql/#{name}.sql", 'w') do |f|
 			f.write(str)
@@ -785,6 +785,10 @@ class String
 		end
 
 		return h
+	end
+
+	def sql_json_escape_quotes
+		self.gsub("'", "\\\\'").gsub('\\"', '\\\\\\"')
 	end
 
 end
