@@ -572,9 +572,9 @@ class AnnoGraph < SearchableGraph
 			"(#{n.id}, @corpus_id, '#{n.attr.to_json.gsub("'", "\\\\'")}', '#{n.type}')"
 		end * ",\n" + ";\n"
 		# edges
-		str += "INSERT INTO `edges` (`id`, `corpus_id`, `start_id`, `end_id`, `attr`, `type`) VALUES\n"
+		str += "INSERT INTO `edges` (`id`, `corpus_id`, `start`, `end`, `attr`, `type`) VALUES\n"
 		str += @edges.values.map do |e|
-			"(#{e.id}, @corpus_id, #{e.start.id}, #{e.end.id}, '#{e.attr.to_json.gsub("'", "\\\\'")}', '#{e.type}')"
+			"(#{e.id}, @corpus_id, '#{e.start.id}', '#{e.end.id}', '#{e.attr.to_json.gsub("'", "\\\\'")}', '#{e.type}')"
 		end * ",\n" + ";\n"
 		File.open("exports/sql/#{name}.sql", 'w') do |f|
 			f.write(str)
