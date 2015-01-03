@@ -101,11 +101,7 @@ class GraphController
 
 	def set_sentence_list(h = {})
 		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
-		if !h[:clear] and @found
-			@found[:all_nodes].map{|n| n.sentence.id}.uniq.each do |s|
-				@sentence_list[s][:found] = true
-			end
-		end
+		set_found_sentences if !h[:clear] and @found
 	end
 
 	def filter
@@ -129,9 +125,7 @@ class GraphController
 		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
 		@sentence_list.each{|id, h| h[:found] = false}
-		@found[:all_nodes].map{|n| n.sentence.id}.uniq.each do |s|
-			@sentence_list[s][:found] = true
-		end
+		set_found_sentences
 		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		puts '"' + @search_result + '"'
@@ -637,6 +631,12 @@ class GraphController
 	end
 
 	private
+
+	def set_found_sentences
+		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
+			@sentence_list[s][:found] = true
+		end
+	end
 
 	def validate_config(data)
 		result = {}
