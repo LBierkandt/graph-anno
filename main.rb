@@ -41,17 +41,21 @@ get '/' do
 end
 
 get '/:method/?:param?' do |method, param|
-	if param
-		controller.send(method, param)
-	else
-		controller.send(method)
+	if controller.respond_to?(method)
+		if param
+			controller.send(method, param)
+		else
+			controller.send(method)
+		end
 	end
 end
 
 post '/:method/?:param?' do |method, param|
-	if param
-		controller.send(method, param)
-	else
-		controller.send(method)
+	if controller.respond_to?(method)
+		if param
+			controller.send(method, param)
+		else
+			controller.send(method)
+		end
 	end
 end
