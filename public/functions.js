@@ -122,28 +122,30 @@ function taste(tast) {
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
-		var sentenceField = document.getElementById('sentence');
-		sentenceField.selectedIndex = Math.max(sentenceField.selectedIndex - 1, 0);
-		changeSentence();
+		navigateSentences('prev');
 	}
 	else if (tast.altKey && tast.which == 39) {
 		tast.preventDefault();
-		var sentenceField = document.getElementById('sentence');
-		sentenceField.selectedIndex = Math.min(sentenceField.selectedIndex + 1, sentenceField.options.length - 1);
-		changeSentence();
+		navigateSentences('next');
 	}
 	else if (tast.altKey && tast.which == 36) {
 		tast.preventDefault();
-		var sentenceField = document.getElementById('sentence');
-		sentenceField.selectedIndex = 0;
-		changeSentence();
+		navigateSentences('first');
 	}
 	else if (tast.altKey && tast.which == 35) {
 		tast.preventDefault();
-		var sentenceField = document.getElementById('sentence');
-		sentenceField.selectedIndex = sentenceField.options.length - 1;
-		changeSentence();
+		navigateSentences('last');
 	}
+}
+function navigateSentences(target) {
+		var sentenceField = document.getElementById('sentence');
+		switch(target) {
+			case 'first': sentenceField.selectedIndex = 0; break;
+			case 'prev': sentenceField.selectedIndex = Math.max(sentenceField.selectedIndex - 1, 0); break;
+			case 'next': sentenceField.selectedIndex = Math.min(sentenceField.selectedIndex + 1, sentenceField.options.length - 1); break;
+			case 'last': sentenceField.selectedIndex = sentenceField.options.length - 1; break;
+		}
+		changeSentence();
 }
 function aendereBildgroesze(richtung) {
 	var bild = document.getElementById('graph');
