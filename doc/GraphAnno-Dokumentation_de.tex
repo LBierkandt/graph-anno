@@ -190,7 +190,7 @@ Mit dem Befehl \texttt{clear} werde alle Daten aus dem Arbeitsbereich von GraphA
 Neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
 
 
-\subsubsection{Neuen Satz anlegen: \texttt{ns}}
+\subsubsection{Neuen Satz anlegen: \texttt{ns}}\label{befehl-ns}
 
 Mit \texttt{ns} – gefolgt von mit Leerzeichen getrennten anzulegenden Satznamen – werden ein oder mehrere neue Sätze angelegt. Dabei werden neue Meta-Knoten mit dem entsprechenden \texttt{sentence}-Attribut erstellt. Anschließend wird sofort in den ersten angegebenen Satz gewechselt.
 
@@ -240,6 +240,8 @@ Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Impo
 \subsection{Annotationsbefehle}
 
 Die Annotationsbefehle von GraphAnno sind darauf ausgerichtet, daß sie möglichst schnell einzugeben sind. Daher ist ihre Syntax entsprechend reduziert: Sie bestehen aus einem kurzen Befehl (oft nur ein Buchstabe) gefolgt von Parametern, die durch Leerzeichen getrennt sind.
+
+Die Befehle setzen voraus, daß man sich ein einem Satz befindet. D.h., wenn der Arbeitsbereich leer ist (und kein Satz im Satzausfahlfeld angezeigt wird), muß also zunächst mit dem Befehl \texttt{ns} (siehe \ref{befehl-ns}) ein Satz angelegt werden.
 
 
 \subsubsection{Neuer Knoten: \texttt{n}}\label{befehl-n}
