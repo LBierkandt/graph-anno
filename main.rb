@@ -20,7 +20,7 @@
 require 'sinatra'
 require 'haml'
 require 'fileutils'
-require 'REXML/document'
+require 'rexml/document'
 
 require './lib/anno_graph'
 require './lib/toolbox_module'
