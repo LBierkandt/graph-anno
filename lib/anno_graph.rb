@@ -258,7 +258,6 @@ class AnnoGraph < SearchableGraph
 		super
 		@conf = AnnoGraphConf.new
 		create_layer_makros
-		load_makros
 	end
 
 	# reads a graph JSON file into self, clearing self before
@@ -515,7 +514,7 @@ class AnnoGraph < SearchableGraph
 	def clear
 		super
 		@conf = AnnoGraphConf.new
-		load_makros
+		@makros_plain = []
 	end
 
 	# import corpus from pre-formatted text
@@ -583,23 +582,14 @@ class AnnoGraph < SearchableGraph
 
 	private
 
-	def load_makros
-		@makros_plain = []
-		makros_strings = []
-		if File.exists?('conf/search_makros.txt')
-			File.open('conf/search_makros.txt', 'r:utf-8') do |datei|
-				makros_strings = datei.readlines.map{|line| line.strip}
-			end
-		end
-		@makros = parse_query(makros_strings * "\n")['def']
-	end
-
 	def create_layer_makros
+		@makros = []
+		@makros_plain = []
 		layer_makros_array = (@conf.layers_and_combinations).map do |layer|
 			attributes_string = [*layer.attr].map{|a| a + ':t'} * ' & '
 			"def #{layer.shortcut} #{attributes_string}"
 		end
-		@makros += parse_query(layer_makros_array * "\n")['def']
+		@makros = parse_query(layer_makros_array * "\n")['def']
 	end
 
 end

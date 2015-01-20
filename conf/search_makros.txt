@@ -1,3 +1,0 @@
-def  cum  lemma:cum & pos:G-
-def  sem  f-layer:t
-def  syn  s-layer:t
