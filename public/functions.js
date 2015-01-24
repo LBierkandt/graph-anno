@@ -6,6 +6,10 @@ window.onload = function() {
 
 	document.forms['cmd'].elements['txtcmd'].focus();
 	document.forms['cmd'].elements['txtcmd'].select();
+
+	$('.box').draggable({handle: '.handle', stack: '.box'});
+	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310});
+	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220});
 }
 window.onresize = graphdivEinpassen;
 

@@ -2,20 +2,20 @@
   %head
     %title GraphAnno
     %meta{'http-equiv' => 'Content-Type', :content => 'text/html; charset=utf-8' }
+    %link{ :rel => 'stylesheet', :type => 'text/css', :href => '/jquery-ui.min.css' }
     %link{ :rel => "stylesheet", :type => "text/css", :href => "/style.css" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/jquery-2.1.1.min.js" }  
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/jquery-ui.min.js' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }  
 
   %body
     #graphdiv
       %object{ :id => "graph", :type => "image/svg+xml" }
-      /%div{ :id => "loadinginfo" }
-      /  Loading graph image ...
 
     #bottom
-      #textline
-      #meta
-      #cmddiv
+      #textline.bottom-block
+      #meta.bottom-block
+      #cmddiv.bottom-block
         %form{ :action => "/handle_commandline", :method => "post",  :name => "cmd" }
           %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
           %select{ :name => "layer", :id => "layer" }
@@ -24,36 +24,40 @@
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
           #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end
 
-    #search
+    #search.box
+      .handle
       %form{ :action => "/search", :method => "post", :name => "search" }
-        %textarea{ :cols => "50", :rows => "20", :name => "query", :id => "query" }
-          = request.cookies['traw_query'].to_s
-        %br
-        %input{ :type => "button", :value => "Search", :onclick => "sendSearch()" }
-        %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export_subcorpus/subcorpus.json'" }
-        %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
-      #searchresult
-        = controller.search_result
+        .textarea-container
+          %textarea{ :cols => "50", :rows => "20", :name => "query", :id => "query" }
+            = request.cookies['traw_query'].to_s
+        .below-textarea
+          %input{ :type => "button", :value => "Search", :onclick => "sendSearch()" }
+          %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export_subcorpus/subcorpus.json'" }
+          %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
+          #searchresult
+            = controller.search_result
     
-    #filter
+    #filter.box
+      .handle
       %form{ :action => "/filter", :method => "post", :name => "filter" }
-        %textarea{ :cols => "50", :rows => "4", :name => "filterfield", :id => "filterfield" }
-          = request.cookies['traw_filter'].to_s
-        %br
-        %table
-          %tr
-            %td
-              %input{ :id => 'hide rest', :type => "button", :value => "Hide rest", :onclick => "sendFilter('hide rest')", :class => request.cookies['traw_filter_mode'].to_s == 'hide rest' ? 'selected_filter_mode' : '' }
-            %td
-              %input{ :id => 'hide selected', :type => "button", :value => "Hide defined", :onclick => "sendFilter('hide selected')", :class => request.cookies['traw_filter_mode'].to_s == 'hide selected' ? 'selected_filter_mode' : '' }
-          %tr
-            %td
-              %input{ :id => 'filter rest', :type => "button", :value => "Filter rest", :onclick => "sendFilter('filter rest')", :class => request.cookies['traw_filter_mode'].to_s == 'filter rest' ? 'selected_filter_mode' : '' }
-            %td
-              %input{ :id => 'filter selected', :type => "button", :value => "Filter defined", :onclick => "sendFilter('filter selected')", :class => request.cookies['traw_filter_mode'].to_s == 'filter selected' ? 'selected_filter_mode' : '' }
-          %tr
-            %td{ :colspan => "2" }
-              %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
+        .textarea-container
+          %textarea{ :cols => "50", :rows => "4", :name => "filterfield", :id => "filterfield" }
+            = request.cookies['traw_filter'].to_s
+        .below-textarea
+          %table
+            %tr
+              %td
+                %input{ :id => 'hide rest', :type => "button", :value => "Hide rest", :onclick => "sendFilter('hide rest')", :class => request.cookies['traw_filter_mode'].to_s == 'hide rest' ? 'selected_filter_mode' : '' }
+              %td
+                %input{ :id => 'hide selected', :type => "button", :value => "Hide defined", :onclick => "sendFilter('hide selected')", :class => request.cookies['traw_filter_mode'].to_s == 'hide selected' ? 'selected_filter_mode' : '' }
+            %tr
+              %td
+                %input{ :id => 'filter rest', :type => "button", :value => "Filter rest", :onclick => "sendFilter('filter rest')", :class => request.cookies['traw_filter_mode'].to_s == 'filter rest' ? 'selected_filter_mode' : '' }
+              %td
+                %input{ :id => 'filter selected', :type => "button", :value => "Filter defined", :onclick => "sendFilter('filter selected')", :class => request.cookies['traw_filter_mode'].to_s == 'filter selected' ? 'selected_filter_mode' : '' }
+            %tr
+              %td{ :colspan => "2" }
+                %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
     
     #documentation
       %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} Documentation
