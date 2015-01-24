@@ -2,10 +2,9 @@ window.onload = function() {
 	loadGraph();
 	
 	window.onkeydown = taste;
-	document.getElementById('sentence').onchange = changeSentence;
+	$('#sentence').change(changeSentence);
 
-	document.forms['cmd'].elements['txtcmd'].focus();
-	document.forms['cmd'].elements['txtcmd'].select();
+	$('#txtcmd').focus().select();
 
 	$('.box').draggable({handle: '.handle', stack: '.box'});
 	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310});
@@ -56,8 +55,7 @@ function taste(tast) {
 	}
 	else if (tast.which == 112) {
 		tast.preventDefault();
-		var help = document.getElementById('help');
-		help.style.display = (help.style.display != 'block') ? 'block' : 'none';
+		$('#help').toggle();
 	}
 	else if (tast.which == 113) {
 		tast.preventDefault();
@@ -87,28 +85,24 @@ function taste(tast) {
 	}
 	else if (tast.which == 117) {
 		tast.preventDefault();
-		var filter = document.getElementById('filter');
-		if (filter.style.display != 'block') {
-			filter.style.display = 'block';
-			document.getElementById('filterfield').focus();
+		if ($('#filter').css('display') == 'none') {
+			$('#filter').show();
+			$('#filterfield').focus();
 		}
 		else {
-			filter.style.display = 'none';
-			document.forms['cmd'].elements['txtcmd'].focus();
-			document.forms['cmd'].elements['txtcmd'].select();
+			$('#filter').hide();
+			$('#txtcmd').focus().select();
 		}
 	}
 	else if (tast.which == 118) {
 		tast.preventDefault();
-		var search = document.getElementById('search');
-		if (search.style.display != 'block') {
-			search.style.display = 'block';
-			document.getElementById('query').focus();
+		if ($('#search').css('display') == 'none') {
+			$('#search').show();
+			$('#query').focus();
 		}
 		else {
-			search.style.display = 'none';
-			document.forms['cmd'].elements['txtcmd'].focus();
-			document.forms['cmd'].elements['txtcmd'].select();
+			$('#search').hide();
+			$('#txtcmd').focus().select();
 		}
 	}
 	else if (tast.which == 119) {
@@ -170,8 +164,8 @@ function verschiebeBild(richtung) {
 	}
 }
 function updateView(antworthash) {
-	document.getElementById('textline').innerHTML = antworthash['textline'];
-	document.getElementById('meta').innerHTML = antworthash['meta'];
+	$('#textline').html(antworthash['textline']);
+	$('#meta').html(antworthash['meta']);
 	if (antworthash['sentence_list'] != undefined) build_sentence_list(antworthash['sentence_list']);
 	setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 	graphdivEinpassen();
@@ -225,9 +219,7 @@ function sendFilter(mode) {
 	document.getElementById('display all').className = '';
 	document.getElementById(mode).className = 'selected_filter_mode';
 	//filter.style.display = 'none';
-	//document.forms['cmd'].elements['txtcmd'].focus();
-	//document.forms['cmd'].elements['txtcmd'].select();
-
+	//$('#txtcmd').focus().select();
 }
 function sendSearch() {
 	var query = document.search.query.value;
