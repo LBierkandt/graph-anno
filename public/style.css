@@ -29,6 +29,9 @@ h1, h2, h3, h4, h5, h6 {
 	margin-top: 0ex;
 	margin-bottom: 1ex;
 }
+a {
+	color: #002050;
+}
 button, input[type="submit"], input[type="reset"], input[type="button"], .button {
 	color: #ffffff;
 	background-color: #002050;
