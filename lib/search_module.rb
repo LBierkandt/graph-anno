@@ -1,19 +1,19 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ require_relative 'parser_module'
 
 class SearchableGraph < Graph
 	include(Parser)
-	
+
 	def initialize
 		super
 		@makros = []
@@ -31,16 +31,16 @@ class SearchableGraph < Graph
 
 	def teilgraph_suchen(anfrage)
 		operationen = parse_query(anfrage)
-		
+
 		puts 'Searching for graph fragment ...'
 		startzeit = Time.new
-		
+
 		suchgraph = self.clone
 		tglisten = {}
 		gefundene_tg = []
 		id_index = {}
 		tgindex = 0
-		
+
 		# Vorgehen:
 		# Anfrage auf Wohlgeformtheit prüfen
 		# edge in link umwandeln, wenn :start und :end gegeben
@@ -49,7 +49,7 @@ class SearchableGraph < Graph
 		# node/nodes: passende Knoten jeweils als TG
 		# text: Textfragmente
 		# edge/link: node/nodes-TGn und text-TGn kombinieren
-		
+
 		# check validity of query
 		text_ids = operationen['text'].map{|o| ([o[:id]] + o[:ids]).flatten.compact}
 		node_ids = operationen['node'].map{|o| o[:id]}
@@ -99,8 +99,8 @@ class SearchableGraph < Graph
 			end
 		end
 		raise error_messages * "\n" unless error_messages.empty?
-		
-		
+
+
 		# edge in link umwandeln, wenn Start und Ziel gegeben
 		operationen['edge'].clone.each do |operation|
 			if operation[:start] and operation[:end]
@@ -114,7 +114,7 @@ class SearchableGraph < Graph
 				operationen['edge'].delete(operation)
 			end
 		end
-		
+
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
 		if metabedingung = operation_erzeugen(:op => 'and', :arg => operationen['meta'].map{|op| op[:cond]})
@@ -122,7 +122,7 @@ class SearchableGraph < Graph
 			suchgraph.nodes.values.select!{|n| metaknoten.include?(n.sentence)}
 			suchgraph.edges.values.select!{|e| metaknoten.include?(e.start.sentence) || metaknoten.include?(e.end.sentence)}
 		end
-		
+
 		# edge
 		operationen['edge'].each do |operation|
 			gefundene_kanten = suchgraph.edges.values.select{|k| k.fulfil?(operation[:cond])}
@@ -134,7 +134,7 @@ class SearchableGraph < Graph
 			end
 			id_index[operation[:id]] = {:index => tgindex, :art => operation[:operator], :cond => operation[:cond]}
 		end
-		
+
 		# node/nodes
 		# gefundene Knoten werden als atomare Teilgraphen gesammelt
 		(operationen['node'] + operationen['nodes']).each do |operation|
@@ -152,7 +152,7 @@ class SearchableGraph < Graph
 			end
 			id_index[operation[:id]] = {:index => tgindex, :art => operation[:operator], :cond => operation[:cond]}
 		end
-		
+
 		# text
 		# ein oder mehrer Teilgraphenlisten werden erstellt
 		operationen['text'].each do |operation|
@@ -165,24 +165,24 @@ class SearchableGraph < Graph
 				id_index[id] = {:index => tgindex, :art => operation[:operator]}
 			end
 		end
-		
+
 		# link
 		# atomare Teilgraphen werden zu Ketten verbunden
 		operationen['link'].sort{|a,b| link_operation_vergleichen(a, b, id_index)}.each_with_index do |operation,operationsindex|
 			startid = operation[:start]
 			zielid = operation[:end]
-			if !id_index[startid] || !id_index[zielid] then next end
+			next unless id_index[startid] && id_index[zielid]
 			startindex = id_index[startid][:index]
 			zielindex = id_index[zielid][:index]
 			tgl_start = tglisten[startindex]
 			tgl_ziel = tglisten[zielindex]
 			schon_gesucht = {}
 			neue_tgl = []
-			
+
 			automat = Automat.create(operation[:arg])
 			automat.bereinigen
 			#automat.zustaende.each{|z| puts z; puts z.typ; puts z.uebergang; puts z.folgezustand; puts}
-			
+
 			if id_index[startid][:art] != 'text'
 				if id_index[zielid][:art] != 'text'
 					# erstmal node(s) -> node(s)
@@ -190,7 +190,7 @@ class SearchableGraph < Graph
 						startknot = starttg.ids[startid][0]
 						if !(breitensuche = schon_gesucht[startknot])
 							breitensuche = startknot.links(automat, id_index[zielid][:cond])
-							if breitensuche == [] then breitensuche = [[nil, Teilgraph.new]] end
+							breitensuche = [[nil, Teilgraph.new]] if breitensuche == []
 							schon_gesucht[startknot] = breitensuche
 						end
 						breitensuche.each do |zielknot, pfadtg|
@@ -229,7 +229,7 @@ class SearchableGraph < Graph
 				end
 			else # wenn Start 'text' ist
 			end
-			
+
 			# alte tg-Listen löschen
 			tglisten.delete(startindex)
 			tglisten.delete(zielindex)
@@ -241,12 +241,12 @@ class SearchableGraph < Graph
 			end
 			# id_index auffrischen
 			id_index.each do |id,tgi|
-				if tgi[:index] == startindex || tgi[:index] == zielindex then id_index[id][:index] = tgindex end
+				id_index[id][:index] = tgindex if tgi[:index] == startindex || tgi[:index] == zielindex
 			end
 			# Operation löschen
 			operationen['link'].delete_at(operationsindex)
 		end
-		
+
 		# Teilgraphen zusammenfassen, und zwar dann, wenn sie alle ihre "node"-Knoten bzw. "text"e teilen
 		if operationen['nodes'] != []
 			node_indizes = id_index.select{|s,w| w[:art] == 'node' || w[:art] == 'text'}
@@ -274,18 +274,18 @@ class SearchableGraph < Graph
 				tglisten[tgindex += 1] = neue_tgl.reverse
 				# id_index auffrischen
 				id_index.each do |id,tgi|
-					if tgi == node_tgindex then id_index[id] = tgindex end
+					id_index[id] = tgindex if tgi == node_tgindex
 				end
 			end
 		end
-		
+
 		## Zusammenhängendes Graphfragment? Sollte vielleicht besser vor der Suche geprüft werden. Wird es jetzt auch.
 		#if tglisten.length > 1
 		#	puts 'Achtung: Sie haben kein zusammenhängendes Graphfragment angegeben!'
 		#end
-		
+
 		tgliste = tglisten.values.flatten(1)
-		
+
 		# cond
 		operationen['cond'].each do |op|
 			lambda = evallambda(op, id_index)
@@ -299,17 +299,17 @@ class SearchableGraph < Graph
 				raise "#{e.message} in line:\ncond #{op[:string]}"
 			end
 		end
-		
+
 		puts "Found #{tgliste.length.to_s} matches in #{(Time.new - startzeit).to_s} seconds"
 		puts
-		
+
 		return {:tg => tgliste, :id_type => id_index.map_hash{|s,w| w[:art]}}
 	end
 
-	def textsuche_NFA(operation, id = nil) 
+	def textsuche_NFA(operation, id = nil)
 		automat = Automat.create(operation)
 		automat.bereinigen
-		
+
 		# Grenzknoten einbauen (das muß natürlich bei einem Graph mit verbundenen Sätzen und mehreren Ebenen anders aussehen)
 		grenzknoten = []
 		@nodes.values.select{|k| k.token}.each do |tok|
@@ -322,10 +322,11 @@ class SearchableGraph < Graph
 				self.add_order_edge(:start => tok, :end => grenzknoten.last)
 			end
 		end
-		
+
 		ergebnis = []
 		@nodes.values.select{|k| k.token}.each do |node|
-			if t = automat.text_suchen_ab(node) 
+			if t = automat.text_suchen_ab(node)
+				t.remove_boundary_nodes!
 				ergebnis << t
 			end
 		end
@@ -334,12 +335,12 @@ class SearchableGraph < Graph
 				tg.ids[id] = tg.nodes.clone
 			end
 		end
-		
+
 		# Grenzknoten wieder entfernen
 		grenzknoten.each do |node|
 			node.delete
 		end
-		
+
 		return ergebnis
 	end
 
@@ -373,7 +374,7 @@ class SearchableGraph < Graph
 
 	def teilgraph_ausgeben(found, befehle, datei = :console)
 		operationen = parse_query(befehle)
-		
+
 		# Sortieren
 		found[:tg].each do |tg|
 			tg.ids.values.each{|arr| arr.sort!{|a,b| a.id.to_i <=> b.id.to_i}}
@@ -399,7 +400,7 @@ class SearchableGraph < Graph
 			end
 			vergleich
 		end
-		
+
 		# Ausgabe
 		operationen['col'].each{|op| op[:lambda] = evallambda(op, found[:id_type])}
 		if datei.class == String or datei == :string
@@ -411,9 +412,9 @@ class SearchableGraph < Graph
 							op[:lambda].call(tg)
 						rescue NoMethodError => e
 							match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
-							raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncol #{op[:string]}"
+							raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncol #{op[:title]} #{op[:string]}"
 						rescue StandardError => e
-							raise "#{e.message} in line:\ncol #{op[:string]}"
+							raise "#{e.message} in line:\ncol #{op[:title]} #{op[:string]}"
 						end
 					end
 				end
@@ -444,28 +445,26 @@ end
 class NodeOrEdge
 
 	def fulfil?(bedingung)
-		if bedingung.class == String
-			bedingung = @graph.parse_attributes(bedingung)[:op]
-		end
-		if not bedingung then return true end
+		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.class == String
+		return true unless bedingung
 		satzzeichen = '.,;:?!"'
 		case bedingung[:operator]
 		when 'attr'
 			knotenwert = @attr[bedingung[:key]]
-			if !knotenwert then return false end
+			return false unless knotenwert
 			wert = bedingung[:value]
-			if !wert then return true end
+			return true unless wert
 			case bedingung[:method]
 			when 'plain'
-				if knotenwert == wert then return true end
+				return true if knotenwert == wert
 			when 'insens'
 				if bedingung[:key] == 'token'
-					if UnicodeUtils.downcase(knotenwert.xstrip(satzzeichen)) == UnicodeUtils.downcase(wert) then return true end
+					return true if UnicodeUtils.downcase(knotenwert.xstrip(satzzeichen)) == UnicodeUtils.downcase(wert)
 				else
-					if UnicodeUtils.downcase(knotenwert) == UnicodeUtils.downcase(wert) then return true end
+					return true if UnicodeUtils.downcase(knotenwert) == UnicodeUtils.downcase(wert)
 				end
 			when 'regex'
-				if knotenwert.match(wert) then return true end
+				return true if knotenwert.match(wert)
 			end
 			return false
 		when 'not'
@@ -530,14 +529,14 @@ class Node
 			automat = Automat.create(pfad_oder_automat)
 			automat.bereinigen
 		end
-	
+
 		neue_zustaende = [{:zustand => automat.startzustand, :tg => Teilgraph.new, :el => self, :forward => true}]
 		rueck = []
-		
+
 		loop do   # Kanten und Knoten durchlaufen
 			alte_zustaende = neue_zustaende.clone
 			neue_zustaende = []
-			
+
 			alte_zustaende.each do |z|
 				# Ziel gefunden?
 				if z[:zustand] == nil
@@ -577,10 +576,10 @@ end
 
 class Automat
 	attr_accessor :zustaende
-	
+
 	def self.create(operation, ids = [])
 		ids = ids.clone
-		if operation[:id] then ids << operation[:id] end
+		ids << operation[:id] if operation[:id]
 		case operation[:operator]
 		when 'node'
 			return Automat.new(Zustand.new('node', nil, operation[:cond], ids))
@@ -614,53 +613,53 @@ class Automat
 					splitautomat = Automat.new(Zustand.new('split', [], ids))
 					anhangautomat = Automat.create(operation[:arg], ids)
 					leerautomat = Automat.new(Zustand.new('empty', nil, ids))
-					
+
 					splitautomat.anhaengen(leerautomat)
 					splitautomat.anhaengen(anhangautomat)
-					
+
 					splitautomat.startzustand.folgezustand << leerautomat.startzustand
 					splitautomat.startzustand.folgezustand << anhangautomat.startzustand
-					
+
 					automat.automaten_anhaengen(splitautomat)
 				end
 			elsif operation[:max] < 0
 				splitautomat = Automat.new(Zustand.new('split', [], ids))
-				
+
 				leerautomat = Automat.new(Zustand.new('empty', nil, ids))
 				anhangautomat = Automat.create(operation[:arg], ids)
 				anhangautomat.automaten_anhaengen(splitautomat)
-				
+
 				splitautomat.anhaengen(leerautomat)
 				splitautomat.anhaengen(anhangautomat)
-				
+
 				splitautomat.startzustand.folgezustand << leerautomat.startzustand
 				splitautomat.startzustand.folgezustand << anhangautomat.startzustand
-				
+
 				automat.automaten_anhaengen(splitautomat)
 			end
 			return automat
 		end
 	end
-	
+
 	def initialize(startzust = nil)
 		@zustaende = [startzust].compact
 	end
-	
+
 	def startzustand
 		return @zustaende[0]
 	end
-	
+
 	def automaten_anhaengen(neuer_automat)
 		@zustaende.each do |z|
-				if z.folgezustand == nil then z.folgezustand = neuer_automat.startzustand end
+			z.folgezustand = neuer_automat.startzustand if z.folgezustand == nil
 		end
 		self.anhaengen(neuer_automat)
 	end
-	
+
 	def anhaengen(neuer_automat)
 		@zustaende += neuer_automat.zustaende
 	end
-	
+
 	def bereinigen
 		@zustaende = @zustaende.uniq
 		@zustaende.clone.each do |z|
@@ -670,7 +669,7 @@ class Automat
 						@zustaende[i].folgezustand = z.folgezustand
 					elsif zz.folgezustand.class == Array
 						zz.folgezustand.each_with_index do |fz,ii|
-							if fz == z then @zustaende[i].folgezustand[ii] = z.folgezustand end
+							@zustaende[i].folgezustand[ii] = z.folgezustand if fz == z
 						end
 					end
 				end
@@ -682,19 +681,19 @@ class Automat
 	def text_suchen_ab(startknoten)
 		neue_zustaende = [{:zustand => self.startzustand, :tg => Teilgraph.new}]
 		neuer_knoten = startknoten
-		
+
 		loop do   # Knoten durchlaufen
 			alte_zustaende = neue_zustaende.clone
 			neue_zustaende = []
-			
+
 			alte_zustaende.each do |z|
 				# Text gefunden?
-				if z[:zustand] == nil then return z[:tg] end
+				return z[:tg] if z[:zustand] == nil
 				# sonst nächsten Schritt
 				neue_zustaende += schrittliste_text(z[:zustand], z[:tg], neuer_knoten)
 			end
-			if neue_zustaende == [] then return nil end
-		
+			return nil if neue_zustaende == []
+
 			# Weiter vorrücken im Text
 			neuer_knoten = neuer_knoten.node_after
 		end
@@ -702,7 +701,7 @@ class Automat
 
 	def schrittliste_text(z, tg, nk)
 		# Liste von Folgezuständen erstellen
-		if z == nil then return [{:zustand => nil, :tg => tg}] end
+		return [{:zustand => nil, :tg => tg}] if z == nil
 		liste = []
 		case z.typ
 		when 'split'
@@ -728,7 +727,7 @@ class Automat
 		nk = h[:el]
 		forward = h[:forward]
 		# Liste von Folgezuständen erstellen
-		if z == nil then return [h] end
+		return [h] if z == nil
 		liste = []
 		case z.typ
 		when 'split'
@@ -738,7 +737,7 @@ class Automat
 			liste += schrittliste_graph(:zustand=>z.folgezustand, :tg=>tg, :el=>nk, :forward=>forward)
 		when 'node'
 			if nk.kind_of?(Node)
-				if nk.fulfil?(z.uebergang) then schritt_in_liste(h.clone, liste) end
+				schritt_in_liste(h.clone, liste) if nk.fulfil?(z.uebergang)
 			elsif forward # wenn das aktuelle Element eine Kante ist
 				schritt_in_liste(h.clone, liste, false)
 			end
@@ -763,7 +762,7 @@ class Automat
 		tg = h[:tg]
 		nk = h[:el]
 		forward = h[:forward]
-		if tg.nodes.include?(nk) then return end # zirkuläre Pfade werden ausgeschlossen
+		return if tg.nodes.include?(nk) # zirkuläre Pfade werden ausgeschlossen
 		if schritt
 			z.ids.each do |id|
 				tg.element_zu_id_hinzufuegen(id, nk)
@@ -793,7 +792,7 @@ end
 
 class Zustand
 	attr_accessor :typ, :folgezustand, :uebergang, :ids
-	
+
 	def initialize(typ, folgezustand = nil, uebergang = nil, ids = [])
 		@typ = typ
 		@folgezustand = folgezustand
@@ -806,9 +805,9 @@ class Teilgraph
 	# @nodes: list of contained nodes
 	# @edges: list of contained edges
 	# @ids: hash of {id => [Elements with this id]}
-	
+
 	attr_accessor :nodes, :edges, :ids
-	
+
 	def initialize
 		@nodes = []
 		@edges = []
@@ -831,17 +830,20 @@ class Teilgraph
 		neu.edges = (@edges + other.edges).uniq
 		neu.ids = @ids.merge(other.ids){|s, w1, w2| (w1 + w2).uniq}
 		return neu
-		end
+	end
 
 	def element_zu_id_hinzufuegen(id, element)
-		if !@ids[id] then @ids[id] = [] end
+		@ids[id] = [] unless @ids[id]
 		@ids[id].push(element).uniq!
 	end
 
+	def remove_boundary_nodes!
+		@nodes.reject!{|n| n.cat == 'boundary' and n.token == ''}
+	end
+	
 	def to_s
 		'Nodes: ' + @nodes.to_s + ', Edges: ' + @edges.to_s + ', ids: ' + @ids.to_s
 	end
-	
 end
 
 class String
@@ -864,12 +866,12 @@ def evallambda(op, id_index)
 	string = op[:string].clone
 	op[:ids].keys.sort{|a,b| b.begin <=> a.begin}.each do |stelle|
 		id = op[:ids][stelle]
-		if (id_type = id_index[id]).class == Hash then id_type = id_index[id][:art] end
+		id_type = id_index[id][:art] if (id_type = id_index[id]).class == Hash
 		case id_type
-			when 'node', 'edge'
-				string[stelle] = 'tg.ids["' + id + '"][0]'
-			when 'nodes', 'text', 'link'
-				string[stelle] = 'tg.ids["' + id + '"]'
+		when 'node', 'edge'
+			string[stelle] = 'tg.ids["' + id + '"][0]'
+		when 'nodes', 'text', 'link'
+			string[stelle] = 'tg.ids["' + id + '"]'
 		end
 	end
 	string = 'lambda{|tg| ' + string + '}'

@@ -66,7 +66,11 @@ class String
 			elsif m = str.match(r[:quantor])
 				rueck << {:cl => :quantor, :str => m[0]}
 			elsif m = str.match(r[:id])
-				rueck << {:cl => :id, :str => m[0]}
+				unless rueck.last[:cl] == :boundary
+					rueck << {:cl => :id, :str => m[0]}
+				else
+					raise 'ID assignment error'
+				end
 			elsif m = str.match(r[:boundary])
 				rueck << {:cl => :boundary, :str => m[0][1..-1]}
 			elsif m = str.match(r[:variable])
