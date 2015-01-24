@@ -289,7 +289,15 @@ class SearchableGraph < Graph
 		# cond
 		operationen['cond'].each do |op|
 			lambda = evallambda(op, id_index)
-			tgliste.select!{|tg| lambda.call(tg)}
+			begin
+				tgliste.select!{|tg| lambda.call(tg)}
+			rescue NoMethodError => e
+				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
+				rueck = eval('lambda{|tg| "error!"}')
+				raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncond #{op[:string]}"
+			rescue StandardError => e
+				raise "#{e.message} in line:\ncond #{op[:string]}"
+			end
 		end
 		
 		puts "Found #{tgliste.length.to_s} matches in #{(Time.new - startzeit).to_s} seconds"
@@ -379,8 +387,11 @@ class SearchableGraph < Graph
 			operationen['sort'].reject{|op| !op}.each do |op|
 				begin
 					vergleich = op[:lambda].call(a) <=> op[:lambda].call(b)
+				rescue NoMethodError => e
+					match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
+					raise "Undefined method '#{match[1]}' for #{match[2]} in line:\nsort #{op[:string]}"
 				rescue StandardError => e
-					raise e.message + " in line:\n" + op[:string]
+					raise "#{e.message} in line:\nsort #{op[:string]}"
 				end
 				if vergleich != 0
 					break vergleich
@@ -398,10 +409,11 @@ class SearchableGraph < Graph
 					csv << [i+1] + operationen['col'].map do |op|
 						begin
 							op[:lambda].call(tg)
+						rescue NoMethodError => e
+							match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
+							raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncol #{op[:string]}"
 						rescue StandardError => e
-							raise e.message + " in line:\n" + op[:string]
-							puts tg
-							'error!'
+							raise "#{e.message} in line:\ncol #{op[:string]}"
 						end
 					end
 				end
