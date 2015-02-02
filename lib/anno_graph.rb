@@ -564,7 +564,7 @@ class AnnoGraph < SearchableGraph
 		Dir.mkdir('exports/sql') unless File.exist?('exports/sql')
 		# corpus
 		str = "INSERT INTO `corpora` (`name`, `conf`, `makros`, `info`) VALUES\n"
-		str += "('#{name.sql_json_escape_quotes}', '#{@conf.to_h.to_json.sql_json_escape_quotes}', '#{@makros_plain.to_json.sql_json_escape_quotes}', '');\n"
+		str += "('#{name.sql_json_escape_quotes}', '#{@conf.to_h.to_json.sql_json_escape_quotes}', '#{@makros_plain.to_json.sql_json_escape_quotes}', '#{@info.to_json.sql_json_escape_quotes}');\n"
 		str += "SET @corpus_id := LAST_INSERT_id();\n"
 		# nodes
 		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
