@@ -251,12 +251,13 @@ class AnnoEdge < Edge
 end
 
 class AnnoGraph < SearchableGraph
-	attr_accessor :conf, :makros_plain, :makros
+	attr_accessor :conf, :makros_plain, :makros, :info
 
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
 		super
 		@conf = AnnoGraphConf.new
+		@info = {}
 		create_layer_makros
 	end
 
