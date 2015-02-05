@@ -455,6 +455,7 @@ class AnnoGraph < SearchableGraph
 
 	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
+		@info = other_graph.info.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
 	end

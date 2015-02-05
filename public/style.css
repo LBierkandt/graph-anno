@@ -226,6 +226,20 @@ th {
 #modal-warning:empty {
 	padding: 0px;
 }
+.metadata * {
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
+.metadata .modal-form-element, .metadata table {
+	width: 100%;
+}
+.metadata td:first-child {
+	vertical-align: top;
+	width: 8em;
+}
+/* .metadata textarea {
+	width: 20em;
+} */
 .hidden_word {
 	color: #888;
 }

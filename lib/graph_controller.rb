@@ -145,6 +145,15 @@ class GraphController
 		)
 	end
 
+	def metadata_form
+		@sinatra.haml(
+			:metadata_form,
+			:locals => {
+				:graph => @graph
+			}
+		)
+	end
+
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
@@ -176,6 +185,14 @@ class GraphController
 			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
 		end
 		return result.to_json
+	end
+
+	def save_metadata
+		@graph.info = {}
+		@sinatra.params['keys'].each do |i, key|
+			@graph.info[key.strip] = @sinatra.params['values'][i].strip if key.strip != ''
+		end
+		return true.to_json
 	end
 
 	def new_layer(i)
