@@ -8,13 +8,20 @@
         %tr
           %th Key
           %th Value
-        - graph.info.keys.each_with_index do |key, i|
-          %tr{:no => i}
+        - if graph.info.length == 0
+          %tr{:no => '0'}
             %td
-              %input{:name => "keys[#{i}]", :type => 'text', :value => key}
+              %input{:name => "keys[0]", :type => 'text', :value => ''}
             %td
-              %textarea{:name => "values[#{i}]"}
-                = graph.info[key]
+              %textarea{:name => "values[0]"}
+        - else
+          - graph.info.keys.each_with_index do |key, i|
+            %tr{:no => i}
+              %td
+                %input{:name => "keys[#{i}]", :type => 'text', :value => key}
+              %td
+                %textarea{:name => "values[#{i}]"}
+                  = graph.info[key]
       %tbody
         %tr
           %td{:colspan => 2}

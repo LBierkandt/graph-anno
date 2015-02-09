@@ -516,6 +516,7 @@ class AnnoGraph < SearchableGraph
 	def clear
 		super
 		@conf = AnnoGraphConf.new
+		@info = {}
 		@makros_plain = []
 	end
 
