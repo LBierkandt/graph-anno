@@ -568,15 +568,19 @@ class AnnoGraph < SearchableGraph
 		str += "('#{name.sql_json_escape_quotes}', '#{@conf.to_h.to_json.sql_json_escape_quotes}', '#{@makros_plain.to_json.sql_json_escape_quotes}', '#{@info.to_json.sql_json_escape_quotes}');\n"
 		str += "SET @corpus_id := LAST_INSERT_id();\n"
 		# nodes
-		str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
-		str += @nodes.values.map do |n|
-			"(#{n.id}, @corpus_id, '#{n.attr.to_json.sql_json_escape_quotes}', '#{n.type}')"
-		end * ",\n" + ";\n"
+		@nodes.values.each_slice(1000) do |chunk|
+			str += "INSERT INTO `nodes` (`id`, `corpus_id`, `attr`, `type`) VALUES\n"
+			str += chunk.map do |n|
+				"(#{n.id}, @corpus_id, '#{n.attr.to_json.sql_json_escape_quotes}', '#{n.type}')"
+			end * ",\n" + ";\n"
+		end
 		# edges
-		str += "INSERT INTO `edges` (`id`, `corpus_id`, `start`, `end`, `attr`, `type`) VALUES\n"
-		str += @edges.values.map do |e|
-			"(#{e.id}, @corpus_id, '#{e.start.id}', '#{e.end.id}', '#{e.attr.to_json.sql_json_escape_quotes}', '#{e.type}')"
-		end * ",\n" + ";\n"
+		@edges.values.each_slice(1000) do |chunk|
+			str += "INSERT INTO `edges` (`id`, `corpus_id`, `start`, `end`, `attr`, `type`) VALUES\n"
+			str += chunk.map do |e|
+				"(#{e.id}, @corpus_id, '#{e.start.id}', '#{e.end.id}', '#{e.attr.to_json.sql_json_escape_quotes}', '#{e.type}')"
+			end * ",\n" + ";\n"
+		end
 		File.open("exports/sql/#{name}.sql", 'w') do |f|
 			f.write(str)
 		end
