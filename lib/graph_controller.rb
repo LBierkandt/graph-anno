@@ -638,7 +638,7 @@ class GraphController
 		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
 			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
 			@sinatra.response.set_cookie('traw_layer', { :value => layer })
-			properties.replace(@graph.conf.layer_attributes[layer].to_h)
+			properties.replace(@graph.conf.layer_attributes[layer])
 			return layer
 		end
 	end
