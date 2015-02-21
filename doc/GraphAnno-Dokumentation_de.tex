@@ -445,6 +445,8 @@ Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art un
 Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{\char"0022xyz\char"0022}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen. 
 Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/} und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit \texttt{//} gefunden werden.
 
+Wie eine Attributbeschreibung kann das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
+
 Des weiteren kann die Attributbeschreibung Kriterien für ein- und ausgehende Kanten enthalten. Diese bestehen aus dem Schlüsselwort \texttt{in} bzw. \texttt{out}, einer optionalen Attributbeschreibung in runden Klammern und einem optionalen Quantor. Der Operator \texttt{in} bzw. \texttt{out} findet alle ein- bzw. ausgehenden Kanten mit den angegebenen Attributen, der Quantor gibt an, wieviele Kanten der spezifizierten Art vorhanden sein dürfen und ist (syntaktisch) wie bei regulären Ausdrücken definiert: \texttt{\{m,n\}} für mindestens m-mal, höchstens n-mal; bei Auslassung der ersten Zahl wird 0 angenommen, bei Auslassung der zweiten unendlich. \texttt{\{n\}} steht für genau n mal. Des weiteren gibt es die Abkürzungen \texttt{?} für \texttt{\{0,1\}}, \texttt{*} für \texttt{\{0,\}} und \texttt{+} für \texttt{\{1,\}}.
 Anders als von regulären Ausdrücken gewohnt (und anders als beim Auftreten von Quantoren in anderen Kontexten der GraphAnno-Abfragesprache), wird das Fehlen eines Quantors hier als \texttt{\{1,\}} interpretiert.
 
@@ -464,6 +466,7 @@ knotenattribute =   knotenattribute " & " knotenattribute
                     "(" knotenattribute ")"
                     attribut
                     kantenkriterium
+                    "token"
 attribut        =   zeichenkette ":" attributwert ("|" attributwert)*
 zeichenkette    =   zeichen_außer_steuerzeichen+
                     """ beliebiges_zeichen* """
@@ -489,9 +492,9 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 \paragraph*{Beispiele:}
 \begin{itemize}
 	\item Suche alle Knoten, die die Kategorie S oder VP haben und keine Token sind:\\
-	{\tt node cat:S|VP \& !token://}
+	{\tt node cat:S|VP \& !token}
 	\item Suche alle Knoten, die von der Kategorie VP sind oder Token mit dem pos-Wert verb:\\
-	{\tt node cat:VP | token:// \& pos:verb}
+	{\tt node cat:VP | token \& pos:verb}
 	\item Suche alle Knoten der Kategorie S, die mindestens zwei ausgehende AUX-Kanten haben:\\
 	{\tt node cat:S \& out(cat:AUX)\{2,\}}
 	\item Suche alle Knoten der Kategorie S, die mindestens einen Knoten mit dem pos-Wert pro dominieren:\\
@@ -592,14 +595,14 @@ verbindung      =   verbindung " " verbindung
 	{\tt
 	node @s cat:S\\[-.4ex]
 	nodes @vpn cat:NP\\[-.4ex]
-	nodes @tok token://\\[-.4ex]
+	nodes @tok token\\[-.4ex]
 	link @s@npn edge+\\[-.4ex]
 	link @npn@tok edge+
 	}
 	\item Suche einen Knoten der Kategorie S und alle Token, die von diesem über einen NP-Knoten dominiert werden (bis auf die IDs äquivalent zum vorigen Beispiel):\\
 	{\tt
 	node @s cat:S\\[-.4ex]
-	nodes @tok token://\\[-.4ex]
+	nodes @tok token\\[-.4ex]
 	link @s@tok edge+ node(cat:NP) edge+
 	}
 \end{itemize}
@@ -679,7 +682,7 @@ Auf die Attribute der Knoten wird in der Form \texttt{['schlüssel']} zugegriffe
 	\item Suche alle S-Knoten, die mindestens drei Token dominieren:\\
 	{\tt
 	node @s cat:S\\[-.4ex]
-	nodes @tok token://\\[-.4ex]
+	nodes @tok token\\[-.4ex]
 	link @s@tok edge+\\[-.4ex]
 	cond @tok.length >= 3
 	}
@@ -723,7 +726,7 @@ name            =   alphanumerisches_zeichen+
 %	{\tt
 %	def cum lemma:cum \& pos:G-\\[-.4ex]
 %	node @s1 cum\\[-.4ex]
-%	node @s2 cum \& token://\\[-.4ex]
+%	node @s2 cum \& token\\[-.4ex]
 %	edge @s1@s2\\[-.4ex]
 %	}
 \end{itemize}

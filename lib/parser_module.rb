@@ -249,7 +249,7 @@ module Parser
 						raise "Undefined string \"#{tok[:str]}\""
 					when :bstring
 						p = parse_element(obj[i..-1])
-						if ['in', 'out', 'start', 'end', 'link', 'quant'].include?(p[:op][:operator])
+						if ['in', 'out', 'start', 'end', 'link', 'quant', 'token'].include?(p[:op][:operator])
 							terms << p[:op]
 						elsif @makros.map{|m| m[:name]}.include?(tok[:str])
 							m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])

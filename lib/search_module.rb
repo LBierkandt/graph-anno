@@ -498,6 +498,12 @@ class NodeOrEdge
 			else
 				return 1
 			end
+		when 'token'
+			if self.kind_of?(Node)
+				return @type == 't'
+			else
+				return false
+			end
 		when 'start'
 			if self.kind_of?(Edge) && !@start.fulfil?(bedingung[:cond])
 				return false
