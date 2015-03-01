@@ -340,7 +340,7 @@ class GraphController
 
 			when 'd' # delete elements
 				if sentence_set?
-					(parameters[:meta] + parameters[:nodes] + parameters[:edges]).each do |el|
+					(parameters[:nodes] + parameters[:edges]).each do |el|
 						if element = element_by_identifier(el)
 							element.delete
 						end
