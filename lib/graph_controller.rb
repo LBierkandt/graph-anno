@@ -78,7 +78,11 @@ class GraphController
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
 		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
-		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
+		begin
+			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
+		rescue StandardError => e
+			message = e.message
+		end
 		return value.to_json if value
 		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence ? @sentence.id : nil })
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
@@ -88,7 +92,8 @@ class GraphController
 		return {
 			:sentence_list => @sentence_list.values,
 			:sentence_changed => sentence_changed,
-			:graph_file => @graph_file
+			:graph_file => @graph_file,
+			:message => message
 		}.merge(satzinfo).to_json
 	end
 
@@ -297,14 +302,14 @@ class GraphController
 
 		case command
 			when 'n' # new node
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(parameters[:attributes])
 					@graph.add_anno_node(:attr => properties, :sentence => @sentence)
 				end
 
 			when 'e' # new edge
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(parameters[:attributes])
 					@graph.add_anno_edge(
@@ -312,10 +317,11 @@ class GraphController
 						:end => element_by_identifier(parameters[:all_nodes][1]),
 						:attr => properties
 					)
+					undefined_references?(parameters[:all_nodes][0..1])
 				end
 
 			when 'a' # annotate elements
-				if @sentence
+				if sentence_set?
 					@graph.conf.layers.map{|l| l.attr}.each do |a|
 						properties.delete(a)
 					end
@@ -329,10 +335,11 @@ class GraphController
 							parameters[:keys].each{|k| element.attr.delete(k)}
 						end
 					end
+					undefined_references?(parameters[:elements])
 				end
 
 			when 'd' # delete elements
-				if @sentence
+				if sentence_set?
 					(parameters[:meta] + parameters[:nodes] + parameters[:edges]).each do |el|
 						if element = element_by_identifier(el)
 							element.delete
@@ -343,13 +350,14 @@ class GraphController
 							element.remove_token
 						end
 					end
+					undefined_references?(parameters[:elements])
 				end
 
 			when 'l' # set layer
 				layer = set_new_layer(parameters[:words], properties)
 
 			when 'p', 'g' # group under new parent node
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
 					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
@@ -361,10 +369,11 @@ class GraphController
 							)
 						end
 					end
+					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 
 			when 'c', 'h' # attach new child node
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
 					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
@@ -376,6 +385,7 @@ class GraphController
 							)
 						end
 					end
+					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 
 			when 'ns' # create and append new sentence(s)
@@ -389,12 +399,13 @@ class GraphController
 				@sentence = new_nodes.first
 
 			when 't' # build tokens and append them
-				if @sentence
+				if sentence_set?
 					@graph.build_tokens(parameters[:words], @sentence)
 				end
 
 			when 'ti' # build tokens and insert them
-				if @sentence
+				if sentence_set?
+					undefined_references?(parameters[:tokens][0..0])
 					knoten = element_by_identifier(parameters[:tokens][0])
 					@graph.build_tokens(parameters[:words][1..-1], @sentence, knoten)
 				end
@@ -403,7 +414,7 @@ class GraphController
 				@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 			when 'del' # delete sentence
-				if @sentence
+				if sentence_set?
 					saetze = @graph.sentence_nodes
 					index = saetze.index(@sentence) + 1
 					index -= 2 if index == saetze.length
@@ -436,6 +447,7 @@ class GraphController
 			when 'save', 'speichern' # save workspace to corpus file
 				@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]
 				Dir.mkdir('data') unless File.exist?('data')
+				raise 'Please specify a file name!' if @graph_file == ''
 				@graph.write_json_file(@graph_file) if @sentence
 
 			when 'clear', 'leeren' # clear workspace
@@ -445,7 +457,7 @@ class GraphController
 				@sentence = nil
 
 			when 'image' # export sentence as graphics file
-				if @sentence
+				if sentence_set?
 					format = parameters[:words][0]
 					name = parameters[:words][1]
 					Dir.mkdir('images') if !File.exist?('images')
@@ -464,6 +476,8 @@ class GraphController
 						@graph.export_saltxml(name)
 					when 'sql'
 						@graph.export_sql(name)
+					else
+						raise "Unknown format \"#{format}\""
 				end
 
 			when 'import' # open text import window
@@ -566,7 +580,9 @@ class GraphController
 				#	k.gesammelte_merkmale = nil
 				#	k.unreduzierte_merkmale = nil
 				#end
-
+			when ''
+			else
+				raise "Unknown command \"#{command}\""
 		end
 		return nil
 	end
@@ -584,6 +600,22 @@ class GraphController
 				return @tokens[i]
 			else
 				return nil
+		end
+	end
+	
+	def undefined_references?(ids)
+		undefined_ids = []
+		ids.each do |id|
+			undefined_ids << id unless element_by_identifier(id)
+		end
+		raise "Undefined element(s) #{undefined_ids * ', '}" unless undefined_ids.empty?
+	end
+
+	def sentence_set?
+		if @sentence
+			return true
+		else
+			raise 'Create a sentence first!'
 		end
 	end
 

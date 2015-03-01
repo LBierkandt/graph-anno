@@ -283,6 +283,7 @@ function makeAnfrage(anfrage, params) {
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
 				updateLayerOptions();
+				if (antworthash['message'] != null) alert(antworthash['message']);
 				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
 				if (antworthash['search_result'] != undefined) {
 					document.getElementById('searchresult').innerHTML = antworthash['search_result'];
