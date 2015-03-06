@@ -774,11 +774,12 @@ class GraphController
 
 		satzinfo = {:textline => '', :meta => ''}
 
-		@tokens = @sentence ? @sentence.sentence_tokens : []
-		all_nodes = @sentence ? @sentence.nodes : []
-		@nodes = all_nodes.reject{|n| n.type == 't'}
-		@edges = all_nodes.map{|n| n.in + n.out}.flatten.uniq.select{|e| e.type == 'a'}
-		token_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'o'}
+		@tokens     = @sentence ? @sentence.sentence_tokens : []
+		all_nodes   = @sentence ? @sentence.nodes : []
+		@nodes      = all_nodes.reject{|n| n.type == 't'}
+		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
+		@edges      = all_edges.select{|e| e.type == 'a'}
+		order_edges = all_edges.select{|e| e.type == 'o'}
 		
 		if @filter[:mode] == 'filter'
 			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
@@ -875,7 +876,7 @@ class GraphController
 			viz_graph.add_edges(edge.start.id, edge.end.id, options)
 		end
 
-		token_edges.each do |edge|
+		order_edges.each do |edge|
 			viz_graph.add_edges(edge.start.id, edge.end.id, :style => 'invis', :weight => 100)
 		end
 
