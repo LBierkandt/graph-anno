@@ -104,11 +104,6 @@ class GraphController
 		return {:sentence_changed => true}.merge(satzinfo).to_json
 	end
 
-	def set_sentence_list(h = {})
-		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
-		set_found_sentences if !h[:clear] and @found
-	end
-
 	def filter
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
@@ -292,6 +287,88 @@ class GraphController
 		end
 	end
 
+	def documentation(filename)
+		@sinatra.send_file('doc/' + filename)
+	end
+
+	private
+
+	def build_label(e, i = nil)
+		label = ''
+		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
+		if e.kind_of?(Node)
+			if e.type == 's'
+				display_attr.each do |key,value|
+					label += "#{key}: #{value}<br/>"
+				end
+			elsif e.type == 't'
+				display_attr.each do |key, value|
+					case key
+						when 'token'
+							label = "#{value}\n#{label}"
+						else
+							label += "#{key}: #{value}\n"
+					end
+				end
+				label += "t" + i.to_s if i
+			else # normaler Knoten
+				display_attr.each do |key,value|
+					case key
+						when 'cat'
+							label = "#{value}\n#{label}"
+						else
+							label += "#{key}: #{value}\n"
+					end
+				end
+				label += "n" + i.to_s if i
+			end
+		elsif e.kind_of?(Edge)
+			display_attr.each do |key,value|
+				case key
+					when 'cat'
+						label = "#{value}\n#{label}"
+					else
+						label += "#{key}: #{value}\n"
+				end
+			end
+			label += "e" + i.to_s if i
+		end
+		return label
+	end
+
+	def check_cookies
+		if @sinatra.request.cookies['traw_sentence'].nil?
+			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
+		end
+
+		if @sinatra.request.cookies['traw_layer'].nil?
+			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
+		end
+
+		if @sinatra.request.cookies['traw_cmd'].nil?
+			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
+		end
+
+		if @sinatra.request.cookies['traw_query'].nil?
+			@sinatra.response.set_cookie('traw_query', { :value => '' })
+		end
+	end
+
+	def element_by_identifier(identifier)
+		i = identifier.scan(/\d/).join.to_i
+		case identifier[0]
+			when 'm'
+				return @sentence
+			when 'n'
+				return @nodes[i]
+			when 'e'
+				return @edges[i]
+			when 't'
+				return @tokens[i]
+			else
+				return nil
+		end
+	end
 
 	def execute_command(command_line, layer)
 		command_line.strip!
@@ -587,172 +664,6 @@ class GraphController
 		return nil
 	end
 
-	def element_by_identifier(identifier)
-		i = identifier.scan(/\d/).join.to_i
-		case identifier[0]
-			when 'm'
-				return @sentence
-			when 'n'
-				return @nodes[i]
-			when 'e'
-				return @edges[i]
-			when 't'
-				return @tokens[i]
-			else
-				return nil
-		end
-	end
-	
-	def undefined_references?(ids)
-		undefined_ids = []
-		ids.each do |id|
-			undefined_ids << id unless element_by_identifier(id)
-		end
-		raise "Undefined element(s) #{undefined_ids * ', '}" unless undefined_ids.empty?
-	end
-
-	def sentence_set?
-		if @sentence
-			return true
-		else
-			raise 'Create a sentence first!'
-		end
-	end
-
-	def check_cookies
-		if @sinatra.request.cookies['traw_sentence'].nil?
-			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_layer'].nil?
-			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
-		end
-
-		if @sinatra.request.cookies['traw_cmd'].nil?
-			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_query'].nil?
-			@sinatra.response.set_cookie('traw_query', { :value => '' })
-		end
-	end
-
-	def set_cmd_cookies
-		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
-			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer] })
-		end
-
-		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
-			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd] })
-		end
-
-		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
-			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence] })
-		end
-	end
-
-	def set_filter_cookies
-		#if @sinatra.request.cookies['traw_filter']
-			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
-		#end
-		#if @sinatra.request.cookies['traw_filter_mode']
-			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
-		#end
-	end
-
-	def set_query_cookies
-		if @sinatra.request.cookies['traw_query']
-			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query] })
-		end
-	end
-
-	def set_new_layer(words, properties)
-		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
-			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
-			@sinatra.response.set_cookie('traw_layer', { :value => layer })
-			properties.replace(@graph.conf.layer_attributes[layer])
-			return layer
-		end
-	end
-
-	def documentation(filename)
-		@sinatra.send_file('doc/' + filename)
-	end
-
-	private
-
-	def set_found_sentences
-		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
-			@sentence_list[s][:found] = true
-		end
-	end
-
-	def validate_config(data)
-		result = {}
-		data['layers'] = data['layers'] || {}
-		data['combinations'] = data['combinations'] || {}
-		data['general'].each do |attr, value|
-			if attr.match(/_color$/)
-				result["general[#{attr}]"] = '' unless value.is_hex_color?
-			elsif attr.match(/weight$/)
-				result["general[#{attr}]"] = '' unless value.is_number?
-			end
-		end
-		data['layers'].each do |i, layer|
-			layer.each do |k, v|
-				if k == 'color'
-					result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
-				elsif k == 'weight'
-					result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
-				elsif ['name', 'attr', 'shortcut'].include?(k)
-					result["layers[#{i}[#{k}]]"] = '' unless v != ''
-				end
-			end
-			['name', 'attr', 'shortcut'].each do |key|
-				data['layers'].each do |i2, l2|
-					if !layer.equal?(l2) and layer[key] == l2[key]
-						result["layers[#{i}[#{key}]]"] = ''
-						result["layers[#{i2}[#{key}]]"] = ''
-					end
-				end
-				data['combinations'].each do |i2, c|
-					if layer[key] == c[key]
-						result["layers[#{i}[#{key}]]"] = ''
-						result["combinations[#{i2}[#{key}]]"] = ''
-					end
-				end
-			end
-		end
-		data['combinations'].each do |i, combination|
-			combination.each do |k, v|
-				if k == 'color'
-					result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
-				elsif k == 'weight'
-					result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
-				elsif ['name', 'shortcut'].include?(k)
-					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
-				end
-				if not combination['attr'] or combination['attr'].length == 1
-					result["combinations[#{i}[attr]]"] = ''
-				end
-			end
-			['name', 'attr', 'shortcut'].each do |key|
-				data['combinations'].each do |i2, c2|
-					if !combination.equal?(c2) and combination[key] == c2[key]
-						result["combinations[#{i}[#{key}]]"] = ''
-						result["combinations[#{i2}[#{key}]]"] = ''
-					end
-				end
-			end
-		end
-		begin
-			@graph.parse_query(data['makros'])
-		rescue StandardError => e
-			result['makros'] = e.message
-		end
-		return result.empty? ? true : result
-	end
-
 	def generate_graph(format, path)
 		puts "Generating graph for sentence \"#{@sentence.name}\"..." if @sentence
 
@@ -885,47 +796,135 @@ class GraphController
 		return satzinfo
 	end
 
-	def build_label(e, i = nil)
-		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
-		if e.kind_of?(Node)
-			if e.type == 's'
-				display_attr.each do |key,value|
-					label += "#{key}: #{value}<br/>"
-				end
-			elsif e.type == 't'
-				display_attr.each do |key, value|
-					case key
-						when 'token'
-							label = "#{value}\n#{label}"
-						else
-							label += "#{key}: #{value}\n"
-					end
-				end
-				label += "t" + i.to_s if i
-			else # normaler Knoten
-				display_attr.each do |key,value|
-					case key
-						when 'cat'
-							label = "#{value}\n#{label}"
-						else
-							label += "#{key}: #{value}\n"
-					end
-				end
-				label += "n" + i.to_s if i
-			end
-		elsif e.kind_of?(Edge)
-			display_attr.each do |key,value|
-				case key
-					when 'cat'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-				end
-			end
-			label += "e" + i.to_s if i
+	def sentence_set?
+		if @sentence
+			return true
+		else
+			raise 'Create a sentence first!'
 		end
-		return label
+	end
+
+	def set_cmd_cookies
+		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
+			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer] })
+		end
+
+		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
+			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd] })
+		end
+
+		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
+			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence] })
+		end
+	end
+
+	def set_filter_cookies
+		#if @sinatra.request.cookies['traw_filter']
+			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
+		#end
+		#if @sinatra.request.cookies['traw_filter_mode']
+			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
+		#end
+	end
+
+	def set_new_layer(words, properties)
+		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
+			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
+			@sinatra.response.set_cookie('traw_layer', { :value => layer })
+			properties.replace(@graph.conf.layer_attributes[layer])
+			return layer
+		end
+	end
+
+	def set_query_cookies
+		if @sinatra.request.cookies['traw_query']
+			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query] })
+		end
+	end
+
+	def set_found_sentences
+		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
+			@sentence_list[s][:found] = true
+		end
+	end
+
+	def set_sentence_list(h = {})
+		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
+		set_found_sentences if !h[:clear] and @found
+	end
+
+	def undefined_references?(ids)
+		undefined_ids = []
+		ids.each do |id|
+			undefined_ids << id unless element_by_identifier(id)
+		end
+		raise "Undefined element(s) #{undefined_ids * ', '}" unless undefined_ids.empty?
+	end
+
+	def validate_config(data)
+		result = {}
+		data['layers'] = data['layers'] || {}
+		data['combinations'] = data['combinations'] || {}
+		data['general'].each do |attr, value|
+			if attr.match(/_color$/)
+				result["general[#{attr}]"] = '' unless value.is_hex_color?
+			elsif attr.match(/weight$/)
+				result["general[#{attr}]"] = '' unless value.is_number?
+			end
+		end
+		data['layers'].each do |i, layer|
+			layer.each do |k, v|
+				if k == 'color'
+					result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+				elsif k == 'weight'
+					result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
+				elsif ['name', 'attr', 'shortcut'].include?(k)
+					result["layers[#{i}[#{k}]]"] = '' unless v != ''
+				end
+			end
+			['name', 'attr', 'shortcut'].each do |key|
+				data['layers'].each do |i2, l2|
+					if !layer.equal?(l2) and layer[key] == l2[key]
+						result["layers[#{i}[#{key}]]"] = ''
+						result["layers[#{i2}[#{key}]]"] = ''
+					end
+				end
+				data['combinations'].each do |i2, c|
+					if layer[key] == c[key]
+						result["layers[#{i}[#{key}]]"] = ''
+						result["combinations[#{i2}[#{key}]]"] = ''
+					end
+				end
+			end
+		end
+		data['combinations'].each do |i, combination|
+			combination.each do |k, v|
+				if k == 'color'
+					result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+				elsif k == 'weight'
+					result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
+				elsif ['name', 'shortcut'].include?(k)
+					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
+				end
+				if not combination['attr'] or combination['attr'].length == 1
+					result["combinations[#{i}[attr]]"] = ''
+				end
+			end
+			['name', 'attr', 'shortcut'].each do |key|
+				data['combinations'].each do |i2, c2|
+					if !combination.equal?(c2) and combination[key] == c2[key]
+						result["combinations[#{i}[#{key}]]"] = ''
+						result["combinations[#{i2}[#{key}]]"] = ''
+					end
+				end
+			end
+		end
+		begin
+			@graph.parse_query(data['makros'])
+		rescue StandardError => e
+			result['makros'] = e.message
+		end
+		return result.empty? ? true : result
 	end
 
 end
