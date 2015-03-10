@@ -154,6 +154,15 @@ class GraphController
 		)
 	end
 
+	def allowed_annotations_form
+		@sinatra.haml(
+			:allowed_annotations_form,
+			:locals => {
+				:graph => @graph
+			}
+		)
+	end
+
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
@@ -191,6 +200,14 @@ class GraphController
 		@graph.info = {}
 		@sinatra.params['keys'].each do |i, key|
 			@graph.info[key.strip] = @sinatra.params['values'][i].strip if key.strip != ''
+		end
+		return true.to_json
+	end
+
+	def save_allowed_annotations
+		@graph.allowed_anno = []
+		@sinatra.params['keys'].each do |i, key|
+			@graph.allowed_anno << {:key => key.strip, :values => @sinatra.params['values'][i].value_list} if key.strip != ''
 		end
 		return true.to_json
 	end

@@ -251,13 +251,14 @@ class AnnoEdge < Edge
 end
 
 class AnnoGraph < SearchableGraph
-	attr_accessor :conf, :makros_plain, :makros, :info
+	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno
 
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
 		super
 		@conf = AnnoGraphConf.new
 		@info = {}
+		@allowed_anno = []
 		create_layer_makros
 	end
 
@@ -285,6 +286,7 @@ class AnnoGraph < SearchableGraph
 		self.add_hash(nodes_and_edges)
 		if version >= 6
 			@info = nodes_and_edges['info'] ? nodes_and_edges['info'] : {}
+			@allowed_anno = nodes_and_edges['allowed_anno'] ? nodes_and_edges['allowed_anno'].to_allowed_anno : []
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain += nodes_and_edges['search_makros']
@@ -438,6 +440,7 @@ class AnnoGraph < SearchableGraph
 			merge('version' => '7').
 			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('info' => @info).
+			merge('allowed_anno' => @allowed_anno.to_savable_array).
 			merge('search_makros' => @makros_plain)
 	end
 
@@ -458,6 +461,7 @@ class AnnoGraph < SearchableGraph
 	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
+		@allowed_anno = other_graph.allowed_anno.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
 	end
@@ -519,6 +523,7 @@ class AnnoGraph < SearchableGraph
 		super
 		@conf = AnnoGraphConf.new
 		@info = {}
+		@allowed_anno = []
 		@makros_plain = []
 	end
 
@@ -587,6 +592,23 @@ class AnnoGraph < SearchableGraph
 		File.open("exports/sql/#{name}.sql", 'w') do |f|
 			f.write(str)
 		end
+	end
+
+	# filter a hash of attributes to be annotated; let only attributes pass that are allowed
+	# @param attr [Hash] the attributes to be annotated
+	# @return [Hash] the allowed attributes
+	def allowed_attributes(attr)
+		return attr.clone if @allowed_anno == []
+		allowed_attr = {}
+		attr.each do |key, value|
+			@allowed_anno.each do |allow|
+				if allow[:key] == key and value.value_allowed?(allow[:values])
+					allowed_attr.merge!(key => value)
+					break
+				end
+			end
+		end
+		return allowed_attr
 	end
 
 	private
@@ -708,6 +730,30 @@ class Array
 		self.map{|n| n.text} * ' '
 	end
 
+	def to_allowed_anno
+		self.map do |rule|
+			{:key => rule['key'], :values => rule['values'].value_list}
+		end
+	end
+
+	def to_savable_array
+		self.map do |rule|
+			{'key' => rule[:key], 'values' => rule[:values].value_list_string}
+		end
+	end
+
+	def value_list_string
+		self.map do |tok|
+			case tok[:cl]
+			when :bstring
+				tok[:str]
+			when :qstring
+				'"' + tok[:str] + '"'
+			when :regex
+				'/' + tok[:str] + '/'
+			end
+		end * ' '
+	end
 end
 
 class String
@@ -788,6 +834,25 @@ class String
 
 	def sql_json_escape_quotes
 		self.gsub("'", "\\\\'").gsub('\\"', '\\\\\\"')
+	end
+
+	def value_allowed?(allowed)
+		return true if allowed == []
+		allowed.each do |allow|
+			case allow[:cl]
+			when :bstring, :qstring
+				return true if self == allow[:str]
+			when :regex
+				return true if self.match('^' + allow[:str] + '$')
+			end
+		end
+		return false
+	end
+
+	def value_list
+		self.lex_ql.select do |tok|
+			[:bstring, :qstring, :regex].include?(tok[:cl])
+		end
 	end
 
 end

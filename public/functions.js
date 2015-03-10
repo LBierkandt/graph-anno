@@ -113,6 +113,10 @@ function taste(tast) {
 		tast.preventDefault();
 		openMetadata();
 	}
+	else if (tast.which == 121) {
+		tast.preventDefault();
+		openAllowedAnnotations();
+	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
 		navigateSentences('prev');
@@ -375,6 +379,25 @@ function openMetadata() {
 		});
 	}
 }
+function openAllowedAnnotations() {
+	if ($('#modal-background').css('display') != 'block') {
+		$.ajax({
+			url: '/allowed_annotations_form'
+		})
+		.done(function(data) {
+			$('#modal-content').html(data);
+			$('#new-allowed-annotations').click(function(){
+				var i = parseInt($('.allowed_annotations tbody:first-child tr:last-child').attr('no')) + 1;
+				$('.allowed_annotations tbody:first-child tr:last-child').after(
+					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
+				);
+				return false;
+			});
+			$('#modal-background').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
 function sendConfig() {
 	$.ajax({
 		type: 'POST',
@@ -404,6 +427,17 @@ function sendMetadata() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_metadata',
+		dataType: 'json',
+		data: $('#modal-form').serialize()
+	})
+	.done(function(data) {
+		closeModal();
+	});
+}
+function sendAllowedAnnotations() {
+	$.ajax({
+		type: 'POST',
+		url: '/save_allowed_annotations',
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})

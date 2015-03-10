@@ -226,14 +226,14 @@ th {
 #modal-warning:empty {
 	padding: 0px;
 }
-.metadata * {
+.metadata *, .allowed_annotations * {
 	box-sizing: border-box;
 	-moz-box-sizing: border-box;
 }
-.metadata .modal-form-element, .metadata table {
+.metadata .modal-form-element, .metadata table, .allowed_annotations .modal-form-element, .allowed_annotations table {
 	width: 100%;
 }
-.metadata td:first-child {
+.metadata td:first-child, .allowed_annotations td:first-child {
 	vertical-align: top;
 	width: 8em;
 }
