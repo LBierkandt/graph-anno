@@ -284,6 +284,7 @@ class AnnoGraph < SearchableGraph
 		end
 		self.add_hash(nodes_and_edges)
 		if version >= 6
+			@info = nodes_and_edges['info'] ? nodes_and_edges['info'] : {}
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain += nodes_and_edges['search_makros']
@@ -436,6 +437,7 @@ class AnnoGraph < SearchableGraph
 		super.
 			merge('version' => '7').
 			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
+			merge('info' => @info).
 			merge('search_makros' => @makros_plain)
 	end
 
