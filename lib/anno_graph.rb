@@ -567,7 +567,7 @@ class AnnoGraph < SearchableGraph
 		end
 	end
 
-	# export corpus as SQL file for import in WebGraphAnno
+	# export corpus as SQL file for import in GraphInspect
 	# @param name [String] The name of the corpus, and the name under which the file will be saved
 	def export_sql(name)
 		Dir.mkdir('exports/sql') unless File.exist?('exports/sql')
@@ -591,6 +591,40 @@ class AnnoGraph < SearchableGraph
 		end
 		File.open("exports/sql/#{name}.sql", 'w') do |f|
 			f.write(str)
+		end
+	end
+
+	# export layer configuration as JSON file for import in other graphs
+	# @param name [String] The name under which the file will be saved
+	def export_config(name)
+		Dir.mkdir('exports/config') unless File.exist?('exports/config')
+		File.open("exports/config/#{name}.config.json", 'w') do |f|
+			f.write(JSON.pretty_generate(@conf, :indent => ' ', :space => '').encode('UTF-8'))
+		end
+	end
+
+	# export allowed annotations as JSON file for import in other graphs
+	# @param name [String] The name of the file
+	def export_tagset(name)
+		Dir.mkdir('exports/tagset') unless File.exist?('exports/tagset')
+		File.open("exports/tagset/#{name}.tagset.json", 'w') do |f|
+			f.write(JSON.pretty_generate(@allowed_anno.to_savable_array, :indent => ' ', :space => '').encode('UTF-8'))
+		end
+	end
+
+	# loads layer configurations from JSON file
+	# @param name [String] The name of the file
+	def import_config(name)
+		File.open("exports/config/#{name}.config.json", 'r:utf-8') do |f|
+			@conf = AnnoGraphConf.new(JSON.parse(f.read))
+		end
+	end
+
+	# loads allowed annotations from JSON file
+	# @param name [String] The name under which the file will be saved
+	def import_tagset(name)
+		File.open("exports/tagset/#{name}.tagset.json", 'r:utf-8') do |f|
+			@allowed_anno = JSON.parse(f.read).to_allowed_anno
 		end
 	end
 
@@ -722,6 +756,10 @@ class AnnoGraphConf
 		return h
 	end
 
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		self.to_h.to_json(*a)
+	end
 end
 
 class Array

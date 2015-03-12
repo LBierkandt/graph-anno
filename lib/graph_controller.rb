@@ -579,21 +579,34 @@ class GraphController
 				name = parameters[:words][1]
 				name2 = parameters[:words][2]
 				case format
-					when 'paula'
-						@graph.export_paula(name, name2 ? name2 : nil)
-					when 'salt'
-						@graph.export_saltxml(name)
-					when 'sql'
-						@graph.export_sql(name)
-					else
-						raise "Unknown format \"#{format}\""
+				when 'config'
+					@graph.export_config(name)
+				when 'paula'
+					@graph.export_paula(name, name2)
+				when 'salt'
+					@graph.export_saltxml(name)
+				when 'sql'
+					@graph.export_sql(name)
+				when 'tagset'
+					@graph.export_tagset(name)
+				else
+					raise "Unknown export format: #{format}"
 				end
 
-			when 'import' # open text import window
-				if parameters[:words].first == 'toolbox'
+			when 'import' # open import window or imports graph configurations
+				type = parameters[:words][0]
+				name = parameters[:words][1]
+				case type
+				when 'config'
+					@graph.import_config(name)
+				when 'tagset'
+					@graph.import_tagset(name)
+				when 'toolbox'
 					return {:modal => 'import', :type => 'toolbox'}
-				else
+				when 'text'
 					return {:modal => 'import', :type => 'text'}
+				else
+					raise "Unknown import type"
 				end
 
 			# all following commands are related to annotation @graph expansion -- Experimental!
