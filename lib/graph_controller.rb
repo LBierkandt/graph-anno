@@ -75,13 +75,14 @@ class GraphController
 	end
 
 	def handle_commandline
+		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
 		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
-			message = e.message
+			@cmd_error_messages << e.message
 		end
 		return value.to_json if value
 		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence ? @sentence.id : nil })
@@ -93,7 +94,7 @@ class GraphController
 			:sentence_list => @sentence_list.values,
 			:sentence_changed => sentence_changed,
 			:graph_file => @graph_file,
-			:message => message
+			:messages => @cmd_error_messages
 		}.merge(satzinfo).to_json
 	end
 
@@ -310,6 +311,14 @@ class GraphController
 
 	private
 
+	def allowed_attributes(attr)
+		allowed_attr = @graph.allowed_attributes(attr)
+		if (forbidden = attr.keys - allowed_attr.keys) != []
+			@cmd_error_messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
+		end
+		return allowed_attr
+	end
+
 	def build_label(e, i = nil)
 		label = ''
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
@@ -398,14 +407,14 @@ class GraphController
 			when 'n' # new node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(parameters[:attributes])
+					properties.merge!(allowed_attributes(parameters[:attributes]))
 					@graph.add_anno_node(:attr => properties, :sentence => @sentence)
 				end
 
 			when 'e' # new edge
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(parameters[:attributes])
+					properties.merge!(allowed_attributes(parameters[:attributes]))
 					@graph.add_anno_edge(
 						:start => element_by_identifier(parameters[:all_nodes][0]),
 						:end => element_by_identifier(parameters[:all_nodes][1]),
@@ -421,7 +430,7 @@ class GraphController
 					end
 
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(parameters[:attributes])
+					properties.merge!(allowed_attributes(parameters[:attributes]))
 
 					parameters[:elements].each do |element_id|
 						if element = element_by_identifier(element_id)
@@ -453,7 +462,10 @@ class GraphController
 			when 'p', 'g' # group under new parent node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
+					mother = @graph.add_anno_node(
+						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
+						:sentence => @sentence
+					)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -469,7 +481,10 @@ class GraphController
 			when 'c', 'h' # attach new child node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
+					daughter = @graph.add_anno_node(
+						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
+						:sentence => @sentence
+					)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -875,7 +890,7 @@ class GraphController
 		ids.each do |id|
 			undefined_ids << id unless element_by_identifier(id)
 		end
-		raise "Undefined element(s) #{undefined_ids * ', '}" unless undefined_ids.empty?
+		@cmd_error_messages << "Undefined element(s): #{undefined_ids * ', '}" unless undefined_ids.empty?
 	end
 
 	def validate_config(data)
