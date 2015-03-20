@@ -257,36 +257,27 @@ class SearchableGraph < Graph
 			# für jede TG-Liste, die "node"s oder "text"e enthält:
 			node_indizes.values.map{|h| h[:index]}.uniq.each do |node_tgindex|
 				node_ids = node_indizes.select{|s,w| w[:index] == node_tgindex}.keys
-				tgliste = tglisten[node_tgindex]
-				neue_tgl = []
-				until tgliste.length == 0
-					referenztg = tgliste.slice!(0)
+				zusammengefasste_tg = {}
+				tglisten[node_tgindex].each do |referenztg|
 					# "node"s/"text"e des Referenz-TG
-					node_knoten = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}}
-					zusammengefasst = Teilgraph.new
-					# TGn aus der Liste nehmen und mit Referenz-TG zusammenführen, wenn gleiche "node"s/"text"e
-					tgliste.clone.each do |tg|
-						if node_knoten == tg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}} # sortieren, damit auch Textfragmente verglichen werden können
-							zusammengefasst += tgliste.delete(tg)
-						end
+					uebereinstimmend = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}}
+					# in Hash unter "uebereinstimmend"en Knoten zusammenfassen
+					if zusammengefasste_tg[uebereinstimmend]
+						zusammengefasste_tg[uebereinstimmend] += referenztg
+					else
+						zusammengefasste_tg[uebereinstimmend] = referenztg
 					end
-					neue_tgl << zusammengefasst + referenztg
 				end
 				# alte tg-Liste löschen
 				tglisten.delete(node_tgindex)
 				# neue einfügen
-				tglisten[tgindex += 1] = neue_tgl.reverse
+				tglisten[tgindex += 1] = zusammengefasste_tg.values
 				# id_index auffrischen
 				id_index.each do |id,tgi|
 					id_index[id] = tgindex if tgi == node_tgindex
 				end
 			end
 		end
-
-		## Zusammenhängendes Graphfragment? Sollte vielleicht besser vor der Suche geprüft werden. Wird es jetzt auch.
-		#if tglisten.length > 1
-		#	puts 'Achtung: Sie haben kein zusammenhängendes Graphfragment angegeben!'
-		#end
 
 		tgliste = tglisten.values.flatten(1)
 
