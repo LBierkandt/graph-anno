@@ -426,6 +426,7 @@ class GraphController
 					@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0]
 				end
 				@sentence = sentence_nodes.first unless @sentence
+				@found = nil
 
 			when 'add' # load corpus file and add it to the workspace
 				@graph_file.replace('')
