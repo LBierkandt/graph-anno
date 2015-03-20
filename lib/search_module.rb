@@ -256,12 +256,12 @@ class SearchableGraph < Graph
 				zusammengefasste_tg = {}
 				tglisten[node_tgindex].each do |referenztg|
 					# "node"s/"text"e des Referenz-TG
-					node_knoten = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}}
-					# in Hash unter übereinstimmenden "node_knoten" zusammenfassen
-					if zusammengefasste_tg[node_knoten]
-						zusammengefasste_tg[node_knoten] = zusammengefasste_tg[node_knoten] + referenztg
+					uebereinstimmend = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}}
+					# in Hash unter "uebereinstimmend"en Knoten zusammenfassen
+					if zusammengefasste_tg[uebereinstimmend]
+						zusammengefasste_tg[uebereinstimmend] += referenztg
 					else
-						zusammengefasste_tg[node_knoten] = referenztg
+						zusammengefasste_tg[uebereinstimmend] = referenztg
 					end
 				end
 				# alte tg-Liste löschen
