@@ -90,13 +90,8 @@ class SearchableGraph < Graph
 		# coherent graph fragment?
 		groups = text_ids + (node_ids + nodes_ids).map{|id| [id]}
 		links = edge_start_end_ids + link_start_end_ids
-		groups.reduce do |all, new|
-			if links.any?{|l| l & all != [] and l & new != []}
-				all += new
-			else
-				error_messages << 'The defined graph fragment is not coherent.'
-				break
-			end
+		unless groups.groups_linked?(links)
+			error_messages << 'The defined graph fragment is not coherent.'
 		end
 		raise error_messages * "\n" unless error_messages.empty?
 
@@ -860,6 +855,21 @@ class String
 			reg = Regexp.new('^' + klasse + '*(.*?)' + klasse + '*$')
 			return self.sub(reg, '\1')
 		end
+	end
+end
+
+class Array
+	def groups_linked?(links)
+		return true if self.length == 1
+		self[1..-1].each_with_index do |g, i|
+			if links.any?{|l| l & self[0] != [] and l & g != []}
+				new = self.clone
+				new[0] += new.delete_at(i)
+				return new.groups_linked?(links)
+				break
+			end
+		end
+		return false
 	end
 end
 
