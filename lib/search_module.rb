@@ -210,7 +210,11 @@ class SearchableGraph < Graph
 					tgl_start.each do |starttg|
 						startknot = starttg.ids[startid][0]
 						if !(breitensuche = schon_gesucht[startknot])
-							breitensuche = startknot.links(automat, {:operator => 'attr', :key => 'token'}) # Zielknoten muß Token sein
+							if startknot
+								breitensuche = startknot.links(automat, {:operator => 'token'}) # Zielknoten muß Token sein
+							else
+								breitensuche = @nodes.values.select{|n| n.type == 't'}.map{|n| [n, Teilgraph.new]}
+							end
 							schon_gesucht[startknot] = breitensuche
 						end
 						if startindex != zielindex # wenn Start und Ziel in verschiedenen TGLn
