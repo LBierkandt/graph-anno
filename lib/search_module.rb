@@ -572,7 +572,7 @@ class Node
 				end
 			end
 			if neue_zustaende == []
-				return rueck
+				return rueck.uniq
 			end
 		end
 	end
