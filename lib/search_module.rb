@@ -140,6 +140,11 @@ class SearchableGraph < Graph
 				neu.ids[operation[:id]] = [k]
 				neu
 			end
+			if operation[:operator] == 'nodes'
+				dummytg = Teilgraph.new
+				dummytg.ids[operation[:id]] = []
+				tglisten[tgindex] << dummytg
+			end
 			id_index[operation[:id]] = {:index => tgindex, :art => operation[:operator], :cond => operation[:cond]}
 		end
 
@@ -179,7 +184,11 @@ class SearchableGraph < Graph
 					tgl_start.each do |starttg|
 						startknot = starttg.ids[startid][0]
 						if !(breitensuche = schon_gesucht[startknot])
-							breitensuche = startknot.links(automat, id_index[zielid][:cond])
+							if startknot
+								breitensuche = startknot.links(automat, id_index[zielid][:cond])
+							else
+								breitensuche = []
+							end
 							breitensuche = [[nil, Teilgraph.new]] if breitensuche == []
 							schon_gesucht[startknot] = breitensuche
 						end
@@ -200,7 +209,11 @@ class SearchableGraph < Graph
 					tgl_start.each do |starttg|
 						startknot = starttg.ids[startid][0]
 						if !(breitensuche = schon_gesucht[startknot])
-							breitensuche = startknot.links(automat, {:operator => 'token'}) # Zielknoten muß Token sein
+							if startknot
+								breitensuche = startknot.links(automat, {:operator => 'token'}) # Zielknoten muß Token sein
+							else
+								breitensuche = []
+							end
 							schon_gesucht[startknot] = breitensuche
 						end
 						if startindex != zielindex # wenn Start und Ziel in verschiedenen TGLn
