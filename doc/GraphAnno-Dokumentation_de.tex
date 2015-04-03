@@ -204,7 +204,7 @@ Neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
 
 \subsubsection{Neuen Satz anlegen: \texttt{ns}}\label{befehl-ns}
 
-Mit \texttt{ns} – gefolgt von mit Leerzeichen getrennten anzulegenden Satznamen – werden ein oder mehrere neue Sätze angelegt. Dabei werden neue Meta-Knoten mit dem entsprechenden \texttt{sentence}-Attribut erstellt. Anschließend wird sofort in den ersten angegebenen Satz gewechselt.
+Mit \texttt{ns} – gefolgt von mit Leerzeichen getrennten anzulegenden Satznamen – werden ein oder mehrere neue Sätze angelegt. Dabei werden neue Satzknoten mit dem entsprechenden \texttt{name}-Attribut erstellt. Anschließend wird sofort in den ersten angegebenen Satz gewechselt.
 
 
 \subsubsection{Satz löschen: \texttt{del}}
@@ -670,7 +670,7 @@ wort            =   attributwert ("(" knotenattribute ")")?
 
 \subsubsection{\texttt{meta}}
 
-Die \texttt{meta}-Klausel schränkt die Menge der zu durchsuchenden Sätze ein. Über diese Klausel können Eigenschaften angegeben werden, die der \texttt{meta}-Knoten eines Satzes (ein Knoten mit dem entsprechenden \texttt{sentence}-Wert und dem Attribut \texttt{cat:meta}) haben muß. Die Klausel besteht aus dem Schlüsselwort \texttt{meta} und einer Attributbeschreibung wie oben unter \texttt{node} beschrieben.
+Die \texttt{meta}-Klausel schränkt die Menge der zu durchsuchenden Sätze ein. Über diese Klausel können Eigenschaften angegeben werden, die der Satznoten eines Satzes haben muß. Die Klausel besteht aus dem Schlüsselwort \texttt{meta} und einer Attributbeschreibung wie oben unter \texttt{node} beschrieben.
 
 \paragraph*{Die \texttt{meta}-Klausel in modifizierter BNF:}
 ~
@@ -686,7 +686,7 @@ text-klausel    =   "meta " attribute
 
 Die \texttt{cond}-Klausel gibt Bedingung an, die das Graphfragment erfüllen muß und wirkt wie ein Filter. Die Klausel besteht aus dem Schlüsselwort \texttt{cond} und der Bedingung in Ruby-Kode. Die Knoten und Knotenmengen werden dabei durch die vergebenen IDs referenziert. Bei der Referenzierung ist zu beachten, daß es sich bei den mit \texttt{node} und \texttt{edge} gefundenen Knoten und Kanten um einzelne Elemente, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten und Kanten hingegen um Arrays von Elementen handelt.
 
-Auf die Attribute der Knoten wird in der Form \texttt{['schlüssel']} zugegriffen; für die Attribute \texttt{sentence}, \texttt{token} und \texttt{cat} stehen Abkürzungen der Form \texttt{.sentence}, \texttt{.token} und \texttt{.cat} zur Verfügung. Über die Methode \texttt{.meta} kann auf den \texttt{meta}-Knoten des Satzes, zu dem das Elementgehört, zugegriffen werden. Bei der Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen behandelt werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
+Auf die Attribute der Knoten wird in der Form \texttt{['schlüssel']} zugegriffen; für die Attribute \texttt{token} und \texttt{cat} stehen Abkürzungen der Form \texttt{.token} und \texttt{.cat} zur Verfügung. Über die Methode \texttt{.sentence} kann auf den Satznoten des Satzes, zu dem das Element gehört, zugegriffen werden. Bei der Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen behandelt werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
 
 
 \paragraph*{Beispiele:}
@@ -770,7 +770,7 @@ Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert erge
 \begin{itemize}
 	\item Sortiere die Ergebnisse nach Satznamen, bzw. nach Tokennummer (die Methode \texttt{.tokenid} gibt die Stelle des Tokens im Satz, beginnend mit 0, aus), wenn sie dem gleichen Satz angehören (durch die Suchanfrage sei gegeben: ein Token mit der ID \texttt{@t1}):\\
 	{\tt
-	sort @t1['sentence']\\[-.4ex]
+	sort @t1.sentence.name\\[-.4ex]
 	sort @t1.tokenid\\[-.4ex]
 	}
 \end{itemize}
