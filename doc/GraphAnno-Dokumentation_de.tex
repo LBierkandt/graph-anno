@@ -109,7 +109,7 @@ GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Eben
 
 \subsection{Konfiguration}\label{konfiguration}
 
-\subsubsection{Darstellung und Ebenen}
+\subsubsection{Darstellung und Ebenen}\label{ebenenkonfiguration}
 
 Mit F8 wird für den aktuell geladenen Graph das Einstellungsfenster geöffnet. In diesem Fenster können Einstellung zur Darstellung und zu den Ebenen vorgenommen werden.
 
@@ -121,7 +121,7 @@ Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zug
 
 Unter \textit{search makros} können graphspezifische Suchmakros, wie unter \ref{def} beschrieben, vordefiniert werden. Diese stehen dann für Suche im Graph zur Verfügung. Die Definitionen (\texttt{def ...}) werden jede in eine eigene Zeile im entsprechenden Fenster eingegeben.
 
-\subsubsection{Erlaubte Annotationen}
+\subsubsection{Erlaubte Annotationen}\label{erlaubteannotationen}
 
 In dem mit F10 zu öffnenden Fenster können für einen Graphen erlaubte Annotationen spezifiziert werden. Nur die hier spezifizierten Schlüssel-Wert-Paare sind für die Annotation von Knoten und Kanten zulässig; unerlaubte Eingaben werden mit einer Fehlermeldung quittiert. Bestehende Annotationen werden durch eine nachträgliche Änderung der erlaubten Schlüssel und Werte nicht beeinflußt.
 
@@ -222,14 +222,14 @@ Um von Satz zu Satz zu navigieren dient (neben den Tastenkombinationen und dem A
 Um die Graphik, die GraphAnno für den aktuellen Satz anzeigt, zu exportieren, dient der Befehl \texttt{image}. Als erstes Argument wird das gewünschte Format angegeben. Zur Verfügung stehen alle von Graphviz unterstützten Formate, u.a. \texttt{dot}, \texttt{eps}, \texttt{pdf}, \texttt{png} und \texttt{svg}. Die vollständige Liste ist hier einzusehen: \url{http://www.graphviz.org/content/output-formats}. Das zweite Argument ist der Name der zu erstellenden Datei (ohne Endung; enthält der Name Leerzeichen, so muß er in doppelten Anführungsstrichen angegeben werden). Die Graphik wird im Ordner \texttt{images} gespeichert.
 
 
-\subsubsection{Korpus exportieren: \texttt{export}}
+\subsubsection{Korpus exportieren: \texttt{export}}\label{befehl-export}
 
-Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige verfügbare Format \texttt{paula}), das zweites Argument ist der Name des Korpus, als drittes Argument kann optional der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
+Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige vollständig funktionale Format \texttt{sql} für den Import in GraphInspect; \texttt{paula} kann ebenfalls exportiert werden, unterliegt jedoch starken Einschränkungen hinsichtlich der Ebenen), das zweites Argument ist der Name des Korpus, als drittes Argument kann optional der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
 
 
 \subsubsection{Text importieren: \texttt{import text}}
 
-Texte können mit dem Befehl \texttt{import} importiert werden. Es öffnet sich ein Fenster, in dem der zu importierende Text eingegeben und Einstellungen zur Verarbeitung vorgenommen werden können.
+Texte können mit dem Befehl \texttt{import text} importiert werden. Es öffnet sich ein Fenster, in dem der zu importierende Text eingegeben und Einstellungen zur Verarbeitung vorgenommen werden können.
 Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
 
 Das Import-Fenster bietet zwei Möglichkeiten zur Eingabe von Text: es kann eine Textdatei hochgeladen werden („File“) oder der Text in das Textfenster eingegeben bzw. kopiert werden („Paste“). Die Verarbeitung des Textes kann ebenfalls auf zwei Arten geschehen: Für unbearbeiteten Text empfielt sich die Option „Punkt segmenter“. Diese verwendet einen automatischen Segmentierer, der den Text in Sätze und die Sätze in Token teilt. Hierbei muß zur korrekten Verarbeitung von Abkürzungen etc. die Sprache des Textes angegeben werden.
@@ -247,6 +247,11 @@ Eine Formatbeschreibung für eine Toolboxdatei mit drei Ebenen (Record, Wort, Mo
 \end{verbatim}
 
 Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+
+
+\subsubsection{Konfigurationen ex- und importieren: \texttt{export} und \texttt{import}}
+
+Mit dem Befehl \texttt{export} ist es auch möglich, Graphkonfigurationen zu exportieren, die später mit \texttt{import} in andere Graphen importiert werden können. Dafür wird als erstes Argument der Typ der zu ex- oder importierenden Konfiguration angegeben: \texttt{config} für Darstellungs- und Ebenenkonfiguration (s. \ref{ebenenkonfiguration}), \texttt{tagset} für erlaubte Annotationen (s. \ref{erlaubteannotationen}). Als zweites wird der Name der Datei angegeben, unter dem die Daten gespeichert werden sollen, bzw. die importiert werden soll (ohne Endung). Die exportierte Datei wird im dem Typ entsprechenden Unterordner des \texttt{exports}-Ordners gespeichert. Achtung: beim Import werden bestehende Konfigurationen von den importierten komplett überschrieben.
 
 
 \subsection{Annotationsbefehle}
