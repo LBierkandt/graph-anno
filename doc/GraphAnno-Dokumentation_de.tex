@@ -40,6 +40,7 @@
 \renewcommand{\labelitemii}{-}
 \newcommand{\anf}[1]{‚#1‘}
 \newcommand{\ti}{\char"223C}
+\newcommand{\quo}{\char"0022}
 
 \renewcommand{\textfraction}{0}
 \renewcommand{\topfraction}{1}
@@ -108,9 +109,11 @@ GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Eben
 
 \subsection{Konfiguration}\label{konfiguration}
 
-Mit F8 wird für den aktuell geladenen Graph das Einstellungsfenster geöffnet. In diesem Fenster können Einstellung zur Darstellung zu den Ebenen vorgenommen werden.
+\subsubsection{Darstellung und Ebenen}
 
-Unter \textit{General settings} werden Einstellungen für Knoten und Kanten, die keiner Ebene angehören, vorgenommen.\footnote{Je nach verwendetem Browser werden die Feldr für Farbeinstellungen als Farbwahlfeld oder als Textfeld dargestellt. Beim Textfeld ist die Farbe als RGB-Hexadezimalwert anzugeben: Ein Rautenzeichen (\texttt{\#})gefolgt von drei zweistelligen Hexadezimalzahlen jeweils für rot, grün und blau. So steht beispielsweise \texttt{\#000000} für schwarz, \texttt{\#ffffff} für weiß, \texttt{\#ff0000} für ein helles Rot etc.} \textit{Default color} gilt für alle Knoten und Kanten, die keine Token sind und keiner Ebene angehören, \textit{token color} gilt für Token, \textit{found color} für die Hervorhebung bei der Suche gefundener Knoten und Kanten (überschreibt dann die für die jeweiligen Elemete sonst geltende Farbe), \textit{filtered color} für die mit der Filterfunktion ausgefilterten Elemente. Die Einstellung \textit{edge weight} ist für Anatomie des Graphen von Belang und zeigt ihre Wirkung erst, wenn es Kanten von unterschiedlichem Gewicht gibt (zu Details siehe folgenden Absatz).
+Mit F8 wird für den aktuell geladenen Graph das Einstellungsfenster geöffnet. In diesem Fenster können Einstellung zur Darstellung und zu den Ebenen vorgenommen werden.
+
+Unter \textit{General settings} werden Einstellungen für Knoten und Kanten, die keiner Ebene angehören, vorgenommen.\footnote{Je nach verwendetem Browser werden die Felder für Farbeinstellungen als Farbwahlfeld oder als Textfeld dargestellt. Beim Textfeld ist die Farbe als RGB-Hexadezimalwert anzugeben: Ein Rautenzeichen (\texttt{\#})gefolgt von drei zweistelligen Hexadezimalzahlen jeweils für rot, grün und blau. So steht beispielsweise \texttt{\#000000} für schwarz, \texttt{\#ffffff} für weiß, \texttt{\#ff0000} für ein helles Rot etc.} \textit{Default color} gilt für alle Knoten und Kanten, die keine Token sind und keiner Ebene angehören, \textit{token color} gilt für Token, \textit{found color} für die Hervorhebung bei der Suche gefundener Knoten und Kanten (überschreibt dann die für die jeweiligen Elemete sonst geltende Farbe), \textit{filtered color} für die mit der Filterfunktion ausgefilterten Elemente. Die Einstellung \textit{edge weight} ist für Anatomie des Graphen von Belang und zeigt ihre Wirkung erst, wenn es Kanten von unterschiedlichem Gewicht gibt (zu Details siehe folgenden Absatz).
 
 Unter \textit{layers} werden Einstellungen für die Ebenen des Graphen vorgenommen. Der \textit{Name} ist eine beliebige Bezeichnung der Ebene, die im Aufklappfeld für die Ebenenwahl angezeigt wird. Das \textit{Attribut} ist dasjenige Annotationsattribut, dessen Wert auf \texttt{t} gesetzt wird, wenn ein Element der entsprechenden Ebene angehört. Der \textit{Shortcut} ist ein Bezeichner, der für die Annotation von Elementen genutzt werden kann (siehe \ref{befehl-n}); dieses Kürzel darf nur aus alphanumerischen Zeichen bestehen und darf nicht das gleiche Format wie Elementreferenzen aufweisen (also \texttt{t}, \texttt{n} oder \texttt{e} gefolgt von einer Zahl, oder  \texttt{m}; siehe \ref{befehl-a}). \textit{Color} ist die für Elemente der Ebene verwendete Farbe; \textit{edge weight} ist das Gewicht der Kanten der Ebene. Je höher der hier eingegebene Wert (ganzzahlige Werte), desto kürzer versucht der Graphzeichenalgorithmus die Kanten zu zeichnen. Legt man also eine Ebene mit hohem Kantengewicht und eine mit niedrigem an, so wird der Graph so gezeichnet, daß der Graph der ersten Ebene möglichst kompakt ist; die Elemente der zweiten Ebene werden so angeordnet, daß sie den Graph der ersten Ebene wenig verzerren. Wird als Kantengewicht \texttt{0} angegeben, so erzwingen die Kanten der Ebene keine Hierarhcie zwischen den Knoten, die sie verbinden (sonst ist der Startknoten einer Kante stets höher als der Zielknoten angeordnet). Wird ein negativer Wert angegeben, so werden die Knoten der Ebene alle auf einer horizontal Ebene dargestellt.
 
@@ -118,7 +121,18 @@ Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zug
 
 Unter \textit{search makros} können graphspezifische Suchmakros, wie unter \ref{def} beschrieben, vordefiniert werden. Diese stehen dann für Suche im Graph zur Verfügung. Die Definitionen (\texttt{def ...}) werden jede in eine eigene Zeile im entsprechenden Fenster eingegeben.
 
-Neben der Konfiguration von Ebenen, Darstellung und Suchmakros können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren angegeben werden. Das Fenster dafür wird mit F9 geöffnet.
+\subsubsection{Erlaubte Annotationen}
+
+In dem mit F10 zu öffnenden Fenster können für einen Graphen erlaubte Annotationen spezifiziert werden. Nur die hier spezifizierten Schlüssel-Wert-Paare sind für die Annotation von Knoten und Kanten zulässig; unerlaubte Eingaben werden mit einer Fehlermeldung quittiert. Bestehende Annotationen werden durch eine nachträgliche Änderung der erlaubten Schlüssel und Werte nicht beeinflußt.
+
+Sind hier keine Schlüssel und Werte angegeben, so sind alle Annotationen zulässig. Trägt man Schlüssel ein, so sind nur diese Schlüssel für Annotationen erlaubt. Läßt man das Werte-Feld für einen Schlüssel leer, so sind für diesen Schlüssel alle Werte erlaubt; will man die erlaubte Wertemenge beschänken, so werden die erlaubten Werte in das Werte-Feld des entsprechenden Schlüssels eingetragen, getrennt mit Leerzeichen.
+
+Für die Notation der Werte gelten die gleichen Regeln wie bei der Suchsprache (Abschnitt \ref{node}, S.\,\pageref{zeichenketten}): Einfache Werte werden ohne weitere Markierung eingetragen, enthalten Werte Sonderzeichen (siehe S.\,\pageref{zeichenketten}), so müssen sie in Anführungszeichen (\texttt{\quo...\quo}) angegeben werden; außderdem können – ebenfalls wie bei der Suchsprache (S.\,\pageref{zeichenketten}) – reguläre Ausdrücke verwendet werden, die in Schrägstrichen angegeben werden (\texttt{/.../}). Die regulären Ausdrücke sind dabei verankert, d.h. ein Annotationswert muß dem gesamten regulären Ausdruck entsprechen, um erlaubt zu sein.
+
+\subsubsection{Metadaten}
+
+Neben der Konfiguration von Ebenen, Darstellung, Suchmakros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren angegeben werden. Das Fenster dafür wird mit F9 geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
+
 
 
 \section{Tastaturbefehle}
@@ -167,7 +181,7 @@ Einige Navigation und Ansicht betreffende Funktionen von GraphAnno werden direkt
 
 \subsubsection{Datei laden: \texttt{load}}
 
-Eine Graphdatei wird mit dem Befehl \texttt{load} in den Arbeitsbereich geladen. Der Dateiname wird ohne die Dateiendung \texttt{.json} angegeben (enthält er Leerzeichen, so muß er in doppelte Anführungszeichen eingeschlossen werden: \texttt{\char"0022...\char"0022}). Alle Dateien werden aus dem Verzeichnis \texttt{data} im GraphAnno-Programmordner geladen. Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen dabei verloren.
+Eine Graphdatei wird mit dem Befehl \texttt{load} in den Arbeitsbereich geladen. Der Dateiname wird ohne die Dateiendung \texttt{.json} angegeben (enthält er Leerzeichen, so muß er in doppelte Anführungszeichen eingeschlossen werden: \texttt{\quo...\quo}). Alle Dateien werden aus dem Verzeichnis \texttt{data} im GraphAnno-Programmordner geladen. Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen dabei verloren.
 Welche Datei geladen wurde, wird neben der Eingabeleiste angezeigt.
 
 
@@ -244,7 +258,7 @@ Die Befehle setzen voraus, daß man sich ein einem Satz befindet. D.h., wenn der
 
 \subsubsection{Neuer Knoten: \texttt{n}}\label{befehl-n}
 
-Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\char"0022})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022...\char"0022}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
+Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\quo})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll. Dazu dienen die auch für den Befehl \texttt{l} (siehe \ref{l}) geltenden Kürzel, die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellt werden. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt.
 
 \paragraph*{Befehl \texttt{n} in modifizierter BNF:}
@@ -383,7 +397,7 @@ h_parameter         =   h_parameter " " h_parameter
 
 Zum Eingeben von Token gibt es die Befehle \texttt{t} und \texttt{ti}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{ti} nimmt als erstes Argument noch eine Tokenreferenz und fügt die neuen Token davor ein.
 
-Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\char"0022}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022...\char"0022}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
+Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\quo}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
 \paragraph*{Befehle \texttt{t} und \texttt{ti} in modifizierter BNF:}
 ~
@@ -439,10 +453,10 @@ Die ID besteht aus einem \texttt{@} gefolgt von einer Zeichenkette, die aus alph
 
 Die Attributbeschreibung besteht aus Schlüssel-Wert-Paaren der Form \texttt{schlüssel:""wert}, die mit den logischen Operatoren \texttt{!} für „nicht“, \texttt{\&} für „und“ und \texttt{|} für „oder“ (Bindungsstärke: \texttt{!} > \texttt{\&} > \texttt{|}) sowie Klammerung mit runden Klammern verknüpft sind. Als Abkürzung für Disjunktionen von Schlüssel-Wert-Paaren mit dem gleichen Schlüssel steht die Form \texttt{schlüssel:wert1|wert2|...|wertn} zur Verfügung.
 
-Der Schlüssel eines Schlüssel-Wert-Paares kann entweder als einfache Zeichenkette angegeben werden, wenn er keines der in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\"/?+*\{\}@\#\^{}}) enthält, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\char"0022xyz\char"0022}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}).
+Der Schlüssel eines Schlüssel-Wert-Paares kann entweder als einfache Zeichenkette angegeben werden, wenn er keines der in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthält, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
-Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art und Weise angegeben werden können. Die erste Variante sind einfache umarkierte Zeichenketten, die alle Zeichen außer den in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\"/?+*\{\}@\#\^{}}) enthalten dürfen. Diese Zeichenketten werden bei der Suche ohne Beachtung von Groß- und Kleinschreibung verglichen.
-Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{\char"0022xyz\char"0022}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\char"0022}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen. 
+\phantomsection\label{zeichenketten}Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art und Weise angegeben werden können. Die erste Variante sind einfache umarkierte Zeichenketten, die alle Zeichen außer den in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthalten dürfen. Diese Zeichenketten werden bei der Suche ohne Beachtung von Groß- und Kleinschreibung verglichen.
+Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen. 
 Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/} und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit \texttt{//} gefunden werden.
 
 Wie eine Attributbeschreibung kann das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
