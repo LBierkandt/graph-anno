@@ -242,8 +242,6 @@ function sendDataExport() {
 	var params = 'query=' + encodeURIComponent(query);
 	anfrage.open('POST', '/export_data');
 	anfrage.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-	anfrage.setRequestHeader("Content-length", params.length);
-	anfrage.setRequestHeader("Connection", "close");
 	anfrage.onreadystatechange = function () {
 		if (anfrage.readyState == 4 && anfrage.status == 200) {
 			if (anfrage.responseText == '') {
@@ -275,8 +273,6 @@ function getCookie(name) {
 }
 function makeAnfrage(anfrage, params) {
 		anfrage.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		anfrage.setRequestHeader("Content-length", params.length);
-		anfrage.setRequestHeader("Connection", "close");
 		anfrage.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
 				var antworthash = JSON.parse(this.responseText);
