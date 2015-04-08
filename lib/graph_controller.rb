@@ -75,10 +75,15 @@ class GraphController
 	end
 
 	def handle_commandline
+		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
 		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
-		value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
+		begin
+			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
+		rescue StandardError => e
+			@cmd_error_messages << e.message
+		end
 		return value.to_json if value
 		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence ? @sentence.id : nil })
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
@@ -88,7 +93,8 @@ class GraphController
 		return {
 			:sentence_list => @sentence_list.values,
 			:sentence_changed => sentence_changed,
-			:graph_file => @graph_file
+			:graph_file => @graph_file,
+			:messages => @cmd_error_messages
 		}.merge(satzinfo).to_json
 	end
 
@@ -97,11 +103,6 @@ class GraphController
 		@sentence = @graph.nodes[@sinatra.params[:sentence]]
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		return {:sentence_changed => true}.merge(satzinfo).to_json
-	end
-
-	def set_sentence_list(h = {})
-		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
-		set_found_sentences if !h[:clear] and @found
 	end
 
 	def filter
@@ -154,6 +155,15 @@ class GraphController
 		)
 	end
 
+	def allowed_annotations_form
+		@sinatra.haml(
+			:allowed_annotations_form,
+			:locals => {
+				:graph => @graph
+			}
+		)
+	end
+
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
@@ -191,6 +201,14 @@ class GraphController
 		@graph.info = {}
 		@sinatra.params['keys'].each do |i, key|
 			@graph.info[key.strip] = @sinatra.params['values'][i].strip if key.strip != ''
+		end
+		return true.to_json
+	end
+
+	def save_allowed_annotations
+		@graph.allowed_anno = []
+		@sinatra.params['keys'].each do |i, key|
+			@graph.allowed_anno << {:key => key.strip, :values => @sinatra.params['values'][i].value_list} if key.strip != ''
 		end
 		return true.to_json
 	end
@@ -287,6 +305,96 @@ class GraphController
 		end
 	end
 
+	def documentation(filename)
+		@sinatra.send_file('doc/' + filename)
+	end
+
+	private
+
+	def allowed_attributes(attr)
+		allowed_attr = @graph.allowed_attributes(attr)
+		if (forbidden = attr.keys - allowed_attr.keys) != []
+			@cmd_error_messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
+		end
+		return allowed_attr
+	end
+
+	def build_label(e, i = nil)
+		label = ''
+		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
+		if e.kind_of?(Node)
+			if e.type == 's'
+				display_attr.each do |key,value|
+					label += "#{key}: #{value}<br/>"
+				end
+			elsif e.type == 't'
+				display_attr.each do |key, value|
+					case key
+						when 'token'
+							label = "#{value}\n#{label}"
+						else
+							label += "#{key}: #{value}\n"
+					end
+				end
+				label += "t" + i.to_s if i
+			else # normaler Knoten
+				display_attr.each do |key,value|
+					case key
+						when 'cat'
+							label = "#{value}\n#{label}"
+						else
+							label += "#{key}: #{value}\n"
+					end
+				end
+				label += "n" + i.to_s if i
+			end
+		elsif e.kind_of?(Edge)
+			display_attr.each do |key,value|
+				case key
+					when 'cat'
+						label = "#{value}\n#{label}"
+					else
+						label += "#{key}: #{value}\n"
+				end
+			end
+			label += "e" + i.to_s if i
+		end
+		return label
+	end
+
+	def check_cookies
+		if @sinatra.request.cookies['traw_sentence'].nil?
+			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
+		end
+
+		if @sinatra.request.cookies['traw_layer'].nil?
+			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
+		end
+
+		if @sinatra.request.cookies['traw_cmd'].nil?
+			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
+		end
+
+		if @sinatra.request.cookies['traw_query'].nil?
+			@sinatra.response.set_cookie('traw_query', { :value => '' })
+		end
+	end
+
+	def element_by_identifier(identifier)
+		i = identifier.scan(/\d/).join.to_i
+		case identifier[0]
+			when 'm'
+				return @sentence
+			when 'n'
+				return @nodes[i]
+			when 'e'
+				return @edges[i]
+			when 't'
+				return @tokens[i]
+			else
+				return nil
+		end
+	end
 
 	def execute_command(command_line, layer)
 		command_line.strip!
@@ -297,31 +405,32 @@ class GraphController
 
 		case command
 			when 'n' # new node
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(parameters[:attributes])
+					properties.merge!(allowed_attributes(parameters[:attributes]))
 					@graph.add_anno_node(:attr => properties, :sentence => @sentence)
 				end
 
 			when 'e' # new edge
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(parameters[:attributes])
+					properties.merge!(allowed_attributes(parameters[:attributes]))
 					@graph.add_anno_edge(
 						:start => element_by_identifier(parameters[:all_nodes][0]),
 						:end => element_by_identifier(parameters[:all_nodes][1]),
 						:attr => properties
 					)
+					undefined_references?(parameters[:all_nodes][0..1])
 				end
 
 			when 'a' # annotate elements
-				if @sentence
+				if sentence_set?
 					@graph.conf.layers.map{|l| l.attr}.each do |a|
 						properties.delete(a)
 					end
 
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(parameters[:attributes])
+					properties.merge!(allowed_attributes(parameters[:attributes]))
 
 					parameters[:elements].each do |element_id|
 						if element = element_by_identifier(element_id)
@@ -329,11 +438,12 @@ class GraphController
 							parameters[:keys].each{|k| element.attr.delete(k)}
 						end
 					end
+					undefined_references?(parameters[:elements])
 				end
 
 			when 'd' # delete elements
-				if @sentence
-					(parameters[:meta] + parameters[:nodes] + parameters[:edges]).each do |el|
+				if sentence_set?
+					(parameters[:nodes] + parameters[:edges]).each do |el|
 						if element = element_by_identifier(el)
 							element.delete
 						end
@@ -343,15 +453,19 @@ class GraphController
 							element.remove_token
 						end
 					end
+					undefined_references?(parameters[:elements])
 				end
 
 			when 'l' # set layer
 				layer = set_new_layer(parameters[:words], properties)
 
 			when 'p', 'g' # group under new parent node
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					mother = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
+					mother = @graph.add_anno_node(
+						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
+						:sentence => @sentence
+					)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -361,12 +475,16 @@ class GraphController
 							)
 						end
 					end
+					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 
 			when 'c', 'h' # attach new child node
-				if @sentence
+				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					daughter = @graph.add_anno_node(:attr => properties.merge(parameters[:attributes]), :sentence => @sentence)
+					daughter = @graph.add_anno_node(
+						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
+						:sentence => @sentence
+					)
 					(parameters[:nodes] + parameters[:tokens]).each do |node|
 						if element = element_by_identifier(node)
 							@graph.add_anno_edge(
@@ -376,6 +494,7 @@ class GraphController
 							)
 						end
 					end
+					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 
 			when 'ns' # create and append new sentence(s)
@@ -389,12 +508,13 @@ class GraphController
 				@sentence = new_nodes.first
 
 			when 't' # build tokens and append them
-				if @sentence
+				if sentence_set?
 					@graph.build_tokens(parameters[:words], @sentence)
 				end
 
 			when 'ti' # build tokens and insert them
-				if @sentence
+				if sentence_set?
+					undefined_references?(parameters[:tokens][0..0])
 					knoten = element_by_identifier(parameters[:tokens][0])
 					@graph.build_tokens(parameters[:words][1..-1], @sentence, knoten)
 				end
@@ -403,7 +523,7 @@ class GraphController
 				@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 			when 'del' # delete sentence
-				if @sentence
+				if sentence_set?
 					saetze = @graph.sentence_nodes
 					index = saetze.index(@sentence) + 1
 					index -= 2 if index == saetze.length
@@ -437,6 +557,7 @@ class GraphController
 			when 'save', 'speichern' # save workspace to corpus file
 				@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]
 				Dir.mkdir('data') unless File.exist?('data')
+				raise 'Please specify a file name!' if @graph_file == ''
 				@graph.write_json_file(@graph_file) if @sentence
 
 			when 'clear', 'leeren' # clear workspace
@@ -446,7 +567,7 @@ class GraphController
 				@sentence = nil
 
 			when 'image' # export sentence as graphics file
-				if @sentence
+				if sentence_set?
 					format = parameters[:words][0]
 					name = parameters[:words][1]
 					Dir.mkdir('images') if !File.exist?('images')
@@ -459,19 +580,34 @@ class GraphController
 				name = parameters[:words][1]
 				name2 = parameters[:words][2]
 				case format
-					when 'paula'
-						@graph.export_paula(name, name2 ? name2 : nil)
-					when 'salt'
-						@graph.export_saltxml(name)
-					when 'sql'
-						@graph.export_sql(name)
+				when 'config'
+					@graph.export_config(name)
+				when 'paula'
+					@graph.export_paula(name, name2)
+				when 'salt'
+					@graph.export_saltxml(name)
+				when 'sql'
+					@graph.export_sql(name)
+				when 'tagset'
+					@graph.export_tagset(name)
+				else
+					raise "Unknown export format: #{format}"
 				end
 
-			when 'import' # open text import window
-				if parameters[:words].first == 'toolbox'
+			when 'import' # open import window or imports graph configurations
+				type = parameters[:words][0]
+				name = parameters[:words][1]
+				case type
+				when 'config'
+					@graph.import_config(name)
+				when 'tagset'
+					@graph.import_tagset(name)
+				when 'toolbox'
 					return {:modal => 'import', :type => 'toolbox'}
-				else
+				when 'text'
 					return {:modal => 'import', :type => 'text'}
+				else
+					raise "Unknown import type"
 				end
 
 			# all following commands are related to annotation @graph expansion -- Experimental!
@@ -567,159 +703,11 @@ class GraphController
 				#	k.gesammelte_merkmale = nil
 				#	k.unreduzierte_merkmale = nil
 				#end
-
+			when ''
+			else
+				raise "Unknown command \"#{command}\""
 		end
 		return nil
-	end
-
-	def element_by_identifier(identifier)
-		i = identifier.scan(/\d/).join.to_i
-		case identifier[0]
-			when 'm'
-				return @sentence
-			when 'n'
-				return @nodes[i]
-			when 'e'
-				return @edges[i]
-			when 't'
-				return @tokens[i]
-			else
-				return nil
-		end
-	end
-
-	def check_cookies
-		if @sinatra.request.cookies['traw_sentence'].nil?
-			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_layer'].nil?
-			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
-		end
-
-		if @sinatra.request.cookies['traw_cmd'].nil?
-			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_query'].nil?
-			@sinatra.response.set_cookie('traw_query', { :value => '' })
-		end
-	end
-
-	def set_cmd_cookies
-		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
-			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer] })
-		end
-
-		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
-			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd] })
-		end
-
-		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
-			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence] })
-		end
-	end
-
-	def set_filter_cookies
-		#if @sinatra.request.cookies['traw_filter']
-			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
-		#end
-		#if @sinatra.request.cookies['traw_filter_mode']
-			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
-		#end
-	end
-
-	def set_query_cookies
-		if @sinatra.request.cookies['traw_query']
-			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query] })
-		end
-	end
-
-	def set_new_layer(words, properties)
-		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
-			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
-			@sinatra.response.set_cookie('traw_layer', { :value => layer })
-			properties.replace(@graph.conf.layer_attributes[layer])
-			return layer
-		end
-	end
-
-	def documentation(filename)
-		@sinatra.send_file('doc/' + filename)
-	end
-
-	private
-
-	def set_found_sentences
-		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
-			@sentence_list[s][:found] = true
-		end
-	end
-
-	def validate_config(data)
-		result = {}
-		data['layers'] = data['layers'] || {}
-		data['combinations'] = data['combinations'] || {}
-		data['general'].each do |attr, value|
-			if attr.match(/_color$/)
-				result["general[#{attr}]"] = '' unless value.is_hex_color?
-			elsif attr.match(/weight$/)
-				result["general[#{attr}]"] = '' unless value.is_number?
-			end
-		end
-		data['layers'].each do |i, layer|
-			layer.each do |k, v|
-				if k == 'color'
-					result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
-				elsif k == 'weight'
-					result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
-				elsif ['name', 'attr', 'shortcut'].include?(k)
-					result["layers[#{i}[#{k}]]"] = '' unless v != ''
-				end
-			end
-			['name', 'attr', 'shortcut'].each do |key|
-				data['layers'].each do |i2, l2|
-					if !layer.equal?(l2) and layer[key] == l2[key]
-						result["layers[#{i}[#{key}]]"] = ''
-						result["layers[#{i2}[#{key}]]"] = ''
-					end
-				end
-				data['combinations'].each do |i2, c|
-					if layer[key] == c[key]
-						result["layers[#{i}[#{key}]]"] = ''
-						result["combinations[#{i2}[#{key}]]"] = ''
-					end
-				end
-			end
-		end
-		data['combinations'].each do |i, combination|
-			combination.each do |k, v|
-				if k == 'color'
-					result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
-				elsif k == 'weight'
-					result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
-				elsif ['name', 'shortcut'].include?(k)
-					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
-				end
-				if not combination['attr'] or combination['attr'].length == 1
-					result["combinations[#{i}[attr]]"] = ''
-				end
-			end
-			['name', 'attr', 'shortcut'].each do |key|
-				data['combinations'].each do |i2, c2|
-					if !combination.equal?(c2) and combination[key] == c2[key]
-						result["combinations[#{i}[#{key}]]"] = ''
-						result["combinations[#{i2}[#{key}]]"] = ''
-					end
-				end
-			end
-		end
-		begin
-			@graph.parse_query(data['makros'])
-		rescue StandardError => e
-			result['makros'] = e.message
-		end
-		return result.empty? ? true : result
 	end
 
 	def generate_graph(format, path)
@@ -743,11 +731,12 @@ class GraphController
 
 		satzinfo = {:textline => '', :meta => ''}
 
-		@tokens = @sentence ? @sentence.sentence_tokens : []
-		all_nodes = @sentence ? @sentence.nodes : []
-		@nodes = all_nodes.reject{|n| n.type == 't'}
-		@edges = all_nodes.map{|n| n.in + n.out}.flatten.uniq.select{|e| e.type == 'a'}
-		token_edges = @tokens.map{|t| t.in + t.out}.flatten.uniq.select{|e| e.type == 'o'}
+		@tokens     = @sentence ? @sentence.sentence_tokens : []
+		all_nodes   = @sentence ? @sentence.nodes : []
+		@nodes      = all_nodes.reject{|n| n.type == 't'}
+		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
+		@edges      = all_edges.select{|e| e.type == 'a'}
+		order_edges = all_edges.select{|e| e.type == 'o'}
 		
 		if @filter[:mode] == 'filter'
 			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
@@ -844,7 +833,7 @@ class GraphController
 			viz_graph.add_edges(edge.start.id, edge.end.id, options)
 		end
 
-		token_edges.each do |edge|
+		order_edges.each do |edge|
 			viz_graph.add_edges(edge.start.id, edge.end.id, :style => 'invis', :weight => 100)
 		end
 
@@ -853,47 +842,135 @@ class GraphController
 		return satzinfo
 	end
 
-	def build_label(e, i = nil)
-		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
-		if e.kind_of?(Node)
-			if e.type == 's'
-				display_attr.each do |key,value|
-					label += "#{key}: #{value}<br/>"
-				end
-			elsif e.type == 't'
-				display_attr.each do |key, value|
-					case key
-						when 'token'
-							label = "#{value}\n#{label}"
-						else
-							label += "#{key}: #{value}\n"
-					end
-				end
-				label += "t" + i.to_s if i
-			else # normaler Knoten
-				display_attr.each do |key,value|
-					case key
-						when 'cat'
-							label = "#{value}\n#{label}"
-						else
-							label += "#{key}: #{value}\n"
-					end
-				end
-				label += "n" + i.to_s if i
-			end
-		elsif e.kind_of?(Edge)
-			display_attr.each do |key,value|
-				case key
-					when 'cat'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-				end
-			end
-			label += "e" + i.to_s if i
+	def sentence_set?
+		if @sentence
+			return true
+		else
+			raise 'Create a sentence first!'
 		end
-		return label
+	end
+
+	def set_cmd_cookies
+		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
+			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer] })
+		end
+
+		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
+			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd] })
+		end
+
+		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
+			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence] })
+		end
+	end
+
+	def set_filter_cookies
+		#if @sinatra.request.cookies['traw_filter']
+			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
+		#end
+		#if @sinatra.request.cookies['traw_filter_mode']
+			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
+		#end
+	end
+
+	def set_new_layer(words, properties)
+		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
+			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
+			@sinatra.response.set_cookie('traw_layer', { :value => layer })
+			properties.replace(@graph.conf.layer_attributes[layer])
+			return layer
+		end
+	end
+
+	def set_query_cookies
+		if @sinatra.request.cookies['traw_query']
+			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query] })
+		end
+	end
+
+	def set_found_sentences
+		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
+			@sentence_list[s][:found] = true
+		end
+	end
+
+	def set_sentence_list(h = {})
+		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
+		set_found_sentences if !h[:clear] and @found
+	end
+
+	def undefined_references?(ids)
+		undefined_ids = []
+		ids.each do |id|
+			undefined_ids << id unless element_by_identifier(id)
+		end
+		@cmd_error_messages << "Undefined element(s): #{undefined_ids * ', '}" unless undefined_ids.empty?
+	end
+
+	def validate_config(data)
+		result = {}
+		data['layers'] = data['layers'] || {}
+		data['combinations'] = data['combinations'] || {}
+		data['general'].each do |attr, value|
+			if attr.match(/_color$/)
+				result["general[#{attr}]"] = '' unless value.is_hex_color?
+			elsif attr.match(/weight$/)
+				result["general[#{attr}]"] = '' unless value.is_number?
+			end
+		end
+		data['layers'].each do |i, layer|
+			layer.each do |k, v|
+				if k == 'color'
+					result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+				elsif k == 'weight'
+					result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
+				elsif ['name', 'attr', 'shortcut'].include?(k)
+					result["layers[#{i}[#{k}]]"] = '' unless v != ''
+				end
+			end
+			['name', 'attr', 'shortcut'].each do |key|
+				data['layers'].each do |i2, l2|
+					if !layer.equal?(l2) and layer[key] == l2[key]
+						result["layers[#{i}[#{key}]]"] = ''
+						result["layers[#{i2}[#{key}]]"] = ''
+					end
+				end
+				data['combinations'].each do |i2, c|
+					if layer[key] == c[key]
+						result["layers[#{i}[#{key}]]"] = ''
+						result["combinations[#{i2}[#{key}]]"] = ''
+					end
+				end
+			end
+		end
+		data['combinations'].each do |i, combination|
+			combination.each do |k, v|
+				if k == 'color'
+					result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+				elsif k == 'weight'
+					result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
+				elsif ['name', 'shortcut'].include?(k)
+					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
+				end
+				if not combination['attr'] or combination['attr'].length == 1
+					result["combinations[#{i}[attr]]"] = ''
+				end
+			end
+			['name', 'attr', 'shortcut'].each do |key|
+				data['combinations'].each do |i2, c2|
+					if !combination.equal?(c2) and combination[key] == c2[key]
+						result["combinations[#{i}[#{key}]]"] = ''
+						result["combinations[#{i2}[#{key}]]"] = ''
+					end
+				end
+			end
+		end
+		begin
+			@graph.parse_query(data['makros'])
+		rescue StandardError => e
+			result['makros'] = e.message
+		end
+		return result.empty? ? true : result
 	end
 
 end

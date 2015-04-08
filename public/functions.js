@@ -113,6 +113,10 @@ function taste(tast) {
 		tast.preventDefault();
 		openMetadata();
 	}
+	else if (tast.which == 121) {
+		tast.preventDefault();
+		openAllowedAnnotations();
+	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
 		navigateSentences('prev');
@@ -238,8 +242,6 @@ function sendDataExport() {
 	var params = 'query=' + encodeURIComponent(query);
 	anfrage.open('POST', '/export_data');
 	anfrage.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-	anfrage.setRequestHeader("Content-length", params.length);
-	anfrage.setRequestHeader("Connection", "close");
 	anfrage.onreadystatechange = function () {
 		if (anfrage.readyState == 4 && anfrage.status == 200) {
 			if (anfrage.responseText == '') {
@@ -271,8 +273,6 @@ function getCookie(name) {
 }
 function makeAnfrage(anfrage, params) {
 		anfrage.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		anfrage.setRequestHeader("Content-length", params.length);
-		anfrage.setRequestHeader("Connection", "close");
 		anfrage.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
 				var antworthash = JSON.parse(this.responseText);
@@ -283,6 +283,7 @@ function makeAnfrage(anfrage, params) {
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
 				updateLayerOptions();
+				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
 				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
 				if (antworthash['search_result'] != undefined) {
 					document.getElementById('searchresult').innerHTML = antworthash['search_result'];
@@ -374,6 +375,25 @@ function openMetadata() {
 		});
 	}
 }
+function openAllowedAnnotations() {
+	if ($('#modal-background').css('display') != 'block') {
+		$.ajax({
+			url: '/allowed_annotations_form'
+		})
+		.done(function(data) {
+			$('#modal-content').html(data);
+			$('#new-allowed-annotations').click(function(){
+				var i = parseInt($('.allowed_annotations tbody:first-child tr:last-child').attr('no')) + 1;
+				$('.allowed_annotations tbody:first-child tr:last-child').after(
+					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
+				);
+				return false;
+			});
+			$('#modal-background').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
 function sendConfig() {
 	$.ajax({
 		type: 'POST',
@@ -403,6 +423,17 @@ function sendMetadata() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_metadata',
+		dataType: 'json',
+		data: $('#modal-form').serialize()
+	})
+	.done(function(data) {
+		closeModal();
+	});
+}
+function sendAllowedAnnotations() {
+	$.ajax({
+		type: 'POST',
+		url: '/save_allowed_annotations',
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})
