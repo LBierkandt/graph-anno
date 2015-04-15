@@ -1,6 +1,5 @@
 \documentclass[12pt]{scrartcl}
 \usepackage{fontspec}
-\usepackage{german}
 \usepackage{linguex}
 \usepackage{booktabs}
 \usepackage{listings}
@@ -49,9 +48,9 @@
 \lstset{basicstyle=\renewcommand{\baselinestretch}{1}\tt, aboveskip=0em, belowskip=0em, tabsize=4, xleftmargin=.5em}
 
 
-\title{\LARGE GraphAnno\\ \large Ein Annotations- und Abfragetool\\für graphenbasierte linguistische Annotationen}
+\title{\LARGE GraphAnno\\ \large An annotation and query tool\\for graph-based linguistic annotations}
 \author{Lennart Bierkandt\\\large Friedrich-Schiller-Universität Jena\\[-.2em]\large post@lennartbierkandt.de}
-\date{Version vom \today}
+\date{Version of \today}
 
 
 \renewcommand{\glt}{\vspace{-\Extopsep}}
@@ -65,7 +64,7 @@
 \newenvironment{figurel}{\begin{figure}[htb]\vskip 2ex}{\end{figure}}
 \newenvironment{tablel}{\begin{table}[htb]\vskip 2ex}{\end{table}}
 
-\newenvironment{anmerkung}{\par{\ }\par\sf\color{black!60}\noindent\textbf{Anmerkung:}\par}{\newline\par}
+\newenvironment{anmerkung}{\par{\ }\par\sf\color{black!60}\noindent\textbf{Remark:}\par}{\newline\par}
 
 \newcommand{\kommentar}[1]{}
 
@@ -84,90 +83,126 @@
 
 \renewcommand{\baselinestretch}{1.05}\normalsize
 
-\renewcommand{\contentsname}{Inhalt}
 \tableofcontents
 
 
-\section{Der Annotationsgraph}
+\section{The annotation graph}
 
-\subsection{Graphformat}
+\subsection{Graph format}
 
-Ein Graph in GraphAnno besteht aus einer Menge von Knoten und gerichteten Kanten. Knoten und Kanten haben Attribute in der Form von Schlüssel-Wert-Paaren, die sowohl der linguistischen Annotation als auch zum Teil der Strukturierung und Darstellung des Graphen in GraphAnno dienen. Diese Attrbiute sind im Datenmodell als Attribut \texttt{attr} zusammengefaßt und sind die einzigen Attribute, die direkt bearbeitet werden können. Diese Attribute werden in diesem Abschnitt als \textit{Annotationsattribute} bezeichnet. Knoten und Kanten tragen weitere Attribute, die nicht direkt bearbeitet werden können. Dazu zählt u.a. das \texttt{type}-Attribut, das die unterschiedliche Typen von Knoten und Kanten (Annotationsknoten, Token, Satzknoten; Annotationskanten, Ordnungskanten, Abschnittskanten) unterscheidet.
+A graph in GraphAnno consists of a set of nodes and directed edges.
+Nodes and edges bear attributes in the form of key-value pairs, that are used for the linguistic annotation as well as the structuring and visualization of the graph.
+There are some attributes – like the attribute \texttt{type}, that differentiates the types of nodes and edges (annotation nodes, tokens, sentence nodes; annotation edges, ordering edges, section edges) – that serve the internal representation of the graph and are not edited directly.
+Under the key \texttt{attr}, however, there is a group of key-value pairs which serve the linguistic annotations and the representation of layers and which are edited by the user directly.
+They will be called \textit{annotation attributes} in the following.
 
-Ein GraphAnno-Graph ist in Sätze eingeteilt – Einheiten die der Strukturierung und Darstellung dienen, aber natürlich nicht unbedingt (wie auch immer definierten) Sätzen entsprechen müssen.
-Für jeden Satz existiert ein Satzknoten (mit \texttt{type:s}), der Informationen trägt, die den ganzen Satz betreffen. Hierbei kann es sich z.B. um Angaben von Quelle, Medium, Sprecher etc. handeln. Der Inhalt dieses Knotens wird im hellgrauen Bereich unter dem Annotationsgraphen und unter dem Text des Satzes (blau dargestellt) in schwarzer Schrift angezeigt.
-Die Information, zu welchem Satz ein Knoten gehört, ist durch eine Kante mit \texttt{type:s}, die den Knoten mit seinem Satzknoten verbindet, repräsentiert. Kanten sind keinem Satz zugeordnet; ihre Zugehörigkeit ergibt sich durch die Knoten, die sie verbinden.
+The graph in GraphAnno is segmented in sentences – units that that are used for structuring and displaying the corpus, but that do not necessarily correspond to real sentences (how ever these may be defined).
+There is a sentence node (bearing the attribute \texttt{type:s}) for every sentence, that bears information concerning the whole sentence.
+This includes, e.g., source, medium, speaker or the like.
+The annotations of this node is displayed in the light grey area below the sentence graph and under the text of the sentence (blue font) in black font.
+The information to which sentence a node of the graph belongs is represented by an (invisible) edge with \texttt{type:s} that links the node in question to the sentence node.
+Edges are not linked to a sentence node; their affiliation follows from the affiliation of their start and end nodes.
 
-Tokenknoten sind neben ihrem \texttt{type:t} dadurch gekennzeichnet, daß sie unter den Annotationsattributen ein Attribut \texttt{token} tragen, das den Tokentext enthält. Die Token eines Satzes sowie die Satzknoten sind außerdem in ihrer Reihenfolge durch Ordnungskanten (mit \texttt{type:o}) verbunden. Dies dient vor allem der korrekten Darstellung und der Traversierung; für den Benutzer sind diese Kanten unsichtbar, und er kann nicht auf sie zugreifen.
+Token nodes are characterized by the attribute \texttt{type:t} and they carry the annotation attribute \texttt{token} with the token text as value.
+The order of the tokens of a sentence (as well as the sentence nodes themselves) is defined by ordering edges (with \texttt{type:o}) that link each node to its successor.
+These edges are needed for the correct visualization and for traversal; the are, however, not displayed and cannot be manipulated directly.
 
-Für Knoten und Kanten gibt es unter den Annotationsattributen das Attribut \texttt{cat}, das innerhalb von GraphAnno keine besondere Bedeutung trägt, das aber besonders dargestellt wird, nämlich ohne Schlüssel und stets zuoberst.
-Kanten und Knoten tragen Nummern der Form \texttt{t23} für Token, \texttt{n23} für andere Knoten und \texttt{e23} für Kanten, die der Referenzierung in Annotationsbefehlen dienen.
-Diese Nummern sind jedoch nicht im Graphmodell gespeichert, sondern werden für jede neu erzeugte Ansicht dynamisch generiert.
+Among the annotation attributes, nodes and edges may bear the \texttt{cat} attribute, that has no special meaning for the graph, but which is desplayed prominently on top of the other annotations and without the key.
+Nodes and edges show numbers like \texttt{t23} for tokens, \texttt{n23} for other nodes and \texttt{e23} for edges, that are used for referencing the elements in annotation commands.
+These numbers are not stored in the graph model but generated dynamically each time the displayed graph is rendered.
 
-GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Ebenen zuzuordnen. Zugehörigkeit eines Elements zu einer Ebene wird dadurch ausgedrückt, daß es (unter den Annotationsattributen) das Attribut der entsprechenden Ebene mit dem Wert\texttt{t} (für \textit{true}) trägt. Durch diese Repräsentation können Elemente auch mehreren Ebene angehören, so daß Ebene sich beliebig überlappen können. Knoten und Kanten der unterschiedlichen Ebenen können farblich unterschiedlich dargestellt und unterschiedlich ausgerichtet werden (hierarchisch oder horizontal). Token sind keiner Ebene zugeordnet und werden in der Standardeinstellung schwarz dargestellt.
-
-
-
-\subsection{Konfiguration}\label{konfiguration}
-
-\subsubsection{Darstellung und Ebenen}\label{ebenenkonfiguration}
-
-Mit F8 wird für den aktuell geladenen Graph das Einstellungsfenster geöffnet. In diesem Fenster können Einstellung zur Darstellung und zu den Ebenen vorgenommen werden.
-
-Unter \textit{General settings} werden Einstellungen für Knoten und Kanten, die keiner Ebene angehören, vorgenommen.\footnote{Je nach verwendetem Browser werden die Felder für Farbeinstellungen als Farbwahlfeld oder als Textfeld dargestellt. Beim Textfeld ist die Farbe als RGB-Hexadezimalwert anzugeben: Ein Rautenzeichen (\texttt{\#}) gefolgt von drei zweistelligen Hexadezimalzahlen jeweils für rot, grün und blau. So steht beispielsweise \texttt{\#000000} für schwarz, \texttt{\#ffffff} für weiß, \texttt{\#ff0000} für ein helles Rot etc.} \textit{Default color} gilt für alle Knoten und Kanten, die keine Token sind und keiner Ebene angehören, \textit{token color} gilt für Token, \textit{found color} für die Hervorhebung bei der Suche gefundener Knoten und Kanten (überschreibt dann die für die jeweiligen Elemete sonst geltende Farbe), \textit{filtered color} für die mit der Filterfunktion ausgefilterten Elemente. Die Einstellung \textit{edge weight} ist für Anatomie des Graphen von Belang und zeigt ihre Wirkung erst, wenn es Kanten von unterschiedlichem Gewicht gibt (zu Details siehe folgenden Absatz).
-
-Unter \textit{layers} werden Einstellungen für die Ebenen des Graphen vorgenommen. Der \textit{Name} ist eine beliebige Bezeichnung der Ebene, die im Aufklappfeld für die Ebenenwahl angezeigt wird. Das \textit{Attribut} ist dasjenige Annotationsattribut, dessen Wert auf \texttt{t} gesetzt wird, wenn ein Element der entsprechenden Ebene angehört. Der \textit{Shortcut} ist ein Bezeichner, der für die Annotation von Elementen genutzt werden kann (siehe \ref{befehl-n}); dieses Kürzel darf nur aus alphanumerischen Zeichen bestehen und darf nicht das gleiche Format wie Elementreferenzen aufweisen (also \texttt{t}, \texttt{n} oder \texttt{e} gefolgt von einer Zahl, oder  \texttt{m}; siehe \ref{befehl-a}). \textit{Color} ist die für Elemente der Ebene verwendete Farbe; \textit{edge weight} ist das Gewicht der Kanten der Ebene. Je höher der hier eingegebene Wert (ganzzahlige Werte), desto kürzer versucht der Graphzeichenalgorithmus die Kanten zu zeichnen. Legt man also eine Ebene mit hohem Kantengewicht und eine mit niedrigem an, so wird der Graph so gezeichnet, daß der Graph der ersten Ebene möglichst kompakt ist; die Elemente der zweiten Ebene werden so angeordnet, daß sie den Graph der ersten Ebene wenig verzerren. Wird als Kantengewicht \texttt{0} angegeben, so erzwingen die Kanten der Ebene keine Hierarhcie zwischen den Knoten, die sie verbinden (sonst ist der Startknoten einer Kante stets höher als der Zielknoten angeordnet). Wird ein negativer Wert angegeben, so werden die Knoten der Ebene alle auf einer horizontal Ebene dargestellt.
-
-Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zugleich angehören, Einstellungen vorgenommen werden. Welchen Ebenen ein Element angehören muß, um unter eine Kombinationsdefinition zu fallen, wird über die Auswahlkästchen unter \textit{attributes} angegeben, die anderen Einstellungen funktionieren analog zu denen unter \textit{layers} und überschreiben die dort angegebenen Werte für Elemente, die der Ebenenkombination angehören.
-
-Unter \textit{search makros} können graphspezifische Suchmakros, wie unter \ref{def} beschrieben, vordefiniert werden. Diese stehen dann für Suche im Graph zur Verfügung. Die Definitionen (\texttt{def ...}) werden jede in eine eigene Zeile im entsprechenden Fenster eingegeben.
-
-\subsubsection{Erlaubte Annotationen}\label{erlaubteannotationen}
-
-In dem mit F10 zu öffnenden Fenster können für einen Graphen erlaubte Annotationen spezifiziert werden. Nur die hier spezifizierten Schlüssel-Wert-Paare sind für die Annotation von Knoten und Kanten zulässig; unerlaubte Eingaben werden mit einer Fehlermeldung quittiert. Bestehende Annotationen werden durch eine nachträgliche Änderung der erlaubten Schlüssel und Werte nicht beeinflußt.
-
-Sind hier keine Schlüssel und Werte angegeben, so sind alle Annotationen zulässig. Trägt man Schlüssel ein, so sind nur diese Schlüssel für Annotationen erlaubt. Läßt man das Werte-Feld für einen Schlüssel leer, so sind für diesen Schlüssel alle Werte erlaubt; will man die erlaubte Wertemenge beschänken, so werden die erlaubten Werte in das Werte-Feld des entsprechenden Schlüssels eingetragen, getrennt mit Leerzeichen.
-
-Für die Notation der Werte gelten die gleichen Regeln wie bei der Suchsprache (Abschnitt \ref{node}, S.\,\pageref{zeichenketten}): Einfache Werte werden ohne weitere Markierung eingetragen, enthalten Werte Sonderzeichen (siehe S.\,\pageref{zeichenketten}), so müssen sie in Anführungszeichen (\texttt{\quo...\quo}) angegeben werden; außderdem können – ebenfalls wie bei der Suchsprache (S.\,\pageref{zeichenketten}) – reguläre Ausdrücke verwendet werden, die in Schrägstrichen angegeben werden (\texttt{/.../}). Die regulären Ausdrücke sind dabei verankert, d.h. ein Annotationswert muß dem gesamten regulären Ausdruck entsprechen, um erlaubt zu sein.
-
-\subsubsection{Metadaten}
-
-Neben der Konfiguration von Ebenen, Darstellung, Suchmakros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren angegeben werden. Das Fenster dafür wird mit F9 geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
+GraphAnno also provides the possibility to assign nodes and edges to different layers.
+The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation (among the annotation attributes) with the key corresponding to the layer and the value \texttt{t} (for \textit{true}).
+This representation allows for elements to belong to more than one layer, with the consequence that layers my overlap in an arbitrary manner.
+Nodes and edges of different layers may be displayed in different colors and aligned in different ways (hierachically or horizontally).
+Tokens do not belong to any layer; they are displayed in black by default.
 
 
 
-\section{Tastaturbefehle}
+\subsection{Configuration}\label{konfiguration}
 
-Die meisten Navigation und Ansicht betreffende Funktionen von GraphAnno werden direkt über Tastenbefehle angesprochen. Nachfolgend eine Tabelle der verfügbaren Befehle:
+\subsubsection{Layers and visualization}\label{ebenenkonfiguration}
+
+The key F8 opens the configurations window for the currently loaded graph.
+This window provides the possibility to configure the layers of the graph and its visualization.
+
+In the section \textit{general settings}, you can configure the settings for nodes and edges that do not belong to any layer.\footnote{Depending on the browser you use, the color fields are displayed as color picker or as simple text field. In the latter case, you have to provide the color as hexadecimal RGB value: A hash (\texttt{\#}) followed by three two-digit hexadecimal numbers for red, green and blue, respectively. \texttt{\#000000}, e.g., stands for black, \texttt{\#ffffff} for white, \texttt{\#ff0000} for light red etc.}
+\textit{Default color} applies to all nodes and edges that are not tokens and that do not belong to any layer, \textit{token color} applies to tokens, \textit{found color} is used for the highlighting of nodes and edges found in a search, and \textit{filtered color} for elements that are filtered out by the filter function.
+The setting for \textit{edge weight} affects the layout of the displayed graph and shows its effect only when edges with different weight are present (details will follow in the next paragraph).
+
+In the section \textit{layers}, you can configure the layers of the graph.
+The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
+\textit{Attribute} is the attribute that will be set to \texttt{t} for elements that belong to the layer in question.
+The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. \ref{befehl-n}); this shortcut may only consist of alphanumeric characters and must not have the same structure as element references (i.e., \texttt{t}, \texttt{n} or \texttt{e} followed by a number, or  \texttt{m}; cf. \ref{befehl-a}).
+\textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
+The heigher this value (integer values), the shorter the rendering algorithm will try to make the edges.
+When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
+If you enter \texttt{0} as edge weight, the edges will not enforce a hierachy between the nodes of that layer (otherwise, the start node of an edge is always placed higher than the end node).
+If a negative value is entered, all nodes of that layer are displayed horizontally on one tier.
+
+The section \textit{layer combinations} contains the settings for elements that belong to multiple layers.
+Via the checkboxes under \textit{attributes} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
+The other settings work like those described for the \textit{layers}, and for those elements that belong to the layer combination, they override the values given for the single layers.
+
+Under \textit{search makros} you can enter predefined graph-specific search makros as described in Section \ref{def}.
+These makros are then available for search queries in the graph.
+In the search makros text area, the definitions (\texttt{def ...}) have to be enterd each on its own line.
+
+\subsubsection{Permitted annotations}\label{erlaubteannotationen}
+
+In the window open by the key F10, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
+Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
+Already existing annotations are not affected by changes of the permitted keys and values.
+
+If you do not specify any keys and values, all annotations are permitted.
+If you enter keys, only these keys are allowed for annotations.
+If you leave the value field for a key empty, then all values are permitted for this key.
+If you want to restrict the possible values for a key, you may enter these into the value field of the key in question, separated by spaces.
+
+The notation of the values is subject to the same rules as in the query language (cf. Section \ref{node}, p.\,\pageref{zeichenketten}):
+Simple values are entered without further markup; if a value contains special characters (siehe p.\,\pageref{zeichenketten}) it has to be enclosed in double quotes (\texttt{\quo...\quo}).
+Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\texttt{/.../}).
+In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
+
+\subsubsection{Metadata}
+
+Additionally to the configuration of layers, visualization, search makros and permitted annotations, you may save metadata for a graph as key-value pairs.
+The key F9 open the window, where you can enter an arbitrary number of keys with a text as corresponding value.
+
+
+\section{Keyboard shortcuts}
+
+In GraphAnno most of the functions related to navigation and display are controlled by keybord shortcuts.
+The following is a table of the available shortcuts:
 
 \begin{center}
 	\begin{tabular*}{\textwidth}{ll}
 		\toprule
-		Tastenkombination & Funktion \\
+		Shortcut & Function \\
 		\midrule
 		Navigation & \\
 		\midrule
-			Alt + ←/→ & vorheriger/nächster Satz \\
-			Alt + Pos1/Ende & erster/letzter Satz \\
+			Alt + ←/→ & previous/next sentence\\
+			Alt + Home/End & first/last sentence \\
 		\midrule
 		Graph & \\
 		\midrule
-			Strg + Umschalt + −/+ & Graph verkleinern/vergrößern \\
-			Strg + Umschalt + 0 & Graph einpassen (bzgl. der Höhe) \\
-			Strg + Umschalt + Pfeile & Graph verschieben \\
-			Strg + Umschalt + Pos1/Ende & an den linken/rechten Rand des Graphen \\
-			Strg + Umschalt + Bild↑/Bild↓ & an den oberen/unteren Rand des Graphen \\
-			F4 & Elementen-IDs im Graphen an-/ausschalten\\
+			Ctrl + Shift + −/+ & scale down/up graph\\
+			Ctrl + Shift + 0 & zoom to fit (wrt. height) \\
+			Ctrl + Shift + arrows & move graph\\
+			Ctrl + Shift + Home/End & go to left/right edge of graph\\
+			Ctrl + Shift + Page up/Page down& go to upper/lower edge of graph\\
+			F4 & toggle element references\\
 		\midrule
-		Fenster & \\
+		Window & \\
 		\midrule
-			F1 & Hilfefenster zeigen/verbergen\\
-			F2 & Text und Satzannotationen zeigen/verbergen\\
-			F6 & Filterfenster zeigen/verbergen\\
-			F7 & Suchfenster zeigen/verbergen\\
-			F8 & Einstellungsfenster zeigen/verbergen\\
-			F9 & Metadatenfenster zeigen/verbergen\\
-			F10 & Fenster für erlaubte Annotationen zeigen/verbergen\\
+			F1 & show/hide help window \\
+			F2 & show/hide text and sentence annotations\\
+			F6 & show/hide filter window\\
+			F7 & show/hide search window\\
+			F8 & show/hide layer settings window\\
+			F9 & show/hide metadata window\\
+			F10 & show/hide tagset window\\
 		\bottomrule
 	\end{tabular*}
 \end{center}
@@ -175,48 +210,61 @@ Die meisten Navigation und Ansicht betreffende Funktionen von GraphAnno werden d
 
 
 
+\section{Command line commands}
 
-\section{Kommandozeilenbefehle}
+\subsection{Data and navigation}
 
-\subsection{Daten und Navigation}
+\subsubsection{Load file: \texttt{load}}
 
-\subsubsection{Datei laden: \texttt{load}}
-
-Eine Graphdatei wird mit dem Befehl \texttt{load} in den Arbeitsbereich geladen. Der Dateiname wird ohne die Dateiendung \texttt{.json} angegeben (enthält er Leerzeichen, so muß er in doppelte Anführungszeichen eingeschlossen werden: \texttt{\quo...\quo}). Alle Dateien werden aus dem Verzeichnis \texttt{data} im GraphAnno-Programmordner geladen. Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen dabei verloren.
-Welche Datei geladen wurde, wird neben der Eingabeleiste angezeigt.
-
-
-\subsubsection{Datei laden: \texttt{add}}
-
-Mit dem Befehl \texttt{add} kann wie mit \texttt{load} eine Datei in den Arbeitsbereich geladen werden. Der Unterschied ist, daß der Arbeitsbereich zuvor nicht geleert wird. Die neu geladene Datei wird dem Arbeitsbereich hinzugefügt und die neuen Sätze hinter den bestehenden angefügt. Nach dem Hinzufügen wird neben der Eingabeleiste keine Datei mehr als geladen angezeigt und die Dateien können nicht mehr einzeln gespeichert werden.
+With the command \texttt{load}, followed by the file name, you load a graph file inte the work space.
+Provide the file name without the extension \texttt{.json}; it has to enclosed in double quotes (\texttt{\quo...\quo}) if it contains spaces.
+Files are loaded from the \texttt{data} directory located in the GraphAnno main directory.
+Before loading, the work space is cleared from all data.
+So, changes that were not saved explicitly (using the command \texttt{save}) are lost.
+The name of the loaded file is shown next to the input line on the bottom of the user interface.
 
 
-\subsubsection{Datei speichern: \texttt{save}}
+\subsubsection{Load file: \texttt{add}}
 
-Mit dem Befehl \texttt{save} wird der gesamte Arbeitsbereich in eine Datei gespeichert. Der Dateiname wird wie beim Laden angegeben, die Datei wird im \texttt{data}-Ordner gespeichert. Wenn neben der Eingabeleiste ein Dateiname angezeigt wird, kann der Arbeitsbereich unter diesem Namen gespeichert werden, ohne den Namen eigens anzugeben.
-Achtung: es wird keine Warnung ausgegeben, wenn eine bestehende Datei überschrieben wird.
-
-
-\subsubsection{Arbeitsbereich leeren: \texttt{clear}}
-
-Mit dem Befehl \texttt{clear} werde alle Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen verloren.
-Neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+Just like the command \texttt{load}, the command \texttt{add} loads a file into the work space.
+The difference is, that the work space is not cleared – the new file is added and the new sentences are appended to the existing ones.
+After adding the file no file is shown as loaded next to the input line and the files cannot be saved separately anymore.
 
 
-\subsubsection{Neuen Satz anlegen: \texttt{ns}}\label{befehl-ns}
+\subsubsection{Save file: \texttt{save}}
 
-Mit \texttt{ns} – gefolgt von mit Leerzeichen getrennten anzulegenden Satznamen – werden ein oder mehrere neue Sätze angelegt. Dabei werden neue Satzknoten mit dem entsprechenden \texttt{name}-Attribut erstellt. Anschließend wird sofort in den ersten angegebenen Satz gewechselt.
+The command \texttt{save} saves the work space to a GraphAnno file in the \texttt{data} directory. The file name has to be entered in the same way as with the command \texttt{load}.
+If there is a filename indicated next to the input line, the work space can be saved to this file without specifying the file name.
+Attention: no warning is issued when an existing file will be overwritten.
 
 
-\subsubsection{Satz löschen: \texttt{del}}
+\subsubsection{Clear work space: \texttt{clear}}
 
-Mit dem Befehl \texttt{del} wird der gegenwärtig angezeigten Satzes komplett gelöscht.
+The command \texttt{clear} clears the work space from all date.
+Changes that were not saved are lost.
+Next to the input line no file will be indicated anymore.
+
+
+\subsubsection{Create new sentence: \texttt{ns}}\label{befehl-ns}
+
+With the command \texttt{ns} – followed by one or more sentence names separated by spaces – you can create a new sentence.
+The command creates sentence nodes with the corresponding \texttt{name} attribute; afterwards you are directed to the first newly created sentence.
+
+
+\subsubsection{Delete sentence: \texttt{del}}
+
+The command \texttt{del} deletes the current sentence including the sentence node.
 
 
 \subsubsection{Gehe zu: \texttt{s}}
 
-Um von Satz zu Satz zu navigieren dient (neben den Tastenkombinationen und dem Aufklappfeld, das auf Änderungen reagiert) der Befehl \texttt{s}, gefolgt vom Namen des anzuzeigenden Satzes. Es wird zum ersten Satz mit dem angegebenen Namen gewechselt.
+In order to navigate from sentence to sentence, you may use (alternatively to keyboard shortcuts or the dropdown field) the command \texttt{s}, followed by the name of the sentence you want to change to.
+You are then directed to the first sentence with the given name.
 
+
+\vskip4em
+\center{\Large tbc.}
+\kommentar{
 
 \subsubsection{Graphik exportieren: \texttt{image}}
 
@@ -787,7 +835,7 @@ Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschriebe
 
 
 
-
+}
 
 
 \end{document}
