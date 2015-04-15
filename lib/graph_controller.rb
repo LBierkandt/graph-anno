@@ -553,6 +553,7 @@ class GraphController
 				addgraph = AnnoGraph.new
 				addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
 				@graph.merge!(addgraph)
+				@found = nil
 
 			when 'save', 'speichern' # save workspace to corpus file
 				@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]

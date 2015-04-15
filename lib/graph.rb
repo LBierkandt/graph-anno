@@ -314,7 +314,7 @@ class Graph
 		end
 		other_graph.edges.each do |id,e|
 			if new_nodes[e.start.id] and new_nodes[e.end.id]
-				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id]))
+				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
 			end
 		end
 	end
