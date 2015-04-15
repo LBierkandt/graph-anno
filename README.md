@@ -44,7 +44,7 @@ Now enter the sentence you want to annotate with the command `t` for tokenize:
 ```
 t I deleted it .
 ```
-The words are split at the spaces and appear as numbered tokens on the screen. Let's assume we have forgotten a word – we can still insert it with the `ti` command. It takes as arguments the token before which to insert and the word(s) to insert:
+The words are split at the spaces and appear as numbered tokens on the screen. Let's assume we have forgotten a word â€“ we can still insert it with the `ti` command. It takes as arguments the token before which to insert and the word(s) to insert:
 ```
 ti t1 quickly
 ```
@@ -91,4 +91,4 @@ c n1 n0
 
 ### Further reading
 
-For more information, please see the documentation located in the `doc` directory (up to now only available in German).
+For more information, please see the documentation located in the `doc` directory (complete version up to now only available in German; English version is work in progress).
