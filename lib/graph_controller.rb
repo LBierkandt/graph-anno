@@ -520,6 +520,27 @@ class GraphController
 					undefined_references?(parameters[:edges])
 				end
 
+			when 'di', 'do' # remove node and connect parent/child nodes
+				if sentence_set?
+					layer = set_new_layer(parameters[:words], properties)
+					parameters[:nodes].each do |node|
+						if element = element_by_identifier(node)
+							element.in.select{|e| e.type == 'a'}.each do |in_edge|
+								element.out.select{|e| e.type == 'a'}.each do |out_edge|
+									devisor = command == 'di' ? out_edge : in_edge
+									@graph.add_anno_edge(
+										:start => in_edge.start,
+										:end => out_edge.end,
+										:attr => devisor.attr.clone
+									)
+								end
+							end
+							element.delete
+						end
+					end
+					undefined_references?(parameters[:nodes])
+				end
+
 			when 'ns' # create and append new sentence(s)
 				old_sentence_nodes = @graph.sentence_nodes
 				new_nodes = []

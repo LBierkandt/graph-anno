@@ -418,6 +418,20 @@ ni_parameter        =   ni_parameter " " ni_parameter
 \end{framed}
 
 
+\subsubsection{Knoten löschen und Mutter-/Tochterknoten verbinden: \texttt{di} und \texttt{do}}
+
+Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} löscht dabei die eingehenden Kanten, \texttt{do} die ausgehenden.
+
+\paragraph*{Befehl \texttt{di}/\texttt{do} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_di_do        =   "di " knotenreferenz+
+                        "do " knotenreferenz+
+\end{lstlisting}
+\end{framed}
+
+
 \subsubsection{Tokenisieren: \texttt{t} und \texttt{ti}}
 
 Zum Eingeben von Token gibt es die Befehle \texttt{t} und \texttt{ti}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{ti} nimmt als erstes Argument noch eine Tokenreferenz und fügt die neuen Token davor ein.
