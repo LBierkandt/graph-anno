@@ -28,6 +28,7 @@
 %\setcounter{secnumdepth}{1}
 %\setcounter{tocdepth}{2}
 %\qtreecenterfalse
+\frenchspacing
 
 \let\origitemize\itemize
 \def\itemize{\origitemize\itemsep-0.5ex}
@@ -155,7 +156,7 @@ Only the keys and values defined here are permitted for the annotation of elemen
 Already existing annotations are not affected by changes of the permitted keys and values.
 
 If you do not specify any keys and values, all annotations are permitted.
-If you enter keys, only these keys are allowed for annotations.
+If you specify keys, only these keys are allowed for annotations.
 If you leave the value field for a key empty, then all values are permitted for this key.
 If you want to restrict the possible values for a key, you may enter these into the value field of the key in question, separated by spaces.
 
@@ -441,6 +442,25 @@ h_parameter         =   h_parameter " " h_parameter
                         tokenreferenz
                         knotensequenz
                         tokensequenz
+                        attribut
+                        ebenenschalter
+\end{lstlisting}
+\end{framed}
+
+
+\subsubsection{Neuen Knoten in Kante einfügen: \texttt{ni}}
+
+Mit dem Befehl \texttt{ni} kann man einen Knoten in eine bestehende Kante „einschieben“. Man gibt als Parameter die Attribute für den neuen Knoten und die Kante an. Es wird dann ein neuer Knoten erstellt und die angegebene Kante durch zwei Kanten ersetzt, die alle Annotationen der alten Kante erben und den Startknoten der alten Kante mit dem neuen Knoten sowie den neuen Knoten mit dem Endknoten der alten Kante verbinden.
+
+Gibt man mehrere Kanten an, so wird in jede ein neuer Knoten nach dem eben beschriebenem Verfahren eingeschoben.
+
+\paragraph*{Befehl \texttt{ni} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_ni           =   "ni " ni_parameter
+ni_parameter        =   ni_parameter " " ni_parameter
+                        kantenreferenz
                         attribut
                         ebenenschalter
 \end{lstlisting}

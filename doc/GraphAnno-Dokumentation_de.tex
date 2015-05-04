@@ -399,6 +399,25 @@ h_parameter         =   h_parameter " " h_parameter
 \end{framed}
 
 
+\subsubsection{Neuen Knoten in Kante einfügen: \texttt{ni}}
+
+Mit dem Befehl \texttt{ni} kann man einen Knoten in eine bestehende Kante „einschieben“. Man gibt als Parameter die Attribute für den neuen Knoten und die Kante an. Es wird dann ein neuer Knoten erstellt und die angegebene Kante durch zwei Kanten ersetzt, die alle Annotationen der alten Kante erben und den Startknoten der alten Kante mit dem neuen Knoten sowie den neuen Knoten mit dem Endknoten der alten Kante verbinden.
+
+Gibt man mehrere Kanten an, so wird in jede ein neuer Knoten nach dem eben beschriebenem Verfahren eingeschoben.
+
+\paragraph*{Befehl \texttt{ni} in modifizierter BNF:}
+~
+\begin{framed}
+\begin{lstlisting}
+befehl_ni           =   "ni " ni_parameter
+ni_parameter        =   ni_parameter " " ni_parameter
+                        kantenreferenz
+                        attribut
+                        ebenenschalter
+\end{lstlisting}
+\end{framed}
+
+
 \subsubsection{Tokenisieren: \texttt{t} und \texttt{ti}}
 
 Zum Eingeben von Token gibt es die Befehle \texttt{t} und \texttt{ti}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{ti} nimmt als erstes Argument noch eine Tokenreferenz und fügt die neuen Token davor ein.
