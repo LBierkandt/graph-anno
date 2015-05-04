@@ -32,6 +32,8 @@ In order to run GraphAnno you need:
 
 You now see the GraphAnno user interface: the (at first empty) graph panel, and the commandline with dropdowns for layer and sentence on the bottom.
 
+(To stop the program, press ctrl + C in the console where it is running)
+
 ### Entering and annotating data
 
 You start with an empty working space, so the first thing to do is to create a sentence. Type the "new sentence" command `ns` with the name of your first sentence, e.g.
