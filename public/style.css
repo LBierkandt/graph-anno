@@ -39,6 +39,9 @@ button, input[type="submit"], input[type="reset"], input[type="button"], .button
 	padding: 2px 6px;
 	cursor: pointer;
 }
+button:focus, input[type="submit"]:focus, input[type="reset"]:focus, input[type="button"]:focus, .button:focus {
+	background-color: #003090;
+}
 ul {
 	margin-top: 0ex;
 	padding-left: 2em;
