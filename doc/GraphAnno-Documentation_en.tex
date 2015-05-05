@@ -262,29 +262,56 @@ In order to navigate from sentence to sentence, you may use (alternatively to ke
 You are then directed to the first sentence with the given name.
 
 
+\subsubsection{Export graphics: \texttt{image}}
+
+With the command \texttt{image}, you can export the graphic that GraphAnno is displaying for the current sentence.
+The first argument is the desired format.
+All formats supported by Graphviz are available, e.g. \texttt{dot}, \texttt{eps}, \texttt{pdf}, \texttt{png} or \texttt{svg}.
+See under \url{http://www.graphviz.org/content/output-formats} for the complete list.
+The second argument is the name of the new image file (without extension; put the name in double quotes if it contains spaces).
+The image will be saved in GraphAnno’s \texttt{images} directory.
+
+
+\subsubsection{Export corpus: \texttt{export}}\label{befehl-export}
+
+Using the command \texttt{export}, you can export the contents of the work space as a corpus in another format.
+The first argument is the format (at present the only fully functional format is \texttt{sql} for the import in GraphInspect; the format \texttt{paula} is theoretically available, but it is heavily restricted with respect to layers), the second argument is the name of the corpus to be saved.
+For \texttt{paula} you can optionally specify the name of the corpus document to be created as third argument.
+The exported corpus will be saved in GraphAnno’s \texttt{exports} directory.
+
+
+\subsubsection{Import text: \texttt{import text}}
+
+You can import texts with the command \texttt{import text}. After issuing the command, a window opens where you can enter the text and set the preferences for its processing.
+The work space will be cleared before the text is imported (but not as soon as the window opens).
+Changes that hadn’t been saved are lost and no file is indicated next to the input line anymore.
+
+In the import window you can choose between two methods of entering your text:
+You can upload a text file or you can paste it in the text area.
+For the processing of the text there are two methods available, too.
+For unedited text you may use the method “punkt segmenter”.
+This method uses an automatic segmenter to split the text into sentences and tokens.
+In order to process abbreviation etc. correctly, you need to specify the language of the text.
+
+The second processing method is “regular expressions”; this method is made for preformatted texts.
+First, you have to enter a string that will be used for segmenting the sentences.
+The preset is \texttt{{\textbackslash}n} \footnote{\texttt{{\textbackslash}n} stands for a line break, \texttt{{\textbackslash}t} for a tab.} for a file in which every sentence starts on a new line.
+The second string you have to enter a a regular expression that matches the tokens.
+The preset here is \texttt{({\textbackslash}S+)}.
+This stands for a sequence of non-spaces, so all words that are separated by spaces are matched as tokens.
+The purpose of the parentheses is to save the matched string in the variable \texttt{\$1}, so it can be used in the next field.
+The next field is for an annotation command (see \ref{befehl-a}) for the tokens, that uses the string matched by the regular expression in the preceding field.
+The preset here is \texttt{token:\$1}.
+That means that the string matched as token is used for the annotation of the token text.
+Another example would be a text tagged for parts of speech, where the part of speech is appended to every word with an underscore.
+In this case you would enter the regular expression \texttt{({\textbackslash}S+)\_({\textbackslash}S+)} and the annotation command \texttt{token:\$1 pos:\$2}.
+The regular expression in this case finds two strings of non-spaces that are joined by an underscore; the strings are saved to the variables \texttt{\$1} (the word) and \texttt{\$2} (the POS tag).
+In the annotation command these variables are used to annotate the token text and the \texttt{pos} attribute.
+
+
 \vskip4em
 \center{\Large tbc.}
 \kommentar{
-
-\subsubsection{Graphik exportieren: \texttt{image}}
-
-Um die Graphik, die GraphAnno für den aktuellen Satz anzeigt, zu exportieren, dient der Befehl \texttt{image}. Als erstes Argument wird das gewünschte Format angegeben. Zur Verfügung stehen alle von Graphviz unterstützten Formate, u.a. \texttt{dot}, \texttt{eps}, \texttt{pdf}, \texttt{png} und \texttt{svg}. Die vollständige Liste ist hier einzusehen: \url{http://www.graphviz.org/content/output-formats}. Das zweite Argument ist der Name der zu erstellenden Datei (ohne Endung; enthält der Name Leerzeichen, so muß er in doppelten Anführungsstrichen angegeben werden). Die Graphik wird im Ordner \texttt{images} gespeichert.
-
-
-\subsubsection{Korpus exportieren: \texttt{export}}\label{befehl-export}
-
-Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige vollständig funktionale Format \texttt{sql} für den Import in GraphInspect; \texttt{paula} kann ebenfalls exportiert werden, unterliegt jedoch starken Einschränkungen hinsichtlich der Ebenen), das zweites Argument ist der Name des Korpus, als drittes Argument kann optional der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
-
-
-\subsubsection{Text importieren: \texttt{import text}}
-
-Texte können mit dem Befehl \texttt{import text} importiert werden. Es öffnet sich ein Fenster, in dem der zu importierende Text eingegeben und Einstellungen zur Verarbeitung vorgenommen werden können.
-Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
-
-Das Import-Fenster bietet zwei Möglichkeiten zur Eingabe von Text: es kann eine Textdatei hochgeladen werden („File“) oder der Text in das Textfenster eingegeben bzw. kopiert werden („Paste“). Die Verarbeitung des Textes kann ebenfalls auf zwei Arten geschehen: Für unbearbeiteten Text empfielt sich die Option „Punkt segmenter“. Diese verwendet einen automatischen Segmentierer, der den Text in Sätze und die Sätze in Token teilt. Hierbei muß zur korrekten Verarbeitung von Abkürzungen etc. die Sprache des Textes angegeben werden.
-
-Die zweite Option zur Verarbeitung ist „Regular expressions“; diese ist für vorformatierte Texte vorgesehen. Hier wird als erstes eine Zeichenkette angegeben, die zur Trennung der Sätze verwendet wird. Voreingestellt ist hier \texttt{{\textbackslash}n} \footnote{\texttt{{\textbackslash}n} steht für einen Zeilenumbruch, \texttt{{\textbackslash}t} für einen Tabstop.} für eine Datei, in der jede Zeile einen Satz darstellt. Als zweites ist ein regulärer Ausdruck anzugeben, der die Token findet. Hier ist \texttt{({\textbackslash}S+)} voreingestellt: dies steht für eine Folge von Nicht-Leerzeichen, findet also als Token alle Wörter, die mit Leerzeichen voneinander getrennt sind. Die Klammern dienen dazu, die gefundenen Zeichenkette in der Variable \texttt{\$1} zu speichern, so daß sie im nächsten Feld verwendet werden kann. Im nächsten Feld ist ein Annotationsbefehl (siehe \ref{befehl-a}) für die Token anzugeben, der von der im vorigen Feld gefunden Zeichenkette gebrauch macht. Voreingestellt ist hier \texttt{token:\$1}. Dies verwendet die als Token gefundene Zeichenkette zur Annotation des Tokentextes. Ein anderes Anwendungsbeispiel wäre ein mit Wortarten getaggter Text, in dem die Wortart für jedes Wort mit einem Unterstrich hinter selbigem angefügt ist. Hier würde man als regulären Ausdruck \texttt{({\textbackslash}S+)\_({\textbackslash}S+)} angeben und als Annotationsbefehl \texttt{token:\$1 pos:\$2}. Der reguläre Ausdruck findet in diesem Fall zwei mit Unterstrich verbundene Zeichenketten aus Nicht-Leerzeichen und speichert sie in den Variablen \texttt{\$1} (das Wort) und \texttt{\$2} (der POS-Tag). Im Annotationsbefehl werden diese Variablen wiederum zur Annotation des Tokentextes und des \texttt{pos}-Attributes verwendet.
-
 
 \subsubsection{Toolboxdaten importieren: \texttt{import toolbox}}
 

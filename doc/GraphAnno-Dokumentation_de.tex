@@ -225,13 +225,13 @@ Um die Graphik, die GraphAnno für den aktuellen Satz anzeigt, zu exportieren, d
 
 \subsubsection{Korpus exportieren: \texttt{export}}\label{befehl-export}
 
-Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige vollständig funktionale Format \texttt{sql} für den Import in GraphInspect; \texttt{paula} kann ebenfalls exportiert werden, unterliegt jedoch starken Einschränkungen hinsichtlich der Ebenen), das zweites Argument ist der Name des Korpus, als drittes Argument kann optional der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
+Mit dem Befehl \texttt{export} wird der Inhalt des Arbeitsbereiches als Korpus in ein anderes Format exportiert. Als erstes Argument wird das Format angegeben (z.Z. ist das einzige vollständig funktionale Format \texttt{sql} für den Import in GraphInspect; \texttt{paula} kann im Prinzip zwar ebenfalls exportiert werden, unterliegt aber starken Einschränkungen hinsichtlich der Ebenen), das zweites Argument ist der Name des Korpus. Für \texttt{paula} kann optional als drittes Argument der Name des zu erstellenden Korpusdokuments angegeben werden. Das exportierte Korpus wird im Ordner \texttt{exports} gespeichert.
 
 
 \subsubsection{Text importieren: \texttt{import text}}
 
 Texte können mit dem Befehl \texttt{import text} importiert werden. Es öffnet sich ein Fenster, in dem der zu importierende Text eingegeben und Einstellungen zur Verarbeitung vorgenommen werden können.
-Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+Der Arbeitsbereich von GraphAnno wird vor dem Import geleert (aber noch nicht, wenn sich das Fenster öffnet). Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
 
 Das Import-Fenster bietet zwei Möglichkeiten zur Eingabe von Text: es kann eine Textdatei hochgeladen werden („File“) oder der Text in das Textfenster eingegeben bzw. kopiert werden („Paste“). Die Verarbeitung des Textes kann ebenfalls auf zwei Arten geschehen: Für unbearbeiteten Text empfielt sich die Option „Punkt segmenter“. Diese verwendet einen automatischen Segmentierer, der den Text in Sätze und die Sätze in Token teilt. Hierbei muß zur korrekten Verarbeitung von Abkürzungen etc. die Sprache des Textes angegeben werden.
 
