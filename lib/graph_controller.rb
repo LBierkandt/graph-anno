@@ -655,6 +655,15 @@ class GraphController
 					raise "Unknown import type"
 				end
 
+			when 'config'
+				return {:modal => 'config'}
+
+			when 'tagset'
+				return {:modal => 'tagset'}
+
+			when 'metadata'
+				return {:modal => 'metadata'}
+
 			# all following commands are related to annotation @graph expansion -- Experimental!
 			when 'project'
 				@graph.merkmale_projizieren(@sentence)

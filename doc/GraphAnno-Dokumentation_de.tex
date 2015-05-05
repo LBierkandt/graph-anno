@@ -112,7 +112,7 @@ GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Eben
 
 \subsubsection{Darstellung und Ebenen}\label{ebenenkonfiguration}
 
-Mit F8 wird für den aktuell geladenen Graph das Einstellungsfenster geöffnet. In diesem Fenster können Einstellung zur Darstellung und zu den Ebenen vorgenommen werden.
+Das Einstellungsfenster für Darstellung und Ebenen wird mit dem Kommandozeilenbefehl \texttt{config} geöffnet.
 
 Unter \textit{General settings} werden Einstellungen für Knoten und Kanten, die keiner Ebene angehören, vorgenommen.\footnote{Je nach verwendetem Browser werden die Felder für Farbeinstellungen als Farbwahlfeld oder als Textfeld dargestellt. Beim Textfeld ist die Farbe als RGB-Hexadezimalwert anzugeben: Ein Rautenzeichen (\texttt{\#}) gefolgt von drei zweistelligen Hexadezimalzahlen jeweils für rot, grün und blau. So steht beispielsweise \texttt{\#000000} für schwarz, \texttt{\#ffffff} für weiß, \texttt{\#ff0000} für ein helles Rot etc.} \textit{Default color} gilt für alle Knoten und Kanten, die keine Token sind und keiner Ebene angehören, \textit{token color} gilt für Token, \textit{found color} für die Hervorhebung bei der Suche gefundener Knoten und Kanten (überschreibt dann die für die jeweiligen Elemete sonst geltende Farbe), \textit{filtered color} für die mit der Filterfunktion ausgefilterten Elemente. Die Einstellung \textit{edge weight} ist für Anatomie des Graphen von Belang und zeigt ihre Wirkung erst, wenn es Kanten von unterschiedlichem Gewicht gibt (zu Details siehe folgenden Absatz).
 
@@ -122,9 +122,9 @@ Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zug
 
 Unter \textit{search makros} können graphspezifische Suchmakros, wie unter \ref{def} beschrieben, vordefiniert werden. Diese stehen dann für Suche im Graph zur Verfügung. Die Definitionen (\texttt{def ...}) werden jede in eine eigene Zeile im entsprechenden Fenster eingegeben.
 
-\subsubsection{Erlaubte Annotationen}\label{erlaubteannotationen}
+\subsubsection{Erlaubte Annotationen / Tagset}\label{erlaubteannotationen}
 
-In dem mit F10 zu öffnenden Fenster können für einen Graphen erlaubte Annotationen spezifiziert werden. Nur die hier spezifizierten Schlüssel-Wert-Paare sind für die Annotation von Knoten und Kanten zulässig; unerlaubte Eingaben werden mit einer Fehlermeldung quittiert. Bestehende Annotationen werden durch eine nachträgliche Änderung der erlaubten Schlüssel und Werte nicht beeinflußt.
+In dem mit dem Befehl \texttt{tagset} zu öffnenden Fenster können für einen Graphen erlaubte Annotationen, also das graphspezifische \textit{Tagset}, spezifiziert werden. Nur die hier spezifizierten Schlüssel-Wert-Paare sind für die Annotation von Knoten und Kanten zulässig; unerlaubte Eingaben werden mit einer Fehlermeldung quittiert. Bestehende Annotationen werden durch eine nachträgliche Änderung der erlaubten Schlüssel und Werte nicht beeinflußt.
 
 Sind hier keine Schlüssel und Werte angegeben, so sind alle Annotationen zulässig. Trägt man Schlüssel ein, so sind nur diese Schlüssel für Annotationen erlaubt. Läßt man das Werte-Feld für einen Schlüssel leer, so sind für diesen Schlüssel alle Werte erlaubt; will man die erlaubte Wertemenge beschänken, so werden die erlaubten Werte in das Werte-Feld des entsprechenden Schlüssels eingetragen, getrennt mit Leerzeichen.
 
@@ -132,7 +132,7 @@ Für die Notation der Werte gelten die gleichen Regeln wie bei der Suchsprache (
 
 \subsubsection{Metadaten}
 
-Neben der Konfiguration von Ebenen, Darstellung, Suchmakros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren angegeben werden. Das Fenster dafür wird mit F9 geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
+Neben der Konfiguration von Ebenen, Darstellung, Suchmakros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren angegeben werden. Das Fenster dafür wird mit dem Befehl \texttt{metadata} geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
 
 
 
@@ -253,6 +253,11 @@ Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Impo
 \subsubsection{Konfigurationen ex- und importieren: \texttt{export} und \texttt{import}}
 
 Mit dem Befehl \texttt{export} ist es auch möglich, Graphkonfigurationen zu exportieren, die später mit \texttt{import} in andere Graphen importiert werden können. Dafür wird als erstes Argument der Typ der zu ex- oder importierenden Konfiguration angegeben: \texttt{config} für Darstellungs- und Ebenenkonfiguration (s. \ref{ebenenkonfiguration}), \texttt{tagset} für erlaubte Annotationen (s. \ref{erlaubteannotationen}). Als zweites wird der Name der Datei angegeben, unter dem die Daten gespeichert werden sollen, bzw. die importiert werden soll (ohne Endung). Die exportierte Datei wird im dem Typ entsprechenden Unterordner des \texttt{exports}-Ordners gespeichert. Achtung: beim Import werden bestehende Konfigurationen von den importierten komplett überschrieben.
+
+
+\subsubsection{Konfiguration bearbeiten: \texttt{config}, \texttt{tagset} und \texttt{metadata}}
+
+Mit diesen Befehlen öffnet man die Fenster für die in Abschnitt \ref{konfiguration} beschriebenen Einstellungen. \texttt{config} für Darstellung und Ebenen, \texttt{tagset} für erlaubte Annotationen und \texttt{metadata} für Metadaten.
 
 
 \subsection{Annotationsbefehle}

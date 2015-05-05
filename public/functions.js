@@ -115,7 +115,7 @@ function taste(tast) {
 	}
 	else if (tast.which == 121) {
 		tast.preventDefault();
-		openAllowedAnnotations();
+		openTagset();
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
@@ -276,9 +276,19 @@ function makeAnfrage(anfrage, params) {
 		anfrage.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
 				var antworthash = JSON.parse(this.responseText);
-				if (antworthash['modal'] == 'import') {
-					openImport(antworthash['type']);
-					return;
+				switch (antworthash['modal']) {
+					case 'import':
+						openImport(antworthash['type']);
+						return;
+					case 'config':
+						openConfig();
+						return;
+					case 'tagset':
+						openTagset();
+						return;
+					case 'metadata':
+						openMetadata();
+						return;
 				}
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
@@ -375,7 +385,7 @@ function openMetadata() {
 		});
 	}
 }
-function openAllowedAnnotations() {
+function openTagset() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
 			url: '/allowed_annotations_form'

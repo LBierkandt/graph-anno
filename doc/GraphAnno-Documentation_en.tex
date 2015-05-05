@@ -124,8 +124,7 @@ Tokens do not belong to any layer; they are displayed in black by default.
 
 \subsubsection{Layers and visualization}\label{ebenenkonfiguration}
 
-The key F8 opens the configurations window for the currently loaded graph.
-This window provides the possibility to configure the layers of the graph and its visualization.
+The window for configuration of the layers of the currently loaded graph and its visualization is opened with the commmand line command \texttt{config}.
 
 In the section \textit{general settings}, you can configure the settings for nodes and edges that do not belong to any layer.\footnote{Depending on the browser you use, the color fields are displayed as color picker or as simple text field. In the latter case, you have to provide the color as hexadecimal RGB value: A hash (\texttt{\#}) followed by three two-digit hexadecimal numbers for red, green and blue, respectively. \texttt{\#000000}, e.g., stands for black, \texttt{\#ffffff} for white, \texttt{\#ff0000} for light red etc.}
 \textit{Default color} applies to all nodes and edges that are not tokens and that do not belong to any layer, \textit{token color} applies to tokens, \textit{found color} is used for the highlighting of nodes and edges found in a search, and \textit{filtered color} for elements that are filtered out by the filter function.
@@ -149,9 +148,9 @@ Under \textit{search makros} you can enter predefined graph-specific search makr
 These makros are then available for search queries in the graph.
 In the search makros text area, the definitions (\texttt{def ...}) have to be enterd each on its own line.
 
-\subsubsection{Permitted annotations}\label{erlaubteannotationen}
+\subsubsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
-In the window open by the key F10, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
+In the window open by the command \texttt{tagste}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
 Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
 Already existing annotations are not affected by changes of the permitted keys and values.
 
@@ -168,7 +167,7 @@ In this case the regular expressions are anchored, i.e. an annotation value has 
 \subsubsection{Metadata}
 
 Additionally to the configuration of layers, visualization, search makros and permitted annotations, you may save metadata for a graph as key-value pairs.
-The key F9 open the window, where you can enter an arbitrary number of keys with a text as corresponding value.
+The command \texttt{metadata} opens the window, where you can enter an arbitrary number of keys with a text as corresponding value.
 
 
 \section{Keyboard shortcuts}
@@ -302,6 +301,11 @@ Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Impo
 \subsubsection{Konfigurationen ex- und importieren: \texttt{export} und \texttt{import}}
 
 Mit dem Befehl \texttt{export} ist es auch möglich, Graphkonfigurationen zu exportieren, die später mit \texttt{import} in andere Graphen importiert werden können. Dafür wird als erstes Argument der Typ der zu ex- oder importierenden Konfiguration angegeben: \texttt{config} für Darstellungs- und Ebenenkonfiguration (s. \ref{ebenenkonfiguration}), \texttt{tagset} für erlaubte Annotationen (s. \ref{erlaubteannotationen}). Als zweites wird der Name der Datei angegeben, unter dem die Daten gespeichert werden sollen, bzw. die importiert werden soll (ohne Endung). Die exportierte Datei wird im dem Typ entsprechenden Unterordner des \texttt{exports}-Ordners gespeichert. Achtung: beim Import werden bestehende Konfigurationen von den importierten komplett überschrieben.
+
+
+\subsubsection{Konfigurationen bearbeiten: \texttt{config}, \texttt{tagset} und \texttt{metadata}}
+
+Mit diesen Befehlen öffnet man die Fenster für die in Abschnitt \ref{konfiguration} beschriebenen Einstellungen. \texttt{config} für Darstellung und Ebenen, \texttt{tagset} für erlaubte Annotationen und \texttt{metadata} für Metadaten.
 
 
 \subsection{Annotationsbefehle}
