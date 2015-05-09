@@ -236,6 +236,12 @@ function sendSearch() {
 	anfrage.open('POST', '/search');
 	makeAnfrage(anfrage, params);
 }
+function clearSearch() {
+	var anfrage = new XMLHttpRequest();
+	var params = '';
+	anfrage.open('POST', '/clear_search');
+	makeAnfrage(anfrage, params);
+}
 function sendDataExport() {
 	var query = document.search.query.value;
 	var anfrage = new XMLHttpRequest();

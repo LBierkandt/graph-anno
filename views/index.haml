@@ -34,6 +34,7 @@
           %input{ :type => "button", :value => "Search", :onclick => "sendSearch()" }
           %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export_subcorpus/subcorpus.json'" }
           %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
+          %input{ :type => "button", :value => "Clear search", :onclick => "clearSearch()" }
           #searchresult
             = controller.search_result
     

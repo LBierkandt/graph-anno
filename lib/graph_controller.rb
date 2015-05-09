@@ -137,6 +137,18 @@ class GraphController
 		}.merge(satzinfo).to_json
 	end
 
+	def clear_search
+		@found = nil
+		@search_result = ''
+		set_sentence_list
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
+		return {
+			:sentence_list => @sentence_list.values,
+			:search_result => @search_result,
+			:sentence_changed => false
+		}.merge(satzinfo).to_json
+	end
+
 	def config_form
 		@sinatra.haml(
 			:config_form,
