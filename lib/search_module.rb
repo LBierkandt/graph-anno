@@ -435,18 +435,19 @@ class SearchableGraph < Graph
 	end
 
 	def teilgraph_annotieren(found, command_string)
-		tg = found[:tg]
-		commands = parse_query(command_string)
-		commands.each do |command|
-			elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-			case command[:operator]
-			when 'a'
-				elements.each do |el|
-					el.attr.merge!(allowed_attributes(command[:attributes]))
-					command[:keys].each{|k| el.attr.delete(k)}
+		commands = parse_query(command_string).select{|k,v| @@annotation_commands.include?(k)}.values.flatten(1)
+		found[:tg].each_with_index do |tg, i|
+			commands.each do |command|
+				elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+				case command[:operator]
+				when 'a'
+					elements.each do |el|
+						el.attr.merge!(allowed_attributes(command[:attributes]))
+						command[:keys].each{|k| el.attr.delete(k)}
+					end
 				end
-			end
-		end
+			end #command
+		end # tg
 	end
 end
 
