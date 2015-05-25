@@ -119,6 +119,7 @@ module Parser
 	@@keywords = @@query_operators + @@annotation_commands
 
 	def parse_query(string)
+		ops = {}
 		@@keywords.each{|c| ops[c] = []}
 		ops['def'] = @makros
 		
