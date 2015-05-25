@@ -807,7 +807,8 @@ class String
 			:meta => [],
 			:nodes => [],
 			:edges => [],
-			:tokens => []
+			:tokens => [],
+			:ids => [],
 		}
 
 		r = {}
@@ -817,6 +818,7 @@ class String
 		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
+		r[:id] = '@' + '[_[:alnum:]]+'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
 
 		while str != ''
@@ -861,6 +863,8 @@ class String
 								h[:edges] << mm[1] + n.to_s
 						end
 					end
+				elsif word.match(r[:id])
+					h[:ids] << word
 				end
 			else
 				break
