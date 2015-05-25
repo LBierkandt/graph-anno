@@ -317,6 +317,16 @@ class GraphController
 		end
 	end
 
+	def annotate_query
+		@graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		set_sentence_list
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
+		return {
+			:sentence_list => @sentence_list.values,
+			:sentence_changed => false
+		}.merge(satzinfo).to_json
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
