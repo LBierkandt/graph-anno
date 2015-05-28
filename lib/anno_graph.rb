@@ -481,6 +481,23 @@ class AnnoGraph < SearchableGraph
 		edge.delete
 	end
 
+	# deletes a node and connects its outgoing edges to its parents or its ingoing edges to its children
+	# @param node [AnnoNode] the node to be deleted
+	# @param mode [Symbol] :in or :out - whether to delete the ingoing or outgoing edges
+	def delete_and_join(node, mode)
+		node.in.select{|e| e.type == 'a'}.each do |in_edge|
+			node.out.select{|e| e.type == 'a'}.each do |out_edge|
+				devisor = mode == :in ? out_edge : in_edge
+				add_anno_edge(
+					:start => in_edge.start,
+					:end => out_edge.end,
+					:attr => devisor.attr.clone
+				)
+			end
+		end
+		node.delete
+	end
+
 	def filter!(bedingung)
 		@nodes.each do |id,node|
 			if !node.fulfil?(bedingung) then @nodes.delete(id) end

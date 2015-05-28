@@ -523,20 +523,8 @@ class GraphController
 			when 'di', 'do' # remove node and connect parent/child nodes
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					parameters[:nodes].each do |node|
-						if element = element_by_identifier(node)
-							element.in.select{|e| e.type == 'a'}.each do |in_edge|
-								element.out.select{|e| e.type == 'a'}.each do |out_edge|
-									devisor = command == 'di' ? out_edge : in_edge
-									@graph.add_anno_edge(
-										:start => in_edge.start,
-										:end => out_edge.end,
-										:attr => devisor.attr.clone
-									)
-								end
-							end
-							element.delete
-						end
+					parameters[:nodes].map{|id| element_by_identifier(id)}.compact.each do |node|
+						@graph.delete_and_join(node, command == 'di' ? :in : :out)
 					end
 					undefined_references?(parameters[:nodes])
 				end

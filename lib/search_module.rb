@@ -490,6 +490,13 @@ class SearchableGraph < Graph
 						insert_node(e, attrs)
 						search_result_preserved = false
 					end
+				when 'di', 'do'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					nodes.select!{|e| e.kind_of?(Node)}
+					nodes.each do |n|
+						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
+						search_result_preserved = false
+					end
 				end
 			end #command
 		end # tg
