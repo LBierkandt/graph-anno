@@ -435,6 +435,7 @@ class SearchableGraph < Graph
 	end
 
 	def teilgraph_annotieren(found, command_string)
+		search_result_preserved = true
 		commands = parse_query(command_string).select{|k,v| @@annotation_commands.include?(k)}.values.flatten(1)
 		found[:tg].each_with_index do |tg, i|
 			commands.each do |command|
@@ -477,9 +478,16 @@ class SearchableGraph < Graph
 							:end => end_node
 						)
 					end
+				when 'd'
+					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					elements.each do |el|
+						el.type == 't' ? el.remove_token : el.delete if el
+					end
+					search_result_preserved = false
 				end
 			end #command
 		end # tg
+		return search_result_preserved
 	end
 end
 

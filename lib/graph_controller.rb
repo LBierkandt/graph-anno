@@ -318,11 +318,16 @@ class GraphController
 	end
 
 	def annotate_query
-		@graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		unless search_result_preserved
+			@found = nil
+			@search_result = ''
+		end
 		set_sentence_list
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
 		return {
 			:sentence_list => @sentence_list.values,
+			:search_result => @search_result,
 			:sentence_changed => false
 		}.merge(satzinfo).to_json
 	end
