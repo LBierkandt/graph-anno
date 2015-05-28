@@ -481,8 +481,15 @@ class SearchableGraph < Graph
 					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
 						el.type == 't' ? el.remove_token : el.delete if el
+						search_result_preserved = false
 					end
-					search_result_preserved = false
+				when 'ni'
+					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					edges.select!{|e| e.kind_of?(Edge)}
+					edges.each do |e|
+						insert_node(e, attrs)
+						search_result_preserved = false
+					end
 				end
 			end #command
 		end # tg

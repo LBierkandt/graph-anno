@@ -514,21 +514,8 @@ class GraphController
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(allowed_attributes(parameters[:attributes]))
-					parameters[:edges].each do |edge|
-						if element = element_by_identifier(edge)
-							new_node = @graph.add_anno_node(:attr => properties, :sentence => @sentence)
-							@graph.add_anno_edge(
-								:start => element.start,
-								:end => new_node,
-								:attr => element.attr.clone
-							)
-							@graph.add_anno_edge(
-								:start => new_node,
-								:end => element.end,
-								:attr => element.attr.clone
-							)
-							element.delete
-						end
+					parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
+						@graph.insert_node(edge, properties)
 					end
 					undefined_references?(parameters[:edges])
 				end

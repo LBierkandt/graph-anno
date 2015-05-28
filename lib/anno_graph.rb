@@ -425,6 +425,11 @@ class AnnoGraph < SearchableGraph
 		add_edge(h.merge(:type => 's'))
 	end
 
+	# creates a new annotation node as parent node for the given nodes
+	# @param nodes [Array] the nodes that will be connected to the new node
+	# @param node_attrs [Hash] the annotations for the new node
+	# @param edge_attrs [Hash] the annotations for the new edges
+	# @param sentence [SectNode] the sentence node to which the new node will belong
 	def add_parent_node(nodes, node_attrs, edge_attrs, sentence)
 		parent_node = add_anno_node(
 			:attr => node_attrs,
@@ -439,6 +444,11 @@ class AnnoGraph < SearchableGraph
 		end
 	end
 
+	# creates a new annotation node as child node for the given nodes
+	# @param nodes [Array] the nodes that will be connected to the new node
+	# @param node_attrs [Hash] the annotations for the new node
+	# @param edge_attrs [Hash] the annotations for the new edges
+	# @param sentence [SectNode] the sentence node to which the new node will belong
 	def add_child_node(nodes, node_attrs, edge_attrs, sentence)
 		child_node = add_anno_node(
 			:attr => node_attrs,
@@ -451,6 +461,24 @@ class AnnoGraph < SearchableGraph
 				:attr => edge_attrs
 			)
 		end
+	end
+
+	# replaces the given edge by a sequence of an edge, a node and another edge. The new edges inherit the annotations of the replaced edge.
+	# @param edge [AnnoEdge] the edge to be replaced
+	# @param attrs [Hash] the annotations for the new node
+	def insert_node(edge, attrs)
+		new_node = add_anno_node(:attr => attrs, :sentence => edge.end.sentence)
+		add_anno_edge(
+			:start => edge.start,
+			:end => new_node,
+			:attr => edge.attr.clone
+		)
+		add_anno_edge(
+			:start => new_node,
+			:end => edge.end,
+			:attr => edge.attr.clone
+		)
+		edge.delete
 	end
 
 	def filter!(bedingung)
