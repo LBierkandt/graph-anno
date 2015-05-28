@@ -458,17 +458,23 @@ class SearchableGraph < Graph
 							:attr => attrs
 						)
 					end
-				when 'p', 'g'
+				when 'p', 'g', 'c', 'h'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					nodes.select!{|e| e.kind_of?(Node)}
-					mother = add_anno_node(
+					new_node = add_anno_node(
 						:attr => attrs,
 						:sentence => nodes.map{|n| n.sentence}.most_frequent
 					)
 					nodes.each do |node|
+						case command[:operator]
+						when 'p', 'g'
+							start_node, end_node = new_node, node
+						when 'c', 'h'
+							start_node, end_node = node, new_node
+						end
 						add_anno_edge(
-							:start => mother,
-							:end => node
+							:start => start_node,
+							:end => end_node
 						)
 					end
 				end
