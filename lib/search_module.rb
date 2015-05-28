@@ -438,21 +438,37 @@ class SearchableGraph < Graph
 		commands = parse_query(command_string).select{|k,v| @@annotation_commands.include?(k)}.values.flatten(1)
 		found[:tg].each_with_index do |tg, i|
 			commands.each do |command|
+				attrs = allowed_attributes(command[:attributes])
 				case command[:operator]
 				when 'a'
 					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
-						el.attr.merge!(allowed_attributes(command[:attributes]))
+						el.attr.merge!(attrs)
 						command[:keys].each{|k| el.attr.delete(k)}
 					end
 				when 'e'
 					start_nodes = *tg.ids[command[:ids][0]]
 					end_nodes   = *tg.ids[command[:ids][1]]
+					start_nodes.select!{|e| e.kind_of?(Node)}
+					end_nodes.select!{|e| e.kind_of?(Node)}
 					start_nodes.product(end_nodes).each do |start_node, end_node|
 						add_anno_edge(
 							:start => start_node,
 							:end => end_node,
-							:attr => allowed_attributes(command[:attributes])
+							:attr => attrs
+						)
+					end
+				when 'p', 'g'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					nodes.select!{|e| e.kind_of?(Node)}
+					mother = add_anno_node(
+						:attr => attrs,
+						:sentence => nodes.map{|n| n.sentence}.most_frequent
+					)
+					nodes.each do |node|
+						add_anno_edge(
+							:start => mother,
+							:end => node
 						)
 					end
 				end
@@ -899,6 +915,10 @@ class Array
 			end
 		end
 		return false
+	end
+
+	def most_frequent
+		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
 	end
 end
 
