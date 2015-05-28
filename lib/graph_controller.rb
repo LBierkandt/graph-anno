@@ -489,38 +489,24 @@ class GraphController
 			when 'p', 'g' # group under new parent node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					mother = @graph.add_anno_node(
-						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
-						:sentence => @sentence
+					@graph.add_parent_node(
+						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+						properties.merge(allowed_attributes(parameters[:attributes])),
+						properties.clone,
+						@sentence
 					)
-					(parameters[:nodes] + parameters[:tokens]).each do |node|
-						if element = element_by_identifier(node)
-							@graph.add_anno_edge(
-								:start => mother,
-								:end => element,
-								:attr => properties.clone
-							)
-						end
-					end
 					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 
 			when 'c', 'h' # attach new child node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					daughter = @graph.add_anno_node(
-						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
-						:sentence => @sentence
+					@graph.add_child_node(
+						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+						properties.merge(allowed_attributes(parameters[:attributes])),
+						properties.clone,
+						@sentence
 					)
-					(parameters[:nodes] + parameters[:tokens]).each do |node|
-						if element = element_by_identifier(node)
-							@graph.add_anno_edge(
-								:start => element,
-								:end => daughter,
-								:attr => properties.clone
-							)
-						end
-					end
 					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 

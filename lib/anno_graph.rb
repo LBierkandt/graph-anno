@@ -425,6 +425,34 @@ class AnnoGraph < SearchableGraph
 		add_edge(h.merge(:type => 's'))
 	end
 
+	def add_parent_node(nodes, node_attrs, edge_attrs, sentence)
+		parent_node = add_anno_node(
+			:attr => node_attrs,
+			:sentence => sentence
+		)
+		nodes.each do |n|
+			add_anno_edge(
+				:start => parent_node,
+				:end => n,
+				:attr => edge_attrs
+			)
+		end
+	end
+
+	def add_child_node(nodes, node_attrs, edge_attrs, sentence)
+		child_node = add_anno_node(
+			:attr => node_attrs,
+			:sentence => sentence
+		)
+		nodes.each do |n|
+			add_anno_edge(
+				:start => n,
+				:end => child_node,
+				:attr => edge_attrs
+			)
+		end
+	end
+
 	def filter!(bedingung)
 		@nodes.each do |id,node|
 			if !node.fulfil?(bedingung) then @nodes.delete(id) end
