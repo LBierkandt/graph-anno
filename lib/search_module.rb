@@ -438,12 +438,22 @@ class SearchableGraph < Graph
 		commands = parse_query(command_string).select{|k,v| @@annotation_commands.include?(k)}.values.flatten(1)
 		found[:tg].each_with_index do |tg, i|
 			commands.each do |command|
-				elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 				case command[:operator]
 				when 'a'
+					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
 						el.attr.merge!(allowed_attributes(command[:attributes]))
 						command[:keys].each{|k| el.attr.delete(k)}
+					end
+				when 'e'
+					start_nodes = *tg.ids[command[:ids][0]]
+					end_nodes   = *tg.ids[command[:ids][1]]
+					start_nodes.product(end_nodes).each do |start_node, end_node|
+						add_anno_edge(
+							:start => start_node,
+							:end => end_node,
+							:attr => allowed_attributes(command[:attributes])
+						)
 					end
 				end
 			end #command
