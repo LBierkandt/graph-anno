@@ -457,8 +457,7 @@ class SearchableGraph < Graph
 						command[:keys].each{|k| el.attr.delete(k)}
 					end
 				when 'n'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					nodes.select!{|e| e.kind_of?(Node)}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
 					unless nodes.empty?
 						add_anno_node(
 							:attr => attrs,
@@ -478,8 +477,7 @@ class SearchableGraph < Graph
 						)
 					end
 				when 'p', 'g'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					nodes.select!{|e| e.kind_of?(Node)}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
 					add_parent_node(
 						nodes,
 						attrs,
@@ -487,8 +485,7 @@ class SearchableGraph < Graph
 						nodes.map{|n| n.sentence}.most_frequent
 					)
 				when 'c', 'h'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					nodes.select!{|e| e.kind_of?(Node)}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
 					add_child_node(
 						nodes,
 						attrs,
@@ -502,15 +499,13 @@ class SearchableGraph < Graph
 						search_result_preserved = false
 					end
 				when 'ni'
-					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					edges.select!{|e| e.kind_of?(Edge)}
+					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Edge)}
 					edges.each do |e|
 						insert_node(e, attrs)
 						search_result_preserved = false
 					end
 				when 'di', 'do'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					nodes.select!{|e| e.kind_of?(Node)}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
 					nodes.each do |n|
 						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
 						search_result_preserved = false
