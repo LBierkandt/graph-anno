@@ -456,6 +456,15 @@ class SearchableGraph < Graph
 						el.attr.merge!(attrs)
 						command[:keys].each{|k| el.attr.delete(k)}
 					end
+				when 'n'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					nodes.select!{|e| e.kind_of?(Node)}
+					unless nodes.empty?
+						add_anno_node(
+							:attr => attrs,
+							:sentence => nodes.map{|n| n.sentence}.most_frequent
+						)
+					end
 				when 'e'
 					start_nodes = *tg.ids[command[:ids][0]]
 					end_nodes   = *tg.ids[command[:ids][1]]
