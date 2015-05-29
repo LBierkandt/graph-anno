@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'unicode_utils/downcase'
-require 'csv'
-require_relative 'parser_module'
+require 'unicode_utils/downcase.rb'
+require 'csv.rb'
+require_relative 'parser_module.rb'
 
 class SearchableGraph < Graph
 	include(Parser)

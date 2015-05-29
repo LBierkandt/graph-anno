@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'yaml'
-require 'graphviz'
-	require 'open3'
-require 'htmlentities'
+require 'yaml.rb'
+require 'graphviz.rb'
+	require 'open3.rb'
+require 'htmlentities.rb'
 
 class GraphController
 	attr_writer :sinatra

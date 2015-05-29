@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative 'graph'
-require_relative 'search_module'
-require_relative 'nlp_module'
+require_relative 'graph.rb'
+require_relative 'search_module.rb'
+require_relative 'nlp_module.rb'
 
 class NodeOrEdge
 	attr_accessor :type

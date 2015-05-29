@@ -18,7 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 module Expansion
-	require 'yaml'
+	require 'yaml.rb'
 	
 	attr_accessor :expansion_rules
 

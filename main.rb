@@ -17,17 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'sinatra'
-require 'haml'
-require 'fileutils'
-require 'rexml/document'
+require 'sinatra.rb'
+require 'haml.rb'
+require 'fileutils.rb'
+require 'rexml/document.rb'
 
-require './lib/anno_graph'
-require './lib/toolbox_module'
-require './lib/paula_exporter'
-require './lib/salt_exporter'
-require './lib/expansion_module'
-require './lib/graph_controller'
+require './lib/anno_graph.rb'
+require './lib/toolbox_module.rb'
+require './lib/paula_exporter.rb'
+require './lib/salt_exporter.rb'
+require './lib/expansion_module.rb'
+require './lib/graph_controller.rb'
 
 controller = GraphController.new
 

@@ -17,14 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require "unicode_utils/uppercase_char_q"
-require "unicode_utils/lowercase_char_q"
-require "unicode_utils/downcase"
-require "set"
-require 'yaml'
+require "unicode_utils/uppercase_char_q.rb"
+require "unicode_utils/lowercase_char_q.rb"
+require "unicode_utils/downcase.rb"
+require "set.rb"
+require 'yaml.rb'
 
-require "punkt-segmenter/frequency_distribution"
-require "punkt-segmenter/punkt"
+require "punkt-segmenter/frequency_distribution.rb"
+require "punkt-segmenter/punkt.rb"
 
 class NLP
 	@@languages = [
