@@ -436,10 +436,19 @@ class SearchableGraph < Graph
 
 	def teilgraph_annotieren(found, command_string)
 		search_result_preserved = true
-		commands = parse_query(command_string).select{|k,v| @@annotation_commands.include?(k)}.values.flatten(1)
+		commands = parse_query(command_string)[:all].select{|c| @@annotation_commands.include?(c[:operator])}
 		found[:tg].each_with_index do |tg, i|
+			layer = nil
 			commands.each do |command|
+				# set attributes (same for all commands)
 				attrs = allowed_attributes(command[:attributes])
+				# set layer (same for all commands)
+				if layer_shortcut = command[:layers].select{|l| conf.layer_shortcuts.keys.include?(l)}.last
+					layer = conf.layer_shortcuts[layer_shortcut]
+				end
+				# extend attributes accordingly (same for all commands)
+				attrs.merge!(conf.layer_attributes[layer]) if layer
+				# process the commands
 				case command[:operator]
 				when 'a'
 					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
@@ -465,7 +474,7 @@ class SearchableGraph < Graph
 					add_parent_node(
 						nodes,
 						attrs,
-						{},
+						conf.layer_attributes[layer],
 						nodes.map{|n| n.sentence}.most_frequent
 					)
 				when 'c', 'h'
@@ -474,7 +483,7 @@ class SearchableGraph < Graph
 					add_child_node(
 						nodes,
 						attrs,
-						{},
+						conf.layer_attributes[layer],
 						nodes.map{|n| n.sentence}.most_frequent
 					)
 				when 'd'
@@ -505,6 +514,7 @@ class SearchableGraph < Graph
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					node = nodes.select{|e| e.kind_of?(Node) && e.type == 't'}.last
 					build_tokens(command[:words][1..-1], :last_token => node)
+				when 'l'
 				end
 			end #command
 		end # tg

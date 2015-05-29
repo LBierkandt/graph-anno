@@ -114,11 +114,12 @@ module Parser
 		'ni',
 		'di', 'do',
 		'tb', 'ta', 'ti',
+		'l',
 	]
 	@@keywords = @@query_operators + @@annotation_commands
 
 	def parse_query(string)
-		ops = {}
+		ops = {:all => []}
 		@@keywords.each{|c| ops[c] = []}
 		ops['def'] = @makros
 		
@@ -132,6 +133,7 @@ module Parser
 			begin
 				if op = parse_line(line, ops['def'])
 					ops[op[:operator]] << op
+					ops[:all] << op
 				end
 			rescue StandardError => e
 				raise e.message + " on line:\n" + line
