@@ -433,14 +433,14 @@ class GraphController
 		case command
 			when 'n' # new node
 				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
+					layer = set_new_layer(parameters[:layers], properties)
 					properties.merge!(allowed_attributes(parameters[:attributes]))
 					@graph.add_anno_node(:attr => properties, :sentence => @sentence)
 				end
 
 			when 'e' # new edge
 				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
+					layer = set_new_layer(parameters[:layers], properties)
 					properties.merge!(allowed_attributes(parameters[:attributes]))
 					@graph.add_anno_edge(
 						:start => element_by_identifier(parameters[:all_nodes][0]),
@@ -456,7 +456,7 @@ class GraphController
 						properties.delete(a)
 					end
 
-					layer = set_new_layer(parameters[:words], properties)
+					layer = set_new_layer(parameters[:layers], properties)
 					properties.merge!(allowed_attributes(parameters[:attributes]))
 
 					parameters[:elements].each do |element_id|
@@ -484,11 +484,11 @@ class GraphController
 				end
 
 			when 'l' # set layer
-				layer = set_new_layer(parameters[:words], properties)
+				layer = set_new_layer(parameters[:layers], properties)
 
 			when 'p', 'g' # group under new parent node
 				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
+					layer = set_new_layer(parameters[:layers], properties)
 					@graph.add_parent_node(
 						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
 						properties.merge(allowed_attributes(parameters[:attributes])),
@@ -500,7 +500,7 @@ class GraphController
 
 			when 'c', 'h' # attach new child node
 				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
+					layer = set_new_layer(parameters[:layers], properties)
 					@graph.add_child_node(
 						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
 						properties.merge(allowed_attributes(parameters[:attributes])),
@@ -512,7 +512,7 @@ class GraphController
 
 			when 'ni' # build node and "insert in edge"
 				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
+					layer = set_new_layer(parameters[:layers], properties)
 					properties.merge!(allowed_attributes(parameters[:attributes]))
 					parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
 						@graph.insert_node(edge, properties)
@@ -522,7 +522,7 @@ class GraphController
 
 			when 'di', 'do' # remove node and connect parent/child nodes
 				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
+					layer = set_new_layer(parameters[:layers], properties)
 					parameters[:nodes].map{|id| element_by_identifier(id)}.compact.each do |node|
 						@graph.delete_and_join(node, command == 'di' ? :in : :out)
 					end
