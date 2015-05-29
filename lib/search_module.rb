@@ -133,7 +133,7 @@ class SearchableGraph < Graph
 		# node/nodes
 		# gefundene Knoten werden als atomare Teilgraphen gesammelt
 		(operationen['node'] + operationen['nodes']).each do |operation|
-			gefundene_knoten = suchgraph.nodes.values.select{|k| k.fulfil?(operation[:cond])}
+			gefundene_knoten = suchgraph.nodes.values.select{|k| k.type != 's' && k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_knoten.map do |k|
 				neu = Teilgraph.new
 				neu.nodes << k
