@@ -46,11 +46,11 @@ Now enter the sentence you want to annotate with the command `t` for tokenize:
 ```
 t I deleted it .
 ```
-The words are split at the spaces and appear as numbered tokens on the screen. Let's assume we have forgotten a word – we can still insert it with the `ti` command. It takes as arguments the token before which to insert and the word(s) to insert:
+The words are split at the spaces and appear as numbered tokens on the screen. Let's assume we have forgotten a word – we can still insert it with the `ta` command. It takes as arguments the token after which to insert and the word(s) to insert (the corresponding command for inserting *before* the given token is `tb`):
 ```
-ti t1 quickly
+ta t0 quickly
 ```
-This results in the sentence "I quickly deleted it." If you want to append word at the end of the sentence, just use `t` again.
+This results in the sentence "I quickly deleted it." If you want to append words at the end of the sentence, just use `t` again.
 
 You can annotate the tokens (as well as other nodes and edges) using the command `a` followed by a mixture of identifiers (t0, t1 ...) and key-value pairs. Annotate the two pronouns in our example with their part of speech tag like this:
 ```
@@ -84,7 +84,7 @@ And single edges with `e`, specifying start and end node (and, of course, option
 ```
 e n1 t0 role:subj
 ```
-GraphAnno is not confined to trees, so you could add a child node (command `c`) to S and VP nodes (just for the purpose of demonstration, in this case):
+GraphAnno is not confined to trees, so you could add a child node (command `c`) to the S and VP nodes of our graph (just for the purpose of demonstration, in this case):
 ```
 c n1 n0
 ```
