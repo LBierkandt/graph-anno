@@ -571,13 +571,20 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# builds token-nodes from a list of words, concatenates them and appends them if tokens in the given sentence are already present; if next_token is given, the new tokens are inserted before next_token
-	def build_tokens(words, sentence, next_token = nil)
-		token_collection = []
-		if next_token
-			last_token = next_token.node_before
-		else
+	def build_tokens(words, h)
+		if h[:sentence]
+			sentence = h[:sentence]
 			last_token = sentence.sentence_tokens[-1]
+		elsif h[:next_token]
+			next_token = h[:next_token]
+			last_token = next_token.node_before
+			sentence = next_token.sentence
+		elsif h[:last_token]
+			last_token = h[:last_token]
+			next_token = last_token.node_after
+			sentence = last_token.sentence
 		end
+		token_collection = []
 		words.each do |word|
 			token_collection << add_token_node(:attr => {'token' => word}, :sentence => sentence)
 		end
@@ -624,7 +631,7 @@ class AnnoGraph < SearchableGraph
 			case options['processing_method']
 			when 'regex'
 				words = s.scan(options['tokens']['regex'])
-				tokens = build_tokens([''] * words.length, sentence_node)
+				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
 					annotation.each do |k, v|
 						if v.class == Fixnum
@@ -636,7 +643,7 @@ class AnnoGraph < SearchableGraph
 				end
 			when 'punkt'
 				words = NLP.tokenize(s)
-				tokens = build_tokens(words, sentence_node)
+				tokens = build_tokens(words, :sentence => sentence_node)
 			end
 		end
 	end

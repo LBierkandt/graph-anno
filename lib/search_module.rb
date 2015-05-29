@@ -497,6 +497,14 @@ class SearchableGraph < Graph
 						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
 						search_result_preserved = false
 					end
+				when 'tb', 'ti'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					node = nodes.select{|e| e.kind_of?(Node) && e.type == 't'}.first
+					build_tokens(command[:words][1..-1], :next_token => node)
+				when 'ta'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					node = nodes.select{|e| e.kind_of?(Node) && e.type == 't'}.last
+					build_tokens(command[:words][1..-1], :last_token => node)
 				end
 			end #command
 		end # tg

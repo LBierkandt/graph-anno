@@ -541,14 +541,21 @@ class GraphController
 
 			when 't' # build tokens and append them
 				if sentence_set?
-					@graph.build_tokens(parameters[:words], @sentence)
+					@graph.build_tokens(parameters[:words], :sentence => @sentence)
 				end
 
-			when 'ti' # build tokens and insert them
+			when 'tb', 'ti' # build tokens and insert them before given token
 				if sentence_set?
 					undefined_references?(parameters[:tokens][0..0])
-					knoten = element_by_identifier(parameters[:tokens][0])
-					@graph.build_tokens(parameters[:words][1..-1], @sentence, knoten)
+					node = element_by_identifier(parameters[:tokens][0])
+					@graph.build_tokens(parameters[:words][1..-1], :next_token => node)
+				end
+
+			when 'ta' # build tokens and insert them after given token
+				if sentence_set?
+					undefined_references?(parameters[:tokens][0..0])
+					node = element_by_identifier(parameters[:tokens][0])
+					@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
 				end
 
 			when 's' # change sentence

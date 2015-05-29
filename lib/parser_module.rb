@@ -112,9 +112,8 @@ module Parser
 		'c', 'h',
 		'd',
 		'ni',
-		'di',
-		'do',
-		'ti',
+		'di', 'do',
+		'tb', 'ta', 'ti',
 	]
 	@@keywords = @@query_operators + @@annotation_commands
 
