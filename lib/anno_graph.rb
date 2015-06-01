@@ -425,6 +425,79 @@ class AnnoGraph < SearchableGraph
 		add_edge(h.merge(:type => 's'))
 	end
 
+	# creates a new annotation node as parent node for the given nodes
+	# @param nodes [Array] the nodes that will be connected to the new node
+	# @param node_attrs [Hash] the annotations for the new node
+	# @param edge_attrs [Hash] the annotations for the new edges
+	# @param sentence [SectNode] the sentence node to which the new node will belong
+	def add_parent_node(nodes, node_attrs, edge_attrs, sentence)
+		parent_node = add_anno_node(
+			:attr => node_attrs,
+			:sentence => sentence
+		)
+		nodes.each do |n|
+			add_anno_edge(
+				:start => parent_node,
+				:end => n,
+				:attr => edge_attrs
+			)
+		end
+	end
+
+	# creates a new annotation node as child node for the given nodes
+	# @param nodes [Array] the nodes that will be connected to the new node
+	# @param node_attrs [Hash] the annotations for the new node
+	# @param edge_attrs [Hash] the annotations for the new edges
+	# @param sentence [SectNode] the sentence node to which the new node will belong
+	def add_child_node(nodes, node_attrs, edge_attrs, sentence)
+		child_node = add_anno_node(
+			:attr => node_attrs,
+			:sentence => sentence
+		)
+		nodes.each do |n|
+			add_anno_edge(
+				:start => n,
+				:end => child_node,
+				:attr => edge_attrs
+			)
+		end
+	end
+
+	# replaces the given edge by a sequence of an edge, a node and another edge. The new edges inherit the annotations of the replaced edge.
+	# @param edge [AnnoEdge] the edge to be replaced
+	# @param attrs [Hash] the annotations for the new node
+	def insert_node(edge, attrs)
+		new_node = add_anno_node(:attr => attrs, :sentence => edge.end.sentence)
+		add_anno_edge(
+			:start => edge.start,
+			:end => new_node,
+			:attr => edge.attr.clone
+		)
+		add_anno_edge(
+			:start => new_node,
+			:end => edge.end,
+			:attr => edge.attr.clone
+		)
+		edge.delete
+	end
+
+	# deletes a node and connects its outgoing edges to its parents or its ingoing edges to its children
+	# @param node [AnnoNode] the node to be deleted
+	# @param mode [Symbol] :in or :out - whether to delete the ingoing or outgoing edges
+	def delete_and_join(node, mode)
+		node.in.select{|e| e.type == 'a'}.each do |in_edge|
+			node.out.select{|e| e.type == 'a'}.each do |out_edge|
+				devisor = mode == :in ? out_edge : in_edge
+				add_anno_edge(
+					:start => in_edge.start,
+					:end => out_edge.end,
+					:attr => devisor.attr.clone
+				)
+			end
+		end
+		node.delete
+	end
+
 	def filter!(bedingung)
 		@nodes.each do |id,node|
 			if !node.fulfil?(bedingung) then @nodes.delete(id) end
@@ -498,13 +571,20 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# builds token-nodes from a list of words, concatenates them and appends them if tokens in the given sentence are already present; if next_token is given, the new tokens are inserted before next_token
-	def build_tokens(words, sentence, next_token = nil)
-		token_collection = []
-		if next_token
-			last_token = next_token.node_before
-		else
+	def build_tokens(words, h)
+		if h[:sentence]
+			sentence = h[:sentence]
 			last_token = sentence.sentence_tokens[-1]
+		elsif h[:next_token]
+			next_token = h[:next_token]
+			last_token = next_token.node_before
+			sentence = next_token.sentence
+		elsif h[:last_token]
+			last_token = h[:last_token]
+			next_token = last_token.node_after
+			sentence = last_token.sentence
 		end
+		token_collection = []
 		words.each do |word|
 			token_collection << add_token_node(:attr => {'token' => word}, :sentence => sentence)
 		end
@@ -551,7 +631,7 @@ class AnnoGraph < SearchableGraph
 			case options['processing_method']
 			when 'regex'
 				words = s.scan(options['tokens']['regex'])
-				tokens = build_tokens([''] * words.length, sentence_node)
+				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
 					annotation.each do |k, v|
 						if v.class == Fixnum
@@ -563,7 +643,7 @@ class AnnoGraph < SearchableGraph
 				end
 			when 'punkt'
 				words = NLP.tokenize(s)
-				tokens = build_tokens(words, sentence_node)
+				tokens = build_tokens(words, :sentence => sentence_node)
 			end
 		end
 	end
@@ -807,7 +887,8 @@ class String
 			:meta => [],
 			:nodes => [],
 			:edges => [],
-			:tokens => []
+			:tokens => [],
+			:ids => [],
 		}
 
 		r = {}
@@ -817,6 +898,7 @@ class String
 		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
+		r[:id] = '@' + '[_[:alnum:]]+'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
 
 		while str != ''
@@ -861,6 +943,8 @@ class String
 								h[:edges] << mm[1] + n.to_s
 						end
 					end
+				elsif word.match(r[:id])
+					h[:ids] << word
 				end
 			else
 				break

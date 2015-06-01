@@ -434,6 +434,96 @@ class SearchableGraph < Graph
 		end
 	end
 
+	def teilgraph_annotieren(found, command_string)
+		search_result_preserved = true
+		commands = parse_query(command_string)[:all].select{|c| @@annotation_commands.include?(c[:operator])}
+		found[:tg].each_with_index do |tg, i|
+			layer = nil
+			commands.each do |command|
+				# set attributes (same for all commands)
+				attrs = allowed_attributes(command[:attributes])
+				# set layer (same for all commands)
+				if layer_shortcut = command[:words].select{|l| conf.layer_shortcuts.keys.include?(l)}.last
+					layer = conf.layer_shortcuts[layer_shortcut]
+				end
+				# extend attributes accordingly (same for all commands)
+				attrs.merge!(conf.layer_attributes[layer]) if layer
+				# process the commands
+				case command[:operator]
+				when 'a'
+					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					elements.each do |el|
+						el.attr.merge!(attrs)
+						command[:keys].each{|k| el.attr.delete(k)}
+					end
+				when 'n'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
+					unless nodes.empty?
+						add_anno_node(
+							:attr => attrs,
+							:sentence => nodes.map{|n| n.sentence}.most_frequent
+						)
+					end
+				when 'e'
+					start_nodes = *tg.ids[command[:ids][0]]
+					end_nodes   = *tg.ids[command[:ids][1]]
+					start_nodes.select!{|e| e.kind_of?(Node)}
+					end_nodes.select!{|e| e.kind_of?(Node)}
+					start_nodes.product(end_nodes).each do |start_node, end_node|
+						add_anno_edge(
+							:start => start_node,
+							:end => end_node,
+							:attr => attrs
+						)
+					end
+				when 'p', 'g'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
+					add_parent_node(
+						nodes,
+						attrs,
+						conf.layer_attributes[layer],
+						nodes.map{|n| n.sentence}.most_frequent
+					)
+				when 'c', 'h'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
+					add_child_node(
+						nodes,
+						attrs,
+						conf.layer_attributes[layer],
+						nodes.map{|n| n.sentence}.most_frequent
+					)
+				when 'd'
+					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					elements.each do |el|
+						el.type == 't' ? el.remove_token : el.delete if el
+						search_result_preserved = false
+					end
+				when 'ni'
+					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Edge)}
+					edges.each do |e|
+						insert_node(e, attrs)
+						search_result_preserved = false
+					end
+				when 'di', 'do'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
+					nodes.each do |n|
+						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
+						search_result_preserved = false
+					end
+				when 'tb', 'ti'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					node = nodes.select{|e| e.kind_of?(Node) && e.type == 't'}.first
+					build_tokens(command[:words][1..-1], :next_token => node)
+				when 'ta'
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+					node = nodes.select{|e| e.kind_of?(Node) && e.type == 't'}.last
+					build_tokens(command[:words][1..-1], :last_token => node)
+				when 'l'
+				end
+			end #command
+		end # tg
+		return search_result_preserved
+	end
 end
 
 class NodeOrEdge
@@ -874,6 +964,10 @@ class Array
 			end
 		end
 		return false
+	end
+
+	def most_frequent
+		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
 	end
 end
 

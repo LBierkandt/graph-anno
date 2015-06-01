@@ -259,6 +259,13 @@ function sendDataExport() {
 	}
 	anfrage.send(params);
 }
+function sendAnnotateQuery() {
+	var query = document.search.query.value;
+	var anfrage = new XMLHttpRequest();
+	var params = 'query=' + encodeURIComponent(query);
+	anfrage.open('POST', '/annotate_query');
+	makeAnfrage(anfrage, params);
+}
 function setSelectedIndex(s, v) {
 	for ( var i = 0; i < s.options.length; i++ ) {
 		if ( s.options[i].value == v ) {

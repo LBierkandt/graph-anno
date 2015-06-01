@@ -317,6 +317,21 @@ class GraphController
 		end
 	end
 
+	def annotate_query
+		search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		unless search_result_preserved
+			@found = nil
+			@search_result = ''
+		end
+		set_sentence_list
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
+		return {
+			:sentence_list => @sentence_list.values,
+			:search_result => @search_result,
+			:sentence_changed => false
+		}.merge(satzinfo).to_json
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
@@ -474,38 +489,24 @@ class GraphController
 			when 'p', 'g' # group under new parent node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					mother = @graph.add_anno_node(
-						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
-						:sentence => @sentence
+					@graph.add_parent_node(
+						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+						properties.merge(allowed_attributes(parameters[:attributes])),
+						properties.clone,
+						@sentence
 					)
-					(parameters[:nodes] + parameters[:tokens]).each do |node|
-						if element = element_by_identifier(node)
-							@graph.add_anno_edge(
-								:start => mother,
-								:end => element,
-								:attr => properties.clone
-							)
-						end
-					end
 					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 
 			when 'c', 'h' # attach new child node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					daughter = @graph.add_anno_node(
-						:attr => properties.merge(allowed_attributes(parameters[:attributes])),
-						:sentence => @sentence
+					@graph.add_child_node(
+						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+						properties.merge(allowed_attributes(parameters[:attributes])),
+						properties.clone,
+						@sentence
 					)
-					(parameters[:nodes] + parameters[:tokens]).each do |node|
-						if element = element_by_identifier(node)
-							@graph.add_anno_edge(
-								:start => element,
-								:end => daughter,
-								:attr => properties.clone
-							)
-						end
-					end
 					undefined_references?(parameters[:nodes] + parameters[:tokens])
 				end
 
@@ -513,21 +514,8 @@ class GraphController
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
 					properties.merge!(allowed_attributes(parameters[:attributes]))
-					parameters[:edges].each do |edge|
-						if element = element_by_identifier(edge)
-							new_node = @graph.add_anno_node(:attr => properties, :sentence => @sentence)
-							@graph.add_anno_edge(
-								:start => element.start,
-								:end => new_node,
-								:attr => element.attr.clone
-							)
-							@graph.add_anno_edge(
-								:start => new_node,
-								:end => element.end,
-								:attr => element.attr.clone
-							)
-							element.delete
-						end
+					parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
+						@graph.insert_node(edge, properties)
 					end
 					undefined_references?(parameters[:edges])
 				end
@@ -535,20 +523,8 @@ class GraphController
 			when 'di', 'do' # remove node and connect parent/child nodes
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					parameters[:nodes].each do |node|
-						if element = element_by_identifier(node)
-							element.in.select{|e| e.type == 'a'}.each do |in_edge|
-								element.out.select{|e| e.type == 'a'}.each do |out_edge|
-									devisor = command == 'di' ? out_edge : in_edge
-									@graph.add_anno_edge(
-										:start => in_edge.start,
-										:end => out_edge.end,
-										:attr => devisor.attr.clone
-									)
-								end
-							end
-							element.delete
-						end
+					parameters[:nodes].map{|id| element_by_identifier(id)}.compact.each do |node|
+						@graph.delete_and_join(node, command == 'di' ? :in : :out)
 					end
 					undefined_references?(parameters[:nodes])
 				end
@@ -565,14 +541,21 @@ class GraphController
 
 			when 't' # build tokens and append them
 				if sentence_set?
-					@graph.build_tokens(parameters[:words], @sentence)
+					@graph.build_tokens(parameters[:words], :sentence => @sentence)
 				end
 
-			when 'ti' # build tokens and insert them
+			when 'tb', 'ti' # build tokens and insert them before given token
 				if sentence_set?
 					undefined_references?(parameters[:tokens][0..0])
-					knoten = element_by_identifier(parameters[:tokens][0])
-					@graph.build_tokens(parameters[:words][1..-1], @sentence, knoten)
+					node = element_by_identifier(parameters[:tokens][0])
+					@graph.build_tokens(parameters[:words][1..-1], :next_token => node)
+				end
+
+			when 'ta' # build tokens and insert them after given token
+				if sentence_set?
+					undefined_references?(parameters[:tokens][0..0])
+					node = element_by_identifier(parameters[:tokens][0])
+					@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
 				end
 
 			when 's' # change sentence

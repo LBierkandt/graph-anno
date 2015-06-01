@@ -116,7 +116,7 @@ Das Einstellungsfenster für Darstellung und Ebenen wird mit dem Kommandozeilenb
 
 Unter \textit{General settings} werden Einstellungen für Knoten und Kanten, die keiner Ebene angehören, vorgenommen.\footnote{Je nach verwendetem Browser werden die Felder für Farbeinstellungen als Farbwahlfeld oder als Textfeld dargestellt. Beim Textfeld ist die Farbe als RGB-Hexadezimalwert anzugeben: Ein Rautenzeichen (\texttt{\#}) gefolgt von drei zweistelligen Hexadezimalzahlen jeweils für rot, grün und blau. So steht beispielsweise \texttt{\#000000} für schwarz, \texttt{\#ffffff} für weiß, \texttt{\#ff0000} für ein helles Rot etc.} \textit{Default color} gilt für alle Knoten und Kanten, die keine Token sind und keiner Ebene angehören, \textit{token color} gilt für Token, \textit{found color} für die Hervorhebung bei der Suche gefundener Knoten und Kanten (überschreibt dann die für die jeweiligen Elemete sonst geltende Farbe), \textit{filtered color} für die mit der Filterfunktion ausgefilterten Elemente. Die Einstellung \textit{edge weight} ist für Anatomie des Graphen von Belang und zeigt ihre Wirkung erst, wenn es Kanten von unterschiedlichem Gewicht gibt (zu Details siehe folgenden Absatz).
 
-Unter \textit{layers} werden Einstellungen für die Ebenen des Graphen vorgenommen. Der \textit{Name} ist eine beliebige Bezeichnung der Ebene, die im Aufklappfeld für die Ebenenwahl angezeigt wird. Das \textit{Attribut} ist dasjenige Annotationsattribut, dessen Wert auf \texttt{t} gesetzt wird, wenn ein Element der entsprechenden Ebene angehört. Der \textit{Shortcut} ist ein Bezeichner, der für die Annotation von Elementen genutzt werden kann (siehe \ref{befehl-n}); dieses Kürzel darf nur aus alphanumerischen Zeichen bestehen und darf nicht das gleiche Format wie Elementreferenzen aufweisen (also \texttt{t}, \texttt{n} oder \texttt{e} gefolgt von einer Zahl, oder  \texttt{m}; siehe \ref{befehl-a}). \textit{Color} ist die für Elemente der Ebene verwendete Farbe; \textit{edge weight} ist das Gewicht der Kanten der Ebene. Je höher der hier eingegebene Wert (ganzzahlige Werte), desto kürzer versucht der Graphzeichenalgorithmus die Kanten zu zeichnen. Legt man also eine Ebene mit hohem Kantengewicht und eine mit niedrigem an, so wird der Graph so gezeichnet, daß der Graph der ersten Ebene möglichst kompakt ist; die Elemente der zweiten Ebene werden so angeordnet, daß sie den Graph der ersten Ebene wenig verzerren. Wird als Kantengewicht \texttt{0} angegeben, so erzwingen die Kanten der Ebene keine Hierarhcie zwischen den Knoten, die sie verbinden (sonst ist der Startknoten einer Kante stets höher als der Zielknoten angeordnet). Wird ein negativer Wert angegeben, so werden die Knoten der Ebene alle auf einer horizontal Ebene dargestellt.
+Unter \textit{layers} werden Einstellungen für die Ebenen des Graphen vorgenommen. Der \textit{Name} ist eine beliebige Bezeichnung der Ebene, die im Aufklappfeld für die Ebenenwahl angezeigt wird. Das \textit{Attribut} ist dasjenige Annotationsattribut, dessen Wert auf \texttt{t} gesetzt wird, wenn ein Element der entsprechenden Ebene angehört. Der \textit{Shortcut} ist ein Bezeichner, der für die Annotation von Elementen genutzt werden kann (siehe \ref{befehl-n} oder \ref{befehl-l}); dieses Kürzel darf nur aus alphanumerischen Zeichen und Unterstrich bestehen und darf nicht das gleiche Format wie Elementreferenzen aufweisen (also \texttt{t}, \texttt{n} oder \texttt{e} gefolgt von einer Zahl, oder  \texttt{m}; siehe \ref{befehl-a}). \textit{Color} ist die für Elemente der Ebene verwendete Farbe; \textit{edge weight} ist das Gewicht der Kanten der Ebene. Je höher der hier eingegebene Wert (ganzzahlige Werte), desto kürzer versucht der Graphzeichenalgorithmus die Kanten zu zeichnen. Legt man also eine Ebene mit hohem Kantengewicht und eine mit niedrigem an, so wird der Graph so gezeichnet, daß der Graph der ersten Ebene möglichst kompakt ist; die Elemente der zweiten Ebene werden so angeordnet, daß sie den Graph der ersten Ebene wenig verzerren. Wird als Kantengewicht \texttt{0} angegeben, so erzwingen die Kanten der Ebene keine Hierarhcie zwischen den Knoten, die sie verbinden (sonst ist der Startknoten einer Kante stets höher als der Zielknoten angeordnet). Wird ein negativer Wert angegeben, so werden die Knoten der Ebene alle auf einer horizontal Ebene dargestellt.
 
 Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zugleich angehören, Einstellungen vorgenommen werden. Welchen Ebenen ein Element angehören muß, um unter eine Kombinationsdefinition zu fallen, wird über die Auswahlkästchen unter \textit{attributes} angegeben, die anderen Einstellungen funktionieren analog zu denen unter \textit{layers} und überschreiben die dort angegebenen Werte für Elemente, die der Ebenenkombination angehören.
 
@@ -257,7 +257,7 @@ Mit dem Befehl \texttt{export} ist es auch möglich, Graphkonfigurationen zu exp
 Mit diesen Befehlen öffnet man die Fenster für die in Abschnitt \ref{konfiguration} beschriebenen Einstellungen. \texttt{config} für Darstellung und Ebenen, \texttt{tagset} für erlaubte Annotationen und \texttt{metadata} für Metadaten.
 
 
-\subsection{Annotationsbefehle}
+\subsection{Annotationsbefehle}\label{annotationsbefehle}
 
 Die Annotationsbefehle von GraphAnno sind darauf ausgerichtet, daß sie möglichst schnell einzugeben sind. Daher ist ihre Syntax entsprechend reduziert: Sie bestehen aus einem kurzen Befehl (oft nur ein Buchstabe) gefolgt von Parametern, die durch Leerzeichen getrennt sind.
 
@@ -281,7 +281,7 @@ attribut        =   schlüssel zeichenkette
 schlüssel       =   zeichenkette ":"
 zeichenkette    =   zeichen_außer_steuerzeichen+
                     """ beliebiges_zeichen* """
-ebenenschalter  =   <definiert in der Graphkonfiguration>
+ebenenschalter  =   alphanumerisches_zeichen+
 \end{lstlisting}
 \end{framed}
 
@@ -414,15 +414,15 @@ Gibt man mehrere Kanten an, so wird in jede ein neuer Knoten nach dem eben besch
 befehl_ni           =   "ni " ni_parameter
 ni_parameter        =   ni_parameter " " ni_parameter
                         kantenreferenz
-                        attribut
+                        attribute
                         ebenenschalter
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Knoten löschen und Mutter-/Tochterknoten verbinden: \texttt{di} und \texttt{do}}
+\subsubsection{Knoten löschen und Verbindung bewahren: \texttt{di} und \texttt{do}}
 
-Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} löscht dabei die eingehenden Kanten, \texttt{do} die ausgehenden.
+Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} (für \textit{delete ingoing}) löscht dabei die eingehenden Kanten, \texttt{do} (für \textit{delete outgoing}) die ausgehenden.
 
 \paragraph*{Befehl \texttt{di}/\texttt{do} in modifizierter BNF:}
 ~
@@ -434,13 +434,13 @@ befehl_di_do        =   "di " knotenreferenz+
 \end{framed}
 
 
-\subsubsection{Tokenisieren: \texttt{t} und \texttt{ti}}
+\subsubsection{Tokenisieren: \texttt{t}, \texttt{tb}, \texttt{ta}}
 
-Zum Eingeben von Token gibt es die Befehle \texttt{t} und \texttt{ti}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{ti} nimmt als erstes Argument noch eine Tokenreferenz und fügt die neuen Token davor ein.
+Zum Eingeben von Token gibt es die Befehle \texttt{t}, \texttt{tb} und \texttt{ta}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{tb} (für \textit{tokenize before}) und \texttt{ta} (für \textit{tokenize after}) nehmen als erstes Argument noch eine Tokenreferenz und fügen die neuen Token davor bzw. danach ein.
 
 Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\quo}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
-\paragraph*{Befehle \texttt{t} und \texttt{ti} in modifizierter BNF:}
+\paragraph*{Befehle \texttt{t}, \texttt{tb}, \texttt{ta} in modifizierter BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -450,7 +450,8 @@ wörter          =   wörter " " wörter
 wort            =   zeichen_außer_steuerzeichen+
                     """ beliebiges_zeichen* """
 
-befehl_ti       =   "ti " tokenreferenz " " wörter
+befehl_tb       =   "tb " tokenreferenz " " wörter
+befehl_ta       =   "ta " tokenreferenz " " wörter
 \end{lstlisting}
 \end{framed}
 
@@ -788,6 +789,17 @@ name            =   alphanumerisches_zeichen+
 
 
 
+\subsection{Annotation}
+
+Nach dem Durchführen einer Suche können unter Zuhilfenahme der in der Suche vergebenen IDs automatisch Annotationen durchgeführt werden. Dazu stehen die in Abschnitt \ref{annotationsbefehle} vorgestellten Annotationsbefehle (außer \texttt{t}) zur Verfügung.
+
+Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
+\begin{itemize}
+	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet. 
+	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
+	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
+	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
+\end{itemize}
 
 
 

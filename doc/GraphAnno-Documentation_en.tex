@@ -133,7 +133,7 @@ The setting for \textit{edge weight} affects the layout of the displayed graph a
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
 \textit{Attribute} is the attribute that will be set to \texttt{t} for elements that belong to the layer in question.
-The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. \ref{befehl-n}); this shortcut may only consist of alphanumeric characters and must not have the same structure as element references (i.e., \texttt{t}, \texttt{n} or \texttt{e} followed by a number, or  \texttt{m}; cf. \ref{befehl-a}).
+The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. \ref{befehl-n} or \ref{befehl-l}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \texttt{t}, \texttt{n} or \texttt{e} followed by a number, or  \texttt{m}; cf. \ref{befehl-a}).
 \textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
 The heigher this value (integer values), the shorter the rendering algorithm will try to make the edges.
 When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
@@ -327,12 +327,12 @@ Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Impo
 Mit dem Befehl \texttt{export} ist es auch möglich, Graphkonfigurationen zu exportieren, die später mit \texttt{import} in andere Graphen importiert werden können. Dafür wird als erstes Argument der Typ der zu ex- oder importierenden Konfiguration angegeben: \texttt{config} für Darstellungs- und Ebenenkonfiguration (s. \ref{ebenenkonfiguration}), \texttt{tagset} für erlaubte Annotationen (s. \ref{erlaubteannotationen}). Als zweites wird der Name der Datei angegeben, unter dem die Daten gespeichert werden sollen, bzw. die importiert werden soll (ohne Endung). Die exportierte Datei wird im dem Typ entsprechenden Unterordner des \texttt{exports}-Ordners gespeichert. Achtung: beim Import werden bestehende Konfigurationen von den importierten komplett überschrieben.
 
 
-\subsubsection{Konfigurationen bearbeiten: \texttt{config}, \texttt{tagset} und \texttt{metadata}}
+\subsubsection{Konfiguration bearbeiten: \texttt{config}, \texttt{tagset} und \texttt{metadata}}
 
 Mit diesen Befehlen öffnet man die Fenster für die in Abschnitt \ref{konfiguration} beschriebenen Einstellungen. \texttt{config} für Darstellung und Ebenen, \texttt{tagset} für erlaubte Annotationen und \texttt{metadata} für Metadaten.
 
 
-\subsection{Annotationsbefehle}
+\subsection{Annotationsbefehle}\label{annotationsbefehle}
 
 Die Annotationsbefehle von GraphAnno sind darauf ausgerichtet, daß sie möglichst schnell einzugeben sind. Daher ist ihre Syntax entsprechend reduziert: Sie bestehen aus einem kurzen Befehl (oft nur ein Buchstabe) gefolgt von Parametern, die durch Leerzeichen getrennt sind.
 
@@ -356,7 +356,7 @@ attribut        =   schlüssel zeichenkette
 schlüssel       =   zeichenkette ":"
 zeichenkette    =   zeichen_außer_steuerzeichen+
                     """ beliebiges_zeichen* """
-ebenenschalter  =   <definiert in der Graphkonfiguration>
+ebenenschalter  =   alphanumerisches_zeichen+
 \end{lstlisting}
 \end{framed}
 
@@ -489,15 +489,15 @@ Gibt man mehrere Kanten an, so wird in jede ein neuer Knoten nach dem eben besch
 befehl_ni           =   "ni " ni_parameter
 ni_parameter        =   ni_parameter " " ni_parameter
                         kantenreferenz
-                        attribut
+                        attribute
                         ebenenschalter
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Knoten löschen und Mutter-/Tochterknoten verbinden: \texttt{di} und \texttt{do}}
+\subsubsection{Knoten löschen und Verbindung bewahren: \texttt{di} und \texttt{do}}
 
-Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} löscht dabei die eingehenden Kanten, \texttt{do} die ausgehenden.
+Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} (für \textit{delete ingoing}) löscht dabei die eingehenden Kanten, \texttt{do} (für \textit{delete outgoing}) die ausgehenden.
 
 \paragraph*{Befehl \texttt{di}/\texttt{do} in modifizierter BNF:}
 ~
@@ -509,13 +509,13 @@ befehl_di_do        =   "di " knotenreferenz+
 \end{framed}
 
 
-\subsubsection{Tokenisieren: \texttt{t} und \texttt{ti}}
+\subsubsection{Tokenisieren: \texttt{t}, \texttt{tb}, \texttt{ta}}
 
-Zum Eingeben von Token gibt es die Befehle \texttt{t} und \texttt{ti}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{ti} nimmt als erstes Argument noch eine Tokenreferenz und fügt die neuen Token davor ein.
+Zum Eingeben von Token gibt es die Befehle \texttt{t}, \texttt{tb} und \texttt{ta}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{tb} (für \textit{tokenize before}) und \texttt{ta} (für \textit{tokenize after}) nehmen als erstes Argument noch eine Tokenreferenz und fügen die neuen Token davor bzw. danach ein.
 
 Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\quo}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
-\paragraph*{Befehle \texttt{t} und \texttt{ti} in modifizierter BNF:}
+\paragraph*{Befehle \texttt{t}, \texttt{tb}, \texttt{ta} in modifizierter BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -525,7 +525,8 @@ wörter          =   wörter " " wörter
 wort            =   zeichen_außer_steuerzeichen+
                     """ beliebiges_zeichen* """
 
-befehl_ti       =   "ti " tokenreferenz " " wörter
+befehl_tb       =   "tb " tokenreferenz " " wörter
+befehl_ta       =   "ta " tokenreferenz " " wörter
 \end{lstlisting}
 \end{framed}
 
@@ -863,6 +864,17 @@ name            =   alphanumerisches_zeichen+
 
 
 
+\subsection{Annotation}
+
+Nach dem Durchführen einer Suche können unter Zuhilfenahme der in der Suche vergebenen IDs automatisch Annotationen durchgeführt werden. Dazu stehen die in Abschnitt \ref{annotationsbefehle} vorgestellten Annotationsbefehle (außer \texttt{t}) zur Verfügung.
+
+Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
+\begin{itemize}
+	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet. 
+	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
+	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
+	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
+\end{itemize}
 
 
 
@@ -893,7 +905,6 @@ Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert erge
 Jede \texttt{col}-Klausel steht für eine zu exportierende Spalte. Sie hat als ersten Parameter den Spaltentitel (der keine Leerzeichen enthalten darf), gefolgt von Ruby-Kode, der den auszugebenden Wert ergibt. Knoten und Kanten werden wie gehabt über ihre in der Suche vergebene ID referenziert, dabei ist zu beachten, daß es sich bei den mit \texttt{node} gefundenen Knoten um einzelne Knoten, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten hingegen um Arrays von Knoten handelt.
 
 Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschrieben. Es gibt jedoch noch weitere für die Ausgabe nützliche Methoden: \texttt{.tokens} gibt die über syntaktische Kanten dominierten Token als Liste aus, \texttt{.text} deren Text als Zeichenkette (die einzelnen Tokentexte mit Leerzeichen getrennt). \texttt{.sentence\_tokens} gibt alle Token des Satzes, dem das Element angehört als Liste aus, \texttt{.sentence\_text} wiederum deren Text. \texttt{.position} gibt die Position eines Knotens als Durchschnitt der Positionen seiner dominierten Token aus.
-
 
 
 

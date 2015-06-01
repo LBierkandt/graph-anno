@@ -92,20 +92,37 @@ class String
 end
 
 module Parser
+	@@query_operators = [
+		'node',
+		'nodes',
+		'edge',
+		'link',
+		'text',
+		'meta',
+		'cond',
+		'def',
+		'sort', 
+		'col',
+	]
+	@@annotation_commands = [
+		'a',
+		'n',
+		'e',
+		'p', 'g',
+		'c', 'h',
+		'd',
+		'ni',
+		'di', 'do',
+		'tb', 'ta', 'ti',
+		'l',
+	]
+	@@keywords = @@query_operators + @@annotation_commands
 
 	def parse_query(string)
-		ops = {
-			'col'=>[],
-			'cond'=>[],
-			'def'=>@makros,
-			'edge'=>[],
-			'link'=>[],
-			'meta'=>[],
-			'node'=>[],
-			'nodes'=>[],
-			'sort'=>[],
-			'text'=>[]
-		}
+		ops = {:all => []}
+		@@keywords.each{|c| ops[c] = []}
+		ops['def'] = @makros
+		
 		lines = string.split("\n")
 		
 		puts 'Parsing input:'
@@ -116,6 +133,7 @@ module Parser
 			begin
 				if op = parse_line(line, ops['def'])
 					ops[op[:operator]] << op
+					ops[:all] << op
 				end
 			rescue StandardError => e
 				raise e.message + " on line:\n" + line
@@ -132,25 +150,15 @@ module Parser
 				return {:operator => p[0]}.merge(parse_eval((p[1..-1] * ' ')))
 			elsif p[0] == 'col'
 				return {:operator => p[0], :title => p[1]}.merge(parse_eval((p[2..-1] * ' ')))
+			elsif @@annotation_commands.include?(p[0])
+				return {:operator => p[0]}.merge(p[1..-1].join(' ').parse_parameters)
 			else
 				return parse_line(obj.lex_ql, makros)
 			end
 		else
 			if obj.length == 0 then return nil end
 			arr = obj.clone
-			operators = [
-				'node',
-				'nodes',
-				'edge',
-				'link',
-				'text',
-				'meta',
-				'cond',
-				'def',
-				'sort', 
-				'col'
-			]
-			if arr[0] and arr[0][:cl] == :bstring and operators.include?(arr[0][:str])
+			if arr[0] and arr[0][:cl] == :bstring and @@query_operators.include?(arr[0][:str])
 				op = {:operator => arr.shift[:str]}
 				# Leerzeichen am Anfang entfernen:
 				while true
