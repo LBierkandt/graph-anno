@@ -443,7 +443,7 @@ class SearchableGraph < Graph
 				# set attributes (same for all commands)
 				attrs = allowed_attributes(command[:attributes])
 				# set layer (same for all commands)
-				if layer_shortcut = command[:layers].select{|l| conf.layer_shortcuts.keys.include?(l)}.last
+				if layer_shortcut = command[:words].select{|l| conf.layer_shortcuts.keys.include?(l)}.last
 					layer = conf.layer_shortcuts[layer_shortcut]
 				end
 				# extend attributes accordingly (same for all commands)

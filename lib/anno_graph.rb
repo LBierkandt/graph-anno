@@ -889,7 +889,6 @@ class String
 			:edges => [],
 			:tokens => [],
 			:ids => [],
-			:layers => [],
 		}
 
 		r = {}
@@ -900,7 +899,6 @@ class String
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
 		r[:id] = '@' + '[_[:alnum:]]+'
-		r[:layer] = '-' + '[_[:alnum:]]+'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
 
 		while str != ''
@@ -947,8 +945,6 @@ class String
 					end
 				elsif word.match(r[:id])
 					h[:ids] << word
-				elsif word.match(r[:layer])
-					h[:layers] << word[1..-1]
 				end
 			else
 				break
