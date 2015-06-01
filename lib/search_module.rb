@@ -58,6 +58,7 @@ class SearchableGraph < Graph
 		link_start_end_ids = operationen['link'].map{|o| [o[:start], o[:end]]}
 		edge_ids = operationen['edge'].map{|o| o[:id]}
 		link_ids = operationen['link'].map{|o| o[:ids]}.flatten
+		anno_ids = @@annotation_commands.map{|c| operationen[c].map{|o| o[:ids]}}.flatten.uniq
 		# at least one node, edge or text clause
 		if operationen['node'] + operationen['edge'].select{|o| !(o[:start] or o[:end])} + operationen['text'] == []
 			raise 'A query must contain at least one node clause, edge clause or text clause.'
@@ -80,6 +81,13 @@ class SearchableGraph < Graph
 				if not als_referenz_erlaubte_ids.include?(id)
 					error_messages << "The id #{id} is used in #{op_type} clause, but is not defined."
 				end
+			end
+		end
+		if (undefined_ids = anno_ids - als_referenz_erlaubte_ids) != []
+			if undefined_ids.length == 1
+				error_messages << "The id #{undefined_ids[0]} is used in annotation command, but is not defined."
+			else
+				error_messages << "The ids #{undefined_ids * ', '} are used in annotation command, but are not defined."
 			end
 		end
 		# check for dangling edges
