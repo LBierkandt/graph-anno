@@ -583,6 +583,8 @@ class AnnoGraph < SearchableGraph
 			last_token = h[:last_token]
 			next_token = last_token.node_after
 			sentence = last_token.sentence
+		else
+			return
 		end
 		token_collection = []
 		words.each do |word|

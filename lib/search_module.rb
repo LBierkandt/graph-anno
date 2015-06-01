@@ -478,20 +478,24 @@ class SearchableGraph < Graph
 					end
 				when 'p', 'g'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
-					add_parent_node(
-						nodes,
-						attrs,
-						conf.layer_attributes[layer],
-						nodes.map{|n| n.sentence}.most_frequent
-					)
+					unless nodes.empty?
+						add_parent_node(
+							nodes,
+							attrs,
+							conf.layer_attributes[layer],
+							nodes.map{|n| n.sentence}.most_frequent
+						)
+					end
 				when 'c', 'h'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
-					add_child_node(
-						nodes,
-						attrs,
-						conf.layer_attributes[layer],
-						nodes.map{|n| n.sentence}.most_frequent
-					)
+					unless nodes.empty?
+						add_child_node(
+							nodes,
+							attrs,
+							conf.layer_attributes[layer],
+							nodes.map{|n| n.sentence}.most_frequent
+						)
+					end
 				when 'd'
 					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
