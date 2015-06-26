@@ -150,7 +150,7 @@ In the search makros text area, the definitions (\texttt{def ...}) have to be en
 
 \subsubsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
-In the window open by the command \texttt{tagste}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
+In the window open by the command \texttt{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
 Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
 Already existing annotations are not affected by changes of the permitted keys and values.
 
@@ -237,7 +237,7 @@ Attention: no warning is issued when an existing file will be overwritten.
 
 \subsubsection{Clear work space: \texttt{clear}}
 
-The command \texttt{clear} clears the work space from all date.
+The command \texttt{clear} clears the work space from all data.
 Changes that were not saved are lost.
 Next to the input line no file will be indicated anymore.
 
@@ -253,7 +253,7 @@ The command creates sentence nodes with the corresponding \texttt{name} attribut
 The command \texttt{del} deletes the current sentence including the sentence node.
 
 
-\subsubsection{Gehe zu: \texttt{s}}
+\subsubsection{Set sentence: \texttt{s}}
 
 In order to navigate from sentence to sentence, you may use (alternatively to keyboard shortcuts or the dropdown field) the command \texttt{s}, followed by the name of the sentence you want to change to.
 You are then directed to the first sentence with the given name.
@@ -306,113 +306,132 @@ The regular expression in this case finds two strings of non-spaces that are joi
 In the annotation command these variables are used to annotate the token text and the \texttt{pos} attribute.
 
 
-\vskip4em
-\center{\Large tbc.}
-\kommentar{
+\subsubsection{Import Toolbox data: \texttt{import toolbox}}
 
-\subsubsection{Toolboxdaten importieren: \texttt{import toolbox}}
+Toolbox files can be imported using the command \texttt{import toolbox}.
+This command opens a window in which you can choose the file to be imported and enter the format description.
+The format description has to be in JSON format and consists of a list of a list of markers.
+The lists are sorted according to their levels – the highest (\textit{record} level) first – and contain the markers that belong to the respective level (markers are entered without backslash).
+The first marker of the first level (\texttt{ref} in the example below) will be used as record ID.
+The marker whose line is to be used as token text is preceded by an asterisk.
+Elements that lie below the token level will be joined and integrated into their respective tokens.
 
-Toolboxdateien können mit dem Befehl \texttt{import toolbox} importiert werden. Es öffnet sich ein Fenster, in dem die einzulesende Datei ausgewählt und die Formatbeschreibung eingegeben werden kann. Die Formatbeschreibung wird im JSON-Format angegeben und besteht aus einer Liste von Listen von Markern. Die Listen sind nach Ebenen sortiert – die höchste (\textit{record}) zuerst – und enthalten die der entsprechenden Ebene zugehörigen Marker (ohne Schrägstich). Als Record-ID wird der erste Marker der ersten Ebene (im Bsp. unten \texttt{ref}) verwendet. Dem Marker, auf dessen Grundlage die Token erstellt werden sollen, wird ein Stern vorangestellt. Elemente, die unter der Tokenebene liegen, werden zusammengefügt und in die jeweiligen Token integriert.
+A format description for a toolbox file with three levels (record, word, morpheme) could look like this, e.g.:
 
-Eine Formatbeschreibung für eine Toolboxdatei mit drei Ebenen (Record, Wort, Morphem) könnte z.B. folgendermaßen aussehen:
 \begin{verbatim}
   [["ref", "eng"], ["*gw"], ["mph", "ge", "ps"]]
 \end{verbatim}
 
-Wie beim Befehl \texttt{load} wird der Arbeitsbereich von GraphAnno vor dem Import geleert. Nicht gespeicherte Änderungen gehen verloren und neben der Eingabeleiste wird keine Datei mehr als geladen angezeigt.
+Like with the command \texttt{load}, the work space will be cleared when importing.
+Changes that haven’t been saved will be lost; next to the input line no file will be indicated anymore.
 
 
-\subsubsection{Konfigurationen ex- und importieren: \texttt{export} und \texttt{import}}
+\subsubsection{Export and import configuration: \texttt{export} and \texttt{import}}
 
-Mit dem Befehl \texttt{export} ist es auch möglich, Graphkonfigurationen zu exportieren, die später mit \texttt{import} in andere Graphen importiert werden können. Dafür wird als erstes Argument der Typ der zu ex- oder importierenden Konfiguration angegeben: \texttt{config} für Darstellungs- und Ebenenkonfiguration (s. \ref{ebenenkonfiguration}), \texttt{tagset} für erlaubte Annotationen (s. \ref{erlaubteannotationen}). Als zweites wird der Name der Datei angegeben, unter dem die Daten gespeichert werden sollen, bzw. die importiert werden soll (ohne Endung). Die exportierte Datei wird im dem Typ entsprechenden Unterordner des \texttt{exports}-Ordners gespeichert. Achtung: beim Import werden bestehende Konfigurationen von den importierten komplett überschrieben.
-
-
-\subsubsection{Konfiguration bearbeiten: \texttt{config}, \texttt{tagset} und \texttt{metadata}}
-
-Mit diesen Befehlen öffnet man die Fenster für die in Abschnitt \ref{konfiguration} beschriebenen Einstellungen. \texttt{config} für Darstellung und Ebenen, \texttt{tagset} für erlaubte Annotationen und \texttt{metadata} für Metadaten.
-
-
-\subsection{Annotationsbefehle}\label{annotationsbefehle}
-
-Die Annotationsbefehle von GraphAnno sind darauf ausgerichtet, daß sie möglichst schnell einzugeben sind. Daher ist ihre Syntax entsprechend reduziert: Sie bestehen aus einem kurzen Befehl (oft nur ein Buchstabe) gefolgt von Parametern, die durch Leerzeichen getrennt sind.
-
-Die Befehle setzen voraus, daß man sich ein einem Satz befindet. D.h., wenn der Arbeitsbereich leer ist (und kein Satz im Satzausfahlfeld angezeigt wird), muß also zunächst mit dem Befehl \texttt{ns} (siehe \ref{befehl-ns}) ein Satz angelegt werden.
+The command \texttt{export} serves also for exporting graph configurations, that can be imported in other graphs using the command \texttt{import}.
+As first argument you enter the type of the configuration to be exported or imported: \texttt{config} for layers and visualization configuration (see \ref{ebenenkonfiguration}), \texttt{tagset} for permitted annotations / tagset (see \ref{erlaubteannotationen}).
+The second argument is the filename for the configuration file to be saved or to be imported (without file extension).
+The exported file will be saved in a subdirectory – named like the configuration type – of the \texttt{exports} directory.
+Attention: when importing, the existing configuration will be replaced completely.
 
 
-\subsubsection{Neuer Knoten: \texttt{n}}\label{befehl-n}
+\subsubsection{Edit configurations: \texttt{config}, \texttt{tagset} and \texttt{metadata}}
 
-Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\quo})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
-Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll. Dazu dienen die auch für den Befehl \texttt{l} (siehe \ref{l}) geltenden Kürzel, die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellt werden. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt.
+These commands open the windows for the settings that were described in Section \ref{konfiguration}.
+\texttt{config} for layers and visualization, \texttt{tagset} for permitted annotations / tagset and \texttt{metadata} for metadata.
 
-\paragraph*{Befehl \texttt{n} in modifizierter BNF:}
+
+
+\subsection{Annotation commands}\label{annotationsbefehle}
+
+GraphAnno’s annotation commands are designed to be entered quickly, so their syntax is rather compact:
+they consist of a short command (often one letter only) and are followed by parameters seperated by spaces.
+
+The commands require to be in a sentence, i.e., you have to create a sentence first (using the command \texttt{ns}, see \ref{befehl-ns}) if the work space is empty.
+
+
+\subsubsection{New node: \texttt{n}}\label{befehl-n}
+
+The command for creating a new node is \texttt{n}, followed by the attributes the new node is to bear as key-value pairs in the format \texttt{key:value}.
+Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation languages: \texttt{␣:\quo})\footnote{The symbol \texttt{␣} stands for the space.}) or as string in double quotes (\texttt{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \texttt{\textbackslash\quo}).
+Additionally, you can specify the layer to which the new node is to belong (if you don’t, it will belong to the layer set in the layer dropdown field).
+For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
+The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations (like the command \texttt{l}, see \ref{l}).
+
+\paragraph*{Command \texttt{n} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_n        =   "n " attribute
-attribute       =   attribute " " attribute
-                    attribut
-                    ebenenschalter
-attribut        =   schlüssel zeichenkette
-schlüssel       =   zeichenkette ":"
-zeichenkette    =   zeichen_außer_steuerzeichen+
-                    """ beliebiges_zeichen* """
-ebenenschalter  =   alphanumerisches_zeichen+
+command_n       =   "n " attributes
+attributes      =   attributes " " attributes
+                    attribute
+                    layer_shortcut
+attribute       =   key string
+key             =   string ":"
+string          =   character_not_special+
+                    """ character* """
+layer_shortcut  =   alphanumeric_character+
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Neue Kante: \texttt{e}}
+\subsubsection{New edge: \texttt{e}}
 
-Der Befehl zum Anlegen einer neuen Kante lautet \texttt{e}, gefolgt vom Start- und Zielknoten der zu erstellenden  Kante und den Attributen, die sie erhalten soll. Auch die Angabe einer Ebene wie bei \texttt{n} ist möglich.
+The command for creating a new edge is \texttt{e}, followed by start and end node of the edge to be created and the attributes, it is to bear.
+Like with \texttt{n}, the specification of a layer is possible.
 
-\paragraph*{Befehl \texttt{e} in modifizierter BNF:}
+\paragraph*{Command \texttt{e} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_e       =   "e " start_ziel " " start_ziel " " attribute
-start_ziel     =   knotenreferenz
-                   tokenreferenz
-knotenreferenz =   "n" zahl
-tokenreferenz  =   "t" zahl
+command_e       =   "e " start_end " " start_end " " attributes
+start_end       =   node_reference
+                    token_reference
+node_reference  =   "n" number
+token_reference =   "t" number
 \end{lstlisting}
 \end{framed}
 
 
 \subsubsection{Annotieren: \texttt{a}}\label{befehl-a}
 
-Der Befehl zum Annotieren beliebiger Elemente ist \texttt{a}, gefolgt von den zu annotierenden Elementen und Attributen, mit denen sie annotiert werden sollen (alle angegeben Elemente werden mit allen angegebenen Attributen versehen; auch Ebenekürzel wie bei \texttt{n} können verwendet werden). Die Reihenfolge einzelner Elemente und Attribute ist beliebig. Es können auch Sequenzen von Elementen eines Typs (also \texttt{n}, \texttt{e} oder \texttt{t}) durch Verbinden mit zwei Punkten angegeben werden; beispielsweise werden bei Angabe von \texttt{t3..t7} alle Token von \texttt{t3} bis \texttt{t7} annotiert (die Sequenz kann auch umgekehrt angegeben werden, also \texttt{t7..t3}).
+The command for annotation elements is \texttt{a}, followed by the elements to be annotated and the attributes with which they are to be annotated (all given elements will be annotated with all given attributes; also layer shortcuts can be used).
+The order of the elements and attributes is free.
+You can also annotate sequences of elements of the same type (i.e., \texttt{n}, \texttt{e} or \texttt{t}) by entering the first and the last element joined by two dots.
+E.g., when you enter \texttt{t3..t7}, all tokens from \texttt{t3} to \texttt{t7} will be annotated (you may enter the sequence also in the inverse order, i.e., \texttt{t7..t3}).
 
-Gleichzeitig können mit dem Befehl \texttt{a} Attribute gelöscht werden. Dazu wird der zu löschende Schlüssel mit Doppelpunkt, aber ohne Wert angegeben.
-        %li annotate: <i>a target target ... key:value key:value ...</i>
-          %li a r2 n21 t4 abc:def ghi:jkl
-          %li a m trans:"Ganz Gallien ist in drei Teile geteilt"
+At the same time you can use the command \texttt{a} for deleting attributes.
+In order to do so, enter the key to be deleted with colon, but without value.
 
-\paragraph*{Befehl \texttt{a} in modifizierter BNF:}
+\paragraph*{Command \texttt{a} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_a            =   "a " a_parameter
-a_parameter         =   a_parameter " " a_parameter
-                        elementreferenz
-                        attribute
-                        schlüssel
-elementreferenz     =   knotenreferenz
-                        kantenreferenz
-                        tokenreferenz
-                        metaknotenreferenz
-                        elementsequenz
-kantenreferenz      =   "e" zahl
-metaknotenreferenz  =   "m"
-elementsequenz      =   knotensequenz
-                        tokensequenz
-                        kantensequenz
-knotensequenz       =   knotenreferenz ".." knotenreferenz
-tokensequenz        =   tokenreferenz ".." tokenreferenz
-kantensequenz       =   kantenreferenz ".." kantenreferenz
+command_a           =   "a " a_parameters
+a_parameters        =   a_parameters " " a_parameters
+                        element_reference
+                        attributes
+                        key
+element_reference   =   node_reference
+                        edge_reference
+                        token_reference
+                        meta_node_reference
+                        element_sequence
+edge_reference      =   "e" number
+meta_node_reference =   "m"
+element_sequence    =   node_sequence
+                        token_sequence
+                        edge_sequence
+node_sequence       =   node_reference ".." node_reference
+token_sequence      =   token_reference ".." token_reference
+edge_sequence       =   edge_reference ".." edge_reference
 \end{lstlisting}
 \end{framed}
 
 
+\vskip4em
+\center{\Large tbc.}
+\kommentar{
 
 
 \subsubsection{Elemente löschen: \texttt{d}}
@@ -421,7 +440,7 @@ Gelöscht werden Elemente mit dem Befehl \texttt{d}, gefolgt von den zu löschen
         %li delete: <i>d target target ...</i>
         %ul
           %li d n21 r12 t7
-\paragraph*{Befehl \texttt{d} in modifizierter BNF:}
+\paragraph*{Command \texttt{d} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -438,7 +457,7 @@ Der Gruppierbefehl \texttt{g} oder \texttt{p} erstellt einen neuen Mutterknoten 
         %li group nodes under new mother node: <i>g node node ... key:value key:value ...</i>
         %ul
           %li g t1 t2 n0 typ:S tns:prs
-\paragraph*{Befehl \texttt{g} in modifizierter BNF:}
+\paragraph*{Command \texttt{g} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -460,7 +479,7 @@ Der Befehl \texttt{h}/\texttt{c} funktioniert wie \texttt{g}/\texttt{p}, mit dem
         %li attach new node: <i>h node1 node2 ... key:value key:value ...</i>
         %ul
           %li h n2 n4 typ:R
-\paragraph*{Befehl \texttt{h} in modifizierter BNF:}
+\paragraph*{Command \texttt{h} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -482,7 +501,7 @@ Mit dem Befehl \texttt{ni} kann man einen Knoten in eine bestehende Kante „ein
 
 Gibt man mehrere Kanten an, so wird in jede ein neuer Knoten nach dem eben beschriebenem Verfahren eingeschoben.
 
-\paragraph*{Befehl \texttt{ni} in modifizierter BNF:}
+\paragraph*{Command \texttt{ni} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -499,7 +518,7 @@ ni_parameter        =   ni_parameter " " ni_parameter
 
 Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} (für \textit{delete ingoing}) löscht dabei die eingehenden Kanten, \texttt{do} (für \textit{delete outgoing}) die ausgehenden.
 
-\paragraph*{Befehl \texttt{di}/\texttt{do} in modifizierter BNF:}
+\paragraph*{Command \texttt{di}/\texttt{do} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -515,7 +534,7 @@ Zum Eingeben von Token gibt es die Befehle \texttt{t}, \texttt{tb} und \texttt{t
 
 Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\quo}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
-\paragraph*{Befehle \texttt{t}, \texttt{tb}, \texttt{ta} in modifizierter BNF:}
+\paragraph*{Commande \texttt{t}, \texttt{tb}, \texttt{ta} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -535,7 +554,7 @@ befehl_ta       =   "ta " tokenreferenz " " wörter
 
 Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. Dafür gelten die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellten Kürzel.
 
-\paragraph*{Befehl \texttt{l} in modifizierter BNF:}
+\paragraph*{Command \texttt{l} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -585,7 +604,7 @@ Für die Kanten wiederum können – zusätzlich zu den einfachen Attributen –
 
 Ähnlich wie \texttt{in} und \texttt{out} funktioniert \texttt{link}, jedoch werden damit nicht nur ein- und ausgehenden Kanten abgefragt, sondern (ggf.) komplexere Verbindungen zu anderen Knoten. Wie diese Verbindungen spezifiziert werden, ist in \ref{link} beschrieben. Auch für \texttt{link} gelten die Regeln für Quantoren, wie für \texttt{in} und \texttt{out} beschrieben.
 
-\paragraph*{Die \texttt{node}-Klausel in modifizierter BNF:}
+\paragraph*{Die \texttt{node}-Klausel in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -638,7 +657,7 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 
 Die \texttt{nodes}-Klausel beschreibt eine Menge von Knoten, die im Graphfragment enthalten sein sollen – wenn die Menge nur als Ziel einer \texttt{link}- oder \texttt{edge}-Klausel auftritt, kann die Menge jedoch auch leer sein. Die \texttt{nodes}-Klausel hat, abgesehen vom Schlüsselwort,  die gleiche Syntax wie die \texttt{node}-Klausel.
 
-\paragraph*{Die \texttt{nodes}-Klausel in modifizierter BNF:}
+\paragraph*{Die \texttt{nodes}-Klausel in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -658,7 +677,7 @@ Die \texttt{edge}-Klausel hat zwei Anwendungen. Zum einen kann sie verwendet wer
 Durch die optionale ID und die verschiedenen Verwendungsmöglichkeiten kann das Schlüsselwort \texttt{edge} von null bis drei IDs gefolgt sein. Die Interpretation dieser IDs ergibt sich aus ihrer Anzahl und der Reihenfolge. Eine ID: ID der Kante selber; zwei IDs: Start und Ziel der Kante; drei IDs: ID der Kante, Start und Ziel.
 
 
-\paragraph*{Die \texttt{edge}-Klausel in modifizierter BNF:}
+\paragraph*{Die \texttt{edge}-Klausel in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -699,7 +718,7 @@ Eine Verbindung besteht – der Natur eines Graphen entsprechend – stets aus e
 Wird \texttt{link} als Knotenattribut (z.B. in einer \texttt{node}-Klausel) verwendet, fällt die Angabe von Start- und Endknoten weg. Startknoten ist dann der gesuchte Knoten, Endknoten der letzte in der Verbindung spezifiziert Knoten bzw., wenn die Verbindungsbeschreibung mit einer Kante endet, ein Knoten mit beliebigen Eigenschaften.
 
 
-\paragraph*{Die \texttt{link}-Klausel in modifizierter BNF:}
+\paragraph*{Die \texttt{link}-Klausel in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -749,7 +768,7 @@ Die \texttt{text}-Klausel besteht aus dem Schlüsselwort \texttt{text}, einer op
 Die Beschreibung des Textfragments besteht aus einer Abfolge von Wortbeschreibungen, die aus einer Zeichenkette, die den Tokentext beschreibt (drei Varianten wie oben unter \texttt{node} für die Werte in Schlüssel-Wert-Paaren beschrieben), und einer optionalen Angabe von Attributen (Attributebeschreibung wie oben unter \texttt{node}) in runden Klammern zusammengesetzt ist.
 Für die Beschreibung des Textfragments stehen wie bei der Verbindungsbeschreibung der Operator \texttt{|} für „oder“ (Bindungsstärke schwächer als die der Sequenz), Klammerung und Quantoren zur Verfügung, wobei die Quantoren bei der Textsuche genügsam sind. Zusätzlich kann Textfragmenten eine ID nachgestellt werden, um die gefundenen Knoten in anderen Klauseln zu referenzieren. Quantoren und IDs haben eine höhere Bindungsstärke als Sequenz und Disjunktion; die Reihenfolge von Quantor und ID hinter dem selben Textfragment ist beliebig. Die optionale ID nach dem Schlüsselwort gilt für alle Knoten der \texttt{text}-Klausel. Das gesuchte Textfragment kann mit \texttt{\^{}s} am Beginn bzw. Ende eines Textes (Text eines Satzes) verankert werden.
 
-\paragraph*{Die \texttt{text}-Klausel in modifizierter BNF:}
+\paragraph*{Die \texttt{text}-Klausel in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -784,7 +803,7 @@ wort            =   attributwert ("(" knotenattribute ")")?
 
 Die \texttt{meta}-Klausel schränkt die Menge der zu durchsuchenden Sätze ein. Über diese Klausel können Eigenschaften angegeben werden, die der Satznoten eines Satzes haben muß. Die Klausel besteht aus dem Schlüsselwort \texttt{meta} und einer Attributbeschreibung wie oben unter \texttt{node} beschrieben.
 
-\paragraph*{Die \texttt{meta}-Klausel in modifizierter BNF:}
+\paragraph*{Die \texttt{meta}-Klausel in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -826,7 +845,7 @@ Mit \texttt{def} besteht die Möglichkeit, für die Suche Makros zu definieren. 
 
 Es ist zu beachten, daß ein Makro quasi automatisch geklammert wird, also stets zuerst ausgewertet wird. Nehmen wir beispielsweise an, man definiert ein Makro als \texttt{cat:S | cat:VP} wie unten im Beispiel und kombiniert es durch den Operator \texttt{\&} mit einer weiteren Bedingung – \texttt{tns:prs} wie beim zweiten Knoten im Beispiel. Dann wird dies nicht als \texttt{cat:S | cat:VP \& tns:prs} ausgewertet, in welchem Falle das \texttt{\&} Präzedenz über das \texttt{|} nähme, sondern als \texttt{(cat:S | cat:VP) \& tns:prs}.
 
-\paragraph*{Die Makrodefinition \texttt{def} in modifizierter BNF:}
+\paragraph*{Die Makrodefinition \texttt{def} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
