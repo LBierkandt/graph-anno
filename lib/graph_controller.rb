@@ -777,6 +777,15 @@ class GraphController
 		@graph.conf.layers.each do |l|
 			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
 		end
+		if (speakers = @graph.speaker_nodes) != []
+			speaker_graphs = Hash[speakers.map{|s| [s.id, viz_graph.subgraph(:rank => 'same')]}]
+			# induce layering of speaker graphs:
+			speaker_graphs.values.each_with_index do |sg, i|
+				sg.add_nodes('s' + i.to_s, {:style => 'invis'})
+				viz_graph.add_edges('s' + (i-1).to_s, 's' + i.to_s, {:style => 'invis'}) if i > 0
+			end
+			timeline_graph = viz_graph.subgraph(:rank => 'same')
+		end
 
 		satzinfo = {:textline => '', :meta => ''}
 
@@ -813,7 +822,19 @@ class GraphController
 			else
 				satzinfo[:textline] += token.token + ' '
 			end
-			token_graph.add_nodes(token.id, options)
+			unless token.speaker
+				token_graph.add_nodes(token.id, options)
+			else
+				# create token and point on timeline:
+				gv_token = speaker_graphs[token.speaker.id].add_nodes(token.id, options.merge(:width => token.end - token.start))
+				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}"})
+				# multiple lines between token and point on timeline in order to force correct order:
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
+				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
+				# order points on timeline:
+				viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => 'none'}) if i > 0
+			end
 		end
 
 		@nodes.each_with_index do |node, i|
