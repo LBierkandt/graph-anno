@@ -176,6 +176,15 @@ class GraphController
 		)
 	end
 
+	def speakers_form
+		@sinatra.haml(
+			:speakers_form,
+			:locals => {
+				:graph => @graph
+			}
+		)
+	end
+
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
@@ -213,6 +222,18 @@ class GraphController
 		@graph.info = {}
 		@sinatra.params['keys'].each do |i, key|
 			@graph.info[key.strip] = @sinatra.params['values'][i].strip if key.strip != ''
+		end
+		return true.to_json
+	end
+
+	def save_speakers
+		@graph.info = {}
+		@sinatra.params['ids'].each do |i, id|
+			if id != ''
+				@graph.nodes[id].attr = @sinatra.params['attributes'][i].parse_parameters[:attributes]
+			else
+				@graph.add_speaker_node(:attr => @sinatra.params['attributes'][i].parse_parameters[:attributes])
+			end
 		end
 		return true.to_json
 	end
@@ -652,6 +673,9 @@ class GraphController
 
 			when 'config'
 				return {:modal => 'config'}
+
+			when 'speakers'
+				return {:modal => 'speakers'}
 
 			when 'tagset'
 				return {:modal => 'tagset'}
