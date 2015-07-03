@@ -130,9 +130,13 @@ Sind hier keine Schlüssel und Werte angegeben, so sind alle Annotationen zuläs
 
 Für die Notation der Werte gelten die gleichen Regeln wie bei der Suchsprache (Abschnitt \ref{node}, S.\,\pageref{zeichenketten}): Einfache Werte werden ohne weitere Markierung eingetragen, enthalten Werte Sonderzeichen (siehe S.\,\pageref{zeichenketten}), so müssen sie in Anführungszeichen (\texttt{\quo...\quo}) angegeben werden; außderdem können – ebenfalls wie bei der Suchsprache (S.\,\pageref{zeichenketten}) – reguläre Ausdrücke verwendet werden, die in Schrägstrichen angegeben werden (\texttt{/.../}). Die regulären Ausdrücke sind dabei verankert, d.h. ein Annotationswert muß dem gesamten regulären Ausdruck entsprechen, um erlaubt zu sein.
 
+\subsubsection{Annotationsmakros}\label{annotationsmakros}
+
+Für einen Graphen können Annotationsmakros gespeichert werden, die die Annotation mit häufig gebrauchten Attributkombinationen erleichtern. Mit dem Befehl \texttt{makros} wird ein Fenster geöffnet, in dem diese Makros definiert werden können. Im linken Feld wird jeweils die gewünschte Abkürzung angegeben (diese muß aus alphanumerischen Zeichen und Unterstrich bestehen und sollte weder die Form einer Elementreferenz haben noch gleichlautend mit einem Ebenenkürzel sein, vgl. \ref{ebenenkonfiguration}), im rechten Feld die gewünschten Annotationen. Hierbei ist die gleiche Syntax wie für die Annotationsbefehle einzuhalten, also eine Menge von Attributen in der Form \texttt{schlüssel:wert}, mit Leerzeichen getrennt (zu Details siehe \ref{befehl-n}).
+
 \subsubsection{Metadaten}
 
-Neben der Konfiguration von Ebenen, Darstellung, Suchmakros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren angegeben werden. Das Fenster dafür wird mit dem Befehl \texttt{metadata} geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
+Neben der Konfiguration von Ebenen, Darstellung, Makros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren gespeichert werden. Das Fenster dafür wird mit dem Befehl \texttt{metadata} geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
 
 
 
@@ -267,21 +271,26 @@ Die Befehle setzen voraus, daß man sich ein einem Satz befindet. D.h., wenn der
 \subsubsection{Neuer Knoten: \texttt{n}}\label{befehl-n}
 
 Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\quo})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen allerdings mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
-Des weiteren kann die Ebene angegeben werden, der der neue Knoten angehören soll (andernfalls gehört er zu der im entsprechenden Auswahlfeld aktiven Ebene). Dazu dienen die in der Ebenenkonfiguration (siehe \ref{ebenenkonfiguration}) eingestellten Kürzel. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt (siehe \ref{l}).
+
+Des weiten können zuvor definierte Annotationsmakros (siehe \ref{annotationsmakros}) verwendet werden; dabei überschreiben explizit angegebene Attribute ggf. die in den Makros definierten Annotationen.
+
+Schließlich kann noch die Ebene angegeben werden, der der neue Knoten angehören soll (andernfalls gehört er zu der im entsprechenden Auswahlfeld aktiven Ebene). Dazu dienen die in der Ebenenkonfiguration (siehe \ref{ebenenkonfiguration}) eingestellten Kürzel. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt (siehe \ref{l}).
 
 \paragraph*{Befehl \texttt{n} in modifizierter BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_n        =   "n " attribute
-attribute       =   attribute " " attribute
-                    attribut
-                    ebenenschalter
-attribut        =   schlüssel zeichenkette
-schlüssel       =   zeichenkette ":"
-zeichenkette    =   zeichen_außer_steuerzeichen+
-                    """ beliebiges_zeichen* """
-ebenenschalter  =   alphanumerisches_zeichen+
+befehl_n         =   "n " attribute
+attribute        =   attribute " " attribute
+                     attribut
+                     annotationsmakro
+                     ebenenschalter
+attribut         =   schlüssel zeichenkette
+schlüssel        =   zeichenkette ":"
+zeichenkette     =   zeichen_außer_steuerzeichen+
+                     """ beliebiges_zeichen* """
+annotationsmakro =   alphanumerisches_zeichen+
+ebenenschalter   =   alphanumerisches_zeichen+
 \end{lstlisting}
 \end{framed}
 

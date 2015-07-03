@@ -160,13 +160,20 @@ If you leave the value field for a key empty, then all values are permitted for 
 If you want to restrict the possible values for a key, you may enter these into the value field of the key in question, separated by spaces.
 
 The notation of the values is subject to the same rules as in the query language (cf. Section \ref{node}, p.\,\pageref{zeichenketten}):
-Simple values are entered without further markup; if a value contains special characters (siehe p.\,\pageref{zeichenketten}) it has to be enclosed in double quotes (\texttt{\quo...\quo}).
+Simple values are entered without further markup; if a value contains special characters (see p.\,\pageref{zeichenketten}) it has to be enclosed in double quotes (\texttt{\quo...\quo}).
 Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\texttt{/.../}).
 In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
 
+\subsubsection{Annotation makros}\label{annotationsmakros}
+
+For a graph you save annotation makros, that facilitate the annotation with frquently needed attribute combinations.
+With the command \texttt{makros} you open a window where you can define these makros.
+In the fields on the left you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}); in the corresponding field on the right you enter the desired annotations for your makro.
+For these annotations you must use the same syntax as in the annotation commands, i.e. a set of attributes in the form \texttt{key:value}, separated by spaces (see Section \ref{befehl-n} for details).
+
 \subsubsection{Metadata}
 
-Additionally to the configuration of layers, visualization, search makros and permitted annotations, you may save metadata for a graph as key-value pairs.
+Additionally to the configuration of layers, visualization, makros and permitted annotations, you may save metadata for a graph as key-value pairs.
 The command \texttt{metadata} opens the window, where you can enter an arbitrary number of keys with a text as corresponding value.
 
 
@@ -354,6 +361,10 @@ The commands require to be in a sentence, i.e., you have to create a sentence fi
 
 The command for creating a new node is \texttt{n}, followed by the attributes the new node is to bear as key-value pairs in the format \texttt{key:value}.
 Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation languages: \texttt{␣:\quo})\footnote{The symbol \texttt{␣} stands for the space.}) or as string in double quotes (\texttt{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \texttt{\textbackslash\quo}).
+
+You can also use the shortcut from your previously defined annotation makros (see Section \ref{annotationsmakros}).
+When you additionally enter attributes with keys present in the makro, these override the annotations defined in the makro.
+
 Additionally, you can specify the layer to which the new node is to belong (if you don’t, it will belong to the layer set in the layer dropdown field).
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
 The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations (like the command \texttt{l}, see \ref{l}).
@@ -362,15 +373,17 @@ The use of these shortcuts also has the effect of a switch, insofar as it sets t
 ~
 \begin{framed}
 \begin{lstlisting}
-command_n       =   "n " attributes
-attributes      =   attributes " " attributes
-                    attribute
-                    layer_shortcut
-attribute       =   key string
-key             =   string ":"
-string          =   character_not_special+
-                    """ character* """
-layer_shortcut  =   alphanumeric_character+
+command_n           =   "n " attributes
+attributes          =   attributes " " attributes
+                        attribute
+                        annotation_shortcut
+                        layer_shortcut
+attribute           =   key string
+key                 =   string ":"
+string              =   character_not_special+
+                        """ character* """
+annotation_shortcut =   alphanumeric_character+
+layer_shortcut      =   alphanumeric_character+
 \end{lstlisting}
 \end{framed}
 
