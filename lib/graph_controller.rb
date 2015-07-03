@@ -167,6 +167,15 @@ class GraphController
 		)
 	end
 
+	def makros_form
+		@sinatra.haml(
+			:makros_form,
+			:locals => {
+				:graph => @graph
+			}
+		)
+	end
+
 	def allowed_annotations_form
 		@sinatra.haml(
 			:allowed_annotations_form,
@@ -658,6 +667,9 @@ class GraphController
 
 			when 'metadata'
 				return {:modal => 'metadata'}
+
+			when 'makros'
+				return {:modal => 'makros'}
 
 			# all following commands are related to annotation @graph expansion -- Experimental!
 			when 'project'

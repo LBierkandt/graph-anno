@@ -302,6 +302,9 @@ function makeAnfrage(anfrage, params) {
 					case 'metadata':
 						openMetadata();
 						return;
+					case 'makros':
+						openMakros();
+						return;
 				}
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
@@ -389,6 +392,25 @@ function openMetadata() {
 			$('#new-metadata').click(function(){
 				var i = parseInt($('.metadata tbody:first-child tr:last-child').attr('no')) + 1;
 				$('.metadata tbody:first-child tr:last-child').after(
+					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
+				);
+				return false;
+			});
+			$('#modal-background').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
+function openMakros() {
+	if ($('#modal-background').css('display') != 'block') {
+		$.ajax({
+			url: '/makros_form'
+		})
+		.done(function(data) {
+			$('#modal-content').html(data);
+			$('#new-makro').click(function(){
+				var i = parseInt($('.makros tbody:first-child tr:last-child').attr('no')) + 1;
+				$('.makros tbody:first-child tr:last-child').after(
 					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
 				);
 				return false;
