@@ -266,7 +266,7 @@ class AnnoEdge < Edge
 end
 
 class AnnoGraph < SearchableGraph
-	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno
+	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros
 
 	# extend the super class initialize method by reading in of display and layer configuration, and search makros
 	def initialize
@@ -274,6 +274,7 @@ class AnnoGraph < SearchableGraph
 		@conf = AnnoGraphConf.new
 		@info = {}
 		@allowed_anno = []
+		@anno_makros = {}
 		create_layer_makros
 	end
 
@@ -300,6 +301,7 @@ class AnnoGraph < SearchableGraph
 		end
 		self.add_hash(nodes_and_edges)
 		if version >= 6
+			@anno_makros = nodes_and_edges['anno_makros'] ? nodes_and_edges['anno_makros'] : {}
 			@info = nodes_and_edges['info'] ? nodes_and_edges['info'] : {}
 			@allowed_anno = nodes_and_edges['allowed_anno'] ? nodes_and_edges['allowed_anno'].to_allowed_anno : []
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
@@ -543,6 +545,7 @@ class AnnoGraph < SearchableGraph
 			merge('version' => '7').
 			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('info' => @info).
+			merge('anno_makros' => @anno_makros).
 			merge('allowed_anno' => @allowed_anno.to_savable_array).
 			merge('search_makros' => @makros_plain)
 	end

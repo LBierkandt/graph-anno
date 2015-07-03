@@ -305,6 +305,9 @@ function makeAnfrage(anfrage, params) {
 					case 'metadata':
 						openMetadata();
 						return;
+					case 'makros':
+						openMakros();
+						return;
 				}
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
@@ -420,6 +423,25 @@ function openSpeakers() {
 		});
 	}
 }
+function openMakros() {
+	if ($('#modal-background').css('display') != 'block') {
+		$.ajax({
+			url: '/makros_form'
+		})
+		.done(function(data) {
+			$('#modal-content').html(data);
+			$('#new-makro').click(function(){
+				var i = parseInt($('.makros tbody:first-child tr:last-child').attr('no')) + 1;
+				$('.makros tbody:first-child tr:last-child').after(
+					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><input name="values['+i+']" type="text"></td></tr>'
+				);
+				return false;
+			});
+			$('#modal-background').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
 function openTagset() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
@@ -479,6 +501,17 @@ function sendSpeakers() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_speakers',
+		dataType: 'json',
+		data: $('#modal-form').serialize()
+	})
+	.done(function(data) {
+		closeModal();
+	});
+}
+function sendMakros() {
+	$.ajax({
+		type: 'POST',
+		url: '/save_makros',
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})

@@ -1,0 +1,31 @@
+%form#modal-form.makros{ :name => 'config', :onsubmit => 'sendMakros(); return false;', :onreset => 'closeModal(); return false;' }
+  #modal-warning.error_message
+  %div.modal-form-element
+    %table
+      %tbody
+        %tr
+          %th{ :colspan => 2 } Annotation makros
+        %tr
+          %th Shortcut
+          %th Annotations
+        - if graph.anno_makros.length == 0
+          %tr{:no => '0'}
+            %td
+              %input{:name => "keys[0]", :type => 'text', :value => ''}
+            %td
+              %input{:name => "values[0]", :type => 'text'}
+        - else
+          - graph.anno_makros.keys.each_with_index do |key, i|
+            %tr{:no => i}
+              %td
+                %input{:name => "keys[#{i}]", :type => 'text', :value => key}
+              %td
+                %input{:name => "values[#{i}]", :type => 'text', :value => graph.anno_makros[key].map{|k, v| "#{k}:#{v}"} * ' '}
+      %tbody
+        %tr
+          %td{:colspan => 2}
+            %button#new-makro Add annotation makro
+
+  #modal-submit.bottom-block
+    %input{ :type => 'reset', :value => 'Cancel' }
+    %input{ :type => 'submit', :value => 'Save' }

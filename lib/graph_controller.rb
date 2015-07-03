@@ -167,6 +167,15 @@ class GraphController
 		)
 	end
 
+	def makros_form
+		@sinatra.haml(
+			:makros_form,
+			:locals => {
+				:graph => @graph
+			}
+		)
+	end
+
 	def allowed_annotations_form
 		@sinatra.haml(
 			:allowed_annotations_form,
@@ -234,6 +243,14 @@ class GraphController
 			else
 				@graph.add_speaker_node(:attr => @sinatra.params['attributes'][i].parse_parameters[:attributes])
 			end
+		end
+		return true.to_json
+	end
+
+	def save_makros
+		@graph.anno_makros = {}
+		@sinatra.params['keys'].each do |i, key|
+			@graph.anno_makros[key.strip] = @sinatra.params['values'][i].parse_parameters[:attributes]
 		end
 		return true.to_json
 	end
@@ -359,12 +376,22 @@ class GraphController
 
 	private
 
+	def extract_attributes(parameters)
+		allowed_attributes(
+			makros_to_attributes(parameters[:words]).merge(parameters[:attributes])
+		)
+	end
+
 	def allowed_attributes(attr)
 		allowed_attr = @graph.allowed_attributes(attr)
 		if (forbidden = attr.keys - allowed_attr.keys) != []
 			@cmd_error_messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
 		end
 		return allowed_attr
+	end
+
+	def makros_to_attributes(words)
+		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:compact)
 	end
 
 	def build_label(e, i = nil)
@@ -455,14 +482,14 @@ class GraphController
 			when 'n' # new node
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(allowed_attributes(parameters[:attributes]))
+					properties.merge!(extract_attributes(parameters))
 					@graph.add_anno_node(:attr => properties, :sentence => @sentence)
 				end
 
 			when 'e' # new edge
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(allowed_attributes(parameters[:attributes]))
+					properties.merge!(extract_attributes(parameters))
 					@graph.add_anno_edge(
 						:start => element_by_identifier(parameters[:all_nodes][0]),
 						:end => element_by_identifier(parameters[:all_nodes][1]),
@@ -478,7 +505,7 @@ class GraphController
 					end
 
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(allowed_attributes(parameters[:attributes]))
+					properties.merge!(extract_attributes(parameters))
 
 					parameters[:elements].each do |element_id|
 						if element = element_by_identifier(element_id)
@@ -512,7 +539,7 @@ class GraphController
 					layer = set_new_layer(parameters[:words], properties)
 					@graph.add_parent_node(
 						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
-						properties.merge(allowed_attributes(parameters[:attributes])),
+						properties.merge(extract_attributes(parameters)),
 						properties.clone,
 						@sentence
 					)
@@ -524,7 +551,7 @@ class GraphController
 					layer = set_new_layer(parameters[:words], properties)
 					@graph.add_child_node(
 						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
-						properties.merge(allowed_attributes(parameters[:attributes])),
+						properties.merge(extract_attributes(parameters)),
 						properties.clone,
 						@sentence
 					)
@@ -534,7 +561,7 @@ class GraphController
 			when 'ni' # build node and "insert in edge"
 				if sentence_set?
 					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(allowed_attributes(parameters[:attributes]))
+					properties.merge!(extract_attributes(parameters))
 					parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
 						@graph.insert_node(edge, properties)
 					end
@@ -682,6 +709,9 @@ class GraphController
 
 			when 'metadata'
 				return {:modal => 'metadata'}
+
+			when 'makros'
+				return {:modal => 'makros'}
 
 			# all following commands are related to annotation @graph expansion -- Experimental!
 			when 'project'
