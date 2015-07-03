@@ -226,6 +226,14 @@ class GraphController
 		return true.to_json
 	end
 
+	def save_makros
+		@graph.anno_makros = {}
+		@sinatra.params['keys'].each do |i, key|
+			@graph.anno_makros[key.strip] = @sinatra.params['values'][i].parse_parameters[:attributes]
+		end
+		return true.to_json
+	end
+
 	def save_allowed_annotations
 		@graph.allowed_anno = []
 		@sinatra.params['keys'].each do |i, key|

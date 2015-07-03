@@ -4,24 +4,23 @@
     %table
       %tbody
         %tr
-          %th{ :colspan => 2 } Makros
+          %th{ :colspan => 2 } Annotation makros
         %tr
-          %th Key
-          %th Value
-        - if graph.info.length == 0
+          %th Shortcut
+          %th Annotations
+        - if graph.anno_makros.length == 0
           %tr{:no => '0'}
             %td
               %input{:name => "keys[0]", :type => 'text', :value => ''}
             %td
-              %textarea{:name => "values[0]"}
+              %input{:name => "values[0]", :type => 'text'}
         - else
-          - graph.info.keys.each_with_index do |key, i|
+          - graph.anno_makros.keys.each_with_index do |key, i|
             %tr{:no => i}
               %td
                 %input{:name => "keys[#{i}]", :type => 'text', :value => key}
               %td
-                %textarea{:name => "values[#{i}]"}
-                  = graph.info[key]
+                %input{:name => "values[#{i}]", :type => 'text', :value => graph.anno_makros[key].map{|k, v| "#{k}:#{v}"} * ' '}
       %tbody
         %tr
           %td{:colspan => 2}

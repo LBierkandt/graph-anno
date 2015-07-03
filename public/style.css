@@ -241,6 +241,9 @@ th {
 	box-sizing: border-box;
 	-moz-box-sizing: border-box;
 }
+#modal-form input[type="text"] {
+	width: 100%;
+}
 .metadata .modal-form-element, .metadata table, .allowed_annotations .modal-form-element, .allowed_annotations table, .makros .modal-form-element, .makros table {
 	width: 100%;
 }

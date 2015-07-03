@@ -411,7 +411,7 @@ function openMakros() {
 			$('#new-makro').click(function(){
 				var i = parseInt($('.makros tbody:first-child tr:last-child').attr('no')) + 1;
 				$('.makros tbody:first-child tr:last-child').after(
-					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
+					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><input name="values['+i+']" type="text"></td></tr>'
 				);
 				return false;
 			});
@@ -468,6 +468,17 @@ function sendMetadata() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_metadata',
+		dataType: 'json',
+		data: $('#modal-form').serialize()
+	})
+	.done(function(data) {
+		closeModal();
+	});
+}
+function sendMakros() {
+	$.ajax({
+		type: 'POST',
+		url: '/save_makros',
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})
