@@ -816,6 +816,22 @@ class GraphController
 	def generate_graph(format, path)
 		puts "Generating graph for sentence \"#{@sentence.name}\"..." if @sentence
 
+		satzinfo = {:textline => '', :meta => ''}
+
+		@tokens     = @sentence ? @sentence.sentence_tokens : []
+		all_nodes   = @sentence ? @sentence.nodes : []
+		@nodes      = all_nodes.reject{|n| n.type == 't'}
+		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
+		@edges      = all_edges.select{|e| e.type == 'a'}
+		order_edges = all_edges.select{|e| e.type == 'o'}
+
+		if @filter[:mode] == 'filter'
+			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
+			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
+		end
+
+		satzinfo[:meta] = build_label(@sentence) if @sentence
+
 		viz_graph = GraphViz.new(
 			:G,
 			:type => 'digraph',
@@ -831,31 +847,18 @@ class GraphController
 		@graph.conf.layers.each do |l|
 			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
 		end
-		if (speakers = @graph.speaker_nodes) != []
-			speaker_graphs = Hash[speakers.map{|s| [s.id, viz_graph.subgraph(:rank => 'same')]}]
-			# induce layering of speaker graphs:
-			speaker_graphs.values.each_with_index do |sg, i|
-				sg.add_nodes('s' + i.to_s, {:style => 'invis'})
+		# speaker subgraphs
+		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map{|t| t.speaker}.include?(sp)}) != []
+			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => 'same')]}]
+			# induce speaker labels and layering of speaker graphs:
+			speaker_graphs.each_with_index do |array, i|
+				speaker_graph = array.last
+				speaker_node = array.first
+				speaker_graph.add_nodes('s' + i.to_s, {:shape => 'plaintext', :label => speaker_node['name'], :fontname => @graph.conf.font})
 				viz_graph.add_edges('s' + (i-1).to_s, 's' + i.to_s, {:style => 'invis'}) if i > 0
 			end
 			timeline_graph = viz_graph.subgraph(:rank => 'same')
 		end
-
-		satzinfo = {:textline => '', :meta => ''}
-
-		@tokens     = @sentence ? @sentence.sentence_tokens : []
-		all_nodes   = @sentence ? @sentence.nodes : []
-		@nodes      = all_nodes.reject{|n| n.type == 't'}
-		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
-		@edges      = all_edges.select{|e| e.type == 'a'}
-		order_edges = all_edges.select{|e| e.type == 'o'}
-		
-		if @filter[:mode] == 'filter'
-			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
-			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
-		end
-
-		satzinfo[:meta] = build_label(@sentence) if @sentence
 
 		@tokens.each_with_index do |token, i|
 			options = {
@@ -880,8 +883,9 @@ class GraphController
 				token_graph.add_nodes(token.id, options)
 			else
 				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker.id].add_nodes(token.id, options.merge(:width => token.end - token.start))
-				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}"})
+				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options.merge(:width => token.end - token.start))
+				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
+				speaker_graphs[token.speaker].add_edges('s0', gv_token, {:style => 'invis'}) if i == 0
 				# multiple lines between token and point on timeline in order to force correct order:
 				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
 				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
