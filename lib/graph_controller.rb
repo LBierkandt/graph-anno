@@ -357,7 +357,7 @@ class GraphController
 	end
 
 	def makros_to_attributes(words)
-		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:compact)
+		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}
 	end
 
 	def build_label(e, i = nil)
@@ -576,18 +576,26 @@ class GraphController
 				@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 			when 'del' # delete sentence
-				if sentence_set?
-					saetze = @graph.sentence_nodes
-					index = saetze.index(@sentence) + 1
-					index -= 2 if index == saetze.length
-					last_sentence = @sentence.node_before
-					next_sentence = @sentence.node_after
-					# delete nodes
-					@sentence.nodes.each{|n| n.delete}
-					@sentence.delete
-					@graph.add_order_edge(:start => last_sentence, :end => next_sentence)
+				sentences = if parameters[:words] != []
+					@graph.sentence_nodes.select do |n|
+						parameters[:words].any?{|arg|
+							!arg.match(/^\/.*\/$/) and n.name == arg or
+							arg.match(/^\/.*\/$/) and n.name.match(Regexp.new(arg[1..-2]))
+						}
+					end
+				elsif sentence_set?
+					[@sentence]
+				else
+					[]
+				end
+				sentences.each do |sentence|
 					# change to next sentence
-					@sentence = saetze[index]
+					@sentence = sentence.node_after || sentence.node_before if sentence == @sentence
+					# join remaining sentences
+					@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after)
+					# delete nodes
+					sentence.nodes.each{|n| n.delete}
+					sentence.delete
 				end
 
 			when 'load', 'laden' # clear workspace and load corpus file
