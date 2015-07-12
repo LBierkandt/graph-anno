@@ -149,40 +149,15 @@ class GraphController
 		}.merge(satzinfo).to_json
 	end
 
-	def config_form
-		@sinatra.haml(
-			:config_form,
-			:locals => {
-				:graph => @graph
-			}
-		)
-	end
-
-	def metadata_form
-		@sinatra.haml(
-			:metadata_form,
-			:locals => {
-				:graph => @graph
-			}
-		)
-	end
-
-	def makros_form
-		@sinatra.haml(
-			:makros_form,
-			:locals => {
-				:graph => @graph
-			}
-		)
-	end
-
-	def allowed_annotations_form
-		@sinatra.haml(
-			:allowed_annotations_form,
-			:locals => {
-				:graph => @graph
-			}
-		)
+	['config', 'metadata', 'makros', 'allowed_annotations'].each do |form_name|
+		define_method("#{form_name}_form") do
+			@sinatra.haml(
+				:"#{form_name}_form",
+				:locals => {
+					:graph => @graph
+				}
+			)
+		end
 	end
 
 	def speakers_form
