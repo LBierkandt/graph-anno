@@ -258,6 +258,8 @@ The command creates sentence nodes with the corresponding \texttt{name} attribut
 \subsubsection{Delete sentence: \texttt{del}}
 
 The command \texttt{del} deletes the current sentence including the sentence node.
+If you enter one or more sentence names as arguments, it is not the current sentence that will be deleted but the sentences that bear one of the given names.
+A further possibility is to enter a regular expression (in slashes); in that case, all sentences whose names match the given regular expression will be deleted.
 
 
 \subsubsection{Set sentence: \texttt{s}}
