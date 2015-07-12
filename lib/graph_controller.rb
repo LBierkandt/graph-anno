@@ -345,7 +345,7 @@ class GraphController
 	end
 
 	def makros_to_attributes(words)
-		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:compact)
+		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}
 	end
 
 	def build_label(e, i = nil)
