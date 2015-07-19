@@ -26,7 +26,6 @@ require './lib/anno_graph.rb'
 require './lib/toolbox_module.rb'
 require './lib/paula_exporter.rb'
 require './lib/salt_exporter.rb'
-require './lib/expansion_module.rb'
 require './lib/graph_controller.rb'
 
 controller = GraphController.new
