@@ -78,7 +78,7 @@ class SearchableGraph < Graph
 		end
 		['cond', 'sort', 'col'].each do |op_type|
 			operationen[op_type].map{|o| o[:ids].values}.flatten.each do |id|
-				if not als_referenz_erlaubte_ids.include?(id)
+				unless als_referenz_erlaubte_ids.include?(id)
 					error_messages << "The id #{id} is used in #{op_type} clause, but is not defined."
 				end
 			end
@@ -267,7 +267,7 @@ class SearchableGraph < Graph
 				zusammengefasste_tg = {}
 				tglisten[node_tgindex].each do |referenztg|
 					# "node"s/"text"e des Referenz-TG
-					uebereinstimmend = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort{|a,b| a.id.to_i <=> b.id.to_i}}
+					uebereinstimmend = referenztg.ids.select{|s,w| node_ids.include?(s)}.values.map{|k| k.sort_by{|n| n.id.to_i}}
 					# in Hash unter "uebereinstimmend"en Knoten zusammenfassen
 					if zusammengefasste_tg[uebereinstimmend]
 						zusammengefasste_tg[uebereinstimmend] += referenztg
@@ -379,7 +379,7 @@ class SearchableGraph < Graph
 
 		# Sortieren
 		found[:tg].each do |tg|
-			tg.ids.values.each{|arr| arr.sort!{|a,b| a.id.to_i <=> b.id.to_i}}
+			tg.ids.values.each{|arr| arr.sort_by!{|n| n.id.to_i}}
 		end
 		operationen['sort'].each do |op|
 			op[:lambda] = evallambda(op, found[:id_type])
@@ -539,7 +539,6 @@ class SearchableGraph < Graph
 end
 
 class NodeOrEdge
-
 	def fulfil?(bedingung)
 		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.class == String
 		return true unless bedingung
@@ -616,11 +615,9 @@ class NodeOrEdge
 			return true
 		end
 	end
-
 end
 
 class Node
-
 	def links(pfad_oder_automat, zielknotenbedingung = nil)
 		if pfad_oder_automat.class == String
 			automat = Automat.create(@graph.parse_link(pfad_oder_automat)[:op])
@@ -673,7 +670,6 @@ class Node
 	def nodes(link, zielknotenbedingung = '')
 		return links(link, @graph.parse_attributes(zielknotenbedingung)[:op]).map{|node_and_link| node_and_link[0]}.uniq
 	end
-
 end
 
 class Automat
@@ -845,13 +841,13 @@ class Automat
 			end
 		when 'edge'
 			if nk.kind_of?(Edge)
-				if forward and nk.fulfil?(z.uebergang) then schritt_in_liste(h.clone, liste) end
+				schritt_in_liste(h.clone, liste) if forward and nk.fulfil?(z.uebergang)
 			else # wenn das aktuelle Element ein Knoten ist
 				schritt_in_liste(h.clone, liste, false)
 			end
 		when 'redge'
 			if nk.kind_of?(Edge)
-				if !forward and nk.fulfil?(z.uebergang) then schritt_in_liste(h.clone, liste) end
+				schritt_in_liste(h.clone, liste) if !forward and nk.fulfil?(z.uebergang)
 			else # wenn das aktuelle Element ein Knoten ist
 				schritt_in_liste(h.clone, liste, false)
 			end
@@ -942,7 +938,7 @@ class Teilgraph
 	def remove_boundary_nodes!
 		@nodes.reject!{|n| n.cat == 'boundary' and n.token == ''}
 	end
-	
+
 	def to_s
 		'Nodes: ' + @nodes.to_s + ', Edges: ' + @edges.to_s + ', ids: ' + @ids.to_s
 	end
@@ -985,7 +981,7 @@ end
 
 def evallambda(op, id_index)
 	string = op[:string].clone
-	op[:ids].keys.sort{|a,b| b.begin <=> a.begin}.each do |stelle|
+	op[:ids].keys.sort_by{|id| id.begin}.each do |stelle|
 		id = op[:ids][stelle]
 		id_type = id_index[id][:art] if (id_type = id_index[id]).class == Hash
 		case id_type

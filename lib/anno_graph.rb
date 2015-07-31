@@ -31,11 +31,9 @@ class NodeOrEdge
 	def cat=(arg)
 		@attr['cat'] = arg
 	end
-
 end
 
 class AnnoNode < Node
-
 	def initialize(h)
 		super
 		@type = h[:type]
@@ -46,7 +44,10 @@ class AnnoNode < Node
 		super.merge(:type => @type)
 	end
 
-	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
+	# this is an annotation schema-specific method if no link argument is provided!
+	# @param link [String] a query language string describing the link from self to the tokens that will be returned
+	# @return [Array] all dominated tokens or all tokens connected via given link
+	def tokens(link = nil)
 		if !link
 			if @attr['s-layer'] == 't'
 				link = 'edge(s-layer:t)*'
@@ -54,13 +55,17 @@ class AnnoNode < Node
 				link = 'edge(cat:ex) node(s-layer:t | token://) edge(s-layer:t)*'
 			end
 		end
-		return self.nodes(link, 'token://').sort{|a,b| a.tokenid <=> b.tokenid}
+		self.nodes(link, 'token://').sort_by{|token| token.tokenid}
 	end
 
+	# this is an annotation schema-specific method if no link argument is provided!
+	# @param link [String] a query language string describing the link from self to the tokens whose text will be returned
+	# @return [String] the text formed by all dominated tokens or all tokens connected via given link
 	def text(link = nil)
 		self.tokens(link).map{|t| t.token} * ' '
 	end
 
+	# @return [Node] the sentence node self is associated with
 	def sentence
 		if @type == 's'
 			self
@@ -69,7 +74,8 @@ class AnnoNode < Node
 		end
 	end
 
-	def sentence_tokens # Alle Tokens desselben Satzes
+	# @return [Array] the tokens of the sentence self belongs to
+	def sentence_tokens
 		s = sentence
 		if @type == 't'
 			ordered_sister_nodes{|t| t.sentence === s}
@@ -84,6 +90,8 @@ class AnnoNode < Node
 		end
 	end
 
+	# @param block [Lambda] a block to filter the considered sister nodes
+	# @return [Array] an ordered list of the sister nodes of self, optionally filtered by a block
 	def ordered_sister_nodes(&block)
 		block ||= lambda{|n| true}
 		nodes = [self]
@@ -98,24 +106,22 @@ class AnnoNode < Node
 		return nodes
 	end
 
+	# @return [String] the text of the sentence self belongs to
 	def sentence_text
 		sentence_tokens.map{|t| t.token} * ' '
 	end
 
+	# @return [Float] the position of self in terms of own tokenid or averaged tokenid of the dominated (via tokens method) tokens
 	def position
-		if @attr['token']
+		if @type == 't'
 			position = self.tokenid.to_f
 		else
-			summe = 0
+			sum = 0
 			toks = self.tokens
 			toks.each do |t|
-				summe += t.position
+				sum += t.position
 			end
-			if toks.length > 0
-				position = summe / toks.length
-			else
-				position = 0
-			end
+			position = toks.length > 0 ? sum / toks.length : 0
 		end
 		return position
 	end
@@ -146,10 +152,10 @@ class AnnoNode < Node
 		ot_last  = ot.last.tokenid
 		if st_last < ot_first
 			r += 'pre'
-			if detail and st_last < ot_first - 1 then r += '_separated' end
+			r += '_separated' if detail and st_last < ot_first - 1
 		elsif st_first > ot_last
 			r +='post'
-			if detail and st_first > ot_last + 1 then r += '_separated' end
+			r += '_separated' if detail and st_first > ot_last + 1
 		elsif st_first > ot_first && st_last < ot_last &&
 			ot.any?{|t| t.tokenid < st_first || t.tokenid > st_last}
 			r += 'in'
@@ -185,18 +191,22 @@ class AnnoNode < Node
 
 	# methods specific for token nodes:
 
+	# @return [String] self's text
 	def token
 		@attr['token']
 	end
 
+	# @param arg [String] new self's text
 	def token=(arg)
 		@attr['token'] = arg
 	end
 
+	# @return [Integer] position of self in ordered list of own sentence's tokens
 	def tokenid
 		self.sentence_tokens.index(self)
 	end
 
+	# deletes self and joins adjacent tokens if possible
 	def remove_token
 		if self.token
 			s = self.sentence
@@ -208,15 +218,20 @@ class AnnoNode < Node
 	end
 
 	# methods specific for section nodes:
-	
+
+	# @return [String] self's name attribute
 	def name
 		@attr['name']
 	end
-	
+
+	# @param name [String] self's new name attribute
 	def name=(name)
 		@attr['name'] = name
 	end
 
+	# @param link [String] a link in query language
+	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
+	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
 	def nodes(link = nil, end_node_condition = '')
 		if link
 			super
@@ -228,11 +243,9 @@ class AnnoNode < Node
 			end
 		end
 	end
-
 end
 
 class AnnoEdge < Edge
-
 	def initialize(h)
 		super
 		@type = h[:type]
@@ -243,11 +256,10 @@ class AnnoEdge < Edge
 		super.merge(:type => @type)
 	end
 
-	def fulfil?(bedingung)
-		if @type != 'a' then return false end
+	def fulfil?(condition)
+		return false unless @type == 'a'
 		super
 	end
-
 end
 
 class AnnoGraph < SearchableGraph
@@ -347,7 +359,7 @@ class AnnoGraph < SearchableGraph
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a['sentence'] <=> b['sentence']}
+				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
 					s.name = s.attr.delete('sentence')
@@ -500,15 +512,6 @@ class AnnoGraph < SearchableGraph
 		node.delete
 	end
 
-	def filter!(bedingung)
-		@nodes.each do |id,node|
-			if !node.fulfil?(bedingung) then @nodes.delete(id) end
-		end
-		@edges.each do |id,edge|
-			if !edge.fulfil?(bedingung) then @edges.delete(id) end
-		end
-	end
-
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
 	def to_h
 		super.
@@ -520,6 +523,8 @@ class AnnoGraph < SearchableGraph
 			merge('search_makros' => @makros_plain)
 	end
 
+	# merges another graph into self
+	# @param other [Graph] the graph to be merged
 	def merge!(other)
 		s_nodes = sentence_nodes
 		last_old_sentence_node = s_nodes.last
@@ -529,12 +534,15 @@ class AnnoGraph < SearchableGraph
 		@conf.merge!(other.conf)
 	end
 
+	# @return [Graph] a clone of self (nodes and edges are not cloned)
 	def clone
 		new_graph = super
 		new_graph.clone_graph_info(self)
 		return new_graph
 	end
 
+	# sets self's configuration to the cloned configuration of the given graph
+	# @param other_graph [Graph] the other graph
 	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
@@ -544,6 +552,8 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
+	# @param sentence_list [Array] a list of sentence nodes
+	# @return [Graph] the new graph
 	def subcorpus(sentence_list)
 		nodes = sentence_list.map{|s| s.nodes}.flatten
 		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
@@ -565,6 +575,7 @@ class AnnoGraph < SearchableGraph
 		return g
 	end
 
+	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
 		if first_sect_node = @nodes.values.select{|n| n.type == 's'}[0]
 			first_sect_node.ordered_sister_nodes
@@ -573,7 +584,9 @@ class AnnoGraph < SearchableGraph
 		end
 	end
 
-	# builds token-nodes from a list of words, concatenates them and appends them if tokens in the given sentence are already present; if next_token is given, the new tokens are inserted before next_token
+	# builds token nodes from a list of words, concatenates them and appends them if a sentence is given and the given sentence contains tokens; if next_token is given, the new tokens are inserted before next_token; if last_token is given, the new tokens are inserted after last_token
+	# @param words [Array] a list of strings from which the new tokens will be created
+	# @param h [Hash] a hash with one of the keys :sentence (a sentence node), :next_token or :last_token (a token node)
 	def build_tokens(words, h)
 		if h[:sentence]
 			sentence = h[:sentence]
@@ -589,18 +602,17 @@ class AnnoGraph < SearchableGraph
 		else
 			return
 		end
-		token_collection = []
-		words.each do |word|
-			token_collection << add_token_node(:attr => {'token' => word}, :sentence => sentence)
+		token_collection = words.map do |word|
+			add_token_node(:attr => {'token' => word}, :sentence => sentence)
 		end
 		# This creates relationships between the tokens in the form of 1->2->3->4
 		token_collection[0..-2].each_with_index do |token, index|
 			add_order_edge(:start => token, :end => token_collection[index+1])
 		end
 		# If there are already tokens, append the new ones
-		if last_token then add_order_edge(:start => last_token, :end => token_collection[0]) end
-		if next_token then add_order_edge(:start => token_collection[-1], :end => next_token) end
-		if last_token && next_token then self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete end
+		add_order_edge(:start => last_token, :end => token_collection[0]) if last_token
+		add_order_edge(:start => token_collection[-1], :end => next_token) if next_token
+		self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete if last_token && next_token
 		return token_collection
 	end
 
@@ -639,11 +651,7 @@ class AnnoGraph < SearchableGraph
 				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
 					annotation.each do |k, v|
-						if v.class == Fixnum
-							t[k] = words[i][v]
-						else
-							t[k] = v
-						end
+						t[k] = (v.class == Fixnum) ? words[i][v] : v
 					end
 				end
 			when 'punkt'
@@ -742,7 +750,6 @@ class AnnoGraph < SearchableGraph
 		end
 		@makros = parse_query(layer_makros_array * "\n")['def']
 	end
-
 end
 
 class AnnoLayer
@@ -802,12 +809,12 @@ class AnnoGraphConf
 
 	def merge!(other)
 		other.layers.each do |layer|
-			if not @layers.map{|l| l.attr}.include?(layer.attr)
+			unless @layers.map{|l| l.attr}.include?(layer.attr)
 				@layers << layer
 			end
 		end
 		other.combinations.each do |combination|
-			if not @combinations.map{|c| c.attr}.include?(combination.attr)
+			unless @combinations.map{|c| c.attr}.include?(combination.attr)
 				@combinations << combination
 			end
 		end
@@ -849,7 +856,6 @@ class AnnoGraphConf
 end
 
 class Array
-
 	def text
 		self.map{|n| n.text} * ' '
 	end
@@ -923,29 +929,29 @@ class String
 				if word.match(/^(([ent]\d+)|m)$/)
 					h[:elements] << word
 					case word[0]
-						when 'm'
-							h[:meta] << word
-						when 'n'
-							h[:nodes] << word
-							h[:all_nodes] << word
-						when 't'
-							h[:tokens] << word
-							h[:all_nodes] << word
-						when 'e'
-							h[:edges] << word
+					when 'm'
+						h[:meta] << word
+					when 'n'
+						h[:nodes] << word
+						h[:all_nodes] << word
+					when 't'
+						h[:tokens] << word
+						h[:all_nodes] << word
+					when 'e'
+						h[:edges] << word
 					end
 				elsif mm = word.match(/^([ent])(\d+)\.\.\1(\d+)$/)
 					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
 						h[:elements] << mm[1] + n.to_s
 						case word[0]
-							when 'n'
-								h[:nodes] << mm[1] + n.to_s
-								h[:all_nodes] << mm[1] + n.to_s
-							when 't'
-								h[:tokens] << mm[1] + n.to_s
-								h[:all_nodes] << mm[1] + n.to_s
-							when 'e'
-								h[:edges] << mm[1] + n.to_s
+						when 'n'
+							h[:nodes] << mm[1] + n.to_s
+							h[:all_nodes] << mm[1] + n.to_s
+						when 't'
+							h[:tokens] << mm[1] + n.to_s
+							h[:all_nodes] << mm[1] + n.to_s
+						when 'e'
+							h[:edges] << mm[1] + n.to_s
 						end
 					end
 				elsif word.match(r[:id])
@@ -978,9 +984,6 @@ class String
 	end
 
 	def value_list
-		self.lex_ql.select do |tok|
-			[:bstring, :qstring, :regex].include?(tok[:cl])
-		end
+		self.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
 	end
-
 end
