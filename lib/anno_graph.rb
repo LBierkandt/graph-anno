@@ -904,7 +904,8 @@ class String
 
 		r = {}
 		r[:ctrl] = '(\s|:)'
-		r[:bstring] = '[^\s:"]+'
+		r[:comment] = '#'
+		r[:bstring] = '[^\s:"#]+'
 		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
 		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
@@ -914,7 +915,9 @@ class String
 
 		while str != ''
 			m = nil
-			if m = str.match(r[:ctrl])
+			if m = str.match(r[:comment])
+				break
+			elsif m = str.match(r[:ctrl])
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
 				val = m[6] ? m[6].gsub('\"', '"') : m[5]

@@ -145,7 +145,7 @@ module Parser
 
 	def parse_line(obj, makros)
 		if obj.class == String
-			p = obj.strip.partition('#')[0].split(/\s/)
+			p = obj.strip.split(/\s/)
 			if ['cond', 'sort'].include?(p[0])
 				return {:operator => p[0]}.merge(parse_eval((p[1..-1] * ' ')))
 			elsif p[0] == 'col'
