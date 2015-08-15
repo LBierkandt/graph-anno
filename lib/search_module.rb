@@ -449,7 +449,8 @@ class SearchableGraph < Graph
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands)
-				attrs = allowed_attributes(command[:attributes])
+				attrs = interpolate(command[:attributes], found[:id_type], tg)
+				attrs = allowed_attributes(attrs)
 				# set layer (same for all commands)
 				if layer_shortcut = command[:words].select{|l| conf.layer_shortcuts.keys.include?(l)}.last
 					layer = conf.layer_shortcuts[layer_shortcut]
@@ -535,6 +536,14 @@ class SearchableGraph < Graph
 			end #command
 		end # tg
 		return search_result_preserved
+	end
+
+	def interpolate(attributes, id_index, tg)
+		attributes.map_hash do |k, v|
+			v.gsub(/\{(.*)\}/) do |match|
+				evallambda(parse_eval($1), id_index).call(tg)
+			end
+		end
 	end
 end
 
