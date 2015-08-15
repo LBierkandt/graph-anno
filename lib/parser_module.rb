@@ -18,7 +18,6 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class String
-
 	def lex_ql
 		str = self.strip
 		rueck = []
@@ -88,7 +87,6 @@ class String
 
 		return rueck
 	end
-
 end
 
 module Parser
@@ -156,7 +154,7 @@ module Parser
 				return parse_line(obj.lex_ql, makros)
 			end
 		else
-			if obj.length == 0 then return nil end
+			return nil if obj.length == 0
 			arr = obj.clone
 			if arr[0] and arr[0][:cl] == :bstring and @@query_operators.include?(arr[0][:str])
 				op = {:operator => arr.shift[:str]}
@@ -171,70 +169,70 @@ module Parser
 				raise "Undefined command \"#{arr[0][:str]}\""
 			end
 			case op[:operator]
-				when 'node', 'nodes'
-					if arr[0] and arr[0][:cl] == :id
-						op[:id] = arr.shift[:str]
+			when 'node', 'nodes'
+				if arr[0] and arr[0][:cl] == :id
+					op[:id] = arr.shift[:str]
+				end
+				op[:cond] = parse_attributes(arr)[:op]
+			when 'text'
+				if arr[0] and arr[0][:cl] == :id
+					op[:id] = arr.shift[:str]
+				end
+				p = parse_text_search(arr)
+				op[:arg] = p[:op]
+				op[:ids] = p[:ids]
+			when 'edge'
+				ids = []
+				while arr[0]
+					if arr[0][:cl] == :operator and arr[0][:str] == ' '
+						arr.shift
+					elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
+						arr.shift
+					elsif arr[0][:cl] == :id
+						ids << arr.shift[:str]
+					else break
 					end
-					op[:cond] = parse_attributes(arr)[:op]
-				when 'text'
-					if arr[0] and arr[0][:cl] == :id
-						op[:id] = arr.shift[:str]
+				end
+				if ids.length == 0
+				elsif ids.length == 1
+					op[:id] = ids[0]
+				elsif ids.length == 2
+					op[:start], op[:end] = ids
+				elsif ids.length == 3
+					op[:id], op[:start], op[:end] = ids
+				else #Fehler!
+					raise 'Too many ids in edge clause (max. three)'
+				end
+				op[:cond] = parse_attributes(arr)[:op]
+			when 'link'
+				ids = []
+				while arr[0]
+					if arr[0][:cl] == :operator and arr[0][:str] == ' '
+						arr.shift
+					elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
+						arr.shift
+					elsif arr[0][:cl] == :id
+						ids << arr.shift[:str]
+					else break
 					end
-					p = parse_text_search(arr)
-					op[:arg] = p[:op]
-					op[:ids] = p[:ids]
-				when 'edge'
-					ids = []
-					while arr[0]
-						if arr[0][:cl] == :operator and arr[0][:str] == ' '
-							arr.shift
-						elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
-							arr.shift
-						elsif arr[0][:cl] == :id
-							ids << arr.shift[:str]
-						else break
-						end
-					end
-					if ids.length == 0
-					elsif ids.length == 1
-						op[:id] = ids[0]
-					elsif ids.length == 2
-						op[:start], op[:end] = ids
-					elsif ids.length == 3
-						op[:id], op[:start], op[:end] = ids
-					else #Fehler!
-						raise 'Too many ids in edge clause (max. three)'
-					end
-					op[:cond] = parse_attributes(arr)[:op]
-				when 'link'
-					ids = []
-					while arr[0]
-						if arr[0][:cl] == :operator and arr[0][:str] == ' '
-							arr.shift
-						elsif arr[0][:cl] == :bstring and arr[0][:str] == '>'
-							arr.shift
-						elsif arr[0][:cl] == :id
-							ids << arr.shift[:str]
-						else break
-						end
-					end
-					if ids.length == 2
-						op[:start], op[:end] = ids
-					else #Fehler!
-						raise 'There must be two ids in link clause'
-					end
-					p = parse_link(arr)
-					op[:arg] = p[:op]
-					op[:ids] = p[:ids]
-				when 'meta'
-					op[:cond] = parse_attributes(arr)[:op]
-				when 'def'
-					if [:bstring, :qstring].include?(arr[0][:cl])
-						op[:name] = arr.shift[:str]
-						op[:arg] = arr
-					else # Fehler
-						raise "def clause needs a name"
-					end
+				end
+				if ids.length == 2
+					op[:start], op[:end] = ids
+				else #Fehler!
+					raise 'There must be two ids in link clause'
+				end
+				p = parse_link(arr)
+				op[:arg] = p[:op]
+				op[:ids] = p[:ids]
+			when 'meta'
+				op[:cond] = parse_attributes(arr)[:op]
+			when 'def'
+				if [:bstring, :qstring].include?(arr[0][:cl])
+					op[:name] = arr.shift[:str]
+					op[:arg] = arr
+				else # Fehler
+					raise "def clause needs a name"
+				end
 			end
 			return op
 		end
@@ -249,34 +247,34 @@ module Parser
 			i = 0
 			while tok = obj[i]
 				case tok[:cl]
-					when :key
-						p = parse_attribute(obj[i..-1])
+				when :key
+					p = parse_attribute(obj[i..-1])
+					terms << p[:op]
+					i += p[:length] - 1
+				when :qstring
+					raise "Undefined string \"#{tok[:str]}\""
+				when :bstring
+					p = parse_element(obj[i..-1])
+					if ['in', 'out', 'start', 'end', 'link', 'quant', 'token'].include?(p[:op][:operator])
 						terms << p[:op]
-						i += p[:length] - 1
-					when :qstring
+					elsif @makros.map{|m| m[:name]}.include?(tok[:str])
+						m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
+						terms << m[:op]
+					else #Fehler!
 						raise "Undefined string \"#{tok[:str]}\""
-					when :bstring
-						p = parse_element(obj[i..-1])
-						if ['in', 'out', 'start', 'end', 'link', 'quant', 'token'].include?(p[:op][:operator])
-							terms << p[:op]
-						elsif @makros.map{|m| m[:name]}.include?(tok[:str])
-							m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
-							terms << m[:op]
-						else #Fehler!
-							raise "Undefined string \"#{tok[:str]}\""
-						end
-						i += p[:length] - 1
-					when :operator
-						if ['!', '&', '|'].include?(tok[:str])
-							terms << {'!'=>'not', '&'=>'and', '|'=>'or'}[tok[:str]]
-						elsif tok[:str] == '('
-							p = parse_attributes(obj[i+1..-1])
-							terms << p[:op]
-							i += p[:length]
-						elsif tok[:str] == ')'
-							i += 1
-							break
-						end
+					end
+					i += p[:length] - 1
+				when :operator
+					if ['!', '&', '|'].include?(tok[:str])
+						terms << {'!'=>'not', '&'=>'and', '|'=>'or'}[tok[:str]]
+					elsif tok[:str] == '('
+						p = parse_attributes(obj[i+1..-1])
+						terms << p[:op]
+						i += p[:length]
+					elsif tok[:str] == ')'
+						i += 1
+						break
+					end
 				end
 				i += 1
 			end
@@ -301,33 +299,33 @@ module Parser
 			value_expected = true
 			while tok = obj[i]
 				case tok[:cl]
-					when :bstring, :qstring, :regex
-						if value_expected
-							values << {
-								:value => tok[:str],
-								:method => {:bstring=>'insens', :qstring=>'plain', :regex=>'regex'}[tok[:cl]]
-							}
-							value_expected = false
-						else # Fehler
-							raise "Wrong syntax in declaration of multiple possibilities for attribute value"
-						end
-					when :operator
-						if value_expected
-							values << {:value => '', :method => 'plain'} # oder sollte hier ":value=>nil"? Dann müßte aber fulfil anders definiert sein!
+				when :bstring, :qstring, :regex
+					if value_expected
+						values << {
+							:value => tok[:str],
+							:method => {:bstring=>'insens', :qstring=>'plain', :regex=>'regex'}[tok[:cl]]
+						}
+						value_expected = false
+					else # Fehler
+						raise "Wrong syntax in declaration of multiple possibilities for attribute value"
+					end
+				when :operator
+					if value_expected
+						values << {:value => '', :method => 'plain'} # oder sollte hier ":value=>nil"? Dann müßte aber fulfil anders definiert sein!
+						value_expected = false
+						break
+					else
+						if tok[:str] == '|'
+							value_expected = true
+						else
 							value_expected = false
 							break
-						else
-							if tok[:str] == '|'
-								value_expected = true
-							else
-								value_expected = false
-								break
-							end
 						end
+					end
 				end
 				i += 1
 			end
-			if value_expected then values << {:value => '', :method => 'plain'} end
+			values << {:value => '', :method => 'plain'} if value_expected
 			# build operation
 			op.merge!(values.pop)
 			while values.length > 0
@@ -395,32 +393,32 @@ module Parser
 			i = 0
 			while tok = obj[i]
 				case tok[:cl]
-					when :bstring, :qstring
-						if terms[-1].class == Hash then terms << 'seq' end
-						p = parse_element(obj[i..-1])
-						if ['node', 'edge', 'redge'].include?(p[:op][:operator])
-							terms << p[:op]
-							if p[:op][:id] then ids << p[:op][:id] end
-						elsif @makros.map{|m| m[:name]}.include?(tok[:str])
-							m = parse_link(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
-							terms << m[:op]
-							if m[:op][:id] then ids << m[:op][:id] end
-						end
-						i += p[:length] - 1
-					when :quantor
-						terms[-1] = parse_quantor(tok[:str], terms[-1])
-					when :operator
-						if tok[:str] == '|'
-							terms << 'or'
-						elsif tok[:str] == '('
-							if terms[-1].class == Hash then terms << 'seq' end
-							p = parse_link(obj[i+1..-1])
-							terms << p[:op]
-							i += p[:length]
-						elsif tok[:str] == ')'
-							i += 1
-							break
-						end
+				when :bstring, :qstring
+					terms << 'seq' if terms[-1].class == Hash
+					p = parse_element(obj[i..-1])
+					if ['node', 'edge', 'redge'].include?(p[:op][:operator])
+						terms << p[:op]
+						ids << p[:op][:id] if p[:op][:id]
+					elsif @makros.map{|m| m[:name]}.include?(tok[:str])
+						m = parse_link(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
+						terms << m[:op]
+						ids << m[:op][:id] if m[:op][:id]
+					end
+					i += p[:length] - 1
+				when :quantor
+					terms[-1] = parse_quantor(tok[:str], terms[-1])
+				when :operator
+					if tok[:str] == '|'
+						terms << 'or'
+					elsif tok[:str] == '('
+						terms << 'seq' if terms[-1].class == Hash
+						p = parse_link(obj[i+1..-1])
+						terms << p[:op]
+						i += p[:length]
+					elsif tok[:str] == ')'
+						i += 1
+						break
+					end
 				end
 				i += 1
 			end
@@ -439,32 +437,32 @@ module Parser
 			i = 0
 			while tok = obj[i]
 				case tok[:cl]
-					when :bstring, :qstring, :regex
-						if terms[-1].class == Hash then terms << 'seq' end
-						p = parse_word(obj[i..-1])
+				when :bstring, :qstring, :regex
+					terms << 'seq' if terms[-1].class == Hash
+					p = parse_word(obj[i..-1])
+					terms << p[:op]
+					i += p[:length] - 1
+				when :quantor
+					terms[-1] = parse_quantor(tok[:str], terms[-1])
+				when :id
+					terms[-1][:id] = tok[:str]
+					ids << tok[:str]
+				when :operator
+					if tok[:str] == '|'
+						terms << 'or'
+					elsif tok[:str] == '('
+						terms << 'seq' if terms[-1].class == Hash
+						p = parse_text_search(obj[i+1..-1])
 						terms << p[:op]
-						i += p[:length] - 1
-					when :quantor
-						terms[-1] = parse_quantor(tok[:str], terms[-1])
-					when :id
-						terms[-1][:id] = tok[:str]
-						ids << tok[:str]
-					when :operator
-						if tok[:str] == '|'
-							terms << 'or'
-						elsif tok[:str] == '('
-							if terms[-1].class == Hash then terms << 'seq' end
-							p = parse_text_search(obj[i+1..-1])
-							terms << p[:op]
-							ids += p[:ids]
-							i += p[:length]
-						elsif tok[:str] == ')'
-							i += 1
-							break
-						end
-					when :boundary
-						if terms[-1].class == Hash then terms << 'seq' end
-						terms << {:operator => 'boundary', :level => tok[:str]}
+						ids += p[:ids]
+						i += p[:length]
+					elsif tok[:str] == ')'
+						i += 1
+						break
+					end
+				when :boundary
+					terms << 'seq' if terms[-1].class == Hash
+					terms << {:operator => 'boundary', :level => tok[:str]}
 				end
 				i += 1
 			end
@@ -484,9 +482,7 @@ module Parser
 				terms.delete_at(i-1)
 			end
 		end
-		if terms.length > 1
-			raise "Attributes not linked by operator"
-		end
+		raise "Attributes not linked by operator" if terms.length > 1
 		return terms[0]
 	end
 
@@ -501,7 +497,7 @@ module Parser
 			m = string.match(/{\s*(-?\d*)\s*(,\s*(-?\d*)\s*)?}/)
 			op[:min] = [0, m[1].to_i].max
 			if m[2]
-				op[:max] = if m[3] == '' then -1 else m[3].to_i end
+				op[:max] = m[3] == '' ? -1 : m[3].to_i
 			else
 				op[:max] = op[:min]
 			end
@@ -517,5 +513,4 @@ module Parser
 		end
 		return op
 	end
-
 end
