@@ -77,7 +77,7 @@ class SearchableGraph < Graph
 			error_messages << "The id #{id} is used as start or end, but is not defined." unless erlaubte_start_end_ids.include?(id)
 		end
 		['cond', 'sort', 'col'].each do |op_type|
-			operationen[op_type].map{|o| o[:ids].values}.flatten.each do |id|
+			operationen[op_type].map{|o| o[:ids]}.flatten.each do |id|
 				unless als_referenz_erlaubte_ids.include?(id)
 					error_messages << "The id #{id} is used in #{op_type} clause, but is not defined."
 				end
@@ -287,12 +287,12 @@ class SearchableGraph < Graph
 		end
 
 		tgliste = tglisten.values.flatten(1)
+		tgliste.each{|tg| tg.set_ids(id_index)}
 
 		# cond
 		operationen['cond'].each do |op|
-			lambda = evallambda(op, id_index)
 			begin
-				tgliste.select!{|tg| lambda.call(tg)}
+				tgliste.select!{|tg| tg.id_mapping.instance_eval(op[:string])}
 			rescue NoMethodError => e
 				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 				rueck = eval('lambda{|tg| "error!"}')
@@ -381,15 +381,12 @@ class SearchableGraph < Graph
 		found[:tg].each do |tg|
 			tg.ids.values.each{|arr| arr.sort_by!{|n| n.id.to_i}}
 		end
-		operationen['sort'].each do |op|
-			op[:lambda] = evallambda(op, found[:id_type])
-		end
 		found[:tg].sort! do |a,b|
 			# Hierarchie der sort-Befehle abarbeiten
 			vergleich = 0
 			operationen['sort'].reject{|op| !op}.each do |op|
 				begin
-					vergleich = op[:lambda].call(a) <=> op[:lambda].call(b)
+					vergleich = a.id_mapping.instance_eval(op[:string]) <=> b.id_mapping.instance_eval(op[:string])
 				rescue NoMethodError => e
 					match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 					raise "Undefined method '#{match[1]}' for #{match[2]} in line:\nsort #{op[:string]}"
@@ -404,14 +401,13 @@ class SearchableGraph < Graph
 		end
 
 		# Ausgabe
-		operationen['col'].each{|op| op[:lambda] = evallambda(op, found[:id_type])}
 		if datei.class == String or datei == :string
 			rueck = CSV.generate(:col_sep => "\t") do |csv|
 				csv << ['match_no'] + operationen['col'].map{|o| o[:title]}
 				found[:tg].each_with_index do |tg, i|
 					csv << [i+1] + operationen['col'].map do |op|
 						begin
-							op[:lambda].call(tg)
+							tg.id_mapping.instance_eval(op[:string])
 						rescue NoMethodError => e
 							match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 							raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncol #{op[:title]} #{op[:string]}"
@@ -540,7 +536,7 @@ class SearchableGraph < Graph
 
 	def interpolate(attributes, id_index, tg)
 		attributes.map_hash do |k, v|
-			evallambda(parse_eval("\"#{v}\""), id_index).call(tg)
+			tg.id_mapping.instance_eval("\"#{v}\"")
 		end
 	end
 end
@@ -910,13 +906,15 @@ class Teilgraph
 	# @nodes: list of contained nodes
 	# @edges: list of contained edges
 	# @ids: hash of {id => [Elements with this id]}
+	# @id_mapping: an object containing ids set to the respective elements
 
-	attr_accessor :nodes, :edges, :ids
+	attr_accessor :nodes, :edges, :ids, :id_mapping
 
 	def initialize
 		@nodes = []
 		@edges = []
 		@ids = {}
+		@id_mapping = Object.new
 	end
 
 	def clone
@@ -948,6 +946,17 @@ class Teilgraph
 
 	def to_s
 		'Nodes: ' + @nodes.to_s + ', Edges: ' + @edges.to_s + ', ids: ' + @ids.to_s
+	end
+
+	def set_ids(id_index)
+		id_index.keys.each do |id|
+			case id_index[id][:art]
+			when 'node', 'edge'
+				@id_mapping.instance_variable_set(id, @ids[id][0])
+			when 'nodes', 'text', 'link'
+				@id_mapping.instance_variable_set(id, @ids[id])
+			end
+		end
 	end
 end
 
@@ -984,26 +993,4 @@ class Array
 	def most_frequent
 		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
 	end
-end
-
-def evallambda(op, id_index)
-	string = op[:string].clone
-	op[:ids].keys.sort_by{|id| id.begin}.reverse.each do |stelle|
-		id = op[:ids][stelle]
-		id_type = id_index[id][:art] if (id_type = id_index[id]).class == Hash
-		case id_type
-		when 'node', 'edge'
-			string[stelle] = 'tg.ids[\'' + id + '\'][0]'
-		when 'nodes', 'text', 'link'
-			string[stelle] = 'tg.ids[\'' + id + '\']'
-		end
-	end
-	string = 'lambda{|tg| ' + string + '}'
-	begin
-		rueck = eval(string)
-	rescue SyntaxError
-		rueck = eval('lambda{|tg| "error!"}')
-		raise "Syntax error in line:\n#{op[:operator]} #{op[:title] ? op[:title] : ''} #{op[:string]}"
-	end
-	return rueck
 end

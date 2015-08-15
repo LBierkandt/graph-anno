@@ -1,19 +1,19 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -44,7 +44,7 @@ class String
 		r[:string] = '(' + r[:bstring] + '|' + r[:qstring] + ')'
 		r[:key] = r[:string] + ':'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
-		
+
 		while str != ''
 			m = nil
 			if m = str.match(/^#/)
@@ -78,17 +78,17 @@ class String
 			else
 				raise 'Syntax error'
 			end
-		
+
 			if m
 				str = str[m[0].length..-1]
 			else
 				break
 			end
 		end
-		
+
 		return rueck
 	end
-	
+
 end
 
 module Parser
@@ -101,7 +101,7 @@ module Parser
 		'meta',
 		'cond',
 		'def',
-		'sort', 
+		'sort',
 		'col',
 	]
 	@@annotation_commands = [
@@ -122,13 +122,13 @@ module Parser
 		ops = {:all => []}
 		@@keywords.each{|c| ops[c] = []}
 		ops['def'] = @makros
-		
+
 		lines = string.split("\n")
-		
+
 		puts 'Parsing input:'
 		lines.each{|z| puts '  ' + z}
 		puts
-		
+
 		lines.each do |line|
 			begin
 				if op = parse_line(line, ops['def'])
@@ -139,7 +139,7 @@ module Parser
 				raise e.message + " on line:\n" + line
 			end
 		end
-		
+
 		return ops
 	end
 
@@ -147,9 +147,9 @@ module Parser
 		if obj.class == String
 			p = obj.strip.split(/\s/)
 			if ['cond', 'sort'].include?(p[0])
-				return {:operator => p[0]}.merge(parse_eval((p[1..-1] * ' ')))
+				return {:operator => p[0]}.merge(extract_ids((p[1..-1] * ' ')))
 			elsif p[0] == 'col'
-				return {:operator => p[0], :title => p[1]}.merge(parse_eval((p[2..-1] * ' ')))
+				return {:operator => p[0], :title => p[1]}.merge(extract_ids((p[2..-1] * ' ')))
 			elsif @@annotation_commands.include?(p[0])
 				return {:operator => p[0]}.merge(p[1..-1].join(' ').parse_parameters)
 			else
@@ -490,12 +490,8 @@ module Parser
 		return terms[0]
 	end
 
-	def parse_eval(string)
-		rueck = {:ids => {}, :string => string}
-		string.scan(/@[_[:alnum:]]+/) do |id|
-			rueck[:ids][$`.length..$`.length+$&.length-1] = id
-		end
-		return rueck
+	def extract_ids(string)
+		{:ids => string.scan(/@[_[:alnum:]]+/), :string => string}
 	end
 
 	def parse_quantor(string, argument)
