@@ -540,9 +540,7 @@ class SearchableGraph < Graph
 
 	def interpolate(attributes, id_index, tg)
 		attributes.map_hash do |k, v|
-			v.gsub(/\{(.*)\}/) do |match|
-				evallambda(parse_eval($1), id_index).call(tg)
-			end
+			evallambda(parse_eval("\"#{v}\""), id_index).call(tg)
 		end
 	end
 end
@@ -990,14 +988,14 @@ end
 
 def evallambda(op, id_index)
 	string = op[:string].clone
-	op[:ids].keys.sort_by{|id| id.begin}.each do |stelle|
+	op[:ids].keys.sort_by{|id| id.begin}.reverse.each do |stelle|
 		id = op[:ids][stelle]
 		id_type = id_index[id][:art] if (id_type = id_index[id]).class == Hash
 		case id_type
 		when 'node', 'edge'
-			string[stelle] = 'tg.ids["' + id + '"][0]'
+			string[stelle] = 'tg.ids[\'' + id + '\'][0]'
 		when 'nodes', 'text', 'link'
-			string[stelle] = 'tg.ids["' + id + '"]'
+			string[stelle] = 'tg.ids[\'' + id + '\']'
 		end
 	end
 	string = 'lambda{|tg| ' + string + '}'
