@@ -120,7 +120,7 @@ class GraphController
 			@found = @graph.teilgraph_suchen(@sinatra.params[:query])
 			@search_result = @found[:tg].length.to_s + ' matches'
 		rescue StandardError => e
-			@found = {:tg => [], :id_type => {}}
+			@found = {:tg => []}
 			@search_result = error_message_html(e.message)
 		end
 		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq

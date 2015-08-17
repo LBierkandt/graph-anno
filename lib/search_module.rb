@@ -307,7 +307,7 @@ class SearchableGraph < Graph
 		puts "Found #{tgliste.length.to_s} matches in #{(Time.new - startzeit).to_s} seconds"
 		puts
 
-		return {:tg => tgliste, :id_type => id_index.map_hash{|s,w| w[:art]}}
+		return {:tg => tgliste}
 	end
 
 	def textsuche_NFA(operation, id = nil)
@@ -451,7 +451,7 @@ class SearchableGraph < Graph
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands)
-				attrs = interpolate(command[:attributes], found[:id_type], tg)
+				attrs = interpolate(command[:attributes], tg)
 				attrs = allowed_attributes(attrs)
 				# set layer (same for all commands)
 				if layer_shortcut = command[:words].select{|l| conf.layer_shortcuts.keys.include?(l)}.last
@@ -540,7 +540,7 @@ class SearchableGraph < Graph
 		return search_result_preserved
 	end
 
-	def interpolate(attributes, id_index, tg)
+	def interpolate(attributes, tg)
 		attributes.map_hash do |k, v|
 			begin
 				tg.id_mapping.instance_eval("\"#{v}\"")
