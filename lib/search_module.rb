@@ -299,6 +299,8 @@ class SearchableGraph < Graph
 				raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncond #{op[:string]}"
 			rescue StandardError => e
 				raise "#{e.message} in line:\ncond #{op[:string]}"
+			rescue SyntaxError => e
+				raise clean_syntax_error_message(:message => e.message, :line => "cond #{op[:string]}")
 			end
 		end
 
@@ -392,6 +394,8 @@ class SearchableGraph < Graph
 					raise "Undefined method '#{match[1]}' for #{match[2]} in line:\nsort #{op[:string]}"
 				rescue StandardError => e
 					raise "#{e.message} in line:\nsort #{op[:string]}"
+				rescue SyntaxError => e
+					raise clean_syntax_error_message(:message => e.message, :line => "sort #{op[:string]}")
 				end
 				if vergleich != 0
 					break vergleich
@@ -413,6 +417,8 @@ class SearchableGraph < Graph
 							raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncol #{op[:title]} #{op[:string]}"
 						rescue StandardError => e
 							raise "#{e.message} in line:\ncol #{op[:title]} #{op[:string]}"
+						rescue SyntaxError => e
+							raise clean_syntax_error_message(:message => e.message, :line => "col #{op[:title]} #{op[:string]}")
 						end
 					end
 				end
@@ -536,7 +542,25 @@ class SearchableGraph < Graph
 
 	def interpolate(attributes, id_index, tg)
 		attributes.map_hash do |k, v|
-			tg.id_mapping.instance_eval("\"#{v}\"")
+			begin
+				tg.id_mapping.instance_eval("\"#{v}\"")
+			rescue NoMethodError => e
+				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
+				raise "Undefined method '#{match[1]}' for #{match[2]} in string:\n\"#{v}\""
+			rescue StandardError => e
+				raise "#{e.message} in string:\n\"#{v}\""
+			rescue SyntaxError => e
+				raise clean_syntax_error_message(:message => e.message)
+			end
+		end
+	end
+
+	def clean_syntax_error_message(h)
+		message = h[:message]
+		if h[:line]
+			message.sub(/^\(eval\):1: (.+)\n.+\n.*\^.*$/, "\\1 in line:\n#{h[:line]}")
+		else
+			message.sub(/^\(eval\):1: (.+)\n(.+)\n.*\^.*$/, "\\1 in string:\n\\2")
 		end
 	end
 end

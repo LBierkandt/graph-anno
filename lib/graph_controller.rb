@@ -121,7 +121,7 @@ class GraphController
 			@search_result = @found[:tg].length.to_s + ' matches'
 		rescue StandardError => e
 			@found = {:tg => [], :id_type => {}}
-			@search_result = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
+			@search_result = error_message_html(e.message)
 		end
 		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
@@ -297,7 +297,7 @@ class GraphController
 				@data_table = @graph.teilgraph_ausgeben(@found, anfrage, :string)
 				return ''
 			rescue StandardError => e
-				return e.message
+				return error_message_html(e.message)
 			end
 		end
 	end
@@ -310,7 +310,11 @@ class GraphController
 	end
 
 	def annotate_query
-		search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		begin
+			search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		rescue StandardError => e
+			return {:search_result => error_message_html(e.message)}.to_json
+		end
 		unless search_result_preserved
 			@found = nil
 			@search_result = ''
@@ -346,6 +350,10 @@ class GraphController
 
 	def makros_to_attributes(words)
 		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}
+	end
+
+	def error_message_html(message)
+		 '<span class="error_message">' + message.gsub("\n", '</br>') + '</span>'
 	end
 
 	def build_label(e, i = nil)

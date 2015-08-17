@@ -1,6 +1,6 @@
 window.onload = function() {
 	loadGraph();
-	
+
 	window.onkeydown = taste;
 	$('#sentence').change(changeSentence);
 
@@ -219,7 +219,7 @@ function sendFilter(mode) {
 	var params = 'filter=' + encodeURIComponent(filterfield) + '&mode=' + encodeURIComponent(mode);
 	anfrage.open('POST', '/filter');
 	makeAnfrage(anfrage, params);
-	
+
 	document.getElementById('hide rest').className = '';
 	document.getElementById('hide selected').className = '';
 	document.getElementById('filter rest').className = '';
@@ -253,7 +253,7 @@ function sendDataExport() {
 			if (anfrage.responseText == '') {
 				location = "/export_data_table/data_table.csv";
 			} else {
-				alert(anfrage.responseText);
+				display_search_message(anfrage.responseText);
 			}
 		}
 	}
@@ -312,8 +312,7 @@ function makeAnfrage(anfrage, params) {
 				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
 				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
 				if (antworthash['search_result'] != undefined) {
-					document.getElementById('searchresult').innerHTML = antworthash['search_result'];
-					query.focus();
+					display_search_message(antworthash['search_result']);
 				} else if (antworthash['filter_applied'] != undefined) {
 					filterfield.focus();
 				} else {
@@ -601,4 +600,8 @@ function disable_import_form_fields(type) {
 		$('input[name^="sentences"], input[name^="tokens"]').attr('disabled', true);
 		$('input[name="language"]').removeAttr('disabled');
 	}
+}
+function display_search_message(message) {
+	$('#searchresult').html(message);
+	query.focus();
 }
