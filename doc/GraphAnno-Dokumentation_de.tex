@@ -272,7 +272,7 @@ Die Befehle setzen voraus, daß man sich ein einem Satz befindet. D.h., wenn der
 
 \subsubsection{Neuer Knoten: \texttt{n}}\label{befehl-n}
 
-Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\quo})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen allerdings mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
+Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den Attributen, die der neue Knoten haben soll, als Schlüssel-Wert-Paare in der Form \texttt{schlüssel:wert}. Schlüssel und Wert können entweder als einfache Zeichenkette angegeben werden, wenn sie keines der in der GraphAnno-Annotiersprache verwendeten Steuerzeichen (\texttt{␣:\quo\#})\footnote{Das Zeichen \texttt{␣} steht für das Leerzeichen.} enthalten, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen allerdings mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
 Des weiten können zuvor definierte Annotationsmakros (siehe \ref{annotationsmakros}) verwendet werden; dabei überschreiben explizit angegebene Attribute ggf. die in den Makros definierten Annotationen.
 
@@ -291,8 +291,9 @@ attribut         =   schlüssel zeichenkette
 schlüssel        =   zeichenkette ":"
 zeichenkette     =   zeichen_außer_steuerzeichen+
                      """ beliebiges_zeichen* """
-annotationsmakro =   alphanumerisches_zeichen+
-ebenenschalter   =   alphanumerisches_zeichen+
+alnum            =   buchstabe | ziffer | "_"
+annotationsmakro =   alnum+
+ebenenschalter   =   alnum+
 \end{lstlisting}
 \end{framed}
 
@@ -374,11 +375,11 @@ Der Gruppierbefehl \texttt{g} oder \texttt{p} erstellt einen neuen Mutterknoten 
         %li group nodes under new mother node: <i>g node node ... key:value key:value ...</i>
         %ul
           %li g t1 t2 n0 typ:S tns:prs
-\paragraph*{Befehl \texttt{g} in modifizierter BNF:}
+\paragraph*{Befehl \texttt{g}/\texttt{p} in modifizierter BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_g            =   "g " g_parameter
+befehl_g            =   ("g " | "p ") g_parameter
 g_parameter         =   g_parameter " " g_parameter
                         knotenreferenz
                         tokenreferenz
@@ -396,11 +397,11 @@ Der Befehl \texttt{h}/\texttt{c} funktioniert wie \texttt{g}/\texttt{p}, mit dem
         %li attach new node: <i>h node1 node2 ... key:value key:value ...</i>
         %ul
           %li h n2 n4 typ:R
-\paragraph*{Befehl \texttt{h} in modifizierter BNF:}
+\paragraph*{Befehl \texttt{h}/\texttt{c} in modifizierter BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_h            =   "h " h_parameter
+befehl_h            =   ("h " | "c ") h_parameter
 h_parameter         =   h_parameter " " h_parameter
                         knotenreferenz
                         tokenreferenz
@@ -414,7 +415,7 @@ h_parameter         =   h_parameter " " h_parameter
 
 \subsubsection{Neuen Knoten in Kante einfügen: \texttt{ni}}
 
-Mit dem Befehl \texttt{ni} kann man einen Knoten in eine bestehende Kante „einschieben“. Man gibt als Parameter die Attribute für den neuen Knoten und die Kante an. Es wird dann ein neuer Knoten erstellt und die angegebene Kante durch zwei Kanten ersetzt, die alle Annotationen der alten Kante erben und den Startknoten der alten Kante mit dem neuen Knoten sowie den neuen Knoten mit dem Endknoten der alten Kante verbinden.
+Mit dem Befehl \texttt{ni} (\texttt{node insert}) kann man einen Knoten in eine bestehende Kante „einschieben“. Man gibt als Parameter die Kante an und die Attribute für den neuen Knoten. Es wird dann ein neuer Knoten erstellt und die angegebene Kante durch zwei Kanten ersetzt, die alle Annotationen der alten Kante erben und den Startknoten der alten Kante mit dem neuen Knoten sowie den neuen Knoten mit dem Endknoten der alten Kante verbinden.
 
 Gibt man mehrere Kanten an, so wird in jede ein neuer Knoten nach dem eben beschriebenem Verfahren eingeschoben.
 
@@ -433,9 +434,9 @@ ni_parameter        =   ni_parameter " " ni_parameter
 
 \subsubsection{Knoten löschen und Verbindung bewahren: \texttt{di} und \texttt{do}}
 
-Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} (für \textit{delete ingoing}) löscht dabei die eingehenden Kanten, \texttt{do} (für \textit{delete outgoing}) die ausgehenden.
+Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten (das ergibt vor in Baumstrukturen Sinn, wo es einen Mutterknoten und mehrere Tochterknoten gibt). \texttt{di} (für \textit{delete ingoing}) löscht dabei die eingehenden Kanten, \texttt{do} (für \textit{delete outgoing}) die ausgehenden.
 
-\paragraph*{Befehl \texttt{di}/\texttt{do} in modifizierter BNF:}
+\paragraph*{Befehle \texttt{di} und \texttt{do} in modifizierter BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
@@ -449,7 +450,7 @@ befehl_di_do        =   "di " knotenreferenz+
 
 Zum Eingeben von Token gibt es die Befehle \texttt{t}, \texttt{tb} und \texttt{ta}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{tb} (für \textit{tokenize before}) und \texttt{ta} (für \textit{tokenize after}) nehmen als erstes Argument noch eine Tokenreferenz und fügen die neuen Token davor bzw. danach ein.
 
-Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\quo}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
+Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\quo\#}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
 \paragraph*{Befehle \texttt{t}, \texttt{tb}, \texttt{ta} in modifizierter BNF:}
 ~
@@ -469,7 +470,7 @@ befehl_ta       =   "ta " tokenreferenz " " wörter
 
 \subsubsection{Ebenen setzen: \texttt{l}}\label{l}
 
-Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. Dafür gelten die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellten Kürzel.
+Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. Dafür gelten die in der Graphkonfiguration (siehe \ref{ebenenkonfiguration}) eingestellten Kürzel.
 
 \paragraph*{Befehl \texttt{l} in modifizierter BNF:}
 ~
@@ -502,7 +503,7 @@ Die einzelnen Klauseln werden in beliebiger Reihenfolge in jeweils eine eigene Z
 
 Die \texttt{node}-Klausel beschreibt einen Knoten, der im Graphfragment genau einmal vorkommen soll. Die Klausel besteht aus dem Schlüsselwort \texttt{node}, einer optionalen ID und einer Attributbeschreibung.
 
-Die ID besteht aus einem \texttt{@} gefolgt von einer Zeichenkette, die aus alphanumerischen Zeichen und dem Unterstrich besteht. Unter der ID kann der Knoten in anderen Teilen der Suchanfrage referenziert werden.
+Die ID besteht aus einem \texttt{@} gefolgt von einer Zeichenkette, die aus einer Folge von alphanumerischen Zeichen inkl. Unterstrich besteht, wobei das erste Zeichen keine Ziffer sein darf. Unter der ID kann der Knoten in anderen Teilen der Suchanfrage referenziert werden.
 
 Die Attributbeschreibung besteht aus Schlüssel-Wert-Paaren der Form \texttt{schlüssel:""wert}, die mit den logischen Operatoren \texttt{!} für „nicht“, \texttt{\&} für „und“ und \texttt{|} für „oder“ (Bindungsstärke: \texttt{!} > \texttt{\&} > \texttt{|}) sowie Klammerung mit runden Klammern verknüpft sind. Als Abkürzung für Disjunktionen von Schlüssel-Wert-Paaren mit dem gleichen Schlüssel steht die Form \texttt{schlüssel:wert1|wert2|...|wertn} zur Verfügung.
 
@@ -526,7 +527,7 @@ Für die Kanten wiederum können – zusätzlich zu den einfachen Attributen –
 \begin{framed}
 \begin{lstlisting}
 node-klausel    =   "node" id? " " knotenattribute
-id              =   "@" alphanumerisches_zeichen+
+id              =   "@" (buchstabe | "_") alnum*
 knotenattribute =   knotenattribute " & " knotenattribute
                     knotenattribute " | " knotenattribute
                     "!" knotenattribute
@@ -770,11 +771,11 @@ makrodefinition =   "def " name " " makro
 makro           =   kantenattribute
                     knotenattribute
                     verbindung
-name            =   alphanumerisches_zeichen+
+name            =   alnum+
 \end{lstlisting}
 %\begin{lstlisting}
 %makrodefinition =   "def " name " " (kantenattribute | knotenattribute)
-%name            =   alphanumerisches_zeichen+
+%name            =   alnum+
 %\end{lstlisting}
 \end{framed}
 
@@ -810,6 +811,11 @@ Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
 	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
 	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
 	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
+	\item Bei der Angabe von Attributen kann für den Wert auf die in der Suche gefundenen Elemente zurückgegriffen werden. Dazu wird die Zeichenkette für den Wert in doppelten Anführungszeichen angegeben und darin kann, wie in Ruby gebräuchlich, in geschweiften Klammern mit vorangestelltem Rautenzeichen Ruby-Kode verwendet werden, in dem die gefundenen Elemente mit ihren IDs referenziert werden. Eine Such-/Annotationskombination, die alle Satzknoten mit dem von ihnen dominierten Text versieht (mit Punkt abgeschlossen) könnte z.B. folgendermaßen aussehen:
+	\begin{verbatim}
+		node @s cat:S
+		a @s text:"#{@s.text}."
+	\end{verbatim}
 \end{itemize}
 
 

@@ -362,7 +362,7 @@ The commands require to be in a sentence, i.e., you have to create a sentence fi
 \subsubsection{New node: \texttt{n}}\label{befehl-n}
 
 The command for creating a new node is \texttt{n}, followed by the attributes the new node is to bear as key-value pairs in the format \texttt{key:value}.
-Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation languages: \texttt{␣:\quo})\footnote{The symbol \texttt{␣} stands for the space.}) or as string in double quotes (\texttt{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \texttt{\textbackslash\quo}).
+Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation languages: \texttt{␣:\quo\#})\footnote{The symbol \texttt{␣} stands for the space.}) or as string in double quotes (\texttt{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \texttt{\textbackslash\quo}).
 
 You can also use the shortcut from your previously defined annotation makros (see Section \ref{annotationsmakros}).
 When you additionally enter attributes with keys present in the makro, these override the annotations defined in the makro.
@@ -384,8 +384,9 @@ attribute           =   key string
 key                 =   string ":"
 string              =   character_not_special+
                         """ character* """
-annotation_shortcut =   alphanumeric_character+
-layer_shortcut      =   alphanumeric_character+
+alnum               =   letter | digit | "_"
+annotation_shortcut =   alnum+
+layer_shortcut      =   alnum+
 \end{lstlisting}
 \end{framed}
 
@@ -444,140 +445,150 @@ edge_sequence       =   edge_reference ".." edge_reference
 \end{framed}
 
 
-\vskip4em
-\center{\Large tbc.}
-\kommentar{
+\subsubsection{Delete elements: \texttt{d}}
 
+Elements are deleted with the command \texttt{d}, followed by the elements to be deleted.
+If you delete nodes, the outgoing and ingoing edges are deleted as well.
+If you delete a token node from the middle of a sentence, the adjacent tokens are joined automatically.
 
-\subsubsection{Elemente löschen: \texttt{d}}
-
-Gelöscht werden Elemente mit dem Befehl \texttt{d}, gefolgt von den zu löschenden Elementen. Werden Knoten gelöscht, werden Ein- und Ausgehende Kanten dieses Knotens ebenfalls gelöscht. Beim Löschen von Tokenknoten aus der Mitte eines Satzes wird die Verbindung zwischen den Token rechts und links des gelöschten Tokens wieder hergestellt.
-        %li delete: <i>d target target ...</i>
-        %ul
-          %li d n21 r12 t7
 \paragraph*{Command \texttt{d} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_d        =   "d " d_parameter
-d_parameter     =   d_parameter " " d_parameter
-                    elementreferenz
+command_d       =   "d " d_parameters
+d_parameters    =   d_parameters " " d_parameters
+                    element_reference
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Knoten unter neuem Mutterknoten gruppieren: \texttt{g} oder \texttt{p}}
+\subsubsection{Group nodes under new parent node: \texttt{g} oder \texttt{p}}
 
-Der Gruppierbefehl \texttt{g} oder \texttt{p} erstellt einen neuen Mutterknoten für die angegebenen Knoten. D.h. es wird ein neuer Knoten erstellt und Kanten erzeugt, die diesen mit den zu gruppierenden Knoten verbindet. Die Parameter des Befehls sind die zu gruppierenden Knoten und die Attribute, mit denen der neue Knoten annotiert werden soll. Die Reihenfolge von Knoten und Attributen ist irrelevant. Auch die Angabe einer Ebene wie bei \texttt{n} ist möglich.
-        %li group nodes under new mother node: <i>g node node ... key:value key:value ...</i>
-        %ul
-          %li g t1 t2 n0 typ:S tns:prs
-\paragraph*{Command \texttt{g} in modified BNF:}
+The grouping command \texttt{g} or \texttt{p} creates a new parent node for the given nodes.
+I.e., the command creates a new node and edges that connect the new nodes to the nodes to be grouped.
+The parameters of this command are the nodes to be grouped and the attributes the newly created node is to bear.
+The order of nodes and attributes is irrelevant.
+Like with the command \texttt{n}, a layer can be specified.
+
+\paragraph*{Command \texttt{g}/\texttt{p} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_g            =   "g " g_parameter
-g_parameter         =   g_parameter " " g_parameter
-                        knotenreferenz
-                        tokenreferenz
-                        knotensequenz
-                        tokensequenz
-                        attribut
-                        ebenenschalter
+command_g           =   ("g " | "p ") g_parameters
+g_parameters        =   g_parameters " " g_parameters
+                        node_reference
+                        token_reference
+                        node_sequence
+                        token_sequence
+                        attribute
+                        layer_shortcut
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Tochterknoten anhängen: \texttt{h} oder \texttt{c}}
+\subsubsection{Append child node: \texttt{h} or \texttt{c}}
 
-Der Befehl \texttt{h}/\texttt{c} funktioniert wie \texttt{g}/\texttt{p}, mit dem Unterschied, daß anstelle eines Mutterknotens ein neuer gemeinsamer Tochterknoten erstellt wird.
-        %li attach new node: <i>h node1 node2 ... key:value key:value ...</i>
-        %ul
-          %li h n2 n4 typ:R
-\paragraph*{Command \texttt{h} in modified BNF:}
+The command \texttt{h}/\texttt{c} works analogously to the command \texttt{g}/\texttt{p}, but instead of a parent node a new common child node is created.
+
+\paragraph*{Command \texttt{h}/\texttt{c} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_h            =   "h " h_parameter
-h_parameter         =   h_parameter " " h_parameter
-                        knotenreferenz
-                        tokenreferenz
-                        knotensequenz
-                        tokensequenz
-                        attribut
-                        ebenenschalter
+command_h           =   ("h " | "c ") h_parameters
+h_parameters        =   h_parameters " " h_parameters
+                        node_reference
+                        token_reference
+                        node_sequence
+                        token_sequence
+                        attribute
+                        layer_shortcut
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Neuen Knoten in Kante einfügen: \texttt{ni}}
+\subsubsection{Insert node into edge: \texttt{ni}}
 
-Mit dem Befehl \texttt{ni} kann man einen Knoten in eine bestehende Kante „einschieben“. Man gibt als Parameter die Attribute für den neuen Knoten und die Kante an. Es wird dann ein neuer Knoten erstellt und die angegebene Kante durch zwei Kanten ersetzt, die alle Annotationen der alten Kante erben und den Startknoten der alten Kante mit dem neuen Knoten sowie den neuen Knoten mit dem Endknoten der alten Kante verbinden.
+The command \texttt{ni} (\texttt{node insert}) allows you to insert a new node into an existing edge.
+As parameters you specify the edge and the attributes for the new node.
+A new node will be created, and the given edge will be replaced by two edges with the same annotations, that connect the start node of the original edge with the new node and the new node with the end node of the original edge.
 
-Gibt man mehrere Kanten an, so wird in jede ein neuer Knoten nach dem eben beschriebenem Verfahren eingeschoben.
+If you specify more than one edge, a new node will be inserted into each of them
 
 \paragraph*{Command \texttt{ni} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_ni           =   "ni " ni_parameter
-ni_parameter        =   ni_parameter " " ni_parameter
-                        kantenreferenz
-                        attribute
-                        ebenenschalter
+command_ni          =   "ni " ni_parameters
+ni_parameters       =   ni_parameters " " ni_parameters
+                        edge_reference
+                        attributes
+                        layer_shortcut
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Knoten löschen und Verbindung bewahren: \texttt{di} und \texttt{do}}
+\subsubsection{Delete node but preserve connections: \texttt{di} und \texttt{do}}
 
-Für den Fall, daß man einen Knoten löschen, aber die Verbindung zwischen Mutter- und Tochterknoten dieses Knotens bestehen lassen möchte, sind die Befehle \texttt{di} bzw. \texttt{do} vorgesehen. Diese Befehle löschen den angegebenen Knoten und verbinden jeden Mutterknoten mit jedem Tochterknoten. \texttt{di} (für \textit{delete ingoing}) löscht dabei die eingehenden Kanten, \texttt{do} (für \textit{delete outgoing}) die ausgehenden.
+If you want to delete a node but preserve the connections between parent node(s) and child node(s) of the deleted node, you can use the commands \texttt{di} or \texttt{do}.
+These commands delete the specified node and connect each child node to each mother node (this makes sense particularly in a tree-like structure where there is one parent node and many child nodes).
+\texttt{di} (\textit{delete ingoing}) deletes the ingoing edge(s), \texttt{do} (\textit{delete outgoing}) deletes the outgoing edge(s).
 
-\paragraph*{Command \texttt{di}/\texttt{do} in modified BNF:}
+\paragraph*{Commands \texttt{di} and \texttt{do} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_di_do        =   "di " knotenreferenz+
-                        "do " knotenreferenz+
+command_di_do       =   "di " node_reference+
+                        "do " node_reference+
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Tokenisieren: \texttt{t}, \texttt{tb}, \texttt{ta}}
+\subsubsection{Tokenize: \texttt{t}, \texttt{tb}, \texttt{ta}}
 
-Zum Eingeben von Token gibt es die Befehle \texttt{t}, \texttt{tb} und \texttt{ta}. Diese Befehle nehmen eine Folge von durch Leerzeichen getrennten Wörtern als Argument und fügen sie als neue Token in den aktuellen Satz ein. Der Befehl \texttt{t} fügt die neuen Token dabei ans Ende der ggf. schon bestehenden an, \texttt{tb} (für \textit{tokenize before}) und \texttt{ta} (für \textit{tokenize after}) nehmen als erstes Argument noch eine Tokenreferenz und fügen die neuen Token davor bzw. danach ein.
+For creating tokens there are the commands \texttt{t}, \texttt{tb} and \texttt{ta}.
+The arguments for these commands are a list of words, separated by spaces.
+These words are inserted as tokens into the current sentence.
+If the sentence already contains tokens, the command \texttt{t} appends the new ones.
+\texttt{tb} (\texttt{tokenize before}) and \texttt{ta} (\texttt{tokenize after}) take a token as their first argument and insert the new tokens before or after, respectively.
 
-Die Wörter können als einfache Zeichenkette angeben werden, oder, wenn sie Steuerzeichen (\texttt{␣:\quo}) enthalten, als Zeichenkette in doppelten Anführungsstrichen (\texttt{\quo...\quo}; doppelte Anführungsstriche müssen dann mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
+The words can be given as bare strings, or, if they contain control characters (\texttt{␣:\quo\#}), as string in double quotes (\texttt{\quo...\quo}; double quotes inside the string have to be escape with a backslash: \texttt{\textbackslash\quo}).
 
-\paragraph*{Commande \texttt{t}, \texttt{tb}, \texttt{ta} in modified BNF:}
+\paragraph*{Commands \texttt{t}, \texttt{tb}, \texttt{ta} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_t        =   "t " wörter
-wörter          =   wörter " " wörter
-                    wort
-wort            =   zeichen_außer_steuerzeichen+
-                    """ beliebiges_zeichen* """
+befehl_t        =   "t " words
+words           =   words " " words
+                    word
+word            =   non-control-character+
+                    """ character* """
 
-befehl_tb       =   "tb " tokenreferenz " " wörter
-befehl_ta       =   "ta " tokenreferenz " " wörter
+command_tb      =   "tb " token_reference " " words
+command_ta      =   "ta " token_reference " " words
 \end{lstlisting}
 \end{framed}
 
 
-\subsubsection{Ebenen setzen: \texttt{l}}\label{l}
+\subsubsection{Set layer: \texttt{l}}\label{l}
 
-Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. Dafür gelten die in der Graphkonfiguration (siehe \ref{konfiguration}) eingestellten Kürzel.
+As an alternative to the select field, you can set the layer used for the subsequently created elements with the command \texttt{l}.
+For the layers you use the shortcuts defined in the layer configuration (cf. \ref{ebenenkonfiguration}).
 
 \paragraph*{Command \texttt{l} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-befehl_l    =   "l " ebenenschalter
+command_l   =   "l " layer_shortcut
 \end{lstlisting}
 \end{framed}
 
 
+
+
+
+\vskip4em
+\center{\Large tbc.}
+\kommentar{
 
 
 
@@ -600,7 +611,7 @@ Die einzelnen Klauseln werden in beliebiger Reihenfolge in jeweils eine eigene Z
 
 Die \texttt{node}-Klausel beschreibt einen Knoten, der im Graphfragment genau einmal vorkommen soll. Die Klausel besteht aus dem Schlüsselwort \texttt{node}, einer optionalen ID und einer Attributbeschreibung.
 
-Die ID besteht aus einem \texttt{@} gefolgt von einer Zeichenkette, die aus alphanumerischen Zeichen und dem Unterstrich besteht. Unter der ID kann der Knoten in anderen Teilen der Suchanfrage referenziert werden.
+Die ID besteht aus einem \texttt{@} gefolgt von einer Zeichenkette, die aus einer Folge von alphanumerischen Zeichen inkl. Unterstrich besteht, wobei das erste Zeichen keine Ziffer sein darf. Unter der ID kann der Knoten in anderen Teilen der Suchanfrage referenziert werden.
 
 Die Attributbeschreibung besteht aus Schlüssel-Wert-Paaren der Form \texttt{schlüssel:""wert}, die mit den logischen Operatoren \texttt{!} für „nicht“, \texttt{\&} für „und“ und \texttt{|} für „oder“ (Bindungsstärke: \texttt{!} > \texttt{\&} > \texttt{|}) sowie Klammerung mit runden Klammern verknüpft sind. Als Abkürzung für Disjunktionen von Schlüssel-Wert-Paaren mit dem gleichen Schlüssel steht die Form \texttt{schlüssel:wert1|wert2|...|wertn} zur Verfügung.
 
@@ -624,7 +635,7 @@ Für die Kanten wiederum können – zusätzlich zu den einfachen Attributen –
 \begin{framed}
 \begin{lstlisting}
 node-klausel    =   "node" id? " " knotenattribute
-id              =   "@" alphanumerisches_zeichen+
+id              =   "@" (letter | "_") alnum*
 knotenattribute =   knotenattribute " & " knotenattribute
                     knotenattribute " | " knotenattribute
                     "!" knotenattribute
@@ -868,11 +879,11 @@ makrodefinition =   "def " name " " makro
 makro           =   kantenattribute
                     knotenattribute
                     verbindung
-name            =   alphanumerisches_zeichen+
+name            =   alnum+
 \end{lstlisting}
 %\begin{lstlisting}
 %makrodefinition =   "def " name " " (kantenattribute | knotenattribute)
-%name            =   alphanumerisches_zeichen+
+%name            =   alnum+
 %\end{lstlisting}
 \end{framed}
 
@@ -908,6 +919,11 @@ Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
 	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
 	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
 	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
+	\item Bei der Angabe von Attributen kann für den Wert auf die in der Suche gefundenen Elemente zurückgegriffen werden. Dazu wird die Zeichenkette für den Wert in doppelten Anführungszeichen angegeben und darin kann, wie in Ruby gebräuchlich, in geschweiften Klammern mit vorangestelltem Rautenzeichen Ruby-Kode verwendet werden, in dem die gefundenen Elemente mit ihren IDs referenziert werden. Eine Such-/Annotationskombination, die alle Satzknoten mit dem von ihnen dominierten Text versieht (mit Punkt abgeschlossen) könnte z.B. folgendermaßen aussehen:
+	\begin{verbatim}
+		node @s cat:S
+		a @s text:"#{@s.text}."
+	\end{verbatim}
 \end{itemize}
 
 
