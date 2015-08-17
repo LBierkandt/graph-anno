@@ -30,7 +30,7 @@ class SearchableGraph < Graph
 	end
 
 	def teilgraph_suchen(anfrage)
-		operationen = parse_query(anfrage)
+		operations = parse_query(anfrage)
 
 		puts 'Searching for graph fragment ...'
 		startzeit = Time.new
@@ -51,16 +51,16 @@ class SearchableGraph < Graph
 		# edge/link: node/nodes-TGn und text-TGn kombinieren
 
 		# check validity of query
-		text_ids = operationen['text'].map{|o| ([o[:id]] + o[:ids]).flatten.compact}
-		node_ids = operationen['node'].map{|o| o[:id]}
-		nodes_ids = operationen['nodes'].map{|o| o[:id]}
-		edge_start_end_ids = operationen['edge'].map{|o| [o[:start], o[:end]]}
-		link_start_end_ids = operationen['link'].map{|o| [o[:start], o[:end]]}
-		edge_ids = operationen['edge'].map{|o| o[:id]}
-		link_ids = operationen['link'].map{|o| o[:ids]}.flatten
-		anno_ids = @@annotation_commands.map{|c| operationen[c].map{|o| o[:ids]}}.flatten.uniq
+		text_ids = operations['text'].map{|o| ([o[:id]] + o[:ids]).flatten.compact}
+		node_ids = operations['node'].map{|o| o[:id]}
+		nodes_ids = operations['nodes'].map{|o| o[:id]}
+		edge_start_end_ids = operations['edge'].map{|o| [o[:start], o[:end]]}
+		link_start_end_ids = operations['link'].map{|o| [o[:start], o[:end]]}
+		edge_ids = operations['edge'].map{|o| o[:id]}
+		link_ids = operations['link'].map{|o| o[:ids]}.flatten
+		anno_ids = @@annotation_commands.map{|c| operations[c].map{|o| o[:ids]}}.flatten.uniq
 		# at least one node, edge or text clause
-		if operationen['node'] + operationen['edge'].select{|o| !(o[:start] or o[:end])} + operationen['text'] == []
+		if operations['node'] + operations['edge'].select{|o| !(o[:start] or o[:end])} + operations['text'] == []
 			raise 'A query must contain at least one node clause, edge clause or text clause.'
 		end
 		# check for multiply defined ids
@@ -77,7 +77,7 @@ class SearchableGraph < Graph
 			error_messages << "The id #{id} is used as start or end, but is not defined." unless erlaubte_start_end_ids.include?(id)
 		end
 		['cond', 'sort', 'col'].each do |op_type|
-			operationen[op_type].map{|o| o[:ids]}.flatten.each do |id|
+			operations[op_type].map{|o| o[:ids]}.flatten.each do |id|
 				unless als_referenz_erlaubte_ids.include?(id)
 					error_messages << "The id #{id} is used in #{op_type} clause, but is not defined."
 				end
@@ -91,8 +91,8 @@ class SearchableGraph < Graph
 			end
 		end
 		# check for dangling edges
-		if erlaubte_start_end_ids.length > 0 and operationen['edge'].any?{|o| !(o[:start] && o[:end])} or
-			erlaubte_start_end_ids.length == 0 and operationen['edge'].length > 1
+		if erlaubte_start_end_ids.length > 0 and operations['edge'].any?{|o| !(o[:start] && o[:end])} or
+			erlaubte_start_end_ids.length == 0 and operations['edge'].length > 1
 			error_messages << 'There are dangling edges.'
 		end
 		# coherent graph fragment?
@@ -105,29 +105,29 @@ class SearchableGraph < Graph
 
 
 		# edge in link umwandeln, wenn Start und Ziel gegeben
-		operationen['edge'].clone.each do |operation|
+		operations['edge'].clone.each do |operation|
 			if operation[:start] and operation[:end]
-				operationen['link'] << {
+				operations['link'] << {
 					:operator => 'edge',
 					:start => operation[:start],
 					:end   => operation[:end],
 					:arg   => operation.reject{|s,w| [:start, :end].include?(s)},
 					:ids   => [operation[:id]].compact
 				}
-				operationen['edge'].delete(operation)
+				operations['edge'].delete(operation)
 			end
 		end
 
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
-		if metabedingung = operation_erzeugen(:op => 'and', :arg => operationen['meta'].map{|op| op[:cond]})
+		if metabedingung = operation_erzeugen(:op => 'and', :arg => operations['meta'].map{|op| op[:cond]})
 			metaknoten = sentence_nodes.select{|s| s.fulfil?(metabedingung)}
 			suchgraph.nodes.values.select!{|n| metaknoten.include?(n.sentence)}
 			suchgraph.edges.values.select!{|e| metaknoten.include?(e.start.sentence) || metaknoten.include?(e.end.sentence)}
 		end
 
 		# edge
-		operationen['edge'].each do |operation|
+		operations['edge'].each do |operation|
 			gefundene_kanten = suchgraph.edges.values.select{|k| k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_kanten.map do |k|
 				neu = Teilgraph.new
@@ -140,7 +140,7 @@ class SearchableGraph < Graph
 
 		# node/nodes
 		# gefundene Knoten werden als atomare Teilgraphen gesammelt
-		(operationen['node'] + operationen['nodes']).each do |operation|
+		(operations['node'] + operations['nodes']).each do |operation|
 			gefundene_knoten = suchgraph.nodes.values.select{|k| k.type != 's' && k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_knoten.map do |k|
 				neu = Teilgraph.new
@@ -158,7 +158,7 @@ class SearchableGraph < Graph
 
 		# text
 		# ein oder mehrer Teilgraphenlisten werden erstellt
-		operationen['text'].each do |operation|
+		operations['text'].each do |operation|
 			tglisten[tgindex += 1] = suchgraph.textsuche_NFA(operation[:arg], operation[:id])
 			# id_index führen
 			if operation[:id]
@@ -171,7 +171,7 @@ class SearchableGraph < Graph
 
 		# link
 		# atomare Teilgraphen werden zu Ketten verbunden
-		operationen['link'].sort{|a,b| link_operation_vergleichen(a, b, id_index)}.each_with_index do |operation,operationsindex|
+		operations['link'].sort{|a,b| link_operation_vergleichen(a, b, id_index)}.each_with_index do |operation, operation_index|
 			startid = operation[:start]
 			zielid = operation[:end]
 			next unless id_index[startid] && id_index[zielid]
@@ -255,11 +255,11 @@ class SearchableGraph < Graph
 				id_index[id][:index] = tgindex if tgi[:index] == startindex || tgi[:index] == zielindex
 			end
 			# Operation löschen
-			operationen['link'].delete_at(operationsindex)
+			operations['link'].delete_at(operation_index)
 		end
 
 		# Teilgraphen zusammenfassen, und zwar dann, wenn sie alle ihre "node"-Knoten bzw. "text"e teilen
-		if operationen['nodes'] != []
+		if operations['nodes'] != []
 			node_indizes = id_index.select{|s,w| w[:art] == 'node' || w[:art] == 'text'}
 			# für jede TG-Liste, die "node"s oder "text"e enthält:
 			node_indizes.values.map{|h| h[:index]}.uniq.each do |node_tgindex|
@@ -290,12 +290,11 @@ class SearchableGraph < Graph
 		tgliste.each{|tg| tg.set_ids(id_index)}
 
 		# cond
-		operationen['cond'].each do |op|
+		operations['cond'].each do |op|
 			begin
 				tgliste.select!{|tg| tg.id_mapping.instance_eval(op[:string])}
 			rescue NoMethodError => e
 				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
-				rueck = eval('lambda{|tg| "error!"}')
 				raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncond #{op[:string]}"
 			rescue StandardError => e
 				raise "#{e.message} in line:\ncond #{op[:string]}"
@@ -377,7 +376,7 @@ class SearchableGraph < Graph
 	end
 
 	def teilgraph_ausgeben(found, befehle, datei = :console)
-		operationen = parse_query(befehle)
+		operations = parse_query(befehle)
 
 		# Sortieren
 		found[:tg].each do |tg|
@@ -386,7 +385,7 @@ class SearchableGraph < Graph
 		found[:tg].sort! do |a,b|
 			# Hierarchie der sort-Befehle abarbeiten
 			vergleich = 0
-			operationen['sort'].reject{|op| !op}.each do |op|
+			operations['sort'].reject{|op| !op}.each do |op|
 				begin
 					vergleich = a.id_mapping.instance_eval(op[:string]) <=> b.id_mapping.instance_eval(op[:string])
 				rescue NoMethodError => e
@@ -407,9 +406,9 @@ class SearchableGraph < Graph
 		# Ausgabe
 		if datei.class == String or datei == :string
 			rueck = CSV.generate(:col_sep => "\t") do |csv|
-				csv << ['match_no'] + operationen['col'].map{|o| o[:title]}
+				csv << ['match_no'] + operations['col'].map{|o| o[:title]}
 				found[:tg].each_with_index do |tg, i|
-					csv << [i+1] + operationen['col'].map do |op|
+					csv << [i+1] + operations['col'].map do |op|
 						begin
 							tg.id_mapping.instance_eval(op[:string])
 						rescue NoMethodError => e
@@ -433,13 +432,15 @@ class SearchableGraph < Graph
 			end
 		elsif datei == :console
 			found[:tg].each_with_index do |tg, i|
-				operationen['col'].each do |op|
+				puts "match #{i}"
+				operations['col'].each do |op|
 					begin
-						puts op[:title] + ': ' + op[:lambda].call(tg).to_s
-					rescue StandardError
-						raise "Error in line:\n" + op[:string]
+						puts "#{op[:title]}: #{tg.id_mapping.instance_eval(op[:string])}"
+					rescue StandardError => e
+						raise "#{e.message} in line:\ncol #{op[:title]} #{op[:string]}"
 					end
 				end
+				puts
 			end
 		end
 	end
@@ -695,7 +696,7 @@ class Node
 	end
 
 	def nodes(link, zielknotenbedingung = '')
-		return links(link, @graph.parse_attributes(zielknotenbedingung)[:op]).map{|node_and_link| node_and_link[0]}.uniq
+		links(link, @graph.parse_attributes(zielknotenbedingung)[:op]).map{|node_and_link| node_and_link[0]}.uniq
 	end
 end
 
@@ -771,7 +772,7 @@ class Automat
 	end
 
 	def startzustand
-		return @zustaende[0]
+		@zustaende[0]
 	end
 
 	def automaten_anhaengen(neuer_automat)

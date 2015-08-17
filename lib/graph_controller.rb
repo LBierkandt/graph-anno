@@ -33,7 +33,6 @@ class GraphController
 		@search_result = ''
 		@sentence_list = {}
 		@sentence = nil
-		@sentence = nil
 		@tokens = []
 		@nodes = []
 		@edges = []
@@ -129,7 +128,6 @@ class GraphController
 		set_found_sentences
 		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		puts '"' + @search_result + '"'
 		return {
 			:sentence_list => @sentence_list.values,
 			:search_result => @search_result,
@@ -353,7 +351,7 @@ class GraphController
 	end
 
 	def error_message_html(message)
-		 '<span class="error_message">' + message.gsub("\n", '</br>') + '</span>'
+		 '<span class="error_message">' + message.gsub("\n", '<br/>') + '</span>'
 	end
 
 	def build_label(e, i = nil)
@@ -373,7 +371,7 @@ class GraphController
 						label += "#{key}: #{value}\n"
 					end
 				end
-				label += "t" + i.to_s if i
+				label += "t#{i}" if i
 			else # normaler Knoten
 				display_attr.each do |key,value|
 					case key
@@ -383,7 +381,7 @@ class GraphController
 						label += "#{key}: #{value}\n"
 					end
 				end
-				label += "n" + i.to_s if i
+				label += "n#{i}" if i
 			end
 		elsif e.kind_of?(Edge)
 			display_attr.each do |key,value|
@@ -394,7 +392,7 @@ class GraphController
 					label += "#{key}: #{value}\n"
 				end
 			end
-			label += "e" + i.to_s if i
+			label += "e#{i}" if i
 		end
 		return label
 	end
@@ -434,9 +432,7 @@ class GraphController
 	end
 
 	def execute_command(command_line, layer)
-		command_line.strip!
-		command = command_line.partition(' ')[0]
-		string = command_line.partition(' ')[2]
+		command, foo, string = command_line.strip.partition(' ')
 		parameters = string.parse_parameters
 		properties = @graph.conf.layer_attributes[layer]
 
@@ -666,17 +662,8 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config'
-			return {:modal => 'config'}
-
-		when 'tagset'
-			return {:modal => 'tagset'}
-
-		when 'metadata'
-			return {:modal => 'metadata'}
-
-		when 'makros'
-			return {:modal => 'makros'}
+		when 'config', 'tagset', 'metadata', 'makros'
+			return {:modal => command}
 
 		when ''
 		else

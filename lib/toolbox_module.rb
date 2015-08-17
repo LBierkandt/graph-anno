@@ -1,30 +1,29 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class AnnoGraph
-
 	def toolbox_einlesen(file, korpusformat)
 		# korpusformat:
 		# [[marker_0, ..., marker_n], ..., [marker_0, ..., marker_p]]
 		# Marker für Tokentext: * voranstellen; Tokeneben wird dadurch ebenfalls festgelegt
 		# falls nicht markiert wird ein Defaultwert verwendet (erster Marker der zweituntersten Ebene / Ebene unter Satz)
-		
+
 		@recmarker = korpusformat[0][0]
 		# default-Werte für Wort- und Tokenebene
 		if korpusformat.length <= 2
@@ -44,29 +43,27 @@ class AnnoGraph
 				end
 			end
 		end
-		
+
 		puts 'record id marker: ' + @recmarker
 		puts 'token layer: ' + @tokenebene.to_s
 		puts 'text marker: ' + @textmarker
 		puts "reading #{file[:name]}"
-		
+
 		# zusätzliche Variablen zur Formatbeschreibung generieren
 		@korpusformat = korpusformat
 		@untermarker = []
 		korpusformat.length.times do |ebene|
 			@untermarker[ebene] = korpusformat[ebene..-1].flatten
 		end
-		
-		
+
 		##### Einlesen
 		datei = open(file[:tempfile], 'r:iso-8859-1')
 		dateitext = datei.readlines * ''
 		datei.close
-		
+
 		dateitext.gsub!(/\n([^\\])/, ' \1') # Zeilen zusammenfügen, wenn die folgende nicht mit einem Marker beginnt
 		zeilen = dateitext.split("\n")
 		korpus = []
-
 
 		##### recordweise parsen
 		recordzeilen = []
@@ -84,13 +81,12 @@ class AnnoGraph
 			end
 		end
 		korpus << self.recordparsen(recordzeilen)
-		
+
 		# Nur zu Anschauungs- und Testzwecken:
 		#datei = open('tbtest.json', 'w')
 		#datei.write(JSON.pretty_generate(korpus))
 		#datei.close
 
-		
 		##### Korpus in Graph umwandeln
 		letztes_token = nil
 		satzknoten = []
@@ -98,12 +94,11 @@ class AnnoGraph
 		# Kodierung prüfen
 		@nodes.values.each do |n|
 			n.attr.each do |k, v|
-				if v.sanitize then puts "Encoding error in record \"#{n.sentence.name}\"" end
+				puts "Encoding error in record \"#{n.sentence.name}\"" if v.sanitize
 			end
 		end
-		
 	end
-	
+
 	def baumlesen(ebene, korpusteil, mutter, satznr, letztes_token, sentence = nil, satzknoten)
 		korpusteil.each do |element|
 			if ebene == 0 # Wenn Satzebene:
@@ -154,7 +149,7 @@ class AnnoGraph
 			end
 		end
 	end
-	
+
 	def inbaum(ebene, start, ende, recordzeilen, schnitte)
 		rueck = []
 		letzterschnitt = start
@@ -165,7 +160,7 @@ class AnnoGraph
 		end
 		# Elementgrenzen durchgehen
 		schnittliste.each do |schnitt|
-			if schnitt <= start || schnitt > ende then next end
+			next if schnitt <= start || schnitt > ende
 			rueck << {}
 			@korpusformat[ebene].each do |marker|
 				if recordzeilen[marker]
@@ -180,7 +175,7 @@ class AnnoGraph
 		end
 		return rueck
 	end
-	
+
 	def recordparsen(quellzeilen)
 		recordzeilen = {}
 		record = {}
@@ -188,15 +183,15 @@ class AnnoGraph
 		quellzeilen.each do |zeile|
 			# Falls Marker auf Recordebene: Zeile in Record übernehmen
 			if @korpusformat[0].include?(zeile.getmarker)
-				record[zeile.getmarker] = zeile.ohnemarker.force_encoding('utf-8')
-				if record[zeile.getmarker].sanitize then puts "Encoding error in record \"#{record[@recmarker]}\"" end
+				record[zeile.getmarker] = zeile.without_marker.force_encoding('utf-8')
+				puts "Encoding error in record \"#{record[@recmarker]}\"" if record[zeile.getmarker].sanitize
 				record[zeile.getmarker].gsub!(/\s+/, ' ')
 			# sonst Zeilen mit gleichem Marker konkatenieren ('\n' als Trennzeichen)
 			else
 				if recordzeilen[zeile.getmarker] == nil
-					recordzeilen[zeile.getmarker] = zeile.ohnemarker + "\n"
+					recordzeilen[zeile.getmarker] = zeile.without_marker + "\n"
 				else
-					recordzeilen[zeile.getmarker] += zeile.ohnemarker + "\n"
+					recordzeilen[zeile.getmarker] += zeile.without_marker + "\n"
 				end
 			end
 		end
@@ -215,8 +210,8 @@ class AnnoGraph
 					end
 				end
 			end
-			if schleifenende then break end
-			if @untermarker[1].all?{|m| !recordzeilen[m]} then break end
+			break if schleifenende
+			break if @untermarker[1].all?{|m| !recordzeilen[m]}
 			maxlaenge = laenge.values.max
 			@untermarker[1].each do |marker|
 				if recordzeilen[marker]
@@ -243,26 +238,25 @@ class AnnoGraph
 			end
 		end
 		# in Baumstruktur bringen
-		if !recordzeilen[@korpusformat[1][0]] then recordzeilen[@korpusformat[1][0]] = '' end
+		recordzeilen[@korpusformat[1][0]] = '' if !recordzeilen[@korpusformat[1][0]]
 		record['toechter'] = inbaum(1, 0, recordzeilen[@korpusformat[1][0]].length, recordzeilen, schnitte)
 		return record
 	end
-
 end
 
 class String
 	def getmarker()
 		if match = self.match(/\\(\S+)/)
-			return match[1].force_encoding('utf-8')
+			match[1].force_encoding('utf-8')
 		else
-			return nil
+			 nil
 		end
 	end
-	
-	def ohnemarker()
-		return self.partition(' ')[2].strip
+
+	def without_marker()
+		self.partition(' ')[2].strip
 	end
-	
+
 	def sanitize
 		s = self.chars.map{|c| c.valid_encoding? ? c : '�'}.join
 		if s == self
