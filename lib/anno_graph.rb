@@ -44,18 +44,12 @@ class AnnoNode < Node
 		super.merge(:type => @type)
 	end
 
-	# this is an annotation schema-specific method if no link argument is provided!
+	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
 	# @param link [String] a query language string describing the link from self to the tokens that will be returned
 	# @return [Array] all dominated tokens or all tokens connected via given link
 	def tokens(link = nil)
-		if !link
-			if @attr['s-layer'] == 't'
-				link = 'edge(s-layer:t)*'
-			else
-				link = 'edge(cat:ex) node(s-layer:t | token://) edge(s-layer:t)*'
-			end
-		end
-		self.nodes(link, 'token://').sort_by{|token| token.tokenid}
+ 		link = 'edge+' unless link
+		self.nodes(link, 'token').sort_by{|token| token.tokenid}
 	end
 
 	# this is an annotation schema-specific method if no link argument is provided!
@@ -112,12 +106,13 @@ class AnnoNode < Node
 	end
 
 	# @return [Float] the position of self in terms of own tokenid or averaged tokenid of the dominated (via tokens method) tokens
-	def position
+	# @param link [String] a query language string describing the link from self to the tokens that will be returned
+	def position(link = nil)
 		if @type == 't'
 			position = self.tokenid.to_f
 		else
 			sum = 0
-			toks = self.tokens
+			toks = self.tokens(link)
 			toks.each do |t|
 				sum += t.position
 			end
