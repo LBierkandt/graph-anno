@@ -208,10 +208,8 @@ class GraphController
 	end
 
 	def save_allowed_annotations
-		@graph.allowed_anno = []
-		@sinatra.params['keys'].each do |i, key|
-			@graph.allowed_anno << {:key => key.strip, :values => @sinatra.params['values'][i].value_list} if key.strip != ''
-		end
+		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
+		@graph.allowed_anno = Tagset.new(tagset_hash)
 		return true.to_json
 	end
 

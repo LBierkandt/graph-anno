@@ -52,7 +52,7 @@ class AnnoNode < Node
 		self.nodes(link, 'token').sort_by{|token| token.tokenid}
 	end
 
-	# this is an annotation schema-specific method if no link argument is provided!
+	# like tokens method, but returns text string represented by tokens
 	# @param link [String] a query language string describing the link from self to the tokens whose text will be returned
 	# @return [String] the text formed by all dominated tokens or all tokens connected via given link
 	def text(link = nil)
@@ -265,7 +265,7 @@ class AnnoGraph < SearchableGraph
 		super
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = []
+		@allowed_anno = Tagset.new
 		@anno_makros = {}
 		create_layer_makros
 	end
@@ -293,9 +293,9 @@ class AnnoGraph < SearchableGraph
 		end
 		self.add_hash(nodes_and_edges)
 		if version >= 6
-			@anno_makros = nodes_and_edges['anno_makros'] ? nodes_and_edges['anno_makros'] : {}
-			@info = nodes_and_edges['info'] ? nodes_and_edges['info'] : {}
-			@allowed_anno = nodes_and_edges['allowed_anno'] ? nodes_and_edges['allowed_anno'].to_allowed_anno : []
+			@anno_makros = nodes_and_edges['anno_makros'] || {}
+			@info = nodes_and_edges['info'] || {}
+			@allowed_anno = Tagset.new(nodes_and_edges['allowed_anno'])
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain += nodes_and_edges['search_makros']
@@ -514,7 +514,7 @@ class AnnoGraph < SearchableGraph
 			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('info' => @info).
 			merge('anno_makros' => @anno_makros).
-			merge('allowed_anno' => @allowed_anno.to_savable_array).
+			merge('allowed_anno' => @allowed_anno).
 			merge('search_makros' => @makros_plain)
 	end
 
@@ -616,7 +616,7 @@ class AnnoGraph < SearchableGraph
 		super
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = []
+		@allowed_anno = Tagset.new
 		@makros_plain = []
 	end
 
@@ -697,7 +697,7 @@ class AnnoGraph < SearchableGraph
 	def export_tagset(name)
 		Dir.mkdir('exports/tagset') unless File.exist?('exports/tagset')
 		File.open("exports/tagset/#{name}.tagset.json", 'w') do |f|
-			f.write(JSON.pretty_generate(@allowed_anno.to_savable_array, :indent => ' ', :space => '').encode('UTF-8'))
+			f.write(JSON.pretty_generate(@allowed_anno, :indent => ' ', :space => '').encode('UTF-8'))
 		end
 	end
 
@@ -713,7 +713,7 @@ class AnnoGraph < SearchableGraph
 	# @param name [String] The name under which the file will be saved
 	def import_tagset(name)
 		File.open("exports/tagset/#{name}.tagset.json", 'r:utf-8') do |f|
-			@allowed_anno = JSON.parse(f.read).to_allowed_anno
+			@allowed_anno = Tagset.new(JSON.parse(f.read))
 		end
 	end
 
@@ -721,17 +721,7 @@ class AnnoGraph < SearchableGraph
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
 	def allowed_attributes(attr)
-		return attr.clone if @allowed_anno == []
-		allowed_attr = {}
-		attr.each do |key, value|
-			@allowed_anno.each do |allow|
-				if allow[:key] == key and value.value_allowed?(allow[:values])
-					allowed_attr.merge!(key => value)
-					break
-				end
-			end
-		end
-		return allowed_attr
+		@allowed_anno.allowed_attributes(attr)
 	end
 
 	private
@@ -854,21 +844,45 @@ class Array
 	def text
 		self.map{|n| n.text} * ' '
 	end
+end
 
-	def to_allowed_anno
-		self.map do |rule|
-			{:key => rule['key'], :values => rule['values'].value_list}
+class Tagset < Array
+	def initialize(a = [])
+		a.to_a.each do |rule|
+			self << TagsetRule.new(rule['key'], rule['values']) if rule['key'].strip != ''
 		end
 	end
 
-	def to_savable_array
-		self.map do |rule|
-			{'key' => rule[:key], 'values' => rule[:values].value_list_string}
+	def allowed_attributes(attr)
+		return attr.clone if self.empty?
+		attr.select do |key, value|
+			self.any?{|rule| rule.key == key and rule.allowes?(value)}
 		end
 	end
 
-	def value_list_string
-		self.map do |tok|
+	def to_a
+		self.map{|rule| rule.to_h}
+	end
+
+	def to_json(*a)
+		self.to_a.to_json(*a)
+	end
+end
+
+class TagsetRule
+	attr_accessor :key, :values
+
+	def initialize(key, values)
+		@key = key.strip
+		@values = values.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+	end
+
+	def to_h
+		{'key' => @key, 'values' => values_string}
+	end
+
+	def values_string
+		@values.map do |tok|
 			case tok[:cl]
 			when :bstring
 				tok[:str]
@@ -878,6 +892,17 @@ class Array
 				'/' + tok[:str] + '/'
 			end
 		end * ' '
+	end
+
+	def allowes?(value)
+		@values.any? do |rule|
+			case rule[:cl]
+			when :bstring, :qstring
+				value == rule[:str]
+			when :regex
+				value.match('^' + rule[:str] + '$')
+			end
+		end
 	end
 end
 
@@ -966,22 +991,5 @@ class String
 
 	def sql_json_escape_quotes
 		self.gsub("'", "\\\\'").gsub('\\"', '\\\\\\"')
-	end
-
-	def value_allowed?(allowed)
-		return true if allowed == []
-		allowed.each do |allow|
-			case allow[:cl]
-			when :bstring, :qstring
-				return true if self == allow[:str]
-			when :regex
-				return true if self.match('^' + allow[:str] + '$')
-			end
-		end
-		return false
-	end
-
-	def value_list
-		self.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
 	end
 end

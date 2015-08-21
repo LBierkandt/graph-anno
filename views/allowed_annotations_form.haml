@@ -8,20 +8,20 @@
         %tr
           %th Key
           %th Value
-        - if graph.allowed_anno.length == 0
+        - if graph.allowed_anno.empty?
           %tr{:no => '0'}
             %td
               %input{:name => "keys[0]", :type => 'text', :value => ''}
             %td
               %textarea{:name => "values[0]"}
         - else
-          - graph.allowed_anno.each_with_index do |allowed, i|
+          - graph.allowed_anno.each_with_index do |rule, i|
             %tr{:no => i}
               %td
-                %input{:name => "keys[#{i}]", :type => 'text', :value => allowed[:key]}
+                %input{:name => "keys[#{i}]", :type => 'text', :value => rule.key}
               %td
                 %textarea{:name => "values[#{i}]"}
-                  = allowed[:values].value_list_string
+                  = rule.values_string
       %tbody
         %tr
           %td{:colspan => 2}
