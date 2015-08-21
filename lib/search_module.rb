@@ -974,7 +974,7 @@ class Teilgraph
 	end
 
 	def set_ids(id_index)
-		id_index.keys.each do |id|
+		id_index.keys.compact.each do |id|
 			case id_index[id][:art]
 			when 'node', 'edge'
 				@id_mapping.instance_variable_set(id, @ids[id][0])
