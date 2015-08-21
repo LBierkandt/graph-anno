@@ -109,16 +109,11 @@ class AnnoNode < Node
 	# @param link [String] a query language string describing the link from self to the tokens that will be returned
 	def position(link = nil)
 		if @type == 't'
-			position = self.tokenid.to_f
+			return self.tokenid.to_f
 		else
-			sum = 0
 			toks = self.tokens(link)
-			toks.each do |t|
-				sum += t.position
-			end
-			position = toks.length > 0 ? sum / toks.length : 0
+			return toks.length > 0 ? toks.reduce(0){|sum, t| sum += t.position} / toks.length : 0
 		end
-		return position
 	end
 
 	def position_wrt(other, stil = nil, detail = true)

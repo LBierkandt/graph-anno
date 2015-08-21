@@ -357,9 +357,7 @@ class GraphController
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
 		if e.kind_of?(Node)
 			if e.type == 's'
-				display_attr.each do |key,value|
-					label += "#{key}: #{value}<br/>"
-				end
+				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
 			elsif e.type == 't'
 				display_attr.each do |key, value|
 					case key
@@ -396,20 +394,8 @@ class GraphController
 	end
 
 	def check_cookies
-		if @sinatra.request.cookies['traw_sentence'].nil?
-			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_layer'].nil?
-			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
-		end
-
-		if @sinatra.request.cookies['traw_cmd'].nil?
-			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_query'].nil?
-			@sinatra.response.set_cookie('traw_query', { :value => '' })
+		['traw_sentence', 'traw_layer', 'traw_cmd', 'traw_query'].each do |cookie_name|
+			@sinatra.response.set_cookie(cookie_name, {:value => ''}) unless @sinatra.request.cookies[cookie_name]
 		end
 	end
 
@@ -417,15 +403,15 @@ class GraphController
 		i = identifier.scan(/\d/).join.to_i
 		case identifier[0]
 		when 'm'
-			return @sentence
+			@sentence
 		when 'n'
-			return @nodes[i]
+			@nodes[i]
 		when 'e'
-			return @edges[i]
+			@edges[i]
 		when 't'
-			return @tokens[i]
+			@tokens[i]
 		else
-			return nil
+			nil
 		end
 	end
 
