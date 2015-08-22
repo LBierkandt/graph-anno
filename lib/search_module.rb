@@ -29,15 +29,14 @@ class SearchableGraph < Graph
 		@makros = []
 	end
 
-	def teilgraph_suchen(anfrage)
-		operations = parse_query(anfrage)
+	def teilgraph_suchen(query)
+		operations = parse_query(query)
 
 		puts 'Searching for graph fragment ...'
 		startzeit = Time.new
 
 		suchgraph = self.clone
 		tglisten = {}
-		gefundene_tg = []
 		id_index = {}
 		tgindex = 0
 
@@ -51,72 +50,12 @@ class SearchableGraph < Graph
 		# edge/link: node/nodes-TGn und text-TGn kombinieren
 
 		# check validity of query
-		text_ids = operations['text'].map{|o| ([o[:id]] + o[:ids]).flatten.compact}
-		node_ids = operations['node'].map{|o| o[:id]}
-		nodes_ids = operations['nodes'].map{|o| o[:id]}
-		edge_start_end_ids = operations['edge'].map{|o| [o[:start], o[:end]]}
-		link_start_end_ids = operations['link'].map{|o| [o[:start], o[:end]]}
-		edge_ids = operations['edge'].map{|o| o[:id]}
-		link_ids = operations['link'].map{|o| o[:ids]}.flatten
-		anno_ids = @@annotation_commands.map{|c| operations[c].map{|o| o[:ids]}}.flatten.uniq
-		# at least one node, edge or text clause
-		if operations['node'] + operations['edge'].select{|o| !(o[:start] or o[:end])} + operations['text'] == []
-			raise 'A query must contain at least one node clause, edge clause or text clause.'
+		if (error_messages = query_errors(operations)) != []
+			raise error_messages * "\n"
 		end
-		# check for multiply defined ids
-		error_messages = []
-		all_ids = (text_ids + node_ids + nodes_ids + edge_ids + link_ids).flatten.compact
-		all_ids.select{|id| all_ids.count(id) > 1}.uniq.each do |id|
-			error_messages << "The id #{id} is multiply defined."
-		end
-		# references to undefined ids?
-		erlaubte_start_end_ids = node_ids + nodes_ids + text_ids.flatten
-		benutzte_start_end_ids = (edge_start_end_ids + link_start_end_ids).flatten.compact
-		als_referenz_erlaubte_ids = erlaubte_start_end_ids + edge_ids + link_ids
-		benutzte_start_end_ids.each do |id|
-			error_messages << "The id #{id} is used as start or end, but is not defined." unless erlaubte_start_end_ids.include?(id)
-		end
-		['cond', 'sort', 'col'].each do |op_type|
-			operations[op_type].map{|o| o[:ids]}.flatten.each do |id|
-				unless als_referenz_erlaubte_ids.include?(id)
-					error_messages << "The id #{id} is used in #{op_type} clause, but is not defined."
-				end
-			end
-		end
-		if (undefined_ids = anno_ids - als_referenz_erlaubte_ids) != []
-			if undefined_ids.length == 1
-				error_messages << "The id #{undefined_ids[0]} is used in annotation command, but is not defined."
-			else
-				error_messages << "The ids #{undefined_ids * ', '} are used in annotation command, but are not defined."
-			end
-		end
-		# check for dangling edges
-		if erlaubte_start_end_ids.length > 0 and operations['edge'].any?{|o| !(o[:start] && o[:end])} or
-			erlaubte_start_end_ids.length == 0 and operations['edge'].length > 1
-			error_messages << 'There are dangling edges.'
-		end
-		# coherent graph fragment?
-		groups = text_ids + (node_ids + nodes_ids).map{|id| [id]}
-		links = edge_start_end_ids + link_start_end_ids
-		unless groups.groups_linked?(links)
-			error_messages << 'The defined graph fragment is not coherent.'
-		end
-		raise error_messages * "\n" unless error_messages.empty?
-
 
 		# edge in link umwandeln, wenn Start und Ziel gegeben
-		operations['edge'].clone.each do |operation|
-			if operation[:start] and operation[:end]
-				operations['link'] << {
-					:operator => 'edge',
-					:start => operation[:start],
-					:end   => operation[:end],
-					:arg   => operation.reject{|s,w| [:start, :end].include?(s)},
-					:ids   => [operation[:id]].compact
-				}
-				operations['edge'].delete(operation)
-			end
-		end
+		convert_edge_clauses(operations)
 
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
@@ -292,7 +231,7 @@ class SearchableGraph < Graph
 		# cond
 		operations['cond'].each do |op|
 			begin
-				tgliste.select!{|tg| tg.id_mapping.instance_eval(op[:string])}
+				tgliste.select!{|tg| tg.execute(op[:string])}
 			rescue NoMethodError => e
 				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 				raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncond #{op[:string]}"
@@ -306,7 +245,76 @@ class SearchableGraph < Graph
 		puts "Found #{tgliste.length.to_s} matches in #{(Time.new - startzeit).to_s} seconds"
 		puts
 
-		return {:tg => tgliste}
+		return tgliste
+	end
+
+	def query_errors(operations)
+		text_ids = operations['text'].map{|o| ([o[:id]] + o[:ids]).flatten.compact}
+		node_ids = operations['node'].map{|o| o[:id]}
+		nodes_ids = operations['nodes'].map{|o| o[:id]}
+		edge_start_end_ids = operations['edge'].map{|o| [o[:start], o[:end]]}
+		link_start_end_ids = operations['link'].map{|o| [o[:start], o[:end]]}
+		edge_ids = operations['edge'].map{|o| o[:id]}
+		link_ids = operations['link'].map{|o| o[:ids]}.flatten
+		anno_ids = @@annotation_commands.map{|c| operations[c].map{|o| o[:ids]}}.flatten.uniq
+		# at least one node, edge or text clause
+		if operations['node'] + operations['edge'].select{|o| !(o[:start] or o[:end])} + operations['text'] == []
+			return ['A query must contain at least one node clause, edge clause or text clause.']
+		end
+		# check for multiply defined ids
+		error_messages = []
+		all_ids = (text_ids + node_ids + nodes_ids + edge_ids + link_ids).flatten.compact
+		all_ids.select{|id| all_ids.count(id) > 1}.uniq.each do |id|
+			error_messages << "The id #{id} is multiply defined."
+		end
+		# references to undefined ids?
+		erlaubte_start_end_ids = node_ids + nodes_ids + text_ids.flatten
+		benutzte_start_end_ids = (edge_start_end_ids + link_start_end_ids).flatten.compact
+		als_referenz_erlaubte_ids = erlaubte_start_end_ids + edge_ids + link_ids
+		benutzte_start_end_ids.each do |id|
+			error_messages << "The id #{id} is used as start or end, but is not defined." unless erlaubte_start_end_ids.include?(id)
+		end
+		['cond', 'sort', 'col'].each do |op_type|
+			operations[op_type].map{|o| o[:ids]}.flatten.each do |id|
+				unless als_referenz_erlaubte_ids.include?(id)
+					error_messages << "The id #{id} is used in #{op_type} clause, but is not defined."
+				end
+			end
+		end
+		if (undefined_ids = anno_ids - als_referenz_erlaubte_ids) != []
+			if undefined_ids.length == 1
+				error_messages << "The id #{undefined_ids[0]} is used in annotation command, but is not defined."
+			else
+				error_messages << "The ids #{undefined_ids * ', '} are used in annotation command, but are not defined."
+			end
+		end
+		# check for dangling edges
+		if erlaubte_start_end_ids.length > 0 and operations['edge'].any?{|o| !(o[:start] && o[:end])} or
+			erlaubte_start_end_ids.length == 0 and operations['edge'].length > 1
+			error_messages << 'There are dangling edges.'
+		end
+		# coherent graph fragment?
+		groups = text_ids + (node_ids + nodes_ids).map{|id| [id]}
+		links = edge_start_end_ids + link_start_end_ids
+		unless groups.groups_linked?(links)
+			error_messages << 'The defined graph fragment is not coherent.'
+		end
+		return error_messages
+	end
+
+	def convert_edge_clauses(operations)
+		operations['edge'].clone.each do |operation|
+			if operation[:start] and operation[:end]
+				operations['link'] << {
+					:operator => 'edge',
+					:start => operation[:start],
+					:end   => operation[:end],
+					:arg   => operation.reject{|s,w| [:start, :end].include?(s)},
+					:ids   => [operation[:id]].compact
+				}
+				operations['edge'].delete(operation)
+			end
+		end
 	end
 
 	def textsuche_NFA(operation, id = nil)
@@ -387,7 +395,7 @@ class SearchableGraph < Graph
 			vergleich = 0
 			operations['sort'].reject{|op| !op}.each do |op|
 				begin
-					vergleich = a.id_mapping.instance_eval(op[:string]) <=> b.id_mapping.instance_eval(op[:string])
+					vergleich = a.execute(op[:string]) <=> b.execute(op[:string])
 				rescue NoMethodError => e
 					match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 					raise "Undefined method '#{match[1]}' for #{match[2]} in line:\nsort #{op[:string]}"
@@ -396,9 +404,7 @@ class SearchableGraph < Graph
 				rescue SyntaxError => e
 					raise clean_syntax_error_message(:message => e.message, :line => "sort #{op[:string]}")
 				end
-				if vergleich != 0
-					break vergleich
-				end
+				break vergleich if vergleich != 0
 			end
 			vergleich
 		end
@@ -410,7 +416,7 @@ class SearchableGraph < Graph
 				found[:tg].each_with_index do |tg, i|
 					csv << [i+1] + operations['col'].map do |op|
 						begin
-							tg.id_mapping.instance_eval(op[:string])
+							tg.execute(op[:string])
 						rescue NoMethodError => e
 							match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 							raise "Undefined method '#{match[1]}' for #{match[2]} in line:\ncol #{op[:title]} #{op[:string]}"
@@ -435,7 +441,7 @@ class SearchableGraph < Graph
 				puts "match #{i}"
 				operations['col'].each do |op|
 					begin
-						puts "#{op[:title]}: #{tg.id_mapping.instance_eval(op[:string])}"
+						puts "#{op[:title]}: #{tg.execute(op[:string])}"
 					rescue StandardError => e
 						raise "#{e.message} in line:\ncol #{op[:title]} #{op[:string]}"
 					end
@@ -448,7 +454,7 @@ class SearchableGraph < Graph
 	def teilgraph_annotieren(found, command_string)
 		search_result_preserved = true
 		commands = parse_query(command_string)[:all].select{|c| @@annotation_commands.include?(c[:operator])}
-		found[:tg].each_with_index do |tg, i|
+		found[:tg].each do |tg|
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands)
@@ -544,7 +550,7 @@ class SearchableGraph < Graph
 	def interpolate(attributes, tg)
 		attributes.map_hash do |k, v|
 			begin
-				tg.id_mapping.instance_eval("\"#{v}\"")
+				tg.execute("\"#{v}\"")
 			rescue NoMethodError => e
 				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 				raise "Undefined method '#{match[1]}' for #{match[2]} in string:\n\"#{v}\""
@@ -557,11 +563,10 @@ class SearchableGraph < Graph
 	end
 
 	def clean_syntax_error_message(h)
-		message = h[:message]
 		if h[:line]
-			message.sub(/^\(eval\):1: (.+)\n.+\n.*\^.*$/, "\\1 in line:\n#{h[:line]}")
+			h[:message].sub(/^\(eval\):1: (.+)\n.+\n.*\^.*$/, "\\1 in line:\n#{h[:line]}")
 		else
-			message.sub(/^\(eval\):1: (.+)\n(.+)\n.*\^.*$/, "\\1 in string:\n\\2")
+			h[:message].sub(/^\(eval\):1: (.+)\n(.+)\n.*\^.*$/, "\\1 in string:\n\\2")
 		end
 	end
 end
@@ -933,7 +938,7 @@ class Teilgraph
 	# @ids: hash of {id => [Elements with this id]}
 	# @id_mapping: an object containing ids set to the respective elements
 
-	attr_accessor :nodes, :edges, :ids, :id_mapping
+	attr_accessor :nodes, :edges, :ids
 
 	def initialize
 		@nodes = []
@@ -982,6 +987,10 @@ class Teilgraph
 				@id_mapping.instance_variable_set(id, @ids[id])
 			end
 		end
+	end
+
+	def execute(code)
+		@id_mapping.instance_eval(code)
 	end
 end
 

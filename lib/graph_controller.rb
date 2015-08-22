@@ -115,11 +115,11 @@ class GraphController
 
 	def search
 		set_query_cookies
+		@found = {:tg => []}
 		begin
-			@found = @graph.teilgraph_suchen(@sinatra.params[:query])
+			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
 			@search_result = @found[:tg].length.to_s + ' matches'
 		rescue StandardError => e
-			@found = {:tg => []}
 			@search_result = error_message_html(e.message)
 		end
 		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
