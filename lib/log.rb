@@ -28,7 +28,7 @@ class Log
 	# @return [Step] the created step
 	def add_step(h)
 		# deletes all following steps if current step is not the last one
-		@steps = @steps[0..@current_index]
+		@steps = @steps.slice(0, @current_index + 1)
 		@steps << Step.new(h.merge(:log => self))
 		@current_index += 1
 		return current_step
