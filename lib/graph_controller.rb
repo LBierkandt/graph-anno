@@ -340,7 +340,7 @@ class GraphController
 
 	def allowed_attributes(attr)
 		allowed_attr = @graph.allowed_attributes(attr)
-		if (forbidden = attr.keys - allowed_attr.keys) != []
+		if (forbidden = attr.select{|k, v| v}.keys - allowed_attr.keys) != []
 			@cmd_error_messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
 		end
 		return allowed_attr
@@ -456,8 +456,7 @@ class GraphController
 
 				parameters[:elements].each do |element_id|
 					if element = element_by_identifier(element_id)
-						element.attr.merge!(properties)
-						parameters[:keys].each{|k| element.attr.delete(k)}
+						element.annotate(properties)
 					end
 				end
 				undefined_references?(parameters[:elements])

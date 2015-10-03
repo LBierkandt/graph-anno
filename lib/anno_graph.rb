@@ -31,6 +31,10 @@ class NodeOrEdge
 	def cat=(arg)
 		@attr['cat'] = arg
 	end
+
+	def annotate(attr)
+		@attr.merge!(attr).keep_if{|k, v| v}
+	end
 end
 
 class AnnoNode < Node
@@ -896,6 +900,7 @@ class TagsetRule
 	end
 
 	def allowes?(value)
+		return true if value.nil?
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
@@ -912,7 +917,6 @@ class String
 		str = self.strip
 		h = {
 			:attributes => {},
-			:keys => [],
 			:elements => [],
 			:words => [],
 			:all_nodes => [],
@@ -942,11 +946,7 @@ class String
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
 				val = m[6] ? m[6].gsub('\"', '"') : m[5]
-				if val == nil
-					h[:keys] << key
-				else
-					h[:attributes][key] = val
-				end
+				h[:attributes][key] = val
 			elsif m = str.match(r[:string])
 				word = m[2] ? m[2].gsub('\"', '"') : m[1]
 				h[:words] << word

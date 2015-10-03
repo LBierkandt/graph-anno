@@ -471,8 +471,7 @@ class SearchableGraph < Graph
 				when 'a'
 					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
-						el.attr.merge!(attrs)
-						command[:keys].each{|k| el.attr.delete(k)}
+						el.annotate(attrs)
 					end
 				when 'n'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
@@ -550,7 +549,7 @@ class SearchableGraph < Graph
 	def interpolate(attributes, tg)
 		attributes.map_hash do |k, v|
 			begin
-				tg.execute("\"#{v}\"")
+				v ? tg.execute("\"#{v}\"") : nil
 			rescue NoMethodError => e
 				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 				raise "Undefined method '#{match[1]}' for #{match[2]} in string:\n\"#{v}\""
