@@ -21,13 +21,15 @@ require 'yaml.rb'
 require 'graphviz.rb'
 	require 'open3.rb'
 require 'htmlentities.rb'
+require_relative 'log.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :sentence_list, :graph_file, :search_result
+	attr_reader :graph, :log, :sentence_list, :graph_file, :search_result
 
 	def initialize
 		@graph = AnnoGraph.new
+		@log = Log.new(@graph)
 		@graph_file = ''
 		@data_table = nil
 		@search_result = ''
@@ -425,17 +427,20 @@ class GraphController
 			if sentence_set?
 				layer = set_new_layer(parameters[:words], properties)
 				properties.merge!(extract_attributes(parameters))
-				@graph.add_anno_node(:attr => properties, :sentence => @sentence)
+				log_step = @log.add_step(:command => command_line)
+				@graph.add_anno_node(:attr => properties, :sentence => @sentence, :log => log_step)
 			end
 
 		when 'e' # new edge
 			if sentence_set?
 				layer = set_new_layer(parameters[:words], properties)
 				properties.merge!(extract_attributes(parameters))
+				step = @log.add_step(:command => command_line)
 				@graph.add_anno_edge(
 					:start => element_by_identifier(parameters[:all_nodes][0]),
 					:end => element_by_identifier(parameters[:all_nodes][1]),
-					:attr => properties
+					:attr => properties,
+					:log => log_step
 				)
 				undefined_references?(parameters[:all_nodes][0..1])
 			end
@@ -547,6 +552,12 @@ class GraphController
 				node = element_by_identifier(parameters[:tokens][0])
 				@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
 			end
+
+		when 'z'
+			@log.undo
+
+		when 'y'
+			@log.redo
 
 		when 's' # change sentence
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]

@@ -377,7 +377,11 @@ class AnnoGraph < SearchableGraph
 	# @return [Node] the new node
 	def add_anno_node(h)
 		n = add_node(h.merge(:type => 'a'))
-		add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
+		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
+		if h[:log]
+			h[:log].add_change(:action => :create, :element => n)
+			h[:log].add_change(:action => :create, :element => e)
+		end
 		return n
 	end
 
@@ -412,7 +416,9 @@ class AnnoGraph < SearchableGraph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_anno_edge(h)
-		add_edge(h.merge(:type => 'a'))
+		e = add_edge(h.merge(:type => 'a'))
+		h[:log].add_change(:action => :create, :element => e) if h[:log]
+		return e
 	end
 
 	# creates a new order edge and adds it to self
