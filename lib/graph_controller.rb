@@ -33,7 +33,6 @@ class GraphController
 		@search_result = ''
 		@sentence_list = {}
 		@sentence = nil
-		@sentence = nil
 		@tokens = []
 		@nodes = []
 		@edges = []
@@ -116,12 +115,12 @@ class GraphController
 
 	def search
 		set_query_cookies
+		@found = {:tg => []}
 		begin
-			@found = @graph.teilgraph_suchen(@sinatra.params[:query])
+			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
 			@search_result = @found[:tg].length.to_s + ' matches'
 		rescue StandardError => e
-			@found = {:tg => [], :id_type => {}}
-			@search_result = '<span class="error_message">' + e.message.gsub("\n", '</br>') + '</span>'
+			@search_result = error_message_html(e.message)
 		end
 		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
@@ -129,7 +128,6 @@ class GraphController
 		set_found_sentences
 		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		puts '"' + @search_result + '"'
 		return {
 			:sentence_list => @sentence_list.values,
 			:search_result => @search_result,
@@ -222,10 +220,8 @@ class GraphController
 	end
 
 	def save_allowed_annotations
-		@graph.allowed_anno = []
-		@sinatra.params['keys'].each do |i, key|
-			@graph.allowed_anno << {:key => key.strip, :values => @sinatra.params['values'][i].value_list} if key.strip != ''
-		end
+		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
+		@graph.allowed_anno = Tagset.new(tagset_hash)
 		return true.to_json
 	end
 
@@ -309,7 +305,7 @@ class GraphController
 				@data_table = @graph.teilgraph_ausgeben(@found, anfrage, :string)
 				return ''
 			rescue StandardError => e
-				return e.message
+				return error_message_html(e.message)
 			end
 		end
 	end
@@ -322,7 +318,11 @@ class GraphController
 	end
 
 	def annotate_query
-		search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		begin
+			search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+		rescue StandardError => e
+			return {:search_result => error_message_html(e.message)}.to_json
+		end
 		unless search_result_preserved
 			@found = nil
 			@search_result = ''
@@ -360,429 +360,310 @@ class GraphController
 		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}
 	end
 
+	def error_message_html(message)
+		 '<span class="error_message">' + message.gsub("\n", '<br/>') + '</span>'
+	end
+
 	def build_label(e, i = nil)
 		label = ''
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
 		if e.kind_of?(Node)
 			if e.type == 's'
-				display_attr.each do |key,value|
-					label += "#{key}: #{value}<br/>"
-				end
+				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
 			elsif e.type == 't'
 				display_attr.each do |key, value|
 					case key
-						when 'token'
-							label = "#{value}\n#{label}"
-						else
-							label += "#{key}: #{value}\n"
+					when 'token'
+						label = "#{value}\n#{label}"
+					else
+						label += "#{key}: #{value}\n"
 					end
 				end
-				label += "t" + i.to_s if i
+				label += "t#{i}" if i
 			else # normaler Knoten
 				display_attr.each do |key,value|
 					case key
-						when 'cat'
-							label = "#{value}\n#{label}"
-						else
-							label += "#{key}: #{value}\n"
-					end
-				end
-				label += "n" + i.to_s if i
-			end
-		elsif e.kind_of?(Edge)
-			display_attr.each do |key,value|
-				case key
 					when 'cat'
 						label = "#{value}\n#{label}"
 					else
 						label += "#{key}: #{value}\n"
+					end
+				end
+				label += "n#{i}" if i
+			end
+		elsif e.kind_of?(Edge)
+			display_attr.each do |key,value|
+				case key
+				when 'cat'
+					label = "#{value}\n#{label}"
+				else
+					label += "#{key}: #{value}\n"
 				end
 			end
-			label += "e" + i.to_s if i
+			label += "e#{i}" if i
 		end
 		return label
 	end
 
 	def check_cookies
-		if @sinatra.request.cookies['traw_sentence'].nil?
-			@sinatra.response.set_cookie('traw_sentence', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_layer'].nil?
-			@sinatra.response.set_cookie('traw_layer', { :value => 'fs_layer' })
-		end
-
-		if @sinatra.request.cookies['traw_cmd'].nil?
-			@sinatra.response.set_cookie('traw_cmd', { :value => '' })
-		end
-
-		if @sinatra.request.cookies['traw_query'].nil?
-			@sinatra.response.set_cookie('traw_query', { :value => '' })
+		['traw_sentence', 'traw_layer', 'traw_cmd', 'traw_query'].each do |cookie_name|
+			@sinatra.response.set_cookie(cookie_name, {:value => ''}) unless @sinatra.request.cookies[cookie_name]
 		end
 	end
 
 	def element_by_identifier(identifier)
 		i = identifier.scan(/\d/).join.to_i
 		case identifier[0]
-			when 'm'
-				return @sentence
-			when 'n'
-				return @nodes[i]
-			when 'e'
-				return @edges[i]
-			when 't'
-				return @tokens[i]
-			else
-				return nil
+		when 'm'
+			@sentence
+		when 'n'
+			@nodes[i]
+		when 'e'
+			@edges[i]
+		when 't'
+			@tokens[i]
+		else
+			nil
 		end
 	end
 
 	def execute_command(command_line, layer)
-		command_line.strip!
-		command = command_line.partition(' ')[0]
-		string = command_line.partition(' ')[2]
+		command, foo, string = command_line.strip.partition(' ')
 		parameters = string.parse_parameters
 		properties = @graph.conf.layer_attributes[layer]
 
 		case command
-			when 'n' # new node
-				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(extract_attributes(parameters))
-					@graph.add_anno_node(:attr => properties, :sentence => @sentence)
-				end
-
-			when 'e' # new edge
-				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(extract_attributes(parameters))
-					@graph.add_anno_edge(
-						:start => element_by_identifier(parameters[:all_nodes][0]),
-						:end => element_by_identifier(parameters[:all_nodes][1]),
-						:attr => properties
-					)
-					undefined_references?(parameters[:all_nodes][0..1])
-				end
-
-			when 'a' # annotate elements
-				if sentence_set?
-					@graph.conf.layers.map{|l| l.attr}.each do |a|
-						properties.delete(a)
-					end
-
-					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(extract_attributes(parameters))
-
-					parameters[:elements].each do |element_id|
-						if element = element_by_identifier(element_id)
-							element.attr.merge!(properties)
-							parameters[:keys].each{|k| element.attr.delete(k)}
-						end
-					end
-					undefined_references?(parameters[:elements])
-				end
-
-			when 'd' # delete elements
-				if sentence_set?
-					(parameters[:nodes] + parameters[:edges]).each do |el|
-						if element = element_by_identifier(el)
-							element.delete
-						end
-					end
-					parameters[:tokens].each do |token|
-						if element = element_by_identifier(token)
-							element.remove_token
-						end
-					end
-					undefined_references?(parameters[:elements])
-				end
-
-			when 'l' # set layer
+		when 'n' # new node
+			if sentence_set?
 				layer = set_new_layer(parameters[:words], properties)
+				properties.merge!(extract_attributes(parameters))
+				@graph.add_anno_node(:attr => properties, :sentence => @sentence)
+			end
 
-			when 'p', 'g' # group under new parent node
-				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
-					@graph.add_parent_node(
-						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
-						properties.merge(extract_attributes(parameters)),
-						properties.clone,
-						@sentence
-					)
-					undefined_references?(parameters[:nodes] + parameters[:tokens])
+		when 'e' # new edge
+			if sentence_set?
+				layer = set_new_layer(parameters[:words], properties)
+				properties.merge!(extract_attributes(parameters))
+				@graph.add_anno_edge(
+					:start => element_by_identifier(parameters[:all_nodes][0]),
+					:end => element_by_identifier(parameters[:all_nodes][1]),
+					:attr => properties
+				)
+				undefined_references?(parameters[:all_nodes][0..1])
+			end
+
+		when 'a' # annotate elements
+			if sentence_set?
+				@graph.conf.layers.map{|l| l.attr}.each do |a|
+					properties.delete(a)
 				end
 
-			when 'c', 'h' # attach new child node
-				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
-					@graph.add_child_node(
-						(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
-						properties.merge(extract_attributes(parameters)),
-						properties.clone,
-						@sentence
-					)
-					undefined_references?(parameters[:nodes] + parameters[:tokens])
-				end
+				layer = set_new_layer(parameters[:words], properties)
+				properties.merge!(extract_attributes(parameters))
 
-			when 'ni' # build node and "insert in edge"
-				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
-					properties.merge!(extract_attributes(parameters))
-					parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
-						@graph.insert_node(edge, properties)
+				parameters[:elements].each do |element_id|
+					if element = element_by_identifier(element_id)
+						element.attr.merge!(properties)
+						parameters[:keys].each{|k| element.attr.delete(k)}
 					end
-					undefined_references?(parameters[:edges])
 				end
+				undefined_references?(parameters[:elements])
+			end
 
-			when 'di', 'do' # remove node and connect parent/child nodes
-				if sentence_set?
-					layer = set_new_layer(parameters[:words], properties)
-					parameters[:nodes].map{|id| element_by_identifier(id)}.compact.each do |node|
-						@graph.delete_and_join(node, command == 'di' ? :in : :out)
+		when 'd' # delete elements
+			if sentence_set?
+				(parameters[:nodes] + parameters[:edges]).each do |el|
+					if element = element_by_identifier(el)
+						element.delete
 					end
-					undefined_references?(parameters[:nodes])
 				end
-
-			when 'ns' # create and append new sentence(s)
-				old_sentence_nodes = @graph.sentence_nodes
-				new_nodes = []
-				parameters[:words].each do |s|
-					new_nodes << @graph.add_sect_node(:name => s)
-					@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last)
-				end
-				@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first)
-				@sentence = new_nodes.first
-
-			when 't' # build tokens and append them
-				if sentence_set?
-					@graph.build_tokens(parameters[:words], :sentence => @sentence)
-				end
-
-			when 'tb', 'ti' # build tokens and insert them before given token
-				if sentence_set?
-					undefined_references?(parameters[:tokens][0..0])
-					node = element_by_identifier(parameters[:tokens][0])
-					@graph.build_tokens(parameters[:words][1..-1], :next_token => node)
-				end
-
-			when 'ta' # build tokens and insert them after given token
-				if sentence_set?
-					undefined_references?(parameters[:tokens][0..0])
-					node = element_by_identifier(parameters[:tokens][0])
-					@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
-				end
-
-			when 's' # change sentence
-				@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
-
-			when 'del' # delete sentence
-				sentences = if parameters[:words] != []
-					@graph.sentence_nodes.select do |n|
-						parameters[:words].any?{|arg|
-							!arg.match(/^\/.*\/$/) and n.name == arg or
-							arg.match(/^\/.*\/$/) and n.name.match(Regexp.new(arg[1..-2]))
-						}
+				parameters[:tokens].each do |token|
+					if element = element_by_identifier(token)
+						element.remove_token
 					end
-				elsif sentence_set?
-					[@sentence]
-				else
-					[]
 				end
-				sentences.each do |sentence|
-					# change to next sentence
-					@sentence = sentence.node_after || sentence.node_before if sentence == @sentence
-					# join remaining sentences
-					@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after)
-					# delete nodes
-					sentence.nodes.each{|n| n.delete}
-					sentence.delete
+				undefined_references?(parameters[:elements])
+			end
+
+		when 'l' # set layer
+			layer = set_new_layer(parameters[:words], properties)
+
+		when 'p', 'g' # group under new parent node
+			if sentence_set?
+				layer = set_new_layer(parameters[:words], properties)
+				@graph.add_parent_node(
+					(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+					properties.merge(extract_attributes(parameters)),
+					properties.clone,
+					@sentence
+				)
+				undefined_references?(parameters[:nodes] + parameters[:tokens])
+			end
+
+		when 'c', 'h' # attach new child node
+			if sentence_set?
+				layer = set_new_layer(parameters[:words], properties)
+				@graph.add_child_node(
+					(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+					properties.merge(extract_attributes(parameters)),
+					properties.clone,
+					@sentence
+				)
+				undefined_references?(parameters[:nodes] + parameters[:tokens])
+			end
+
+		when 'ni' # build node and "insert in edge"
+			if sentence_set?
+				layer = set_new_layer(parameters[:words], properties)
+				properties.merge!(extract_attributes(parameters))
+				parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
+					@graph.insert_node(edge, properties)
 				end
+				undefined_references?(parameters[:edges])
+			end
 
-			when 'load', 'laden' # clear workspace and load corpus file
-				@graph_file.replace('data/' + parameters[:words][0] + '.json')
-
-				@graph.read_json_file(@graph_file)
-				sentence_nodes = @graph.sentence_nodes
-				if @sentence
-					@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0]
+		when 'di', 'do' # remove node and connect parent/child nodes
+			if sentence_set?
+				layer = set_new_layer(parameters[:words], properties)
+				parameters[:nodes].map{|id| element_by_identifier(id)}.compact.each do |node|
+					@graph.delete_and_join(node, command == 'di' ? :in : :out)
 				end
-				@sentence = sentence_nodes.first unless @sentence
-				@found = nil
+				undefined_references?(parameters[:nodes])
+			end
 
-			when 'add' # load corpus file and add it to the workspace
-				@graph_file.replace('')
-				addgraph = AnnoGraph.new
-				addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
-				@graph.merge!(addgraph)
-				@found = nil
+		when 'ns' # create and append new sentence(s)
+			old_sentence_nodes = @graph.sentence_nodes
+			new_nodes = []
+			parameters[:words].each do |s|
+				new_nodes << @graph.add_sect_node(:name => s)
+				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last)
+			end
+			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first)
+			@sentence = new_nodes.first
 
-			when 'save', 'speichern' # save workspace to corpus file
-				@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]
-				Dir.mkdir('data') unless File.exist?('data')
-				raise 'Please specify a file name!' if @graph_file == ''
-				@graph.write_json_file(@graph_file) if @sentence
+		when 't' # build tokens and append them
+			if sentence_set?
+				@graph.build_tokens(parameters[:words], :sentence => @sentence)
+			end
 
-			when 'clear', 'leeren' # clear workspace
-				@graph_file.replace('')
-				@graph.clear
-				@found = nil
-				@sentence = nil
+		when 'tb', 'ti' # build tokens and insert them before given token
+			if sentence_set?
+				undefined_references?(parameters[:tokens][0..0])
+				node = element_by_identifier(parameters[:tokens][0])
+				@graph.build_tokens(parameters[:words][1..-1], :next_token => node)
+			end
 
-			when 'image' # export sentence as graphics file
-				if sentence_set?
-					format = parameters[:words][0]
-					name = parameters[:words][1]
-					Dir.mkdir('images') if !File.exist?('images')
-					generate_graph(format.to_sym, 'images/'+name+'.'+format)
+		when 'ta' # build tokens and insert them after given token
+			if sentence_set?
+				undefined_references?(parameters[:tokens][0..0])
+				node = element_by_identifier(parameters[:tokens][0])
+				@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
+			end
+
+		when 's' # change sentence
+			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
+
+		when 'del' # delete sentence
+			sentences = if parameters[:words] != []
+				@graph.sentence_nodes.select do |n|
+					parameters[:words].any?{|arg|
+						!arg.match(/^\/.*\/$/) and n.name == arg or
+						arg.match(/^\/.*\/$/) and n.name.match(Regexp.new(arg[1..-2]))
+					}
 				end
+			elsif sentence_set?
+				[@sentence]
+			else
+				[]
+			end
+			sentences.each do |sentence|
+				# change to next sentence
+				@sentence = sentence.node_after || sentence.node_before if sentence == @sentence
+				# join remaining sentences
+				@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after)
+				# delete nodes
+				sentence.nodes.each{|n| n.delete}
+				sentence.delete
+			end
 
-			when 'export' # export corpus in other format
-				Dir.mkdir('exports') unless File.exist?('exports')
+		when 'load', 'laden' # clear workspace and load corpus file
+			@graph_file.replace('data/' + parameters[:words][0] + '.json')
+
+			@graph.read_json_file(@graph_file)
+			sentence_nodes = @graph.sentence_nodes
+			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
+			@sentence = sentence_nodes.first unless @sentence
+			@found = nil
+
+		when 'add' # load corpus file and add it to the workspace
+			@graph_file.replace('')
+			addgraph = AnnoGraph.new
+			addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
+			@graph.merge!(addgraph)
+			@found = nil
+
+		when 'save', 'speichern' # save workspace to corpus file
+			@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]
+			Dir.mkdir('data') unless File.exist?('data')
+			raise 'Please specify a file name!' if @graph_file == ''
+			@graph.write_json_file(@graph_file) if @sentence
+
+		when 'clear', 'leeren' # clear workspace
+			@graph_file.replace('')
+			@graph.clear
+			@found = nil
+			@sentence = nil
+
+		when 'image' # export sentence as graphics file
+			if sentence_set?
 				format = parameters[:words][0]
 				name = parameters[:words][1]
-				name2 = parameters[:words][2]
-				case format
-				when 'config'
-					@graph.export_config(name)
-				when 'paula'
-					@graph.export_paula(name, name2)
-				when 'salt'
-					@graph.export_saltxml(name)
-				when 'sql'
-					@graph.export_sql(name)
-				when 'tagset'
-					@graph.export_tagset(name)
-				else
-					raise "Unknown export format: #{format}"
-				end
+				Dir.mkdir('images') unless File.exist?('images')
+				generate_graph(format.to_sym, 'images/'+name+'.'+format)
+			end
 
-			when 'import' # open import window or imports graph configurations
-				type = parameters[:words][0]
-				name = parameters[:words][1]
-				case type
-				when 'config'
-					@graph.import_config(name)
-				when 'tagset'
-					@graph.import_tagset(name)
-				when 'toolbox'
-					return {:modal => 'import', :type => 'toolbox'}
-				when 'text'
-					return {:modal => 'import', :type => 'text'}
-				else
-					raise "Unknown import type"
-				end
-
+		when 'export' # export corpus in other format
+			Dir.mkdir('exports') unless File.exist?('exports')
+			format = parameters[:words][0]
+			name = parameters[:words][1]
+			name2 = parameters[:words][2]
+			case format
 			when 'config'
-				return {:modal => 'config'}
-
-			when 'speakers'
-				return {:modal => 'speakers'}
-
+				@graph.export_config(name)
+			when 'paula'
+				@graph.export_paula(name, name2)
+			when 'salt'
+				@graph.export_saltxml(name)
+			when 'sql'
+				@graph.export_sql(name)
 			when 'tagset'
-				return {:modal => 'tagset'}
-
-			when 'metadata'
-				return {:modal => 'metadata'}
-
-			when 'makros'
-				return {:modal => 'makros'}
-
-			# all following commands are related to annotation @graph expansion -- Experimental!
-			when 'project'
-				@graph.merkmale_projizieren(@sentence)
-			when 'reduce'
-				@graph.merkmale_reduzieren(@sentence)
-
-			when 'adv'
-				nodes = (parameters[:all_nodes]).map{|n| element_by_identifier(n)}
-				@graph.add_predication(:args=>nodes[0..-2], :anno=>{'sem'=>'caus'}, :clause=>nodes[-1])
-			when 'ref'
-				(parameters[:nodes] + parameters[:tokens]).each{|n| element_by_identifier(n).referent}
-			when 'pred'
-				(parameters[:nodes] + parameters[:tokens]).each{|n| element_by_identifier(n).praedikation}
-			when 'desem'
-				@graph.de_sem(parameters[:elements].map{|n| element_by_identifier(n)})
-			when 'sc'
-				@graph.apply_shortcuts(@sentence)
-
-
-			when 'exp'
-				@graph.expandieren(@sentence)
-			when 'exp1'
-				@graph.praedikationen_einfuehren(@sentence)
-			when 'exp3'
-				@graph.referenten_einfuehren(@sentence)
-			when 'exp4'
-				@graph.argumente_einfuehren(@sentence)
-			when 'expe'
-				@graph.apply_shortcuts(@sentence)
-				@graph.praedikationen_einfuehren(@sentence)
-				@graph.referenten_einfuehren(@sentence)
-				@graph.argumente_einfuehren(@sentence)
-				@graph.argumente_entfernen(@sentence)
-				@graph.merkmale_projizieren(@sentence)
-			when 'exp-praed'
-				#@graph.praedikationen_einfuehren(@sentence)
-				@graph.praedikationen_einfuehren(@sentence)
-				@graph.referenten_einfuehren(@sentence)
-				@graph.argumente_einfuehren(@sentence)
-				@graph.argumente_entfernen(@sentence)
-				@graph.referenten_entfernen(@sentence)
-				# Aufräumen:
-				@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
-					k.referent = nil
-					k.praedikation = nil
-					k.satz = nil
-					k.gesammelte_merkmale = nil
-					k.unreduzierte_merkmale = nil
-				end
-			when 'exp-ref'
-				@graph.komprimieren(@sentence)
-				@graph.praedikationen_einfuehren(@sentence)
-				@graph.referenten_einfuehren(@sentence)
-				@graph.argumente_einfuehren(@sentence)
-				@graph.argumente_entfernen(@sentence)
-				# Aufräumen:
-				@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
-					k.referent = nil
-					k.praedikation = nil
-					k.satz = nil
-					k.gesammelte_merkmale = nil
-					k.unreduzierte_merkmale = nil
-				end
-			when 'exp-arg'
-				@graph.komprimieren(@sentence)
-				@graph.expandieren(@sentence)
-				# Aufräumen:
-				@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
-					k.referent = nil
-					k.praedikation = nil
-					k.satz = nil
-					k.gesammelte_merkmale = nil
-					k.unreduzierte_merkmale = nil
-				end
-
-			when 'komp'
-				@graph.komprimieren(@sentence)
-			when 'komp-arg'
-				@graph.argumente_entfernen(@sentence)
-			when 'komp-ref'
-				@graph.referenten_entfernen(@sentence)
-			when 'komp-praed'
-				@graph.komprimieren(@sentence)
-				#@graph.praedikationen_entfernen(@sentence)
-				#@graph.adverbialpraedikationen_entfernen(@sentence)
-				## Aufräumen:
-				#@graph.nodes.values.select{|k| @sentence == nil || k.sentence == @sentence}.clone.each do |k|
-				#	k.referent = nil
-				#	k.praedikation = nil
-				#	k.satz = nil
-				#	k.gesammelte_merkmale = nil
-				#	k.unreduzierte_merkmale = nil
-				#end
-			when ''
+				@graph.export_tagset(name)
 			else
-				raise "Unknown command \"#{command}\""
+				raise "Unknown export format: #{format}"
+			end
+
+		when 'import' # open import window or imports graph configurations
+			type = parameters[:words][0]
+			name = parameters[:words][1]
+			case type
+			when 'config'
+				@graph.import_config(name)
+			when 'tagset'
+				@graph.import_tagset(name)
+			when 'toolbox'
+				return {:modal => 'import', :type => 'toolbox'}
+			when 'text'
+				return {:modal => 'import', :type => 'text'}
+			else
+				raise "Unknown import type"
+			end
+
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers'
+			return {:modal => command}
+
+		when ''
+		else
+			raise "Unknown command \"#{command}\""
 		end
 		return nil
 	end
@@ -1054,7 +935,7 @@ class GraphController
 				elsif ['name', 'shortcut'].include?(k)
 					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
 				end
-				if not combination['attr'] or combination['attr'].length == 1
+				if !combination['attr'] or combination['attr'].length == 1
 					result["combinations[#{i}[attr]]"] = ''
 				end
 			end
@@ -1074,11 +955,9 @@ class GraphController
 		end
 		return result.empty? ? true : result
 	end
-
 end
 
 class String
-
 	def is_hex_color?
 		self.match(/^#[0-9a-fA-F]{6}$/)
 	end
@@ -1111,5 +990,4 @@ class String
 			end
 		end
 	end
-
 end

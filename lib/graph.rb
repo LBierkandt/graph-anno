@@ -1,26 +1,25 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'json.rb'
 
 class NodeOrEdge
-
 	# getter for @attr hash
 	def [](key)
 		@attr[key]
@@ -35,7 +34,6 @@ class NodeOrEdge
 	def to_json(*a)
 		self.to_h.to_json(*a)
 	end
-
 end
 
 class Node < NodeOrEdge
@@ -46,7 +44,7 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		if not @attr = h[:attr] then @attr = {} end
+		@attr = h[:attr] || {}
 		@in = []
 		@out = []
 	end
@@ -77,9 +75,7 @@ class Node < NodeOrEdge
 	# @return [Array] list of found parent nodes
 	def parent_nodes(&block)
 		selected = @in.select(&block)
-		if selected.is_a?(Enumerator)
-			selected = @in
-		end
+		selected = @in if selected.is_a?(Enumerator)
 		return selected.map{|e| e.start}
 	end
 
@@ -88,12 +84,9 @@ class Node < NodeOrEdge
 	# @return [Array] child nodes connected by edges with the defined attributes
 	def child_nodes(&block)
 		selected = @out.select(&block)
-		if selected.is_a?(Enumerator)
-			selected = @out
-		end
+		selected = @out if selected.is_a?(Enumerator)
 		return selected.map{|e| e.end}
 	end
-
 end
 
 class Edge < NodeOrEdge
@@ -114,9 +107,7 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		if not @attr = h[:attr]
-			@attr = {}
-		end
+		@attr = h[:attr] || {}
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
@@ -129,8 +120,8 @@ class Edge < NodeOrEdge
 	# deletes self and from graph and from out and in lists of start and end node
 	# @return [Edge] self
 	def delete
-		if @start then @start.out.delete(self) end
-		if @end then @end.in.delete(self) end
+		@start.out.delete(self) if @start
+		@end.in.delete(self) if @end
 		@graph.edges.delete(@id)
 	end
 
@@ -160,7 +151,7 @@ class Edge < NodeOrEdge
 			@start = node
 		end
 	end
-  
+
 	# sets the end node of self
 	# @param node [Node] the new end node
 	def end=(node)
@@ -172,7 +163,6 @@ class Edge < NodeOrEdge
 			@end = node
 		end
 	end
-
 end
 
 class Graph
@@ -185,7 +175,7 @@ class Graph
 
 	attr_reader :nodes, :edges
 
-	# initializes empty graph 
+	# initializes empty graph
 	def initialize
 		@nodes = {}
 		@edges = {}
@@ -231,7 +221,7 @@ class Graph
 	def read_json_file(path)
 		puts 'Reading file "' + path + '" ...'
 		self.clear
-		
+
 		file = open(path, 'r:utf-8')
 		nodes_and_edges = JSON.parse(file.read)
 		file.close
@@ -239,7 +229,7 @@ class Graph
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
 		end
 		self.add_hash(nodes_and_edges)
-		
+
 		puts 'Read "' + path + '".'
 	end
 
@@ -276,18 +266,18 @@ class Graph
 	# @param element_type [Symbol] :node or :edge
 	def new_id(h, element_type)
 		case element_type
-			when :node
-				if !h[:id]
-					h[:id] = (@highest_node_id += 1).to_s
-				else
-					if h[:id].to_i > @highest_node_id then @highest_node_id = h[:id].to_i end
-				end
-			when :edge
-				if !h[:id]
-					h[:id] = (@highest_edge_id += 1).to_s
-				else
-					if h[:id].to_i > @highest_edge_id then @highest_edge_id = h[:id].to_i end
-				end
+		when :node
+			if !h[:id]
+				h[:id] = (@highest_node_id += 1).to_s
+			else
+				@highest_node_id = h[:id].to_i if h[:id].to_i > @highest_node_id
+			end
+		when :edge
+			if !h[:id]
+				h[:id] = (@highest_edge_id += 1).to_s
+			else
+				@highest_edge_id = h[:id].to_i if h[:id].to_i > @highest_edge_id
+			end
 		end
 	end
 
@@ -299,9 +289,7 @@ class Graph
 	def edges_between(start_node, end_node, &block)
 		edges = start_node.out && end_node.in
 		result = edges.select(&block)
-		if result.is_a?(Enumerator)
-			result = edges
-		end
+		result = edges if result.is_a?(Enumerator)
 		return result
 	end
 
@@ -326,16 +314,14 @@ class Graph
 
 	# @return [Hash] the graph in hash format: {'nodes' => [...], 'edges' => [...]}
 	def to_h
-		return {
+		{
 			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
 			'edges' => @edges.values.map{|e| e.to_h}
 		}
 	end
-
 end
 
 class Hash
-
 	# @param h2 [Hash] the hash to be tested for inclusion in self
 	# @return [Boolean] true if the key-value pairs of h2 are a subset of self
 	def includes(h2)
@@ -352,6 +338,5 @@ class Hash
 	def map_hash(&block)
 		self.merge(self){|k, v| block.call(k, v)}
 	end
-
 end
 

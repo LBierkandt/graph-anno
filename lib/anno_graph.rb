@@ -31,7 +31,6 @@ class NodeOrEdge
 	def cat=(arg)
 		@attr['cat'] = arg
 	end
-
 end
 
 class AnnoNode < Node
@@ -49,21 +48,22 @@ class AnnoNode < Node
 		super.merge(:type => @type)
 	end
 
-	def tokens(link = nil) # liefert alle dominierten (bzw. über 'link' verbundenen) Tokens
-		if !link
-			if @attr['s-layer'] == 't'
-				link = 'edge(s-layer:t)*'
-			else
-				link = 'edge(cat:ex) node(s-layer:t | token://) edge(s-layer:t)*'
-			end
-		end
-		return self.nodes(link, 'token://').sort{|a,b| a.tokenid <=> b.tokenid}
+	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
+	# @param link [String] a query language string describing the link from self to the tokens that will be returned
+	# @return [Array] all dominated tokens or all tokens connected via given link
+	def tokens(link = nil)
+ 		link = 'edge+' unless link
+		self.nodes(link, 'token').sort_by{|token| token.tokenid}
 	end
 
+	# like tokens method, but returns text string represented by tokens
+	# @param link [String] a query language string describing the link from self to the tokens whose text will be returned
+	# @return [String] the text formed by all dominated tokens or all tokens connected via given link
 	def text(link = nil)
 		self.tokens(link).map{|t| t.token} * ' '
 	end
 
+	# @return [Node] the sentence node self is associated with
 	def sentence
 		if @type == 's'
 			self
@@ -72,7 +72,8 @@ class AnnoNode < Node
 		end
 	end
 
-	def sentence_tokens # Alle Tokens desselben Satzes
+	# @return [Array] the tokens of the sentence self belongs to
+	def sentence_tokens
 		s = sentence
 		if @type == 't'
 			ordered_sister_nodes{|t| t.sentence === s}
@@ -99,6 +100,8 @@ class AnnoNode < Node
 		end
 	end
 
+	# @param block [Lambda] a block to filter the considered sister nodes
+	# @return [Array] an ordered list of the sister nodes of self, optionally filtered by a block
 	def ordered_sister_nodes(&block)
 		block ||= lambda{|n| true}
 		nodes = [self]
@@ -113,26 +116,20 @@ class AnnoNode < Node
 		return nodes
 	end
 
+	# @return [String] the text of the sentence self belongs to
 	def sentence_text
 		sentence_tokens.map{|t| t.token} * ' '
 	end
 
-	def position
-		if @attr['token']
-			position = self.tokenid.to_f
+	# @return [Float] the position of self in terms of own tokenid or averaged tokenid of the dominated (via tokens method) tokens
+	# @param link [String] a query language string describing the link from self to the tokens that will be returned
+	def position(link = nil)
+		if @type == 't'
+			return self.tokenid.to_f
 		else
-			summe = 0
-			toks = self.tokens
-			toks.each do |t|
-				summe += t.position
-			end
-			if toks.length > 0
-				position = summe / toks.length
-			else
-				position = 0
-			end
+			toks = self.tokens(link)
+			return toks.length > 0 ? toks.reduce(0){|sum, t| sum += t.position} / toks.length : 0
 		end
-		return position
 	end
 
 	def position_wrt(other, stil = nil, detail = true)
@@ -161,10 +158,10 @@ class AnnoNode < Node
 		ot_last  = ot.last.tokenid
 		if st_last < ot_first
 			r += 'pre'
-			if detail and st_last < ot_first - 1 then r += '_separated' end
+			r += '_separated' if detail and st_last < ot_first - 1
 		elsif st_first > ot_last
 			r +='post'
-			if detail and st_first > ot_last + 1 then r += '_separated' end
+			r += '_separated' if detail and st_first > ot_last + 1
 		elsif st_first > ot_first && st_last < ot_last &&
 			ot.any?{|t| t.tokenid < st_first || t.tokenid > st_last}
 			r += 'in'
@@ -200,18 +197,22 @@ class AnnoNode < Node
 
 	# methods specific for token nodes:
 
+	# @return [String] self's text
 	def token
 		@attr['token']
 	end
 
+	# @param arg [String] new self's text
 	def token=(arg)
 		@attr['token'] = arg
 	end
 
+	# @return [Integer] position of self in ordered list of own sentence's tokens
 	def tokenid
 		self.sentence_tokens.index(self)
 	end
 
+	# deletes self and joins adjacent tokens if possible
 	def remove_token
 		if self.token
 			s = self.sentence
@@ -223,15 +224,20 @@ class AnnoNode < Node
 	end
 
 	# methods specific for section nodes:
-	
+
+	# @return [String] self's name attribute
 	def name
 		@attr['name']
 	end
-	
+
+	# @param name [String] self's new name attribute
 	def name=(name)
 		@attr['name'] = name
 	end
 
+	# @param link [String] a link in query language
+	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
+	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
 	def nodes(link = nil, end_node_condition = '')
 		if link
 			super
@@ -243,11 +249,9 @@ class AnnoNode < Node
 			end
 		end
 	end
-
 end
 
 class AnnoEdge < Edge
-
 	def initialize(h)
 		super
 		@type = h[:type]
@@ -258,11 +262,10 @@ class AnnoEdge < Edge
 		super.merge(:type => @type)
 	end
 
-	def fulfil?(bedingung)
-		if @type != 'a' then return false end
+	def fulfil?(condition)
+		return false unless @type == 'a'
 		super
 	end
-
 end
 
 class AnnoGraph < SearchableGraph
@@ -273,7 +276,7 @@ class AnnoGraph < SearchableGraph
 		super
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = []
+		@allowed_anno = Tagset.new
 		@anno_makros = {}
 		create_layer_makros
 	end
@@ -301,9 +304,9 @@ class AnnoGraph < SearchableGraph
 		end
 		self.add_hash(nodes_and_edges)
 		if version >= 6
-			@anno_makros = nodes_and_edges['anno_makros'] ? nodes_and_edges['anno_makros'] : {}
-			@info = nodes_and_edges['info'] ? nodes_and_edges['info'] : {}
-			@allowed_anno = nodes_and_edges['allowed_anno'] ? nodes_and_edges['allowed_anno'].to_allowed_anno : []
+			@anno_makros = nodes_and_edges['anno_makros'] || {}
+			@info = nodes_and_edges['info'] || {}
+			@allowed_anno = Tagset.new(nodes_and_edges['allowed_anno'])
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain += nodes_and_edges['search_makros']
@@ -362,7 +365,7 @@ class AnnoGraph < SearchableGraph
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|k| k.type == 's'}.sort{|a,b| a['sentence'] <=> b['sentence']}
+				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
 					s.name = s.attr.delete('sentence')
@@ -530,15 +533,6 @@ class AnnoGraph < SearchableGraph
 		node.delete
 	end
 
-	def filter!(bedingung)
-		@nodes.each do |id,node|
-			if !node.fulfil?(bedingung) then @nodes.delete(id) end
-		end
-		@edges.each do |id,edge|
-			if !edge.fulfil?(bedingung) then @edges.delete(id) end
-		end
-	end
-
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
 	def to_h
 		super.
@@ -546,10 +540,12 @@ class AnnoGraph < SearchableGraph
 			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('info' => @info).
 			merge('anno_makros' => @anno_makros).
-			merge('allowed_anno' => @allowed_anno.to_savable_array).
+			merge('allowed_anno' => @allowed_anno).
 			merge('search_makros' => @makros_plain)
 	end
 
+	# merges another graph into self
+	# @param other [Graph] the graph to be merged
 	def merge!(other)
 		s_nodes = sentence_nodes
 		last_old_sentence_node = s_nodes.last
@@ -559,12 +555,15 @@ class AnnoGraph < SearchableGraph
 		@conf.merge!(other.conf)
 	end
 
+	# @return [Graph] a clone of self (nodes and edges are not cloned)
 	def clone
 		new_graph = super
 		new_graph.clone_graph_info(self)
 		return new_graph
 	end
 
+	# sets self's configuration to the cloned configuration of the given graph
+	# @param other_graph [Graph] the other graph
 	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
@@ -574,6 +573,8 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
+	# @param sentence_list [Array] a list of sentence nodes
+	# @return [Graph] the new graph
 	def subcorpus(sentence_list)
 		nodes = sentence_list.map{|s| s.nodes}.flatten
 		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
@@ -595,6 +596,7 @@ class AnnoGraph < SearchableGraph
 		return g
 	end
 
+	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
 		if first_sect_node = @nodes.values.select{|n| n.type == 's'}[0]
 			first_sect_node.ordered_sister_nodes
@@ -607,7 +609,9 @@ class AnnoGraph < SearchableGraph
 		@nodes.values.select{|n| n.type == 'sp'}
 	end
 
-	# builds token-nodes from a list of words, concatenates them and appends them if tokens in the given sentence are already present; if next_token is given, the new tokens are inserted before next_token
+	# builds token nodes from a list of words, concatenates them and appends them if a sentence is given and the given sentence contains tokens; if next_token is given, the new tokens are inserted before next_token; if last_token is given, the new tokens are inserted after last_token
+	# @param words [Array] a list of strings from which the new tokens will be created
+	# @param h [Hash] a hash with one of the keys :sentence (a sentence node), :next_token or :last_token (a token node)
 	def build_tokens(words, h)
 		if h[:sentence]
 			sentence = h[:sentence]
@@ -623,18 +627,17 @@ class AnnoGraph < SearchableGraph
 		else
 			return
 		end
-		token_collection = []
-		words.each do |word|
-			token_collection << add_token_node(:attr => {'token' => word}, :sentence => sentence)
+		token_collection = words.map do |word|
+			add_token_node(:attr => {'token' => word}, :sentence => sentence)
 		end
 		# This creates relationships between the tokens in the form of 1->2->3->4
 		token_collection[0..-2].each_with_index do |token, index|
 			add_order_edge(:start => token, :end => token_collection[index+1])
 		end
 		# If there are already tokens, append the new ones
-		if last_token then add_order_edge(:start => last_token, :end => token_collection[0]) end
-		if next_token then add_order_edge(:start => token_collection[-1], :end => next_token) end
-		if last_token && next_token then self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete end
+		add_order_edge(:start => last_token, :end => token_collection[0]) if last_token
+		add_order_edge(:start => token_collection[-1], :end => next_token) if next_token
+		self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete if last_token && next_token
 		return token_collection
 	end
 
@@ -643,7 +646,7 @@ class AnnoGraph < SearchableGraph
 		super
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = []
+		@allowed_anno = Tagset.new
 		@makros_plain = []
 	end
 
@@ -673,11 +676,7 @@ class AnnoGraph < SearchableGraph
 				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
 					annotation.each do |k, v|
-						if v.class == Fixnum
-							t[k] = words[i][v]
-						else
-							t[k] = v
-						end
+						t[k] = (v.class == Fixnum) ? words[i][v] : v
 					end
 				end
 			when 'punkt'
@@ -728,7 +727,7 @@ class AnnoGraph < SearchableGraph
 	def export_tagset(name)
 		Dir.mkdir('exports/tagset') unless File.exist?('exports/tagset')
 		File.open("exports/tagset/#{name}.tagset.json", 'w') do |f|
-			f.write(JSON.pretty_generate(@allowed_anno.to_savable_array, :indent => ' ', :space => '').encode('UTF-8'))
+			f.write(JSON.pretty_generate(@allowed_anno, :indent => ' ', :space => '').encode('UTF-8'))
 		end
 	end
 
@@ -744,7 +743,7 @@ class AnnoGraph < SearchableGraph
 	# @param name [String] The name under which the file will be saved
 	def import_tagset(name)
 		File.open("exports/tagset/#{name}.tagset.json", 'r:utf-8') do |f|
-			@allowed_anno = JSON.parse(f.read).to_allowed_anno
+			@allowed_anno = Tagset.new(JSON.parse(f.read))
 		end
 	end
 
@@ -752,17 +751,7 @@ class AnnoGraph < SearchableGraph
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
 	def allowed_attributes(attr)
-		return attr.clone if @allowed_anno == []
-		allowed_attr = {}
-		attr.each do |key, value|
-			@allowed_anno.each do |allow|
-				if allow[:key] == key and value.value_allowed?(allow[:values])
-					allowed_attr.merge!(key => value)
-					break
-				end
-			end
-		end
-		return allowed_attr
+		@allowed_anno.allowed_attributes(attr)
 	end
 
 	private
@@ -776,7 +765,6 @@ class AnnoGraph < SearchableGraph
 		end
 		@makros = parse_query(layer_makros_array * "\n")['def']
 	end
-
 end
 
 class AnnoLayer
@@ -836,12 +824,12 @@ class AnnoGraphConf
 
 	def merge!(other)
 		other.layers.each do |layer|
-			if not @layers.map{|l| l.attr}.include?(layer.attr)
+			unless @layers.map{|l| l.attr}.include?(layer.attr)
 				@layers << layer
 			end
 		end
 		other.combinations.each do |combination|
-			if not @combinations.map{|c| c.attr}.include?(combination.attr)
+			unless @combinations.map{|c| c.attr}.include?(combination.attr)
 				@combinations << combination
 			end
 		end
@@ -883,25 +871,48 @@ class AnnoGraphConf
 end
 
 class Array
-
 	def text
 		self.map{|n| n.text} * ' '
 	end
+end
 
-	def to_allowed_anno
-		self.map do |rule|
-			{:key => rule['key'], :values => rule['values'].value_list}
+class Tagset < Array
+	def initialize(a = [])
+		a.to_a.each do |rule|
+			self << TagsetRule.new(rule['key'], rule['values']) if rule['key'].strip != ''
 		end
 	end
 
-	def to_savable_array
-		self.map do |rule|
-			{'key' => rule[:key], 'values' => rule[:values].value_list_string}
+	def allowed_attributes(attr)
+		return attr.clone if self.empty?
+		attr.select do |key, value|
+			self.any?{|rule| rule.key == key and rule.allowes?(value)}
 		end
 	end
 
-	def value_list_string
-		self.map do |tok|
+	def to_a
+		self.map{|rule| rule.to_h}
+	end
+
+	def to_json(*a)
+		self.to_a.to_json(*a)
+	end
+end
+
+class TagsetRule
+	attr_accessor :key, :values
+
+	def initialize(key, values)
+		@key = key.strip
+		@values = values.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+	end
+
+	def to_h
+		{'key' => @key, 'values' => values_string}
+	end
+
+	def values_string
+		@values.map do |tok|
 			case tok[:cl]
 			when :bstring
 				tok[:str]
@@ -911,6 +922,17 @@ class Array
 				'/' + tok[:str] + '/'
 			end
 		end * ' '
+	end
+
+	def allowes?(value)
+		@values.any? do |rule|
+			case rule[:cl]
+			when :bstring, :qstring
+				value == rule[:str]
+			when :regex
+				value.match('^' + rule[:str] + '$')
+			end
+		end
 	end
 end
 
@@ -932,7 +954,8 @@ class String
 
 		r = {}
 		r[:ctrl] = '(\s|:)'
-		r[:bstring] = '[^\s:"]+'
+		r[:comment] = '#'
+		r[:bstring] = '[^\s:"#]+'
 		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
 		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
@@ -942,7 +965,9 @@ class String
 
 		while str != ''
 			m = nil
-			if m = str.match(r[:ctrl])
+			if m = str.match(r[:comment])
+				break
+			elsif m = str.match(r[:ctrl])
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
 				val = m[6] ? m[6].gsub('\"', '"') : m[5]
@@ -957,29 +982,29 @@ class String
 				if word.match(/^(([ent]\d+)|m)$/)
 					h[:elements] << word
 					case word[0]
-						when 'm'
-							h[:meta] << word
-						when 'n'
-							h[:nodes] << word
-							h[:all_nodes] << word
-						when 't'
-							h[:tokens] << word
-							h[:all_nodes] << word
-						when 'e'
-							h[:edges] << word
+					when 'm'
+						h[:meta] << word
+					when 'n'
+						h[:nodes] << word
+						h[:all_nodes] << word
+					when 't'
+						h[:tokens] << word
+						h[:all_nodes] << word
+					when 'e'
+						h[:edges] << word
 					end
 				elsif mm = word.match(/^([ent])(\d+)\.\.\1(\d+)$/)
 					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
 						h[:elements] << mm[1] + n.to_s
 						case word[0]
-							when 'n'
-								h[:nodes] << mm[1] + n.to_s
-								h[:all_nodes] << mm[1] + n.to_s
-							when 't'
-								h[:tokens] << mm[1] + n.to_s
-								h[:all_nodes] << mm[1] + n.to_s
-							when 'e'
-								h[:edges] << mm[1] + n.to_s
+						when 'n'
+							h[:nodes] << mm[1] + n.to_s
+							h[:all_nodes] << mm[1] + n.to_s
+						when 't'
+							h[:tokens] << mm[1] + n.to_s
+							h[:all_nodes] << mm[1] + n.to_s
+						when 'e'
+							h[:edges] << mm[1] + n.to_s
 						end
 					end
 				elsif word.match(r[:id])
@@ -997,24 +1022,4 @@ class String
 	def sql_json_escape_quotes
 		self.gsub("'", "\\\\'").gsub('\\"', '\\\\\\"')
 	end
-
-	def value_allowed?(allowed)
-		return true if allowed == []
-		allowed.each do |allow|
-			case allow[:cl]
-			when :bstring, :qstring
-				return true if self == allow[:str]
-			when :regex
-				return true if self.match('^' + allow[:str] + '$')
-			end
-		end
-		return false
-	end
-
-	def value_list
-		self.lex_ql.select do |tok|
-			[:bstring, :qstring, :regex].include?(tok[:cl])
-		end
-	end
-
 end
