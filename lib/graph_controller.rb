@@ -435,7 +435,7 @@ class GraphController
 			if sentence_set?
 				layer = set_new_layer(parameters[:words], properties)
 				properties.merge!(extract_attributes(parameters))
-				step = @log.add_step(:command => command_line)
+				log_step = @log.add_step(:command => command_line)
 				@graph.add_anno_edge(
 					:start => element_by_identifier(parameters[:all_nodes][0]),
 					:end => element_by_identifier(parameters[:all_nodes][1]),
@@ -454,9 +454,10 @@ class GraphController
 				layer = set_new_layer(parameters[:words], properties)
 				properties.merge!(extract_attributes(parameters))
 
+				log_step = @log.add_step(:command => command_line)
 				parameters[:elements].each do |element_id|
 					if element = element_by_identifier(element_id)
-						element.annotate(properties)
+						element.annotate(properties, log_step)
 					end
 				end
 				undefined_references?(parameters[:elements])

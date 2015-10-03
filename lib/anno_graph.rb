@@ -32,7 +32,8 @@ class NodeOrEdge
 		@attr['cat'] = arg
 	end
 
-	def annotate(attr)
+	def annotate(attr, log_step = nil)
+		log_step.add_change(:action => :update, :element => self, :attr => attr) if log_step
 		@attr.merge!(attr).keep_if{|k, v| v}
 	end
 end
