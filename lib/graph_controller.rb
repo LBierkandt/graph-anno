@@ -465,14 +465,15 @@ class GraphController
 
 		when 'd' # delete elements
 			if sentence_set?
+				log_step = @log.add_step(:command => command_line)
 				(parameters[:nodes] + parameters[:edges]).each do |el|
 					if element = element_by_identifier(el)
-						element.delete
+						element.delete(log_step)
 					end
 				end
 				parameters[:tokens].each do |token|
 					if element = element_by_identifier(token)
-						element.remove_token
+						element.remove_token(log_step)
 					end
 				end
 				undefined_references?(parameters[:elements])
@@ -483,43 +484,49 @@ class GraphController
 
 		when 'p', 'g' # group under new parent node
 			if sentence_set?
+				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
 				@graph.add_parent_node(
 					(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
 					properties.merge(extract_attributes(parameters)),
 					properties.clone,
-					@sentence
+					@sentence,
+					log_step
 				)
 				undefined_references?(parameters[:nodes] + parameters[:tokens])
 			end
 
 		when 'c', 'h' # attach new child node
 			if sentence_set?
+				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
 				@graph.add_child_node(
 					(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
 					properties.merge(extract_attributes(parameters)),
 					properties.clone,
-					@sentence
+					@sentence,
+					log_step
 				)
 				undefined_references?(parameters[:nodes] + parameters[:tokens])
 			end
 
 		when 'ni' # build node and "insert in edge"
 			if sentence_set?
+				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
 				properties.merge!(extract_attributes(parameters))
 				parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
-					@graph.insert_node(edge, properties)
+					@graph.insert_node(edge, properties, log_step)
 				end
 				undefined_references?(parameters[:edges])
 			end
 
 		when 'di', 'do' # remove node and connect parent/child nodes
 			if sentence_set?
+				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
 				parameters[:nodes].map{|id| element_by_identifier(id)}.compact.each do |node|
-					@graph.delete_and_join(node, command == 'di' ? :in : :out)
+					@graph.delete_and_join(node, command == 'di' ? :in : :out, log_step)
 				end
 				undefined_references?(parameters[:nodes])
 			end
@@ -587,7 +594,7 @@ class GraphController
 
 		when 'load', 'laden' # clear workspace and load corpus file
 			@graph_file.replace('data/' + parameters[:words][0] + '.json')
-
+			@log = Log.new(@graph)
 			@graph.read_json_file(@graph_file)
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
@@ -610,6 +617,7 @@ class GraphController
 		when 'clear', 'leeren' # clear workspace
 			@graph_file.replace('')
 			@graph.clear
+			@log = Log.new(@graph)
 			@found = nil
 			@sentence = nil
 

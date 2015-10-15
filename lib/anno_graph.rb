@@ -49,6 +49,18 @@ class AnnoNode < Node
 		super.merge(:type => @type)
 	end
 
+	# deletes self and all in- and outgoing edges; optionally writes changes to log
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	# @return [Node] self
+	def delete(log_step = nil)
+		if log_step
+			@out.each{|e| log_step.add_change(:action => :delete, :element => e)}
+			@in.each{|e| log_step.add_change(:action => :delete, :element => e)}
+			log_step.add_change(:action => :delete, :element => self)
+		end
+		super()
+	end
+
 	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
 	# @param link [String] a query language string describing the link from self to the tokens that will be returned
 	# @return [Array] all dominated tokens or all tokens connected via given link
@@ -202,13 +214,15 @@ class AnnoNode < Node
 	end
 
 	# deletes self and joins adjacent tokens if possible
-	def remove_token
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def remove_token(log_step = nil)
 		if self.token
 			s = self.sentence
 			if self.node_before && self.node_after
-				@graph.add_order_edge(:start => self.node_before, :end => self.node_after)
+				e = @graph.add_order_edge(:start => self.node_before, :end => self.node_after)
+				log_step.add_change(:action => :create, :element => e) if log_step
 			end
-			self.delete
+			self.delete(log_step)
 		end
 	end
 
@@ -244,6 +258,16 @@ class AnnoEdge < Edge
 	def initialize(h)
 		super
 		@type = h[:type]
+	end
+
+	# deletes self from graph and from out and in lists of start and end node
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	# @return [Edge] self
+	def delete(log_step = nil)
+		if log_step
+			log_step.add_change(:action => :delete, :element => self)
+		end
+		super()
 	end
 
 	# @return [Hash] the element transformed into a hash with all values casted to strings
@@ -445,16 +469,19 @@ class AnnoGraph < SearchableGraph
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param sentence [SectNode] the sentence node to which the new node will belong
-	def add_parent_node(nodes, node_attrs, edge_attrs, sentence)
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def add_parent_node(nodes, node_attrs, edge_attrs, sentence, log_step = nil)
 		parent_node = add_anno_node(
 			:attr => node_attrs,
-			:sentence => sentence
+			:sentence => sentence,
+			:log => log_step
 		)
 		nodes.each do |n|
 			add_anno_edge(
 				:start => parent_node,
 				:end => n,
-				:attr => edge_attrs
+				:attr => edge_attrs,
+				:log => log_step
 			)
 		end
 	end
@@ -464,16 +491,19 @@ class AnnoGraph < SearchableGraph
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param sentence [SectNode] the sentence node to which the new node will belong
-	def add_child_node(nodes, node_attrs, edge_attrs, sentence)
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def add_child_node(nodes, node_attrs, edge_attrs, sentence, log_step = nil)
 		child_node = add_anno_node(
 			:attr => node_attrs,
-			:sentence => sentence
+			:sentence => sentence,
+			:log => log_step
 		)
 		nodes.each do |n|
 			add_anno_edge(
 				:start => n,
 				:end => child_node,
-				:attr => edge_attrs
+				:attr => edge_attrs,
+				:log => log_step
 			)
 		end
 	end
@@ -481,36 +511,45 @@ class AnnoGraph < SearchableGraph
 	# replaces the given edge by a sequence of an edge, a node and another edge. The new edges inherit the annotations of the replaced edge.
 	# @param edge [AnnoEdge] the edge to be replaced
 	# @param attrs [Hash] the annotations for the new node
-	def insert_node(edge, attrs)
-		new_node = add_anno_node(:attr => attrs, :sentence => edge.end.sentence)
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def insert_node(edge, attrs, log_step = nil)
+		new_node = add_anno_node(
+			:attr => attrs,
+			:sentence => edge.end.sentence,
+			:log => log_step
+		)
 		add_anno_edge(
 			:start => edge.start,
 			:end => new_node,
-			:attr => edge.attr.clone
+			:attr => edge.attr.clone,
+			:log => log_step
 		)
 		add_anno_edge(
 			:start => new_node,
 			:end => edge.end,
-			:attr => edge.attr.clone
+			:attr => edge.attr.clone,
+			:log => log_step
 		)
-		edge.delete
+		edge.delete(log_step)
 	end
 
 	# deletes a node and connects its outgoing edges to its parents or its ingoing edges to its children
 	# @param node [AnnoNode] the node to be deleted
 	# @param mode [Symbol] :in or :out - whether to delete the ingoing or outgoing edges
-	def delete_and_join(node, mode)
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def delete_and_join(node, mode, log_step = nil)
 		node.in.select{|e| e.type == 'a'}.each do |in_edge|
 			node.out.select{|e| e.type == 'a'}.each do |out_edge|
 				devisor = mode == :in ? out_edge : in_edge
 				add_anno_edge(
 					:start => in_edge.start,
 					:end => out_edge.end,
-					:attr => devisor.attr.clone
+					:attr => devisor.attr.clone,
+					:log => log_step
 				)
 			end
 		end
-		node.delete
+		node.delete(log_step)
 	end
 
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
