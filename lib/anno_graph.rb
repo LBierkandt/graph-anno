@@ -653,16 +653,16 @@ class AnnoGraph < SearchableGraph
 			return
 		end
 		token_collection = words.map do |word|
-			add_token_node(:attr => {'token' => word}, :sentence => sentence)
+			add_token_node(:attr => {'token' => word}, :sentence => sentence, :log => h[:log])
 		end
 		# This creates relationships between the tokens in the form of 1->2->3->4
 		token_collection[0..-2].each_with_index do |token, index|
-			add_order_edge(:start => token, :end => token_collection[index+1])
+			add_order_edge(:start => token, :end => token_collection[index+1], :log => h[:log])
 		end
 		# If there are already tokens, append the new ones
-		add_order_edge(:start => last_token, :end => token_collection[0]) if last_token
-		add_order_edge(:start => token_collection[-1], :end => next_token) if next_token
-		self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete if last_token && next_token
+		add_order_edge(:start => last_token, :end => token_collection[0], :log => h[:log]) if last_token
+		add_order_edge(:start => token_collection[-1], :end => next_token, :log => h[:log]) if next_token
+		self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete(h[:log]) if last_token && next_token
 		return token_collection
 	end
 

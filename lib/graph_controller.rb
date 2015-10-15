@@ -514,41 +514,48 @@ class GraphController
 			undefined_references?(parameters[:nodes])
 
 		when 'ns' # create and append new sentence(s)
+			log_step = @log.add_step(:command => command_line)
 			old_sentence_nodes = @graph.sentence_nodes
 			new_nodes = []
 			parameters[:words].each do |s|
-				new_nodes << @graph.add_sect_node(:name => s)
-				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last)
+				new_nodes << @graph.add_sect_node(:name => s, :log => log_step)
+				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last, :log => log_step)
 			end
-			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first)
+			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first, :log => log_step)
 			@sentence = new_nodes.first
 
 		when 't' # build tokens and append them
 			sentence_set?
-			@graph.build_tokens(parameters[:words], :sentence => @sentence)
+			log_step = @log.add_step(:command => command_line)
+			@graph.build_tokens(parameters[:words], :sentence => @sentence, :log => log_step)
 
 		when 'tb', 'ti' # build tokens and insert them before given token
 			sentence_set?
+			log_step = @log.add_step(:command => command_line)
 			undefined_references?(parameters[:tokens][0..0])
 			node = element_by_identifier(parameters[:tokens][0])
-			@graph.build_tokens(parameters[:words][1..-1], :next_token => node)
+			@graph.build_tokens(parameters[:words][1..-1], :next_token => node, :log => log_step)
 
 		when 'ta' # build tokens and insert them after given token
 			sentence_set?
+			log_step = @log.add_step(:command => command_line)
 			undefined_references?(parameters[:tokens][0..0])
 			node = element_by_identifier(parameters[:tokens][0])
-			@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
+			@graph.build_tokens(parameters[:words][1..-1], :last_token => node, :log => log_step)
 
 		when 'z'
 			@log.undo
+			@sentence = @graph.sentence_nodes.first unless @graph.sentence_nodes.include?(@sentence)
 
 		when 'y'
 			@log.redo
+			@sentence = @graph.sentence_nodes.first unless @graph.sentence_nodes.include?(@sentence)
 
 		when 's' # change sentence
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 		when 'del' # delete sentence
+			log_step = @log.add_step(:command => command_line)
 			sentences = if parameters[:words] != []
 				@graph.sentence_nodes.select do |n|
 					parameters[:words].any?{|arg|
@@ -565,10 +572,10 @@ class GraphController
 				# change to next sentence
 				@sentence = sentence.node_after || sentence.node_before if sentence == @sentence
 				# join remaining sentences
-				@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after)
+				@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after, :log => log_step)
 				# delete nodes
-				sentence.nodes.each{|n| n.delete}
-				sentence.delete
+				sentence.nodes.each{|n| n.delete(log_step)}
+				sentence.delete(log_step)
 			end
 
 		when 'load', 'laden' # clear workspace and load corpus file
