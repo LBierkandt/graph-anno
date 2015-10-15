@@ -419,7 +419,11 @@ class AnnoGraph < SearchableGraph
 	# @return [Node] the new node
 	def add_token_node(h)
 		n = add_node(h.merge(:type => 't'))
-		add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
+		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
+		if h[:log]
+			h[:log].add_change(:action => :create, :element => n)
+			h[:log].add_change(:action => :create, :element => e)
+		end
 		return n
 	end
 
@@ -429,7 +433,9 @@ class AnnoGraph < SearchableGraph
 	def add_sect_node(h)
 		h.merge!(:attr => {}) unless h[:attr]
 		h[:attr].merge!('name' => h[:name]) if h[:name]
-		add_node(h.merge(:type => 's'))
+		n = add_node(h.merge(:type => 's'))
+		h[:log].add_change(:action => :create, :element => n) if h[:log]
+		return n
 	end
 
 	# creates a new edge and adds it to self
@@ -454,14 +460,18 @@ class AnnoGraph < SearchableGraph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_order_edge(h)
-		add_edge(h.merge(:type => 'o'))
+		e = add_edge(h.merge(:type => 'o'))
+		h[:log].add_change(:action => :create, :element => e) if h[:log]
+		return e
 	end
 
 	# creates a new sect edge and adds it to self
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_sect_edge(h)
-		add_edge(h.merge(:type => 's'))
+		e = add_edge(h.merge(:type => 's'))
+		h[:log].add_change(:action => :create, :element => e) if h[:log]
+		return e
 	end
 
 	# creates a new annotation node as parent node for the given nodes
