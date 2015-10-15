@@ -422,106 +422,96 @@ class GraphController
 
 		case command
 		when 'n' # new node
-			if sentence_set?
-				layer = set_new_layer(parameters[:words], properties)
-				properties.merge!(extract_attributes(parameters))
-				log_step = @log.add_step(:command => command_line)
-				@graph.add_anno_node(:attr => properties, :sentence => @sentence, :log => log_step)
-			end
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			layer = set_new_layer(parameters[:words], properties)
+			properties.merge!(extract_attributes(parameters))
+			@graph.add_anno_node(:attr => properties, :sentence => @sentence, :log => log_step)
 
 		when 'e' # new edge
-			if sentence_set?
-				layer = set_new_layer(parameters[:words], properties)
-				properties.merge!(extract_attributes(parameters))
-				log_step = @log.add_step(:command => command_line)
-				@graph.add_anno_edge(
-					:start => element_by_identifier(parameters[:all_nodes][0]),
-					:end => element_by_identifier(parameters[:all_nodes][1]),
-					:attr => properties,
-					:log => log_step
-				)
-				undefined_references?(parameters[:all_nodes][0..1])
-			end
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			layer = set_new_layer(parameters[:words], properties)
+			properties.merge!(extract_attributes(parameters))
+			@graph.add_anno_edge(
+				:start => element_by_identifier(parameters[:all_nodes][0]),
+				:end => element_by_identifier(parameters[:all_nodes][1]),
+				:attr => properties,
+				:log => log_step
+			)
+			undefined_references?(parameters[:all_nodes][0..1])
 
 		when 'a' # annotate elements
-			if sentence_set?
-				@graph.conf.layers.map{|l| l.attr}.each do |a|
-					properties.delete(a)
-				end
-
-				layer = set_new_layer(parameters[:words], properties)
-				properties.merge!(extract_attributes(parameters))
-
-				log_step = @log.add_step(:command => command_line)
-				extract_elements(parameters[:elements]).each do |element|
-					element.annotate(properties, log_step)
-				end
-				undefined_references?(parameters[:elements])
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			@graph.conf.layers.map{|l| l.attr}.each do |a|
+				properties.delete(a)
 			end
+			layer = set_new_layer(parameters[:words], properties)
+			properties.merge!(extract_attributes(parameters))
+			extract_elements(parameters[:elements]).each do |element|
+				element.annotate(properties, log_step)
+			end
+			undefined_references?(parameters[:elements])
 
 		when 'd' # delete elements
-			if sentence_set?
-				log_step = @log.add_step(:command => command_line)
-				extract_elements(parameters[:nodes] + parameters[:edges]).each do |element|
-					element.delete(log_step)
-				end
-				extract_elements(parameters[:tokens]).each do |element|
-					element.remove_token(log_step)
-				end
-				undefined_references?(parameters[:elements])
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			extract_elements(parameters[:nodes] + parameters[:edges]).each do |element|
+				element.delete(log_step)
 			end
+			extract_elements(parameters[:tokens]).each do |element|
+				element.remove_token(log_step)
+			end
+			undefined_references?(parameters[:elements])
 
 		when 'l' # set layer
 			layer = set_new_layer(parameters[:words], properties)
 
 		when 'p', 'g' # group under new parent node
-			if sentence_set?
-				log_step = @log.add_step(:command => command_line)
-				layer = set_new_layer(parameters[:words], properties)
-				@graph.add_parent_node(
-					extract_elements(parameters[:nodes] + parameters[:tokens]),
-					properties.merge(extract_attributes(parameters)),
-					properties.clone,
-					@sentence,
-					log_step
-				)
-				undefined_references?(parameters[:nodes] + parameters[:tokens])
-			end
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			layer = set_new_layer(parameters[:words], properties)
+			@graph.add_parent_node(
+				extract_elements(parameters[:nodes] + parameters[:tokens]),
+				properties.merge(extract_attributes(parameters)),
+				properties.clone,
+				@sentence,
+				log_step
+			)
+			undefined_references?(parameters[:nodes] + parameters[:tokens])
 
 		when 'c', 'h' # attach new child node
-			if sentence_set?
-				log_step = @log.add_step(:command => command_line)
-				layer = set_new_layer(parameters[:words], properties)
-				@graph.add_child_node(
-					extract_elements(parameters[:nodes] + parameters[:tokens]),
-					properties.merge(extract_attributes(parameters)),
-					properties.clone,
-					@sentence,
-					log_step
-				)
-				undefined_references?(parameters[:nodes] + parameters[:tokens])
-			end
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			layer = set_new_layer(parameters[:words], properties)
+			@graph.add_child_node(
+				extract_elements(parameters[:nodes] + parameters[:tokens]),
+				properties.merge(extract_attributes(parameters)),
+				properties.clone,
+				@sentence,
+				log_step
+			)
+			undefined_references?(parameters[:nodes] + parameters[:tokens])
 
 		when 'ni' # build node and "insert in edge"
-			if sentence_set?
-				log_step = @log.add_step(:command => command_line)
-				layer = set_new_layer(parameters[:words], properties)
-				properties.merge!(extract_attributes(parameters))
-				extract_elements(parameters[:edges]).each do |edge|
-					@graph.insert_node(edge, properties, log_step)
-				end
-				undefined_references?(parameters[:edges])
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			layer = set_new_layer(parameters[:words], properties)
+			properties.merge!(extract_attributes(parameters))
+			extract_elements(parameters[:edges]).each do |edge|
+				@graph.insert_node(edge, properties, log_step)
 			end
+			undefined_references?(parameters[:edges])
 
 		when 'di', 'do' # remove node and connect parent/child nodes
-			if sentence_set?
-				log_step = @log.add_step(:command => command_line)
-				layer = set_new_layer(parameters[:words], properties)
-				extract_elements(parameters[:nodes]).each do |node|
-					@graph.delete_and_join(node, command == 'di' ? :in : :out, log_step)
-				end
-				undefined_references?(parameters[:nodes])
+			sentence_set?
+			log_step = @log.add_step(:command => command_line)
+			layer = set_new_layer(parameters[:words], properties)
+			extract_elements(parameters[:nodes]).each do |node|
+				@graph.delete_and_join(node, command == 'di' ? :in : :out, log_step)
 			end
+			undefined_references?(parameters[:nodes])
 
 		when 'ns' # create and append new sentence(s)
 			old_sentence_nodes = @graph.sentence_nodes
@@ -534,23 +524,20 @@ class GraphController
 			@sentence = new_nodes.first
 
 		when 't' # build tokens and append them
-			if sentence_set?
-				@graph.build_tokens(parameters[:words], :sentence => @sentence)
-			end
+			sentence_set?
+			@graph.build_tokens(parameters[:words], :sentence => @sentence)
 
 		when 'tb', 'ti' # build tokens and insert them before given token
-			if sentence_set?
-				undefined_references?(parameters[:tokens][0..0])
-				node = element_by_identifier(parameters[:tokens][0])
-				@graph.build_tokens(parameters[:words][1..-1], :next_token => node)
-			end
+			sentence_set?
+			undefined_references?(parameters[:tokens][0..0])
+			node = element_by_identifier(parameters[:tokens][0])
+			@graph.build_tokens(parameters[:words][1..-1], :next_token => node)
 
 		when 'ta' # build tokens and insert them after given token
-			if sentence_set?
-				undefined_references?(parameters[:tokens][0..0])
-				node = element_by_identifier(parameters[:tokens][0])
-				@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
-			end
+			sentence_set?
+			undefined_references?(parameters[:tokens][0..0])
+			node = element_by_identifier(parameters[:tokens][0])
+			@graph.build_tokens(parameters[:words][1..-1], :last_token => node)
 
 		when 'z'
 			@log.undo
@@ -614,12 +601,11 @@ class GraphController
 			@sentence = nil
 
 		when 'image' # export sentence as graphics file
-			if sentence_set?
-				format = parameters[:words][0]
-				name = parameters[:words][1]
-				Dir.mkdir('images') unless File.exist?('images')
-				generate_graph(format.to_sym, 'images/'+name+'.'+format)
-			end
+			sentence_set?
+			format = parameters[:words][0]
+			name = parameters[:words][1]
+			Dir.mkdir('images') unless File.exist?('images')
+			generate_graph(format.to_sym, 'images/'+name+'.'+format)
 
 		when 'export' # export corpus in other format
 			Dir.mkdir('exports') unless File.exist?('exports')
