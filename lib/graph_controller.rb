@@ -41,6 +41,7 @@ class GraphController
 		@show_refs = true
 		@found = nil
 		@filter = {:mode => 'unfilter'}
+		@user = ''
 	end
 
 	def root
@@ -554,6 +555,10 @@ class GraphController
 		when 's' # change sentence
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
+		when 'user'
+			@user = parameters[:string]
+			@log.user = @user
+
 		when 'del' # delete sentence
 			log_step = @log.add_step(:command => command_line)
 			sentences = if parameters[:words] != []
@@ -580,7 +585,7 @@ class GraphController
 
 		when 'load', 'laden' # clear workspace and load corpus file
 			@graph_file.replace('data/' + parameters[:words][0] + '.json')
-			@log = Log.new(@graph)
+			@log = Log.new(@graph, @user)
 			@graph.read_json_file(@graph_file)
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
@@ -603,7 +608,7 @@ class GraphController
 		when 'clear', 'leeren' # clear workspace
 			@graph_file.replace('')
 			@graph.clear
-			@log = Log.new(@graph)
+			@log = Log.new(@graph, @user)
 			@found = nil
 			@sentence = nil
 

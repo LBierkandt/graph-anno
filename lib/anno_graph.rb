@@ -966,6 +966,7 @@ class String
 	def parse_parameters
 		str = self.strip
 		h = {
+			:string => str,
 			:attributes => {},
 			:elements => [],
 			:words => [],

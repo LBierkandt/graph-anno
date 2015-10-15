@@ -1,10 +1,12 @@
 class Log
 	attr_reader :steps, :graph
+	attr_accessor :user
 
-	def initialize(graph)
+	def initialize(graph, user = '')
 		@graph = graph
 		@steps = []
 		@current_index = -1
+		@user = user
 	end
 
 	# @return [Hash] a hash representing the log
@@ -58,7 +60,7 @@ class Step
 
 	def initialize(h)
 		@log = h[:log]
-		@user = h[:user]
+		@user = h[:user] || @log.user
     @command = h[:command]
 		@time = Time.now.utc
     @changes = []
