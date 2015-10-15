@@ -403,18 +403,16 @@ class GraphController
 
 	def element_by_identifier(identifier)
 		i = identifier.scan(/\d/).join.to_i
-		case identifier[0]
-		when 'm'
-			@sentence
-		when 'n'
-			@nodes[i]
-		when 'e'
-			@edges[i]
-		when 't'
-			@tokens[i]
-		else
-			nil
-		end
+		{
+			'm' => @sentence,
+			'n' => @nodes[i],
+			'e' => @edges[i],
+			't' => @tokens[i],
+		}[identifier[0]]
+	end
+
+	def extract_elements(identifiers)
+		identifiers.map{|id| element_by_identifier(id)}.compact
 	end
 
 	def execute_command(command_line, layer)
@@ -455,10 +453,8 @@ class GraphController
 				properties.merge!(extract_attributes(parameters))
 
 				log_step = @log.add_step(:command => command_line)
-				parameters[:elements].each do |element_id|
-					if element = element_by_identifier(element_id)
-						element.annotate(properties, log_step)
-					end
+				extract_elements(parameters[:elements]).each do |element|
+					element.annotate(properties, log_step)
 				end
 				undefined_references?(parameters[:elements])
 			end
@@ -466,15 +462,11 @@ class GraphController
 		when 'd' # delete elements
 			if sentence_set?
 				log_step = @log.add_step(:command => command_line)
-				(parameters[:nodes] + parameters[:edges]).each do |el|
-					if element = element_by_identifier(el)
-						element.delete(log_step)
-					end
+				extract_elements(parameters[:nodes] + parameters[:edges]).each do |element|
+					element.delete(log_step)
 				end
-				parameters[:tokens].each do |token|
-					if element = element_by_identifier(token)
-						element.remove_token(log_step)
-					end
+				extract_elements(parameters[:tokens]).each do |element|
+					element.remove_token(log_step)
 				end
 				undefined_references?(parameters[:elements])
 			end
@@ -487,7 +479,7 @@ class GraphController
 				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
 				@graph.add_parent_node(
-					(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+					extract_elements(parameters[:nodes] + parameters[:tokens]),
 					properties.merge(extract_attributes(parameters)),
 					properties.clone,
 					@sentence,
@@ -501,7 +493,7 @@ class GraphController
 				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
 				@graph.add_child_node(
-					(parameters[:nodes] + parameters[:tokens]).map{|id| element_by_identifier(id)}.compact,
+					extract_elements(parameters[:nodes] + parameters[:tokens]),
 					properties.merge(extract_attributes(parameters)),
 					properties.clone,
 					@sentence,
@@ -515,7 +507,7 @@ class GraphController
 				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
 				properties.merge!(extract_attributes(parameters))
-				parameters[:edges].map{|id| element_by_identifier(id)}.compact.each do |edge|
+				extract_elements(parameters[:edges]).each do |edge|
 					@graph.insert_node(edge, properties, log_step)
 				end
 				undefined_references?(parameters[:edges])
@@ -525,7 +517,7 @@ class GraphController
 			if sentence_set?
 				log_step = @log.add_step(:command => command_line)
 				layer = set_new_layer(parameters[:words], properties)
-				parameters[:nodes].map{|id| element_by_identifier(id)}.compact.each do |node|
+				extract_elements(parameters[:nodes]).each do |node|
 					@graph.delete_and_join(node, command == 'di' ? :in : :out, log_step)
 				end
 				undefined_references?(parameters[:nodes])
