@@ -4,18 +4,6 @@
     %th.user user
     %th.time time
     %th.action
-  %tr
-    %td.command
-    %td.user
-    %td.time
-    %td.action
-      %button{ :onclick => "goToStep(-1)" }
-        go here
+  = haml :log_step, :locals => {:log => log, :i => -1}
   - log.steps.each_with_index do |step, i|
-    %tr{class: step.done? ? '' : 'undone'}
-      %td.command= step.command
-      %td.user= step.user
-      %td.time= step.time.strftime('%y-%m-%d %H:%M')
-      %td.action
-        %button{ :onclick => "goToStep(#{i})" }
-          go here
+    = haml :log_step, :locals => {:log => log, :i => i}

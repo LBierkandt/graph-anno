@@ -338,6 +338,20 @@ class GraphController
 		)
 	end
 
+	def get_log_update
+		{
+			:current_index => @log.current_index,
+			:max_index => @log.max_index,
+			:html => @sinatra.haml(
+				:log_step,
+				:locals => {
+					:log => @log,
+					:i => @log.max_index
+				}
+			)
+		}.to_json
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end

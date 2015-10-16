@@ -54,9 +54,15 @@ class Log
 		end
 	end
 
+	# @param i [Int] the index of the step which is to be restored
 	def go_to_step(i)
 		self.undo while i < @current_index
 		self.redo while i > @current_index
+	end
+
+	# @return [Int] the maximum step index
+	def max_index
+		@steps.length - 1
 	end
 end
 

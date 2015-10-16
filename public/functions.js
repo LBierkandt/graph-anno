@@ -321,6 +321,7 @@ function makeAnfrage(anfrage, params) {
 					txtcmd.select();
 				}
 				updateView(antworthash);
+				updateLogTable();
 			}
 		}
 		anfrage.send(params);
@@ -611,5 +612,24 @@ function goToStep(i) {
 	.done(function(data){
 		$('#log .content').html(data);
 		updateView();
+	});
+}
+function updateLogTable() {
+	$.getJSON('/get_log_update')
+	.done(function(data){
+		if (data['current_index'] == data['max_index']) {
+			var currentStep = $('#log table tr[index="'+data['current_index']+'"]');
+			if (currentStep.length == 0) {
+				$('#log .content table').append(data['html']);
+			} else {
+				currentStep.replaceWith(data['html']);
+			}
+		}
+		$('#log table tr[index]').each(function(){
+			var index = $(this).attr('index');
+			if (index > data['max_index']) $(this).remove();
+			else if (index > data['current_index']) $(this).addClass('undone');
+			else $(this).removeClass('undone') ;
+		});
 	});
 }
