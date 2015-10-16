@@ -4,9 +4,9 @@
     %meta{'http-equiv' => 'Content-Type', :content => 'text/html; charset=utf-8' }
     %link{ :rel => 'stylesheet', :type => 'text/css', :href => '/jquery-ui.min.css' }
     %link{ :rel => "stylesheet", :type => "text/css", :href => "/style.css" }
-    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/jquery-2.1.1.min.js" }  
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/jquery-2.1.1.min.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/jquery-ui.min.js' }
-    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }  
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
 
   %body
     #graphdiv
@@ -38,7 +38,7 @@
           %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export_subcorpus/subcorpus.json'" }
           #searchresult
             = controller.search_result
-    
+
     #filter.box
       .handle
       %form{ :action => "/filter", :method => "post", :name => "filter" }
@@ -60,12 +60,12 @@
             %tr
               %td{ :colspan => "2" }
                 %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
-    
+
     #documentation
       Documentation
       %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} en
       %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} de
-    
+
     #help.box
       .handle
       .content
@@ -86,13 +86,14 @@
           %li load and add file: <i>add file_name_without_extension</i>
           %li save workspace to file: <i>save (file_name_without_extension)</i>
           %li clear workspace: <i>clear</i>
-          %li create new sentence: <i>ns</i>
-          %li set sentence: <i>s sentence</i>
-          %li delete sentence: <i>del</i>
-          %li import: <i>import format (name)</i>
+          %li create new sentence: <i>ns sentence_name</i>
+          %li go to sentence: <i>s sentence</i>
+          %li delete sentence: <i>del (sentence_name)</i>
+          %li import: <i>import format name</i>
           %li export: <i>export format name</i>
           %li edit layer configuration: <i>config</i>
           %li edit tagset: <i>tagset</i>
+          %li edit makros: <i>makros</i>
           %li edit metadata: <i>metadata</i>
         %h4 Annotation
         %ul
@@ -106,7 +107,8 @@
           %li insert node into edge: <i>ni edge key:value key:value ...</i>
           %li delete node and in/out edges: <i>di node</i> or <i>do node</i>
           %li tokenise (and append): <i>t A string separated by spaces .</i>
-          %li tokenise and insert before: <i>ti token A string separated by spaces .</i>
+          %li tokenise and insert before: <i>tb token A string separated by spaces .</i>
+          %li tokenise and insert after: <i>ta token A string separated by spaces .</i>
 
     #modal-background
       #modal-content
