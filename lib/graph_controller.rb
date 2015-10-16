@@ -327,6 +327,17 @@ class GraphController
 		}.merge(satzinfo).to_json
 	end
 
+	def go_to_step(i)
+		@log.go_to_step(i.to_i)
+		generate_graph(:svg, 'public/graph.svg')
+		@sinatra.haml(
+			:log_table,
+			:locals => {
+				:log => @log
+			}
+		)
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end

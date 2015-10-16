@@ -9,6 +9,7 @@ window.onload = function() {
 	$('.box').draggable({handle: '.handle', stack: '.box'});
 	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310});
 	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220});
+	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400});
 }
 window.onresize = graphdivEinpassen;
 
@@ -107,7 +108,7 @@ function taste(tast) {
 	}
 	else if (tast.which == 119) {
 		tast.preventDefault();
-		openConfig();
+		$('#log').toggle();
 	}
 	else if (tast.which == 120) {
 		tast.preventDefault();
@@ -171,9 +172,9 @@ function verschiebeBild(richtung) {
 		case 'u': div.scrollTop  += 50; break;
 	}
 }
-function updateView(antworthash) {
-	$('#textline').html(antworthash['textline']);
-	$('#meta').html(antworthash['meta']);
+function updateView(antworthash = {}) {
+	if (antworthash['textline'] != undefined) $('#textline').html(antworthash['textline']);
+	if (antworthash['meta'] != undefined) $('#meta').html(antworthash['meta']);
 	if (antworthash['sentence_list'] != undefined) build_sentence_list(antworthash['sentence_list']);
 	setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 	graphdivEinpassen();
@@ -604,4 +605,11 @@ function disable_import_form_fields(type) {
 function display_search_message(message) {
 	$('#searchresult').html(message);
 	query.focus();
+}
+function goToStep(i) {
+	$.get('/go_to_step/' + i)
+	.done(function(data){
+		$('#log .content').html(data);
+		updateView();
+	});
 }

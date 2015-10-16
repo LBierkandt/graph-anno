@@ -61,6 +61,11 @@
               %td{ :colspan => "2" }
                 %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
 
+    #log.box
+      .handle
+      .content
+        = haml :log_table, :locals => {:log => controller.log}
+
     #documentation
       Documentation
       %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} en

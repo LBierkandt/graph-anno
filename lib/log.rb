@@ -1,5 +1,5 @@
 class Log
-	attr_reader :steps, :graph
+	attr_reader :steps, :graph, :current_index
 	attr_accessor :user
 
 	def initialize(graph, user = '')
@@ -53,6 +53,11 @@ class Log
 			current_step.redo
 		end
 	end
+
+	def go_to_step(i)
+		self.undo while i < @current_index
+		self.redo while i > @current_index
+	end
 end
 
 class Step
@@ -91,6 +96,10 @@ class Step
 		@changes.each do |change|
 			change.redo
 		end
+	end
+
+	def done?
+		@log.steps.index(self) <= @log.current_index
 	end
 end
 

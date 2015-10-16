@@ -92,6 +92,36 @@ th {
 #active_file {
 	display: inline;
 }
+#log {
+	display: none;
+	position: fixed;
+	top: 10px;
+	right: 10px;
+	width: 50%;
+	height: 30%;
+	padding: 5px;
+}
+#log table {
+	width: 100%;
+}
+#log table button {
+	padding-top: 1px;
+	padding-bottom: 1px;
+}
+#log .content td, #log .content th {
+	padding: 0 0.3em;
+	overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+#log .content tr.undone {
+	color: #aaa;
+}
+#log .command {width: 50%;}
+#log .user {width: 20%;}
+#log .time {width: 20%;}
+#log .action {width: 10%; min-width: 4.7em;}
 #filter {
 	display: none;
 	position: fixed;
@@ -182,7 +212,7 @@ th {
 	height: 90%;
 	padding: 5px;
 }
-#help .content {
+.content {
 	position: absolute;
 	top: 30px;
 	bottom: 5px;
@@ -193,7 +223,7 @@ th {
 	background-color: #ffffff;
 }
 #documentation {
-	position: fixed; 
+	position: fixed;
 	right: 0px;
 	bottom: 0px;
 	text-align: right;
