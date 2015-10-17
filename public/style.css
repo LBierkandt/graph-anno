@@ -104,10 +104,6 @@ th {
 #log table {
 	width: 100%;
 }
-#log table button {
-	padding-top: 1px;
-	padding-bottom: 1px;
-}
 #log .content td, #log .content th {
 	padding: 0 0.3em;
 	overflow: hidden;
@@ -115,13 +111,18 @@ th {
   white-space: nowrap;
   max-width: 0;
 }
+#log .content tr[index] {
+	cursor: pointer;
+}
+#log .content tr[index]:hover {
+	background-color: #ddd;
+}
 #log .content tr.undone {
 	color: #aaa;
 }
-#log .command {width: 50%;}
+#log .command {width: 60%;}
 #log .user {width: 20%;}
 #log .time {width: 20%;}
-#log .action {width: 10%; min-width: 4.7em;}
 #filter {
 	display: none;
 	position: fixed;

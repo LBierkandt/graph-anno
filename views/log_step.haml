@@ -1,17 +1,11 @@
 - if i >= 0
   - step = log.steps[i]
-  %tr{class: step.done? ? '' : 'undone', :index => i}
+  %tr{class: step.done? ? '' : 'undone', :index => i, :onclick => "goToStep(#{i})" }
     %td.command= step.command
     %td.user= step.user
     %td.time= step.time.strftime('%y-%m-%d %H:%M')
-    %td.action
-      %button{ :onclick => "goToStep(#{i})" }
-        go here
 - else
-  %tr{:index => -1}
-    %td.command
+  %tr{:index => -1, :onclick => "goToStep(-1)" }
+    %td.command &nbsp;
     %td.user
     %td.time
-    %td.action
-      %button{ :onclick => "goToStep(-1)" }
-        go here
