@@ -585,7 +585,6 @@ class GraphController
 			@log.user = @user
 
 		when 'del' # delete sentence
-			log_step = @log.add_step(:command => command_line)
 			sentences = if parameters[:words] != []
 				@graph.sentence_nodes.select do |n|
 					parameters[:words].any?{|arg|
@@ -594,10 +593,12 @@ class GraphController
 					}
 				end
 			elsif sentence_set?
+				command_line << ' ' + @sentence.name
 				[@sentence]
 			else
 				[]
 			end
+			log_step = @log.add_step(:command => command_line)
 			sentences.each do |sentence|
 				# change to next sentence
 				@sentence = sentence.node_after || sentence.node_before if sentence == @sentence
