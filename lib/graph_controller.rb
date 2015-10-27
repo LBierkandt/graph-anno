@@ -330,6 +330,7 @@ class GraphController
 	def go_to_step(i)
 		@log.go_to_step(i.to_i)
 		generate_graph(:svg, 'public/graph.svg')
+		reset_sentence
 		@sinatra.haml(
 			:log_table,
 			:locals => {
@@ -571,11 +572,11 @@ class GraphController
 
 		when 'z'
 			@log.undo
-			@sentence = @graph.sentence_nodes.first unless @graph.sentence_nodes.include?(@sentence)
+			reset_sentence
 
 		when 'y'
 			@log.redo
-			@sentence = @graph.sentence_nodes.first unless @graph.sentence_nodes.include?(@sentence)
+			reset_sentence
 
 		when 's' # change sentence
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
@@ -829,6 +830,10 @@ class GraphController
 		else
 			raise 'Create a sentence first!'
 		end
+	end
+
+	def reset_sentence
+		@sentence = @graph.sentence_nodes.first unless @graph.sentence_nodes.include?(@sentence)
 	end
 
 	def set_cmd_cookies
