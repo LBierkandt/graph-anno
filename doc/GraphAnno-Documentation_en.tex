@@ -220,9 +220,11 @@ The following is a table of the available shortcuts:
 
 \subsubsection{Load file: \texttt{load}}
 
-With the command \texttt{load}, followed by the file name, you load a graph file inte the work space.
-Provide the file name without the extension \texttt{.json}; it has to enclosed in double quotes (\texttt{\quo...\quo}) if it contains spaces.
-Files are loaded from the \texttt{data} directory located in the GraphAnno main directory.
+With the command \texttt{load} you load a graph file inte the work space.
+By default, the file will be loaded from the from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
+If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory, if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
+Provide the file name with or without the extension \texttt{.json}; the path has to be enclosed in double quotes (\texttt{\quo...\quo}) if it contains spaces.
+
 Before loading, the work space is cleared from all data.
 So, changes that were not saved explicitly (using the command \texttt{save}) are lost.
 The name of the loaded file is shown next to the input line on the bottom of the user interface.
@@ -230,14 +232,15 @@ The name of the loaded file is shown next to the input line on the bottom of the
 
 \subsubsection{Load file: \texttt{add}}
 
-Just like the command \texttt{load}, the command \texttt{add} loads a file into the work space.
-The difference is, that the work space is not cleared – the new file is added and the new sentences are appended to the existing ones.
+Just like the command \texttt{load}, the command \texttt{add} loads a file into the work space (specify the file as described for \texttt{load}).
+The difference is that the work space is not cleared – the new file is added and the new sentences are appended to the existing ones.
 After adding the file no file is shown as loaded next to the input line and the files cannot be saved separately anymore.
 
 
 \subsubsection{Save file: \texttt{save}}
 
-The command \texttt{save} saves the work space to a GraphAnno file in the \texttt{data} directory. The file name has to be entered in the same way as with the command \texttt{load}.
+The command \texttt{save} saves the work space to a GraphAnno file in the \texttt{data} directory.
+The file name has to be entered in the same way as with the command \texttt{load}.
 If there is a filename indicated next to the input line, the work space can be saved to this file without specifying the file name.
 Attention: no warning is issued when an existing file will be overwritten.
 
