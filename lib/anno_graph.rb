@@ -45,7 +45,11 @@ class AnnoNode < Node
 
 	# @return [Hash] the element transformed into a hash with all values casted to strings
 	def to_h
-		super.merge(:type => @type)
+		if @start || @end
+			super.merge(:type => @type, :start => @start, :end => @end)
+		else
+			super.merge(:type => @type)
+		end
 	end
 
 	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
