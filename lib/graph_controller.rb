@@ -706,11 +706,13 @@ class GraphController
 		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map{|t| t.speaker}.include?(sp)}) != []
 			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => 'same')]}]
 			# induce speaker labels and layering of speaker graphs:
-			speaker_graphs.each_with_index do |array, i|
-				speaker_graph = array.last
-				speaker_node = array.first
-				speaker_graph.add_nodes('s' + i.to_s, {:shape => 'plaintext', :label => speaker_node['name'], :fontname => @graph.conf.font})
-				viz_graph.add_edges('s' + (i-1).to_s, 's' + i.to_s, {:style => 'invis'}) if i > 0
+			gv_speaker_nodes = []
+			speaker_graphs.each do |speaker_node, speaker_graph|
+				gv_speaker_nodes << speaker_graph.add_nodes(
+					's' + speaker_node.id,
+					{:shape => 'plaintext', :label => speaker_node['name'], :fontname => @graph.conf.font}
+				)
+				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => 'invis'}) if gv_speaker_nodes.length > 1
 			end
 			timeline_graph = viz_graph.subgraph(:rank => 'same')
 		end
@@ -740,7 +742,7 @@ class GraphController
 				# create token and point on timeline:
 				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options.merge(:width => token.end - token.start))
 				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
-				speaker_graphs[token.speaker].add_edges('s0', gv_token, {:style => 'invis'}) if i == 0
+				speaker_graphs[token.speaker].add_edges('s' + token.speaker.id, gv_token, {:style => 'invis'}) if i == 0
 				# multiple lines between token and point on timeline in order to force correct order:
 				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
 				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
