@@ -715,6 +715,8 @@ class GraphController
 				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => 'invis'}) if gv_speaker_nodes.length > 1
 			end
 			timeline_graph = viz_graph.subgraph(:rank => 'same')
+			gv_anchor = timeline_graph.add_nodes('anchor', {:style => 'invis'})
+			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => 'invis'})
 		end
 
 		@tokens.each_with_index do |token, i|
@@ -748,7 +750,11 @@ class GraphController
 				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
 				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
 				# order points on timeline:
-				viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => 'none'}) if i > 0
+				if i > 0
+					viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => 'none'})
+				else
+					viz_graph.add_edges(gv_anchor, gv_time, {:style => 'invis'})
+				end
 			end
 		end
 
