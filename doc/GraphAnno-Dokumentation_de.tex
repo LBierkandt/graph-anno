@@ -183,18 +183,21 @@ Die meisten Navigation und Ansicht betreffende Funktionen von GraphAnno werden d
 
 \subsubsection{Datei laden: \texttt{load}}
 
-Eine Graphdatei wird mit dem Befehl \texttt{load} in den Arbeitsbereich geladen. Der Dateiname wird ohne die Dateiendung \texttt{.json} angegeben (enthält er Leerzeichen, so muß er in doppelte Anführungszeichen eingeschlossen werden: \texttt{\quo...\quo}). Alle Dateien werden aus dem Verzeichnis \texttt{data} im GraphAnno-Programmordner geladen. Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen dabei verloren.
+Eine Graphdatei wird mit dem Befehl \texttt{load} in den Arbeitsbereich geladen. Per default wird die angegebene Datei aus dem Verzeichnis \texttt{data} im GraphAnno-Programmordner geladen; es ist aber auch möglich, einen Pfad anzugeben (zur Trennung von der Ordner dient auf allen Betriebssystemen der normale Schrägstrich \texttt{/}). Beginnt der Pfad nicht mit einem Schrägstrich, wird er relativ zum \texttt{data}-Ordner interpretiert; beginnt er mit einem Schrägstrich, wird er als absoluter Pfad interpretiert (auf Windows-Systemen auf der Partition, auf der GraphAnno installiert ist). Der Dateiname kann mit oder ohne die Dateiendung \texttt{.json} angegeben werden; enthält der Pfad Leerzeichen, so muß er in doppelte Anführungszeichen eingeschlossen werden: \texttt{\quo...\quo}.
+
+Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Änderungen, die nicht explizit mit \texttt{save} gespeichert wurden, gehen dabei verloren.
 Welche Datei geladen wurde, wird neben der Eingabeleiste angezeigt.
 
 
 \subsubsection{Datei laden: \texttt{add}}
 
-Mit dem Befehl \texttt{add} kann wie mit \texttt{load} eine Datei in den Arbeitsbereich geladen werden. Der Unterschied ist, daß der Arbeitsbereich zuvor nicht geleert wird. Die neu geladene Datei wird dem Arbeitsbereich hinzugefügt und die neuen Sätze hinter den bestehenden angefügt. Nach dem Hinzufügen wird neben der Eingabeleiste keine Datei mehr als geladen angezeigt und die Dateien können nicht mehr einzeln gespeichert werden.
+Mit dem Befehl \texttt{add} kann wie mit \texttt{load} eine Datei in den Arbeitsbereich geladen werden (die Angabe der Datei erfolgt wie dort beschrieben). Der Unterschied ist, daß der Arbeitsbereich zuvor nicht geleert wird. Die neu geladene Datei wird dem Arbeitsbereich hinzugefügt und die neuen Sätze hinter den bestehenden angefügt. Nach dem Hinzufügen wird neben der Eingabeleiste keine Datei mehr als geladen angezeigt und die Dateien können nicht mehr einzeln gespeichert werden.
 
 
 \subsubsection{Datei speichern: \texttt{save}}
 
-Mit dem Befehl \texttt{save} wird der gesamte Arbeitsbereich in eine Datei gespeichert. Der Dateiname wird wie beim Laden angegeben, die Datei wird im \texttt{data}-Ordner gespeichert. Wenn neben der Eingabeleiste ein Dateiname angezeigt wird, kann der Arbeitsbereich unter diesem Namen gespeichert werden, ohne den Namen eigens anzugeben.
+Mit dem Befehl \texttt{save} wird der gesamte Arbeitsbereich in eine Datei gespeichert. Der Dateiname wird wie beim Laden angegeben. Wenn neben der Eingabeleiste ein Dateiname angezeigt wird, kann der Arbeitsbereich unter diesem Namen gespeichert werden, ohne den Namen eigens anzugeben.
+
 Achtung: es wird keine Warnung ausgegeben, wenn eine bestehende Datei überschrieben wird.
 
 
@@ -510,7 +513,7 @@ Die Attributbeschreibung besteht aus Schlüssel-Wert-Paaren der Form \texttt{sch
 Der Schlüssel eines Schlüssel-Wert-Paares kann entweder als einfache Zeichenkette angegeben werden, wenn er keines der in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthält, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
 
 \phantomsection\label{zeichenketten}Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art und Weise angegeben werden können. Die erste Variante sind einfache umarkierte Zeichenketten, die alle Zeichen außer den in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthalten dürfen. Diese Zeichenketten werden bei der Suche ohne Beachtung von Groß- und Kleinschreibung verglichen.
-Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen. 
+Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen.
 Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/} und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit \texttt{//} gefunden werden.
 
 Wie eine Attributbeschreibung kann das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
@@ -807,7 +810,7 @@ Nach dem Durchführen einer Suche können unter Zuhilfenahme der in der Suche ve
 
 Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
 \begin{itemize}
-	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet. 
+	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet.
 	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
 	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
 	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
@@ -822,13 +825,13 @@ Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
 
 \subsection{Datenexport}
 
-Die GraphAnno-Abfragesprache biete auch Funktionalität zum Exportieren von Suchergebnissen als CSV-Dateien an. 
+Die GraphAnno-Abfragesprache biete auch Funktionalität zum Exportieren von Suchergebnissen als CSV-Dateien an.
 Mit den nachfolgen beschriebenen Klauseln kann angegeben werden, wie Infomationen der in einer zuvor durchgeführten Suche gefundenen Teilgraphen ausgegeben werden sollen.
 Die Daten jedes gefundenen Teilgraphen werden in eine Zeile der CSV-Datei geschrieben, mit \texttt{sort} können die Ergebnisse sortiert werden, mit \texttt{col} wird angegeben, welche Spalten mit welchen Werten angelegt werden sollen. Als erste Spalte wird stets eine fortlaufende Numerierung der Ergebnisse mit ausgegeben.
 
 \subsubsection{\texttt{sort}}
 
-Die \texttt{sort}-Klausel dient dazu, die Ausgabe der gefundenen Teilgraphen zu sortieren. Es können mehrere \texttt{sort}-Klauseln angegeben werden, wobei weiter unten angegeben Klauseln nur ausgewertet werden, wenn  weiter oben angegebenen Klauseln keine Reihenfolge zwischen zwei Teilgraphen ergeben. 
+Die \texttt{sort}-Klausel dient dazu, die Ausgabe der gefundenen Teilgraphen zu sortieren. Es können mehrere \texttt{sort}-Klauseln angegeben werden, wobei weiter unten angegeben Klauseln nur ausgewertet werden, wenn  weiter oben angegebenen Klauseln keine Reihenfolge zwischen zwei Teilgraphen ergeben.
 Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert ergeben, der für die Sortierung verglichen werden soll. Wie bei \texttt{cond} werden die gefundenen Knoten und Kanten über die in der Suche vergebenen IDs referenziert. Bei Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen verglichen werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
 
 \paragraph*{Beispiele:}
