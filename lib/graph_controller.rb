@@ -611,9 +611,9 @@ class GraphController
 			end
 
 		when 'load', 'laden' # clear workspace and load corpus file
-			@graph_file.replace('data/' + parameters[:words][0] + '.json')
+			@graph.read_json_file(file_path(parameters[:words][0]))
 			@log = Log.new(@graph, @user)
-			@graph.read_json_file(@graph_file)
+			@graph_file.replace(file_path(parameters[:words][0]))
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
 			@sentence = sentence_nodes.first unless @sentence
@@ -622,15 +622,16 @@ class GraphController
 		when 'add' # load corpus file and add it to the workspace
 			@graph_file.replace('')
 			addgraph = AnnoGraph.new
-			addgraph.read_json_file('data/' + parameters[:words][0] + '.json')
+			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
 			@found = nil
 
 		when 'save', 'speichern' # save workspace to corpus file
-			@graph_file.replace(@graph_file.replace('data/' + parameters[:words][0] + '.json')) if parameters[:words][0]
-			Dir.mkdir('data') unless File.exist?('data')
-			raise 'Please specify a file name!' if @graph_file == ''
-			@graph.write_json_file(@graph_file) if @sentence
+			raise 'Please specify a file name!' if @graph_file == '' or !parameters[:words][0]
+			@graph_file.replace(file_path(parameters[:words][0]))
+			dir = @graph_file.rpartition('/').first
+			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
+			@graph.write_json_file(@graph_file)
 
 		when 'clear', 'leeren' # clear workspace
 			@graph_file.replace('')
@@ -891,6 +892,10 @@ class GraphController
 			undefined_ids << id unless element_by_identifier(id)
 		end
 		@cmd_error_messages << "Undefined element(s): #{undefined_ids * ', '}" unless undefined_ids.empty?
+	end
+
+	def file_path(input)
+		(input[0] == '/' ? '' : 'data/') + input + (input.match(/\.json$/) ? '' : '.json')
 	end
 
 	def validate_config(data)
