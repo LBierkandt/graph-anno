@@ -565,11 +565,11 @@ class GraphController
 			node = element_by_identifier(parameters[:tokens][0])
 			@graph.build_tokens(parameters[:words][1..-1], :last_token => node, :log => log_step)
 
-		when 'z'
+		when 'undo'
 			@log.undo
 			reset_sentence
 
-		when 'y'
+		when 'redo'
 			@log.redo
 			reset_sentence
 
