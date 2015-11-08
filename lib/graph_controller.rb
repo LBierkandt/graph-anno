@@ -87,9 +87,8 @@ class GraphController
 			@cmd_error_messages << e.message
 		end
 		return value.to_json if value
-		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence ? @sentence.id : nil })
+		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
 		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		# Prüfen, ob sich Satz geändert hat:
 		sentence_changed = (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
 		set_sentence_list
 		return {
@@ -329,14 +328,15 @@ class GraphController
 
 	def go_to_step(i)
 		@log.go_to_step(i.to_i)
-		generate_graph(:svg, 'public/graph.svg')
 		reset_sentence
-		@sinatra.haml(
-			:log_table,
-			:locals => {
-				:log => @log
-			}
-		)
+		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
+		satzinfo = generate_graph(:svg, 'public/graph.svg')
+		sentence_changed = (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
+		set_sentence_list
+		return {
+			:sentence_list => @sentence_list.values,
+			:sentence_changed => sentence_changed,
+		}.merge(satzinfo).to_json
 	end
 
 	def get_log_update

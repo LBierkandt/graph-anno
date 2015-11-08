@@ -608,10 +608,10 @@ function display_search_message(message) {
 	query.focus();
 }
 function goToStep(i) {
-	$.get('/go_to_step/' + i)
+	$.post('/go_to_step/' + i, {}, null, 'json')
 	.done(function(data){
-		$('#log .content').html(data);
-		updateView();
+		updateLogTable();
+		updateView(data);
 	});
 }
 function updateLogTable() {
