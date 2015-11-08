@@ -56,15 +56,17 @@ class GraphController
 
 	def draw_graph
 		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		set_sentence_list
-		return {:sentence_changed => true, :sentence_list => @sentence_list.values}.merge(satzinfo).to_json
+		return generate_graph.merge(
+			:sentence_list => set_sentence_list.values,
+			:sentence_changed => true
+		).to_json
 	end
 
 	def toggle_refs
 		@show_refs = !@show_refs
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => false}.merge(satzinfo).to_json
+		return generate_graph.merge(
+			:sentence_changed => false
+		).to_json
 	end
 
 	def layer_options
@@ -87,23 +89,18 @@ class GraphController
 			@cmd_error_messages << e.message
 		end
 		return value.to_json if value
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		sentence_changed = (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
-		set_sentence_list
-		return {
-			:sentence_list => @sentence_list.values,
-			:sentence_changed => sentence_changed,
+		return sentence_settings_and_graph.merge(
 			:graph_file => @graph_file,
 			:messages => @cmd_error_messages
-		}.merge(satzinfo).to_json
+		).to_json
 	end
 
 	def change_sentence
 		set_cmd_cookies
 		@sentence = @graph.nodes[@sinatra.params[:sentence]]
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => true}.merge(satzinfo).to_json
+		return generate_graph.merge(
+			:sentence_changed => true
+		).to_json
 	end
 
 	def filter
@@ -111,8 +108,10 @@ class GraphController
 		mode = @sinatra.params[:mode].partition(' ')
 		@filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		return {:sentence_changed => false, :filter_applied => true}.merge(satzinfo).to_json
+		return generate_graph.merge(
+			:sentence_changed => false,
+			:filter_applied => true
+		).to_json
 	end
 
 	def search
@@ -129,24 +128,21 @@ class GraphController
 		@sentence_list.each{|id, h| h[:found] = false}
 		set_found_sentences
 		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		return {
+		return generate_graph.merge(
 			:sentence_list => @sentence_list.values,
 			:search_result => @search_result,
 			:sentence_changed => false
-		}.merge(satzinfo).to_json
+		).to_json
 	end
 
 	def clear_search
 		@found = nil
 		@search_result = ''
-		set_sentence_list
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		return {
-			:sentence_list => @sentence_list.values,
+		return generate_graph.merge(
+			:sentence_list => set_sentence_list.values,
 			:search_result => @search_result,
 			:sentence_changed => false
-		}.merge(satzinfo).to_json
+		).to_json
 	end
 
 	['config', 'metadata', 'makros', 'allowed_annotations'].each do |form_name|
@@ -317,26 +313,17 @@ class GraphController
 			@found = nil
 			@search_result = ''
 		end
-		set_sentence_list
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		return {
-			:sentence_list => @sentence_list.values,
+		return generate_graph.merge(
+			:sentence_list => set_sentence_list.values,
 			:search_result => @search_result,
 			:sentence_changed => false
-		}.merge(satzinfo).to_json
+		).to_json
 	end
 
 	def go_to_step(i)
 		@log.go_to_step(i.to_i)
 		reset_sentence
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
-		satzinfo = generate_graph(:svg, 'public/graph.svg')
-		sentence_changed = (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
-		set_sentence_list
-		return {
-			:sentence_list => @sentence_list.values,
-			:sentence_changed => sentence_changed,
-		}.merge(satzinfo).to_json
+		return sentence_settings_and_graph.to_json
 	end
 
 	def get_log_update
@@ -358,6 +345,14 @@ class GraphController
 	end
 
 	private
+
+	def sentence_settings_and_graph
+		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
+		return generate_graph.merge(
+			:sentence_list => set_sentence_list.values,
+			:sentence_changed => (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
+		)
+	end
 
 	def extract_attributes(parameters)
 		allowed_attributes(
@@ -693,7 +688,7 @@ class GraphController
 		return nil
 	end
 
-	def generate_graph(format, path)
+	def generate_graph(format = :svg, path = 'public/graph.svg')
 		puts "Generating graph for sentence \"#{@sentence.name}\"..." if @sentence
 
 		viz_graph = GraphViz.new(
@@ -884,6 +879,7 @@ class GraphController
 	def set_sentence_list(h = {})
 		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
 		set_found_sentences if !h[:clear] and @found
+		@sentence_list
 	end
 
 	def undefined_references?(ids)
