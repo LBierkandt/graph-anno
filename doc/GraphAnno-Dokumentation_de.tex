@@ -280,7 +280,7 @@ Der Befehl zum Erstellen eines neuen Knotens lautet \texttt{n}, gefolgt von den 
 
 Des weiten können zuvor definierte Annotationsmakros (siehe \ref{annotationsmakros}) verwendet werden; dabei überschreiben explizit angegebene Attribute ggf. die in den Makros definierten Annotationen.
 
-Schließlich kann noch die Ebene angegeben werden, der der neue Knoten angehören soll (andernfalls gehört er zu der im entsprechenden Auswahlfeld aktiven Ebene). Dazu dienen die in der Ebenenkonfiguration (siehe \ref{ebenenkonfiguration}) eingestellten Kürzel. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt (siehe \ref{l}).
+Schließlich kann noch die Ebene angegeben werden, der der neue Knoten angehören soll (andernfalls gehört er zu der im entsprechenden Auswahlfeld aktiven Ebene). Dazu dienen die in der Ebenenkonfiguration (siehe \ref{ebenenkonfiguration}) eingestellten Kürzel. Die Angabe der Ebene hat zudem die Wirkung eines Schalters, der wie der Befehl \texttt{l} die Ebene für die folgenden Operationen setzt (siehe \ref{befehl-l}).
 
 \paragraph*{Befehl \texttt{n} in modifizierter BNF:}
 ~
@@ -472,7 +472,7 @@ befehl_ta       =   "ta " tokenreferenz " " wörter
 \end{framed}
 
 
-\subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo}}\label{undo}
+\subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo}}\label{befehl-undo}
 
 Mit dem Befehl \texttt{undo} können zuvor ausgeführte Annotationsbefehle rückgängig gemacht werden.
 Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{add} oder \texttt{clear}.
@@ -483,7 +483,7 @@ Die Änderungshistorie ist auch in einem Fenster zu sehen, das mit F8 ein- und a
 Hier ist es auch möglich, per Klick direkt zu bestimmten Zuständen der Änderungshistorie zu springen.
 
 
-\subsubsection{Ebenen setzen: \texttt{l}}\label{l}
+\subsubsection{Ebenen setzen: \texttt{l}}\label{befehl-l}
 
 Mit dem Befehl \texttt{l} wird, alternativ zum Aufklappfeld, die Ebene gesetzt, in der sich die nachfolgend erstellten Elemente befinden sollen. Dafür gelten die in der Graphkonfiguration (siehe \ref{ebenenkonfiguration}) eingestellten Kürzel.
 
