@@ -169,6 +169,7 @@ Die meisten Navigation und Ansicht betreffende Funktionen von GraphAnno werden d
 			F2 & Text und Satzannotationen zeigen/verbergen\\
 			F6 & Filterfenster zeigen/verbergen\\
 			F7 & Suchfenster zeigen/verbergen\\
+			F8 & Änderungsprotokollfenster zeigen/verbergen\\
 		\bottomrule
 	\end{tabular*}
 \end{center}
@@ -469,6 +470,17 @@ befehl_tb       =   "tb " tokenreferenz " " wörter
 befehl_ta       =   "ta " tokenreferenz " " wörter
 \end{lstlisting}
 \end{framed}
+
+
+\subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo}}\label{undo}
+
+Mit dem Befehl \texttt{undo} können zuvor ausgeführte Annotationsbefehle rückgängig gemacht werden.
+Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{add} oder \texttt{clear}.
+Ein rückgängig gemachter Befehl kann mit \texttt{redo} erneut ausgeführt werden.
+Rückgängigmachen und Wiederherstellen können auch mehrfach erfolgen; wird nach einem \texttt{undo}-Befehl wieder ein Annotationsbefehl ausgeführt, können die zuvor rückgängig gemachten Befehle nicht wiederhergestellt werden (lineare Änderungshistorie).
+
+Die Änderungshistorie ist auch in einem Fenster zu sehen, das mit F8 ein- und ausgeblendet wird.
+Hier ist es auch möglich, per Klick direkt zu bestimmten Zuständen der Änderungshistorie zu springen.
 
 
 \subsubsection{Ebenen setzen: \texttt{l}}\label{l}
