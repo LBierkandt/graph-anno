@@ -1,0 +1,9 @@
+%table
+  %tr
+    %th.command command
+    %th.user user
+    %th.time time
+    %th.action
+  = haml :log_step, :locals => {:log => log, :i => -1}
+  - log.steps.each_with_index do |step, i|
+    = haml :log_step, :locals => {:log => log, :i => i}
