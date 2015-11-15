@@ -107,7 +107,6 @@ class GraphController
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
 		@filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
-		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		return generate_graph.merge(
 			:sentence_changed => false,
 			:filter_applied => true
@@ -115,7 +114,7 @@ class GraphController
 	end
 
 	def search
-		set_query_cookies
+		@sinatra.response.set_cookie('traw_query', {:value => @sinatra.params[:query]})
 		@found = {:tg => []}
 		begin
 			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
@@ -127,7 +126,6 @@ class GraphController
 		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
 		@sentence_list.each{|id, h| h[:found] = false}
 		set_found_sentences
-		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
 		return generate_graph.merge(
 			:sentence_list => @sentence_list.values,
 			:search_result => @search_result,
@@ -233,7 +231,7 @@ class GraphController
 	end
 
 	def import_form(type)
-		modal = "import_form_#{type}".to_sym
+		modal = :"import_form_#{type}"
 		@sinatra.haml(
 			modal,
 			:locals => {
@@ -833,26 +831,14 @@ class GraphController
 	end
 
 	def set_cmd_cookies
-		if @sinatra.request.cookies['traw_layer'] && @sinatra.params[:layer]
-			@sinatra.response.set_cookie('traw_layer', { :value => @sinatra.params[:layer] })
-		end
-
-		if @sinatra.request.cookies['traw_cmd'] && @sinatra.params[:txtcmd]
-			@sinatra.response.set_cookie('traw_cmd', { :value => @sinatra.params[:txtcmd] })
-		end
-
-		if @sinatra.request.cookies['traw_sentence'] && @sinatra.params[:sentence]
-			@sinatra.response.set_cookie('traw_sentence', { :value => @sinatra.params[:sentence] })
-		end
+		@sinatra.response.set_cookie('traw_layer', {:value => @sinatra.params[:layer]}) if @sinatra.params[:layer]
+		@sinatra.response.set_cookie('traw_cmd', {:value => @sinatra.params[:txtcmd]}) if @sinatra.params[:txtcmd]
+		@sinatra.response.set_cookie('traw_sentence', {:value => @sinatra.params[:sentence]}) if @sinatra.params[:sentence]
 	end
 
 	def set_filter_cookies
-		#if @sinatra.request.cookies['traw_filter']
-			@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
-		#end
-		#if @sinatra.request.cookies['traw_filter_mode']
-			@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
-		#end
+		@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
+		@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
 	end
 
 	def set_new_layer(words, properties)
@@ -861,12 +847,6 @@ class GraphController
 			@sinatra.response.set_cookie('traw_layer', { :value => layer })
 			properties.replace(@graph.conf.layer_attributes[layer])
 			return layer
-		end
-	end
-
-	def set_query_cookies
-		if @sinatra.request.cookies['traw_query']
-			@sinatra.response.set_cookie('traw_query', { :value => @sinatra.params[:query] })
 		end
 	end
 
@@ -883,10 +863,7 @@ class GraphController
 	end
 
 	def undefined_references?(ids)
-		undefined_ids = []
-		ids.each do |id|
-			undefined_ids << id unless element_by_identifier(id)
-		end
+		undefined_ids = ids.select{|id| !element_by_identifier(id)}
 		@cmd_error_messages << "Undefined element(s): #{undefined_ids * ', '}" unless undefined_ids.empty?
 	end
 
