@@ -597,6 +597,7 @@ class AnnoGraph < SearchableGraph
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
 		@allowed_anno = other_graph.allowed_anno.clone
+		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
 	end
@@ -672,6 +673,7 @@ class AnnoGraph < SearchableGraph
 		@conf = AnnoGraphConf.new
 		@info = {}
 		@allowed_anno = Tagset.new
+		@anno_makros = {}
 		@makros_plain = []
 	end
 
