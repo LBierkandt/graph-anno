@@ -689,22 +689,6 @@ class GraphController
 	def generate_graph(format = :svg, path = 'public/graph.svg')
 		puts "Generating graph for sentence \"#{@sentence.name}\"..." if @sentence
 
-		viz_graph = GraphViz.new(
-			:G,
-			:type => 'digraph',
-			:rankdir => 'TB',
-			:use => 'dot',
-			:ranksep => '.3'
-		)
-		token_graph = viz_graph.subgraph(:rank => 'same')
-		layer_graphs = {}
-		@graph.conf.combinations.each do |c|
-			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
-		end
-		@graph.conf.layers.each do |l|
-			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
-		end
-
 		satzinfo = {:textline => '', :meta => ''}
 
 		@tokens     = @sentence ? @sentence.sentence_tokens : []
@@ -720,6 +704,22 @@ class GraphController
 		end
 
 		satzinfo[:meta] = build_label(@sentence) if @sentence
+
+		viz_graph = GraphViz.new(
+			:G,
+			:type => 'digraph',
+			:rankdir => 'TB',
+			:use => 'dot',
+			:ranksep => '.3'
+		)
+		token_graph = viz_graph.subgraph(:rank => 'same')
+		layer_graphs = {}
+		@graph.conf.combinations.each do |c|
+			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+		end
+		@graph.conf.layers.each do |l|
+			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+		end
 
 		@tokens.each_with_index do |token, i|
 			options = {
