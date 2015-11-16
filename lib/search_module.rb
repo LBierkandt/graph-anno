@@ -22,7 +22,7 @@ require 'csv.rb'
 require_relative 'parser_module.rb'
 
 class SearchableGraph < Graph
-	include(Parser)
+	include Parser
 
 	def initialize
 		super
@@ -69,10 +69,7 @@ class SearchableGraph < Graph
 		operations['edge'].each do |operation|
 			gefundene_kanten = suchgraph.edges.values.select{|k| k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_kanten.map do |k|
-				neu = Teilgraph.new
-				neu.edges << k
-				neu.ids[operation[:id]] = [k]
-				neu
+				Teilgraph.new([], [k], {operation[:id] => [k]})
 			end
 			id_index[operation[:id]] = {:index => tgindex, :art => operation[:operator], :cond => operation[:cond]}
 		end
@@ -82,15 +79,10 @@ class SearchableGraph < Graph
 		(operations['node'] + operations['nodes']).each do |operation|
 			gefundene_knoten = suchgraph.nodes.values.select{|k| k.type != 's' && k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_knoten.map do |k|
-				neu = Teilgraph.new
-				neu.nodes << k
-				neu.ids[operation[:id]] = [k]
-				neu
+				Teilgraph.new([k], [], {operation[:id] => [k]})
 			end
 			if operation[:operator] == 'nodes'
-				dummytg = Teilgraph.new
-				dummytg.ids[operation[:id]] = []
-				tglisten[tgindex] << dummytg
+				tglisten[tgindex] << Teilgraph.new([], [], {operation[:id] => []})
 			end
 			id_index[operation[:id]] = {:index => tgindex, :art => operation[:operator], :cond => operation[:cond]}
 		end
@@ -471,8 +463,7 @@ class SearchableGraph < Graph
 				when 'a'
 					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
-						el.attr.merge!(attrs)
-						command[:keys].each{|k| el.attr.delete(k)}
+						el.annotate(attrs)
 					end
 				when 'n'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.kind_of?(Node)}
@@ -550,7 +541,7 @@ class SearchableGraph < Graph
 	def interpolate(attributes, tg)
 		attributes.map_hash do |k, v|
 			begin
-				tg.execute("\"#{v}\"")
+				v ? tg.execute("\"#{v}\"") : nil
 			rescue NoMethodError => e
 				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
 				raise "Undefined method '#{match[1]}' for #{match[2]} in string:\n\"#{v}\""
@@ -712,17 +703,13 @@ class Automat
 		ids = ids.clone
 		ids << operation[:id] if operation[:id]
 		case operation[:operator]
-		when 'node'
-			return Automat.new(Zustand.new('node', nil, operation[:cond], ids))
-		when 'edge'
-			return Automat.new(Zustand.new('edge', nil, operation[:cond], ids))
-		when 'redge'
-			return Automat.new(Zustand.new('redge', nil, operation[:cond], ids))
+		when 'node', 'edge', 'redge'
+			return Automat.new(Zustand.new(operation[:operator].to_sym, nil, operation[:cond], ids))
 		when 'boundary'
-			return Automat.new(Zustand.new('node', nil, SearchableGraph.new.parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
+			return Automat.new(Zustand.new(:node, nil, SearchableGraph.new.parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
 		when 'or'
 			folgeautomaten = [Automat.create(operation[:arg][0], ids), Automat.create(operation[:arg][1], ids)]
-			automat = Automat.new(Zustand.new('split', [], ids))
+			automat = Automat.new(Zustand.new(:split, [], ids))
 			automat.anhaengen(folgeautomaten[0])
 			automat.anhaengen(folgeautomaten[1])
 			automat.startzustand.folgezustand << folgeautomaten[0].startzustand
@@ -734,16 +721,16 @@ class Automat
 			erster_automat.automaten_anhaengen(zweiter_automat)
 			return erster_automat
 		when 'quant'
-			automat = Automat.new(Zustand.new('empty', nil, ids))
+			automat = Automat.new(Zustand.new(:empty, nil, ids))
 			(1..operation[:min]).each do |i|
 				automat.automaten_anhaengen(Automat.create(operation[:arg], ids))
 			end
 			if operation[:max] > operation[:min]
 				splitautomat = nil
 				(1..operation[:max] - operation[:min]).each do |i|
-					splitautomat = Automat.new(Zustand.new('split', [], ids))
+					splitautomat = Automat.new(Zustand.new(:split, [], ids))
 					anhangautomat = Automat.create(operation[:arg], ids)
-					leerautomat = Automat.new(Zustand.new('empty', nil, ids))
+					leerautomat = Automat.new(Zustand.new(:empty, nil, ids))
 
 					splitautomat.anhaengen(leerautomat)
 					splitautomat.anhaengen(anhangautomat)
@@ -754,9 +741,9 @@ class Automat
 					automat.automaten_anhaengen(splitautomat)
 				end
 			elsif operation[:max] < 0
-				splitautomat = Automat.new(Zustand.new('split', [], ids))
+				splitautomat = Automat.new(Zustand.new(:split, [], ids))
 
-				leerautomat = Automat.new(Zustand.new('empty', nil, ids))
+				leerautomat = Automat.new(Zustand.new(:empty, nil, ids))
 				anhangautomat = Automat.create(operation[:arg], ids)
 				anhangautomat.automaten_anhaengen(splitautomat)
 
@@ -794,7 +781,7 @@ class Automat
 	def bereinigen
 		@zustaende = @zustaende.uniq
 		@zustaende.clone.each do |z|
-			if z.typ == 'empty'
+			if z.typ == :empty
 				@zustaende.each_with_index do |zz,i|
 					if zz.folgezustand == z
 						@zustaende[i].folgezustand = z.folgezustand
@@ -835,12 +822,12 @@ class Automat
 		return [{:zustand => nil, :tg => tg}] if z == nil
 		liste = []
 		case z.typ
-		when 'split'
+		when :split
 			liste += schrittliste_text(z.folgezustand[0], tg.clone, nk)
 			liste += schrittliste_text(z.folgezustand[1], tg.clone, nk)
-		when 'empty'
+		when :empty
 			liste += schrittliste_text(z.folgezustand, tg, nk)
-		when 'node'
+		when :node
 			if nk && nk.fulfil?(z.uebergang)
 				tg.nodes << nk
 				z.ids.each do |id|
@@ -861,24 +848,24 @@ class Automat
 		return [h] if z == nil
 		liste = []
 		case z.typ
-		when 'split'
+		when :split
 			liste += schrittliste_graph(:zustand=>z.folgezustand[0], :tg=>tg.clone, :el=>nk, :forward=>forward)
 			liste += schrittliste_graph(:zustand=>z.folgezustand[1], :tg=>tg.clone, :el=>nk, :forward=>forward)
-		when 'empty'
+		when :empty
 			liste += schrittliste_graph(:zustand=>z.folgezustand, :tg=>tg, :el=>nk, :forward=>forward)
-		when 'node'
+		when :node
 			if nk.kind_of?(Node)
 				schritt_in_liste(h.clone, liste) if nk.fulfil?(z.uebergang)
 			elsif forward # wenn das aktuelle Element eine Kante ist
 				schritt_in_liste(h.clone, liste, false)
 			end
-		when 'edge'
+		when :edge
 			if nk.kind_of?(Edge)
 				schritt_in_liste(h.clone, liste) if forward and nk.fulfil?(z.uebergang)
 			else # wenn das aktuelle Element ein Knoten ist
 				schritt_in_liste(h.clone, liste, false)
 			end
-		when 'redge'
+		when :redge
 			if nk.kind_of?(Edge)
 				schritt_in_liste(h.clone, liste) if !forward and nk.fulfil?(z.uebergang)
 			else # wenn das aktuelle Element ein Knoten ist
@@ -940,29 +927,23 @@ class Teilgraph
 
 	attr_accessor :nodes, :edges, :ids
 
-	def initialize
-		@nodes = []
-		@edges = []
-		@ids = {}
+	def initialize(nodes = [], edges = [], ids = {})
+		@nodes = nodes
+		@edges = edges
+		@ids = ids
 		@id_mapping = Object.new
 	end
 
 	def clone
-		neu = Teilgraph.new
-		neu.nodes = @nodes.clone
-		neu.edges = @edges.clone
-		@ids.each do |s,w|
-			neu.ids[s] = w.clone
-		end
-		return neu
+		Teilgraph.new(@nodes.clone, @edges.clone, @ids.map_hash{|k, v| v.clone})
 	end
 
 	def +(other)
-		neu = Teilgraph.new
-		neu.nodes = (@nodes + other.nodes).uniq
-		neu.edges = (@edges + other.edges).uniq
-		neu.ids = @ids.merge(other.ids){|s, w1, w2| (w1 + w2).uniq}
-		return neu
+		Teilgraph.new(
+			(@nodes + other.nodes).uniq,
+			(@edges + other.edges).uniq,
+			@ids.merge(other.ids){|s, w1, w2| (w1 + w2).uniq}
+		)
 	end
 
 	def element_zu_id_hinzufuegen(id, element)
