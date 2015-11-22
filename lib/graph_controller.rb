@@ -621,7 +621,7 @@ class GraphController
 
 		when 'save', 'speichern' # save workspace to corpus file
 			raise 'Please specify a file name!' if @graph_file == '' and !parameters[:words][0]
-			@graph_file.replace(file_path(parameters[:words][0]))
+			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
 			dir = @graph_file.rpartition('/').first
 			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
 			@graph.write_json_file(@graph_file)
