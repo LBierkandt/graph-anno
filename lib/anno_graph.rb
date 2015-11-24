@@ -43,9 +43,9 @@ class NodeOrEdge
 	def attr=(arg)
 		if @graph.multi_user
 			@attr = {} unless @attr
-			@attr[@graph.user] = arg
+			@attr[@graph.user] = arg || {}
 		else
-			@attr = arg
+			@attr = arg || {}
 		end
 	end
 
@@ -81,7 +81,11 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		self.attr = h[:attr] || {}
+		if h[:raw]
+			@attr = h[:attr]
+		else
+			self.attr = h[:attr]
+		end
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -345,7 +349,11 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		self.attr = h[:attr] || {}
+		if h[:raw]
+			@attr = h[:attr]
+		else
+			self.attr = h[:attr]
+		end
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
@@ -439,10 +447,10 @@ class AnnoGraph
 	# @param h [Hash] the graph to be added in hash format
 	def add_hash(h)
 		h['nodes'].each do |n|
-			self.add_node(n)
+			self.add_node(n.merge(:raw => true))
 		end
 		h['edges'].each do |e|
-			self.add_edge(e)
+			self.add_edge(e.merge(:raw => true))
 		end
 	end
 
