@@ -577,6 +577,7 @@ class GraphController
 		when 'user'
 			@user = parameters[:string]
 			@log.user = @user
+			@graph.user = @user
 
 		when 'del' # delete sentence
 			sentences = if parameters[:words] != []
