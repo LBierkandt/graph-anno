@@ -17,12 +17,27 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative 'graph.rb'
+require 'json.rb'
 require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
-	attr_accessor :type
+	attr_accessor :attr, :type
+
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		self.to_h.to_json(*a)
+	end
+
+	# getter for @attr hash
+	def [](key)
+		@attr[key]
+	end
+
+	# setter for @attr hash
+	def []=(key, value)
+		@attr[key] = value
+	end
 
 	def cat
 		@attr['cat']
@@ -38,23 +53,35 @@ class NodeOrEdge
 	end
 end
 
-class AnnoNode < Node
-	attr_accessor :start, :end
+class Node < NodeOrEdge
+	attr_accessor :id, :in, :out, :start, :end
 
+	# initializes node
+	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
 	def initialize(h)
-		super
+		@graph = h[:graph]
+		@id = h[:id]
+		@attr = h[:attr] || {}
+		@in = []
+		@out = []
 		@type = h[:type]
 		@start= h[:start]
 		@end  = h[:end]
 	end
 
-	# @return [Hash] the element transformed into a hash with all values casted to strings
+	def inspect
+		'Node' + @id
+	end
+
+	# @return [Hash] the node transformed into a hash with all values casted to strings
 	def to_h
-		if @start || @end
-			super.merge(:type => @type, :start => @start, :end => @end)
-		else
-			super.merge(:type => @type)
-		end
+		h = {
+			:attr => @attr,
+			:id   => @id,
+			:type => @type
+		}
+		h.merge!(:start => @start, :end => @end) if @start || @end
+		@attr == {} ? h.reject{|k,v| k == :attr} : h
 	end
 
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
@@ -66,7 +93,27 @@ class AnnoNode < Node
 			@in.each{|e| log_step.add_change(:action => :delete, :element => e)}
 			log_step.add_change(:action => :delete, :element => self)
 		end
-		super()
+		Array.new(@out).each{|e| e.delete}
+		Array.new(@in).each{|e| e.delete}
+		@graph.nodes.delete(@id)
+	end
+
+	# returns nodes connected to self by ingoing edges which fulfil the (optional) block
+	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
+	# @return [Array] list of found parent nodes
+	def parent_nodes(&block)
+		selected = @in.select(&block)
+		selected = @in if selected.is_a?(Enumerator)
+		return selected.map{|e| e.start}
+	end
+
+	# returns nodes connected to self by outgoing edges which fulfil the (optional) block
+	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
+	# @return [Array] child nodes connected by edges with the defined attributes
+	def child_nodes(&block)
+		selected = @out.select(&block)
+		selected = @out if selected.is_a?(Enumerator)
+		return selected.map{|e| e.end}
 	end
 
 	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
@@ -274,10 +321,33 @@ class AnnoNode < Node
 	end
 end
 
-class AnnoEdge < Edge
+class Edge < NodeOrEdge
+	attr_accessor :id, :start, :end
+
+	# initializes edge, registering it with start and end node
+	# @param h [{:graph => Graph, :id => String, :start => Node or String, :end => Node or String, :attr => Hash}]
 	def initialize(h)
-		super
+		@graph = h[:graph]
+		@id = h[:id]
 		@type = h[:type]
+		if h[:start].class == String
+			@start = @graph.nodes[h[:start]]
+		else
+			@start = h[:start]
+		end
+		if h[:end].class == String
+			@end = @graph.nodes[h[:end]]
+		else
+			@end = h[:end]
+		end
+		@attr = h[:attr] || {}
+		if @start && @end
+			# register in start and end node as outgoing or ingoing edge, respectively
+			@start.out << self
+			@end.in << self
+		else
+			raise 'edge needs start and end node'
+		end
 	end
 
 	# deletes self from graph and from out and in lists of start and end node
@@ -287,12 +357,49 @@ class AnnoEdge < Edge
 		if log_step
 			log_step.add_change(:action => :delete, :element => self)
 		end
-		super()
+		@start.out.delete(self) if @start
+		@end.in.delete(self) if @end
+		@graph.edges.delete(@id)
 	end
 
-	# @return [Hash] the element transformed into a hash with all values casted to strings
+	# @return [Hash] the edge transformed into a hash with all values casted to strings
 	def to_h
-		super.merge(:type => @type)
+		h = {
+			:start => @start.id,
+			:end   => @end.id,
+			:attr  => @attr,
+			:id    => @id,
+			:type  => @type
+		}
+		@attr == {} ? h.reject{|k,v| k == :attr} : h
+	end
+
+	def inspect
+		'Edge' + @id
+	end
+
+	# sets the start node of self
+	# @param node [Node] the new start node
+	def start=(node)
+		if node
+			if @start
+				@start.out.delete(self)
+				node.out << self
+			end
+			@start = node
+		end
+	end
+
+	# sets the end node of self
+	# @param node [Node] the new end node
+	def end=(node)
+		if node
+			if @end
+				@end.in.delete(self)
+				node.in << self
+			end
+			@end = node
+		end
 	end
 
 	def fulfil?(condition)
@@ -301,17 +408,72 @@ class AnnoEdge < Edge
 	end
 end
 
-class AnnoGraph < SearchableGraph
+class AnnoGraph
+	include SearchableGraph
+
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id
 	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros
 
-	# extend the super class initialize method by reading in of display and layer configuration, and search makros
+	# initializes empty graph
 	def initialize
-		super
+		@nodes = {}
+		@edges = {}
+		@highest_node_id = 0
+		@highest_edge_id = 0
 		@conf = AnnoGraphConf.new
 		@info = {}
 		@allowed_anno = Tagset.new
 		@anno_makros = {}
+		@makros = []
 		create_layer_makros
+	end
+
+	# adds a graph in hash format to self
+	# @param h [Hash] the graph to be added in hash format
+	def add_hash(h)
+		h['nodes'].each do |n|
+			self.add_node(n)
+		end
+		h['edges'].each do |e|
+			self.add_edge(e)
+		end
+	end
+
+	# organizes ids for new nodes or edges
+	# @param h [Hash] hash from which the new element is generated
+	# @param element_type [Symbol] :node or :edge
+	def new_id(h, element_type)
+		case element_type
+		when :node
+			if !h[:id]
+				h[:id] = (@highest_node_id += 1).to_s
+			else
+				@highest_node_id = h[:id].to_i if h[:id].to_i > @highest_node_id
+			end
+		when :edge
+			if !h[:id]
+				h[:id] = (@highest_edge_id += 1).to_s
+			else
+				@highest_edge_id = h[:id].to_i if h[:id].to_i > @highest_edge_id
+			end
+		end
+	end
+
+	# returns the edges that start at the given start node and end at the given end node; optionally, a block can be specified that the edges must fulfil
+	# @param start_node [Node] the start node
+	# @param end_node [Node] the end node
+	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are returned
+	# @return [Array] the edges found
+	def edges_between(start_node, end_node, &block)
+		edges = start_node.out && end_node.in
+		result = edges.select(&block)
+		result = edges if result.is_a?(Enumerator)
+		return result
+	end
+
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		self.to_h.to_json(*a)
 	end
 
 	# reads a graph JSON file into self, clearing self before
@@ -413,12 +575,22 @@ class AnnoGraph < SearchableGraph
 		puts 'Read "' + path + '".'
 	end
 
+	# serializes self in a JSON file
+	# @param path [String] path to the JSON file
+	def write_json_file(path)
+		puts 'Writing file "' + path + '"...'
+		file = open(path, 'w')
+		file.write(JSON.pretty_generate(self, :indent => ' ', :space => '').encode('UTF-8'))
+		file.close
+		puts 'Wrote "' + path + '".'
+	end
+
 	# creates a new node and adds it to self
 	# @param h [{:type => String, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_node(h)
 		new_id(h, :node)
-		@nodes[h[:id]] = AnnoNode.new(h.merge(:graph => self))
+		@nodes[h[:id]] = Node.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno node and adds it to self
@@ -472,7 +644,7 @@ class AnnoGraph < SearchableGraph
 	def add_edge(h)
 		return nil unless h[:start] && h[:end]
 		new_id(h, :edge)
-		@edges[h[:id]] = AnnoEdge.new(h.merge(:graph => self))
+		@edges[h[:id]] = Edge.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno edge and adds it to self
@@ -554,7 +726,7 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# replaces the given edge by a sequence of an edge, a node and another edge. The new edges inherit the annotations of the replaced edge.
-	# @param edge [AnnoEdge] the edge to be replaced
+	# @param edge [Edge] the edge to be replaced
 	# @param attrs [Hash] the annotations for the new node
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def insert_node(edge, attrs, log_step = nil)
@@ -579,7 +751,7 @@ class AnnoGraph < SearchableGraph
 	end
 
 	# deletes a node and connects its outgoing edges to its parents or its ingoing edges to its children
-	# @param node [AnnoNode] the node to be deleted
+	# @param node [Node] the node to be deleted
 	# @param mode [Symbol] :in or :out - whether to delete the ingoing or outgoing edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def delete_and_join(node, mode, log_step = nil)
@@ -596,10 +768,20 @@ class AnnoGraph < SearchableGraph
 		end
 		node.delete(log_step)
 	end
-
-	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String}
+	# @return [Hash] the graph in hash format: {'nodes' => [...], 'edges' => [...]}
 	def to_h
-		super.
+		{
+			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
+			'edges' => @edges.values.map{|e| e.to_h}
+		}
+	end
+
+	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
+	def to_h
+		{
+			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
+			'edges' => @edges.values.map{|e| e.to_h}
+		}.
 			merge('version' => '7').
 			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge('info' => @info).
@@ -608,33 +790,49 @@ class AnnoGraph < SearchableGraph
 			merge('search_makros' => @makros_plain)
 	end
 
+	def inspect
+		'Graph'
+	end
+
 	# merges another graph into self
 	# @param other [Graph] the graph to be merged
 	def merge!(other)
 		s_nodes = sentence_nodes
 		last_old_sentence_node = s_nodes.last
-		super
+		new_nodes = {}
+		other.nodes.each do |id,n|
+			new_nodes[id] = add_node(n.to_h.merge(:id => nil))
+		end
+		other.edges.each do |id,e|
+			if new_nodes[e.start.id] and new_nodes[e.end.id]
+				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
+			end
+		end
 		first_new_sentence_node = @nodes.values.select{|n| n.type == 's' and !s_nodes.include?(n)}[0].ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
 	end
 
-	# @return [Graph] a clone of self (nodes and edges are not cloned)
+	# builds a clone of self, but does not clone the nodes and edges
+	# @return [Graph] the clone
 	def clone
-		new_graph = super
-		new_graph.clone_graph_info(self)
-		return new_graph
+		new_graph = AnnoGraph.new
+		return new_graph.clone_graph(self)
 	end
 
-	# sets self's configuration to the cloned configuration of the given graph
-	# @param other_graph [Graph] the other graph
-	def clone_graph_info(other_graph)
+	# makes self a clone of another graph
+	def clone_graph(other_graph)
+		@nodes = other_graph.nodes.clone
+		@edges = other_graph.edges.clone
+		@highest_node_id = other_graph.highest_node_id
+		@highest_edge_id = other_graph.highest_edge_id
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
 		@allowed_anno = other_graph.allowed_anno.clone
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
+		return self
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
@@ -706,9 +904,12 @@ class AnnoGraph < SearchableGraph
 		return token_collection
 	end
 
-	# extend clear method: reset layer configuration and search makros
+	# clear all nodes and edges from self, reset layer configuration and search makros
 	def clear
-		super
+		@nodes.clear
+		@edges.clear
+		@highest_node_id = 0
+		@highest_edge_id = 0
 		@conf = AnnoGraphConf.new
 		@info = {}
 		@allowed_anno = Tagset.new
@@ -1084,5 +1285,24 @@ class String
 
 	def sql_json_escape_quotes
 		self.gsub("'", "\\\\'").gsub('\\"', '\\\\\\"')
+	end
+end
+
+class Hash
+	# @param h2 [Hash] the hash to be tested for inclusion in self
+	# @return [Boolean] true if the key-value pairs of h2 are a subset of self
+	def includes(h2)
+		if h2.to_h == {}
+			return true
+		else
+			return h2.any?{|k,v| self[k] == v}
+		end
+	end
+
+	# creates a new hash by applying the given block to every key-value pair of self and assigning the result as value to the unaltered key
+	# @param block [Proc] the block to be applied to the key-value pairs of self
+	# @return [Hash] the new Hash
+	def map_hash(&block)
+		self.merge(self){|k, v| block.call(k, v)}
 	end
 end

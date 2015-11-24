@@ -115,7 +115,7 @@ class Change
 	def initialize(h)
 		@step = h[:step]
 		@action = h[:action]
-		@element_type = h[:element].kind_of?(Node) ? :node : :edge
+		@element_type = h[:element].is_a?(Node) ? :node : :edge
 		@element_id = h[:element].id
 		@data = case h[:action]
 		when :create, :delete

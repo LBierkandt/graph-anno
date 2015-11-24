@@ -389,7 +389,7 @@ class GraphController
 	def build_label(e, i = nil)
 		label = ''
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
-		if e.kind_of?(Node)
+		if e.is_a?(Node)
 			if e.type == 's'
 				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
 			elsif e.type == 't'
@@ -413,7 +413,7 @@ class GraphController
 				end
 				label += "n#{i}" if i
 			end
-		elsif e.kind_of?(Edge)
+		elsif e.is_a?(Edge)
 			display_attr.each do |key,value|
 				case key
 				when 'cat'
