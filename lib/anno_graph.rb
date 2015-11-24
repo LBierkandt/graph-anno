@@ -22,7 +22,7 @@ require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
-	attr_accessor :attr, :type
+	attr_accessor :type
 
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
@@ -30,26 +30,46 @@ class NodeOrEdge
 	end
 
 	# getter for @attr hash
-	def [](key)
-		@attr[key]
+	def attr
+		if @graph.multi_user
+			@attr[@graph.user] = {} unless @attr[@graph.user]
+			@attr[@graph.user]
+		else
+			@attr
+		end
 	end
 
 	# setter for @attr hash
+	def attr=(arg)
+		if @graph.multi_user
+			@attr = {} unless @attr
+			@attr[@graph.user] = arg
+		else
+			@attr = arg
+		end
+	end
+
+	# alternative getter for @attr hash
+	def [](key)
+		attr[key]
+	end
+
+	# alternative setter for @attr hash
 	def []=(key, value)
-		@attr[key] = value
+		attr[key] = value
 	end
 
 	def cat
-		@attr['cat']
+		attr['cat']
 	end
 
 	def cat=(arg)
-		@attr['cat'] = arg
+		attr['cat'] = arg
 	end
 
-	def annotate(attr, log_step = nil)
-		log_step.add_change(:action => :update, :element => self, :attr => attr) if log_step
-		@attr.merge!(attr).keep_if{|k, v| v}
+	def annotate(attributes, log_step = nil)
+		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
+		attr.merge!(attributes).keep_if{|k, v| v}
 	end
 end
 
@@ -61,7 +81,7 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		@attr = h[:attr] || {}
+		self.attr = h[:attr] || {}
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -252,12 +272,12 @@ class Node < NodeOrEdge
 
 	# @return [String] self's text
 	def token
-		@attr['token']
+		attr['token']
 	end
 
 	# @param arg [String] new self's text
 	def token=(arg)
-		@attr['token'] = arg
+		attr['token'] = arg
 	end
 
 	# @return [Integer] position of self in ordered list of own sentence's tokens
@@ -282,12 +302,12 @@ class Node < NodeOrEdge
 
 	# @return [String] self's name attribute
 	def name
-		@attr['name']
+		attr['name']
 	end
 
 	# @param name [String] self's new name attribute
 	def name=(name)
-		@attr['name'] = name
+		attr['name'] = name
 	end
 
 	# @param link [String] a link in query language
@@ -325,7 +345,7 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		@attr = h[:attr] || {}
+		self.attr = h[:attr] || {}
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
