@@ -22,54 +22,34 @@ require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
-	attr_accessor :type
+	attr_accessor :attr, :type
 
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)
 	end
 
-	# getter for @attr hash
-	def attr
-		if @graph.multi_user
-			@attr[@graph.user] = {} unless @attr[@graph.user]
-			@attr[@graph.user]
-		else
-			@attr
-		end
-	end
-
-	# setter for @attr hash
-	def attr=(arg)
-		if @graph.multi_user
-			@attr = {} unless @attr
-			@attr[@graph.user] = arg || {}
-		else
-			@attr = arg || {}
-		end
-	end
-
 	# alternative getter for @attr hash
 	def [](key)
-		attr[key]
+		@attr[key]
 	end
 
 	# alternative setter for @attr hash
 	def []=(key, value)
-		attr[key] = value
+		@attr[key] = value
 	end
 
 	def cat
-		attr['cat']
+		@attr['cat']
 	end
 
 	def cat=(arg)
-		attr['cat'] = arg
+		@attr['cat'] = arg
 	end
 
 	def annotate(attributes, log_step = nil)
 		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
-		attr.merge!(attributes).keep_if{|k, v| v}
+		@attr.merge!(attributes).remove_empty!
 	end
 end
 
@@ -81,11 +61,7 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		if h[:raw]
-			@attr = h[:attr]
-		else
-			self.attr = h[:attr]
-		end
+		@attr = Attributes.new(@graph, h[:raw], h[:attr])
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -98,7 +74,7 @@ class Node < NodeOrEdge
 	# @return [Hash] the node transformed into a hash with all values casted to strings
 	def to_h
 		h = {
-			:attr => @attr,
+			:attr => @attr.to_h,
 			:id   => @id,
 			:type => @type
 		}
@@ -276,12 +252,12 @@ class Node < NodeOrEdge
 
 	# @return [String] self's text
 	def token
-		attr['token']
+		@attr['token']
 	end
 
 	# @param arg [String] new self's text
 	def token=(arg)
-		attr['token'] = arg
+		@attr['token'] = arg
 	end
 
 	# @return [Integer] position of self in ordered list of own sentence's tokens
@@ -306,12 +282,12 @@ class Node < NodeOrEdge
 
 	# @return [String] self's name attribute
 	def name
-		attr['name']
+		@attr['name']
 	end
 
 	# @param name [String] self's new name attribute
 	def name=(name)
-		attr['name'] = name
+		@attr['name'] = name
 	end
 
 	# @param link [String] a link in query language
@@ -349,11 +325,7 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		if h[:raw]
-			@attr = h[:attr]
-		else
-			self.attr = h[:attr]
-		end
+		@attr = Attributes.new(@graph, h[:raw], h[:attr])
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
@@ -380,7 +352,7 @@ class Edge < NodeOrEdge
 		h = {
 			:start => @start.id,
 			:end   => @end.id,
-			:attr  => @attr,
+			:attr  => @attr.to_h,
 			:id    => @id,
 			:type  => @type
 		}
@@ -1198,6 +1170,89 @@ class TagsetRule
 				value.match('^' + rule[:str] + '$')
 			end
 		end
+	end
+end
+
+class Attributes
+	@@generic_attrs = ['name', 'token']
+
+	def initialize(graph, raw, arg)
+		arg ||= {}
+		@graph = graph
+		if @graph.multi_user && !raw
+			@attr = {}
+			self.merge!(arg)
+		else
+			@attr = arg
+		end
+	end
+
+	def output
+		if @graph.multi_user
+			(@attr[@graph.user] || {}).merge(
+				(@attr[''] || {}).select{|k, v| @@generic_attrs.include?(k)}
+			)
+		else
+			@attr
+		end
+	end
+
+	def [](key)
+		output[key]
+	end
+
+	def []=(key, value)
+		if @graph.multi_user
+			if @@generic_attrs.include?(key)
+				@attr[''][key] = value
+			else
+				@attr[@graph.user] ||= {}
+				@attr[@graph.user][key] = value
+			end
+		else
+			@attr[key] = value
+		end
+	end
+
+	def merge(hash)
+		output.merge(hash)
+	end
+
+	def merge!(hash)
+		if @graph.multi_user
+			@attr[''] ||= {}
+			@attr[@graph.user] ||= {}
+			@attr[''].merge!(hash.select{|k, v| @@generic_attrs.include?(k)})
+			@attr[@graph.user].merge!(hash.reject{|k, v| @@generic_attrs.include?(k)})
+		else
+			@attr.merge!(hash)
+		end
+		self
+	end
+
+	def remove_empty!
+		if @graph.multi_user
+			@attr[''].keep_if{|k, v| v}
+			@attr[@graph.user].keep_if{|k, v| v}
+		else
+			@attr.keep_if{|k, v| v}
+		end
+	end
+
+	def reject(&block)
+		output.reject(&block)
+	end
+
+	def select(&block)
+		output.select(&block)
+	end
+
+	def to_h
+		@attr
+	end
+
+	def to_json(*a)
+		self.to_h.to_json(*a)
 	end
 end
 
