@@ -253,8 +253,7 @@ class GraphController
 	end
 
 	def import(type)
-		@graph_file.replace('')
-		@graph.clear
+		clear_workspace
 		case type
 		when 'text'
 			case @sinatra.params['input_method']
@@ -283,7 +282,7 @@ class GraphController
 		set_sentence_list(:clear => true)
 		@sentence = @graph.nodes[sentence_list.keys.first]
 		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
-		return {:sentence_list => @sentence_list.values}.to_json
+		return {:sentence_list => @sentence_list.values, :graph_file => @sentence}.to_json
 	end
 
 	def export_subcorpus(filename)
@@ -355,6 +354,14 @@ class GraphController
 	end
 
 	private
+
+	def clear_workspace
+		@graph_file.replace('')
+		@graph.clear
+		@found = nil
+		@sentence = nil
+		@log = Log.new(@graph, @user)
+	end
 
 	def sentence_settings_and_graph
 		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
@@ -616,13 +623,12 @@ class GraphController
 			end
 
 		when 'load', 'laden' # clear workspace and load corpus file
+			clear_workspace
 			@graph.read_json_file(file_path(parameters[:words][0]))
-			@log = Log.new(@graph, @user)
 			@graph_file.replace(file_path(parameters[:words][0]))
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
 			@sentence = sentence_nodes.first unless @sentence
-			@found = nil
 
 		when 'add' # load corpus file and add it to the workspace
 			@graph_file.replace('')
@@ -639,11 +645,7 @@ class GraphController
 			@graph.write_json_file(@graph_file)
 
 		when 'clear', 'leeren' # clear workspace
-			@graph_file.replace('')
-			@graph.clear
-			@log = Log.new(@graph, @user)
-			@found = nil
-			@sentence = nil
+			clear_workspace
 
 		when 'image' # export sentence as graphics file
 			sentence_set?

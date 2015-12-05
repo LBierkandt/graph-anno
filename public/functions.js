@@ -315,7 +315,7 @@ function makeAnfrage(anfrage, params) {
 				txtcmd.value = getCookie('traw_cmd');
 				updateLayerOptions();
 				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
-				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
+				if (antworthash['graph_file'] != undefined) $('#active_file').html('file: ' + antworthash['graph_file']);
 				if (antworthash['search_result'] != undefined) {
 					display_search_message(antworthash['search_result']);
 				} else if (antworthash['filter_applied'] != undefined) {
@@ -614,6 +614,7 @@ function sendImport(type) {
 			closeModal();
 			updateLayerOptions();
 			loadGraph();
+			$('#active_file').html('file:');
 		}
 	})
 	.error(function(data) {
