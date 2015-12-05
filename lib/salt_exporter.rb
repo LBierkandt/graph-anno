@@ -1,19 +1,19 @@
 # encoding: utf-8
 
 # Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -22,11 +22,11 @@ class AnnoGraph
 	def export_saltxml(textname)
 		pfad = 'exports/salt/' + textname
 		FileUtils.mkdir_p(pfad + '/corpus')
-		
+
 		@nodes.values.each{|k| k.salt_init}
-		
+
 		graphpfad = 'salt:/corpus/corpus_document/corpus_document_graph'
-		
+
 		# Präambel
 		saltxml = %q{<?xml version="1.0" encoding="UTF-8"?>
 <sDocumentStructure:SDocumentGraph xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:graph="graph" xmlns:sDocumentStructure="sDocumentStructure" xmlns:saltCore="saltCore">
@@ -43,7 +43,7 @@ class AnnoGraph
 			korpusstring += ' '
 		end
 		korpusstring.strip!
-		
+
 		# Korpusstring als erster Knoten
 		saltxml += %q{  <nodes xsi:type="sDocumentStructure:STextualDS">
     <labels xsi:type="saltCore:SFeature" sentence="salt" name="SNAME" valueString="sText1"/>
@@ -53,23 +53,23 @@ class AnnoGraph
     <labels xsi:type="saltCore:SElementId" sentence="graph" name="id" valueString="}+graphpfad+%q{#sText1"/>
   </nodes>
 }
-		
+
 		knotenzaehler = 1
-		
+
 		# Tokens
 		tokens.each_with_index do |tok, index|
 			saltxml += saltXML_knoten_schreiben(tok, :token, index, graphpfad)
 			tok.salt_attr['index'] = knotenzaehler.to_s
 			knotenzaehler += 1
 		end
-		
+
 		# andere Knoten
 		@nodes.values.select{|k| !k.token}.each_with_index do |knot, index|
 			saltxml += saltXML_knoten_schreiben(knot, :knoten, index, graphpfad)
 			knot.salt_attr['index'] = knotenzaehler.to_s
 			knotenzaehler += 1
 		end
-		
+
 		# Satzspannen
 		saetzegraph = AnnoGraph.new
 		self.sentence_nodes.each_with_index do |sentence, index|
@@ -79,8 +79,8 @@ class AnnoGraph
 			knot.salt_attr['index'] = knotenzaehler.to_s
 			knotenzaehler += 1
 		end
-		
-		
+
+
 		# Tokenverankerung
 		tokens.each do |tok|
 			name = 'sTextRel' + tok.salt_attr['nummer']
@@ -96,7 +96,7 @@ class AnnoGraph
   </edges>
 }
 		end
-		
+
 		# Satzspannen verbinden
 		satzrelzaehler = 1
 		saetzegraph.nodes.values.each do |satz|
@@ -112,7 +112,7 @@ class AnnoGraph
 				satzrelzaehler += 1
 			end
 		end
-		
+
 		# andere Kanten
 		@edges.values.select{|k| k.type == 'a'}.each_with_index do |kante, index|
 			if kante['s-layer'] == 't'
@@ -141,11 +141,11 @@ class AnnoGraph
 			# Kanten-Schluß-Täg
 			saltxml += '  </edges>'+"\n"
 		end
-		
+
 		# Datei-Ende
 		saltxml += '</sDocumentStructure:SDocumentGraph>'+"\n"
-	
-	
+
+
 		# Dateien schreiben
 		File.open(pfad + '/corpus/corpus_document.salt', 'w'){|f| f.write(saltxml)}
 		File.open(pfad + '/saltProject.salt', 'w') do |f|
@@ -170,12 +170,12 @@ class AnnoGraph
 </saltCommon:SaltProject>}
 			)
 		end
-	
+
 	end
-	
+
 	def saltXML_knoten_schreiben(knot, knotentyp, index, graphpfad)
 		saltxml = ''
-		
+
 		knot.salt_attr['nummer'] = (index+1).to_s
 		if knotentyp == :token
 			knotentyp = 'SToken'
@@ -206,13 +206,13 @@ class AnnoGraph
 		end
 		# Knoten-Schluß-Täg
 		saltxml += '  </nodes>'+"\n"
-		
+
 		return saltxml
 	end
 
 end
 
-class AnnoNode
+class Node
 	attr_accessor :salt_attr
 	def salt_init
 		@salt_attr = {}

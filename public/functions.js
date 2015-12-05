@@ -298,6 +298,9 @@ function makeAnfrage(anfrage, params) {
 					case 'config':
 						openConfig();
 						return;
+					case 'speakers':
+						openSpeakers();
+						return;
 					case 'tagset':
 						openTagset();
 						return;
@@ -312,7 +315,7 @@ function makeAnfrage(anfrage, params) {
 				txtcmd.value = getCookie('traw_cmd');
 				updateLayerOptions();
 				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
-				if (antworthash['graph_file'] != undefined) document.getElementById('active_file').innerHTML = 'file: '+antworthash['graph_file'];
+				if (antworthash['graph_file'] != undefined) $('#active_file').html('file: ' + antworthash['graph_file']);
 				if (antworthash['search_result'] != undefined) {
 					display_search_message(antworthash['search_result']);
 				} else if (antworthash['filter_applied'] != undefined) {
@@ -403,6 +406,25 @@ function openMetadata() {
 		});
 	}
 }
+function openSpeakers() {
+	if ($('#modal-background').css('display') != 'block') {
+		$.ajax({
+			url: '/speakers_form'
+		})
+		.done(function(data) {
+			$('#modal-content').html(data);
+			$('#new-speaker').click(function(){
+				var i = parseInt($('.speakers tbody:first-child tr:last-child').attr('no')) + 1;
+				$('.speakers tbody:first-child tr:last-child').after(
+					'<tr no="'+i+'"><td><input type="hidden" name="ids['+i+']"></input></td><td><textarea name="attributes['+i+']"></textarea></td></tr>'
+				);
+				return false;
+			});
+			$('#modal-background').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
 function openMakros() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
@@ -470,6 +492,17 @@ function sendMetadata() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_metadata',
+		dataType: 'json',
+		data: $('#modal-form').serialize()
+	})
+	.done(function(data) {
+		closeModal();
+	});
+}
+function sendSpeakers() {
+	$.ajax({
+		type: 'POST',
+		url: '/save_speakers',
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})
@@ -581,6 +614,7 @@ function sendImport(type) {
 			closeModal();
 			updateLayerOptions();
 			loadGraph();
+			$('#active_file').html('file:');
 		}
 	})
 	.error(function(data) {

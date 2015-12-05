@@ -1,5 +1,5 @@
-GraphAnno has been developed by Lennart Bierkandt in the DGF-financed project "Towards a corpus-based typology of clause linkage" (http://linktype.iaa.uni-jena.de/) at Friedrich-Schiller-Universität Jena.
+GraphAnno has been developed by Lennart Bierkandt in the project "Towards a corpus-based typology of clause linkage" (http://linktype.iaa.uni-jena.de/) at Friedrich-Schiller-Universität Jena, financed by the Deutsche Forschungsgemeinschaft (DFG, http://dfg.de/).
 
-The initial version of GraphAnno was conceived by Volker Gast, Christoph Rzymski and Lennart Bierkandt, and implemented by Christoph Rzymski.
+The initial version of GraphAnno was conceived by Volker Gast, Christoph Rzymski and Lennart Bierkandt, and implemented by Christoph Rzymski. Most inspiration for functions to implement came from Volker Gast.
 
 The training data for the punkt segmenter as well as the tokenisation algorithm (slightly adapted) are taken from Louis Mullies’s work Treat (https://github.com/louismullie/treat).

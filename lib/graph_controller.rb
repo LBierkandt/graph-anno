@@ -143,7 +143,7 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'allowed_annotations'].each do |form_name|
+	['config', 'metadata', 'makros', 'allowed_annotations', 'speakers'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
@@ -195,6 +195,18 @@ class GraphController
 		return true.to_json
 	end
 
+	def save_speakers
+		@graph.info = {}
+		@sinatra.params['ids'].each do |i, id|
+			if id != ''
+				@graph.nodes[id].attr = @sinatra.params['attributes'][i].parse_parameters[:attributes]
+			else
+				@graph.add_speaker_node(:attr => @sinatra.params['attributes'][i].parse_parameters[:attributes])
+			end
+		end
+		return true.to_json
+	end
+
 	def save_makros
 		@graph.anno_makros = {}
 		@sinatra.params['keys'].each do |i, key|
@@ -241,8 +253,7 @@ class GraphController
 	end
 
 	def import(type)
-		@graph_file.replace('')
-		@graph.clear
+		clear_workspace
 		case type
 		when 'text'
 			case @sinatra.params['input_method']
@@ -271,7 +282,7 @@ class GraphController
 		set_sentence_list(:clear => true)
 		@sentence = @graph.nodes[sentence_list.keys.first]
 		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
-		return {:sentence_list => @sentence_list.values}.to_json
+		return {:sentence_list => @sentence_list.values, :graph_file => @sentence}.to_json
 	end
 
 	def export_subcorpus(filename)
@@ -344,6 +355,14 @@ class GraphController
 
 	private
 
+	def clear_workspace
+		@graph_file.replace('')
+		@graph.clear
+		@found = nil
+		@sentence = nil
+		@log = Log.new(@graph, @user)
+	end
+
 	def sentence_settings_and_graph
 		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
 		return generate_graph.merge(
@@ -377,7 +396,7 @@ class GraphController
 	def build_label(e, i = nil)
 		label = ''
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
-		if e.kind_of?(Node)
+		if e.is_a?(Node)
 			if e.type == 's'
 				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
 			elsif e.type == 't'
@@ -401,7 +420,7 @@ class GraphController
 				end
 				label += "n#{i}" if i
 			end
-		elsif e.kind_of?(Edge)
+		elsif e.is_a?(Edge)
 			display_attr.each do |key,value|
 				case key
 				when 'cat'
@@ -604,13 +623,12 @@ class GraphController
 			end
 
 		when 'load', 'laden' # clear workspace and load corpus file
+			clear_workspace
 			@graph.read_json_file(file_path(parameters[:words][0]))
-			@log = Log.new(@graph, @user)
 			@graph_file.replace(file_path(parameters[:words][0]))
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
 			@sentence = sentence_nodes.first unless @sentence
-			@found = nil
 
 		when 'add' # load corpus file and add it to the workspace
 			@graph_file.replace('')
@@ -627,11 +645,7 @@ class GraphController
 			@graph.write_json_file(@graph_file)
 
 		when 'clear', 'leeren' # clear workspace
-			@graph_file.replace('')
-			@graph.clear
-			@log = Log.new(@graph, @user)
-			@found = nil
-			@sentence = nil
+			clear_workspace
 
 		when 'image' # export sentence as graphics file
 			sentence_set?
@@ -676,7 +690,7 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers'
 			return {:modal => command}
 
 		when ''
@@ -720,6 +734,22 @@ class GraphController
 		@graph.conf.layers.each do |l|
 			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
 		end
+		# speaker subgraphs
+		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map{|t| t.speaker}.include?(sp)}) != []
+			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => 'same')]}]
+			# induce speaker labels and layering of speaker graphs:
+			gv_speaker_nodes = []
+			speaker_graphs.each do |speaker_node, speaker_graph|
+				gv_speaker_nodes << speaker_graph.add_nodes(
+					's' + speaker_node.id,
+					{:shape => 'plaintext', :label => speaker_node['name'], :fontname => @graph.conf.font}
+				)
+				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => 'invis'}) if gv_speaker_nodes.length > 1
+			end
+			timeline_graph = viz_graph.subgraph(:rank => 'same')
+			gv_anchor = timeline_graph.add_nodes('anchor', {:style => 'invis'})
+			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => 'invis'})
+		end
 
 		@tokens.each_with_index do |token, i|
 			options = {
@@ -740,7 +770,25 @@ class GraphController
 			else
 				satzinfo[:textline] += token.token + ' '
 			end
-			token_graph.add_nodes(token.id, options)
+			unless token.speaker
+				token_graph.add_nodes(token.id, options)
+			else
+				# create token and point on timeline:
+				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options)
+				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
+				# add ordering edge from speaker to speaker's first token
+				viz_graph.add_edges('s' + token.speaker.id, gv_token, {:style => 'invis'}) if i == 0
+				# multiple lines between token and point on timeline in order to force correct order:
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
+				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
+				# order points on timeline:
+				if i > 0
+					viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => 'none'})
+				else
+					viz_graph.add_edges(gv_anchor, gv_time, {:style => 'invis'})
+				end
+			end
 		end
 
 		@nodes.each_with_index do |node, i|
