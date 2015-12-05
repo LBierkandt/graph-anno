@@ -298,6 +298,9 @@ function makeAnfrage(anfrage, params) {
 					case 'config':
 						openConfig();
 						return;
+					case 'speakers':
+						openSpeakers();
+						return;
 					case 'tagset':
 						openTagset();
 						return;
@@ -403,6 +406,25 @@ function openMetadata() {
 		});
 	}
 }
+function openSpeakers() {
+	if ($('#modal-background').css('display') != 'block') {
+		$.ajax({
+			url: '/speakers_form'
+		})
+		.done(function(data) {
+			$('#modal-content').html(data);
+			$('#new-speaker').click(function(){
+				var i = parseInt($('.speakers tbody:first-child tr:last-child').attr('no')) + 1;
+				$('.speakers tbody:first-child tr:last-child').after(
+					'<tr no="'+i+'"><td><input type="hidden" name="ids['+i+']"></input></td><td><textarea name="attributes['+i+']"></textarea></td></tr>'
+				);
+				return false;
+			});
+			$('#modal-background').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
 function openMakros() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
@@ -470,6 +492,17 @@ function sendMetadata() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_metadata',
+		dataType: 'json',
+		data: $('#modal-form').serialize()
+	})
+	.done(function(data) {
+		closeModal();
+	});
+}
+function sendSpeakers() {
+	$.ajax({
+		type: 'POST',
+		url: '/save_speakers',
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})

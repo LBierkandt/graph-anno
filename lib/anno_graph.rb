@@ -39,14 +39,22 @@ class NodeOrEdge
 end
 
 class AnnoNode < Node
+	attr_accessor :start, :end
+
 	def initialize(h)
 		super
 		@type = h[:type]
+		@start= h[:start]
+		@end  = h[:end]
 	end
 
 	# @return [Hash] the element transformed into a hash with all values casted to strings
 	def to_h
-		super.merge(:type => @type)
+		if @start || @end
+			super.merge(:type => @type, :start => @start, :end => @end)
+		else
+			super.merge(:type => @type)
+		end
 	end
 
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
@@ -92,12 +100,24 @@ class AnnoNode < Node
 			ordered_sister_nodes{|t| t.sentence === s}
 		elsif @type == 's'
 			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
-				first_token.ordered_sister_nodes{|t| t.sentence === s}
+				if first_token.speaker
+					child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
+				else
+					first_token.ordered_sister_nodes{|t| t.sentence === s}
+				end
 			else
 				[]
 			end
 		else
 			s.sentence_tokens
+		end
+	end
+
+	def speaker
+		if @type == 'sp'
+			self
+		else
+			parent_nodes{|e| e.type == 'sp'}[0]
 		end
 	end
 
@@ -438,6 +458,14 @@ class AnnoGraph < SearchableGraph
 		return n
 	end
 
+	# creates a new speaker node and adds it to self
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Node] the new node
+	def add_speaker_node(h)
+		h.merge!(:attr => {}) unless h[:attr]
+		add_node(h.merge(:type => 'sp'))
+	end
+
 	# creates a new edge and adds it to self
 	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
@@ -472,6 +500,13 @@ class AnnoGraph < SearchableGraph
 		e = add_edge(h.merge(:type => 's'))
 		h[:log].add_change(:action => :create, :element => e) if h[:log]
 		return e
+	end
+
+	# creates a new speaker edge and adds it to self
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Edge] the new edge
+	def add_speaker_edge(h)
+		add_edge(h.merge(:type => 'sp'))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
@@ -633,6 +668,10 @@ class AnnoGraph < SearchableGraph
 		else
 			[]
 		end
+	end
+
+	def speaker_nodes
+		@nodes.values.select{|n| n.type == 'sp'}
 	end
 
 	# builds token nodes from a list of words, concatenates them and appends them if a sentence is given and the given sentence contains tokens; if next_token is given, the new tokens are inserted before next_token; if last_token is given, the new tokens are inserted after last_token
