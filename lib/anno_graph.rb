@@ -100,7 +100,7 @@ class AnnoNode < Node
 			ordered_sister_nodes{|t| t.sentence === s}
 		elsif @type == 's'
 			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
-				if first_token.start
+				if first_token.speaker
 					child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
 				else
 					first_token.ordered_sister_nodes{|t| t.sentence === s}

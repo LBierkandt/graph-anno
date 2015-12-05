@@ -772,9 +772,10 @@ class GraphController
 				token_graph.add_nodes(token.id, options)
 			else
 				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options.merge(:width => token.end - token.start))
+				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options)
 				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
-				speaker_graphs[token.speaker].add_edges('s' + token.speaker.id, gv_token, {:style => 'invis'}) if i == 0
+				# add ordering edge from speaker to speaker's first token
+				viz_graph.add_edges('s' + token.speaker.id, gv_token, {:style => 'invis'}) if i == 0
 				# multiple lines between token and point on timeline in order to force correct order:
 				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
 				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
