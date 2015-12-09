@@ -81,7 +81,7 @@ class Node < NodeOrEdge
 			:type => @type
 		}
 		h.merge!(:start => @start, :end => @end) if @start || @end
-		@attr == {} ? h.reject{|k,v| k == :attr} : h
+		@attr.empty? ? h.reject{|k,v| k == :attr} : h
 	end
 
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
@@ -371,7 +371,7 @@ class Edge < NodeOrEdge
 			:id    => @id,
 			:type  => @type
 		}
-		@attr == {} ? h.reject{|k,v| k == :attr} : h
+		@attr.empty? ? h.reject{|k,v| k == :attr} : h
 	end
 
 	def inspect
@@ -1284,6 +1284,10 @@ class Attributes
 
 	def select(&block)
 		output.select(&block)
+	end
+
+	def empty?
+		@attr.empty? && @private_attr.empty?
 	end
 
 	# create hash by merging general and private attrs
