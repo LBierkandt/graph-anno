@@ -61,7 +61,7 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		@attr = Attributes.new(@graph, h[:raw], h[:attr])
+		@attr = Attributes.new(@graph, h[:raw], h[:attr], h[:private_attr])
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -76,12 +76,11 @@ class Node < NodeOrEdge
 	# @return [Hash] the node transformed into a hash with all values casted to strings
 	def to_h
 		h = {
-			:attr => @attr.to_h,
 			:id   => @id,
 			:type => @type
-		}
+		}.merge(@attr.to_h)
 		h.merge!(:start => @start, :end => @end) if @start || @end
-		@attr.empty? ? h.reject{|k,v| k == :attr} : h
+		h
 	end
 
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
@@ -340,7 +339,7 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		@attr = Attributes.new(@graph, h[:raw], h[:attr])
+		@attr = Attributes.new(@graph, h[:raw], h[:attr], h[:private_attr])
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
@@ -367,11 +366,9 @@ class Edge < NodeOrEdge
 		h = {
 			:start => @start.id,
 			:end   => @end.id,
-			:attr  => @attr.to_h,
 			:id    => @id,
 			:type  => @type
-		}
-		@attr.empty? ? h.reject{|k,v| k == :attr} : h
+		}.merge(@attr.to_h)
 	end
 
 	def inspect
@@ -1019,12 +1016,12 @@ class AnnoGraph
 		@allowed_anno.allowed_attributes(attr)
 	end
 
-	def set_annotator(h)
-		@current_annotator = get_annotator(h)
+	def set_annotator(name)
+		@current_annotator = get_annotator(name)
 	end
 
-	def get_annotator(h)
-		@annotators.select{|a| h.all?{|k, v| a.send(k) == v}}[0]
+	def get_annotator(name)
+		@annotators.select{|a| a.name == name}[0]
 	end
 
 	private
@@ -1213,17 +1210,19 @@ end
 class Attributes
 	@@generic_attrs = ['name', 'token']
 
-	def initialize(graph, raw, arg)
-		arg ||= {}
+	def initialize(graph, raw, attr, private_attr = nil)
+		attr ||= {}
+		private_attr ||= {}
 		@graph = graph
 		if raw
-			@attr = arg.select{|k, v| !k.match(/^\d+$/)}
-			private_attr_hash = arg.select{|k, v| k.match(/^\d+$/)}
-			@private_attr = Hash[private_attr_hash.map {|k, v| [@graph.get_annotator(:id => k.to_i), v] }]
+			# set directly
+			@attr = attr
+			@private_attr = Hash[private_attr.map {|k, v| [@graph.get_annotator(k), v] }]
 		else
+			# set via key-distinguishing function
 			@attr = {}
 			@private_attr = {}
-			self.merge!(arg)
+			self.merge!(attr)
 		end
 	end
 
@@ -1286,41 +1285,25 @@ class Attributes
 		output.select(&block)
 	end
 
-	def empty?
-		@attr.empty? && @private_attr.empty?
-	end
-
-	# create hash by merging general and private attrs
 	def to_h
-		@attr.merge(Hash[@private_attr.map {|annotator, value| [annotator.id, value] }])
-	end
-
-	# provides the to_json method needed by the JSON gem
-	def to_json(*a)
-		self.to_h.to_json(*a)
+		h = {}
+		h.merge!(:attr => @attr) unless @attr.empty?
+		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, value| [annotator.name, value] }]) unless @private_attr.empty?
+		h
 	end
 end
 
 class Annotator
-	attr_accessor :id, :name
+	attr_accessor :name
 
 	def initialize(h)
 		@graph = h[:graph]
 		@name = h[:name]
-		@id = new_id
-	end
-
-	def new_id
-		id_list = @graph.annotators.map{|a| a.id}
-		id = 1
-		id += 1 while id_list.include?(id)
-		return id
 	end
 
 	def to_h
 		{
-			:id => @id,
-			:name => @name,
+			:name => @name
 		}
 	end
 
