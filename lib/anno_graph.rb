@@ -498,6 +498,7 @@ class AnnoGraph
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
 			el[:id] = el[:ID] if version < 7
 		end
+		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(:name => a['name'], :graph => self)}
 		self.add_hash(nodes_and_edges)
 		if version >= 6
 			@anno_makros = nodes_and_edges['anno_makros'] || {}
