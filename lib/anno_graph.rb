@@ -411,8 +411,8 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators
-	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros, :multi_user, :user
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator
+	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros
 
 	# initializes empty graph
 	def initialize
@@ -426,8 +426,9 @@ class AnnoGraph
 		@anno_makros = {}
 		@makros = []
 		@annotators = []
-		@user = ''
-		@multi_user = true
+		@annotators << Annotator.new(:name => 'klaus', :graph => self)
+		@annotators << Annotator.new(:name => 'peter', :graph => self)
+		@current_annotator = nil
 		create_layer_makros
 	end
 
@@ -771,13 +772,6 @@ class AnnoGraph
 		end
 		node.delete(log_step)
 	end
-	# @return [Hash] the graph in hash format: {'nodes' => [...], 'edges' => [...]}
-	def to_h
-		{
-			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
-			'edges' => @edges.values.map{|e| e.to_h}
-		}
-	end
 
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
 	def to_h
@@ -790,7 +784,8 @@ class AnnoGraph
 			merge('info' => @info).
 			merge('anno_makros' => @anno_makros).
 			merge('allowed_anno' => @allowed_anno).
-			merge('search_makros' => @makros_plain)
+			merge('search_makros' => @makros_plain).
+			merge('annotators' => @annotators)
 	end
 
 	def inspect
@@ -1024,6 +1019,14 @@ class AnnoGraph
 		@allowed_anno.allowed_attributes(attr)
 	end
 
+	def set_annotator(h)
+		@current_annotator = get_annotator(h)
+	end
+
+	def get_annotator(h)
+		@annotators.select{|a| h.all?{|k, v| a.send(k) == v}}[0]
+	end
+
 	private
 
 	def create_layer_makros
@@ -1213,18 +1216,21 @@ class Attributes
 	def initialize(graph, raw, arg)
 		arg ||= {}
 		@graph = graph
-		if @graph.multi_user && !raw
-			@attr = {}
-			self.merge!(arg)
+		if raw
+			@attr = arg.select{|k, v| !k.match(/^\d+$/)}
+			private_attr_hash = arg.select{|k, v| k.match(/^\d+$/)}
+			@private_attr = Hash[private_attr_hash.map {|k, v| [@graph.get_annotator(:id => k.to_i), v] }]
 		else
-			@attr = arg
+			@attr = {}
+			@private_attr = {}
+			self.merge!(arg)
 		end
 	end
 
 	def output
-		if @graph.multi_user
-			(@attr[@graph.user] || {}).merge(
-				(@attr[''] || {}).select{|k, v| @@generic_attrs.include?(k)}
+		if @graph.current_annotator
+			(@private_attr[@graph.current_annotator] || {}).merge(
+				@attr.select{|k, v| @@generic_attrs.include?(k)}
 			)
 		else
 			@attr
@@ -1236,12 +1242,12 @@ class Attributes
 	end
 
 	def []=(key, value)
-		if @graph.multi_user
+		if @graph.current_annotator
 			if @@generic_attrs.include?(key)
-				@attr[''][key] = value
+				@attr[key] = value
 			else
-				@attr[@graph.user] ||= {}
-				@attr[@graph.user][key] = value
+				@private_attr[@graph.current_annotator] ||= {}
+				@private_attr[@graph.current_annotator][key] = value
 			end
 		else
 			@attr[key] = value
@@ -1253,11 +1259,10 @@ class Attributes
 	end
 
 	def merge!(hash)
-		if @graph.multi_user
-			@attr[''] ||= {}
-			@attr[@graph.user] ||= {}
-			@attr[''].merge!(hash.select{|k, v| @@generic_attrs.include?(k)})
-			@attr[@graph.user].merge!(hash.reject{|k, v| @@generic_attrs.include?(k)})
+		if @graph.current_annotator
+			@private_attr[@graph.current_annotator] ||= {}
+			@attr.merge!(hash.select{|k, v| @@generic_attrs.include?(k)})
+			@private_attr[@graph.current_annotator].merge!(hash.reject{|k, v| @@generic_attrs.include?(k)})
 		else
 			@attr.merge!(hash)
 		end
@@ -1265,9 +1270,9 @@ class Attributes
 	end
 
 	def remove_empty!
-		if @graph.multi_user
-			@attr[''].keep_if{|k, v| v}
-			@attr[@graph.user].keep_if{|k, v| v}
+		if @graph.current_annotator
+			@attr.keep_if{|k, v| v}
+			@private_attr[@graph.current_annotator].keep_if{|k, v| v}
 		else
 			@attr.keep_if{|k, v| v}
 		end
@@ -1281,10 +1286,12 @@ class Attributes
 		output.select(&block)
 	end
 
+	# create hash by merging general and private attrs
 	def to_h
-		@attr
+		@attr.merge(Hash[@private_attr.map {|annotator, value| [annotator.id, value] }])
 	end
 
+	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)
 	end
@@ -1311,6 +1318,11 @@ class Annotator
 			:id => @id,
 			:name => @name,
 		}
+	end
+
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		self.to_h.to_json(*a)
 	end
 end
 

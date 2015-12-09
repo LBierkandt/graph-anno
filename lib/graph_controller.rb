@@ -596,7 +596,7 @@ class GraphController
 		when 'user'
 			@user = parameters[:string]
 			@log.user = @user
-			@graph.user = @user
+			@graph.set_annotator(:name => @user)
 
 		when 'del' # delete sentence
 			sentences = if parameters[:words] != []
