@@ -275,16 +275,19 @@ th {
 #modal-form input[type="text"] {
 	width: 100%;
 }
-.metadata .modal-form-element, .metadata table, .allowed_annotations .modal-form-element, .allowed_annotations table, .makros .modal-form-element, .makros table {
+.metadata .modal-form-element, .metadata table, .allowed_annotations .modal-form-element, .allowed_annotations table, .makros .modal-form-element, .makros table, .speakers .modal-form-element, .speakers table {
 	width: 100%;
 }
-.metadata td:first-child, .allowed_annotations td:first-child, .makros td:first-child {
+.metadata td:first-child, .allowed_annotations td:first-child, .makros td:first-child, .speakers td:first-child {
 	vertical-align: top;
 	width: 8em;
 }
 /* .metadata textarea {
 	width: 20em;
 } */
+.speakers textarea {
+	height: 5em;
+}
 .hidden_word {
 	color: #888;
 }

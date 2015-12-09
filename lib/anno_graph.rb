@@ -54,7 +54,7 @@ class NodeOrEdge
 end
 
 class Node < NodeOrEdge
-	attr_accessor :id, :in, :out
+	attr_accessor :id, :in, :out, :start, :end
 
 	# initializes node
 	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
@@ -65,6 +65,8 @@ class Node < NodeOrEdge
 		@in = []
 		@out = []
 		@type = h[:type]
+		@start= h[:start]
+		@end  = h[:end]
 	end
 
 	def inspect
@@ -78,6 +80,7 @@ class Node < NodeOrEdge
 			:id   => @id,
 			:type => @type
 		}
+		h.merge!(:start => @start, :end => @end) if @start || @end
 		@attr == {} ? h.reject{|k,v| k == :attr} : h
 	end
 
@@ -144,12 +147,24 @@ class Node < NodeOrEdge
 			ordered_sister_nodes{|t| t.sentence === s}
 		elsif @type == 's'
 			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
-				first_token.ordered_sister_nodes{|t| t.sentence === s}
+				if first_token.speaker
+					child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
+				else
+					first_token.ordered_sister_nodes{|t| t.sentence === s}
+				end
 			else
 				[]
 			end
 		else
 			s.sentence_tokens
+		end
+	end
+
+	def speaker
+		if @type == 'sp'
+			self
+		else
+			parent_nodes{|e| e.type == 'sp'}[0]
 		end
 	end
 
@@ -396,7 +411,7 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id
 	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros, :multi_user, :user
 
 	# initializes empty graph
@@ -617,6 +632,14 @@ class AnnoGraph
 		return n
 	end
 
+	# creates a new speaker node and adds it to self
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Node] the new node
+	def add_speaker_node(h)
+		h.merge!(:attr => {}) unless h[:attr]
+		add_node(h.merge(:type => 'sp'))
+	end
+
 	# creates a new edge and adds it to self
 	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
@@ -651,6 +674,13 @@ class AnnoGraph
 		e = add_edge(h.merge(:type => 's'))
 		h[:log].add_change(:action => :create, :element => e) if h[:log]
 		return e
+	end
+
+	# creates a new speaker edge and adds it to self
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Edge] the new edge
+	def add_speaker_edge(h)
+		add_edge(h.merge(:type => 'sp'))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
@@ -788,24 +818,23 @@ class AnnoGraph
 	# builds a clone of self, but does not clone the nodes and edges
 	# @return [Graph] the clone
 	def clone
-		new_graph = self.class.new
-		new_graph.nodes = @nodes.clone
-		new_graph.edges = @edges.clone
-		new_graph.highest_node_id = @highest_node_id
-		new_graph.highest_edge_id = @highest_edge_id
-		new_graph.clone_graph_info(self)
-		return new_graph
+		new_graph = AnnoGraph.new
+		return new_graph.clone_graph(self)
 	end
 
-	# sets self's configuration to the cloned configuration of the given graph
-	# @param other_graph [Graph] the other graph
-	def clone_graph_info(other_graph)
+	# makes self a clone of another graph
+	def clone_graph(other_graph)
+		@nodes = other_graph.nodes.clone
+		@edges = other_graph.edges.clone
+		@highest_node_id = other_graph.highest_node_id
+		@highest_edge_id = other_graph.highest_edge_id
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
 		@allowed_anno = other_graph.allowed_anno.clone
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
+		return self
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
@@ -839,6 +868,10 @@ class AnnoGraph
 		else
 			[]
 		end
+	end
+
+	def speaker_nodes
+		@nodes.values.select{|n| n.type == 'sp'}
 	end
 
 	# builds token nodes from a list of words, concatenates them and appends them if a sentence is given and the given sentence contains tokens; if next_token is given, the new tokens are inserted before next_token; if last_token is given, the new tokens are inserted after last_token

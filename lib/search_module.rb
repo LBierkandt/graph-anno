@@ -466,7 +466,7 @@ module SearchableGraph
 						el.annotate(attrs)
 					end
 				when 'n'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.class == Node}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					unless nodes.empty?
 						add_anno_node(
 							:attr => attrs,
@@ -476,8 +476,8 @@ module SearchableGraph
 				when 'e'
 					start_nodes = *tg.ids[command[:ids][0]]
 					end_nodes   = *tg.ids[command[:ids][1]]
-					start_nodes.select!{|e| e.class == Node}
-					end_nodes.select!{|e| e.class == Node}
+					start_nodes.select!{|e| e.is_a?(Node)}
+					end_nodes.select!{|e| e.is_a?(Node)}
 					start_nodes.product(end_nodes).each do |start_node, end_node|
 						add_anno_edge(
 							:start => start_node,
@@ -486,7 +486,7 @@ module SearchableGraph
 						)
 					end
 				when 'p', 'g'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.class == Node}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					unless nodes.empty?
 						add_parent_node(
 							nodes,
@@ -496,7 +496,7 @@ module SearchableGraph
 						)
 					end
 				when 'c', 'h'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.class == Node}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					unless nodes.empty?
 						add_child_node(
 							nodes,
@@ -512,24 +512,24 @@ module SearchableGraph
 						search_result_preserved = false
 					end
 				when 'ni'
-					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.class == Edge}
+					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Edge)}
 					edges.each do |e|
 						insert_node(e, attrs)
 						search_result_preserved = false
 					end
 				when 'di', 'do'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.class == Node}
+					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					nodes.each do |n|
 						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
 						search_result_preserved = false
 					end
 				when 'tb', 'ti'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.class == Node && e.type == 't'}.first
+					node = nodes.select{|e| e.is_a?(Node) && e.type == 't'}.first
 					build_tokens(command[:words][1..-1], :next_token => node)
 				when 'ta'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.class == Node && e.type == 't'}.last
+					node = nodes.select{|e| e.is_a?(Node) && e.type == 't'}.last
 					build_tokens(command[:words][1..-1], :last_token => node)
 				when 'l'
 				end
@@ -600,37 +600,37 @@ class NodeOrEdge
 				return false
 			end
 		when 'in'
-			if self.class == Node
+			if self.is_a?(Node)
 				return @in.select{|k| k.fulfil?(bedingung[:cond])}.length
 			else
 				return 1
 			end
 		when 'out'
-			if self.class == Node
+			if self.is_a?(Node)
 				return @out.select{|k| k.fulfil?(bedingung[:cond])}.length
 			else
 				return 1
 			end
 		when 'link'
-			if self.class == Node
+			if self.is_a?(Node)
 				return self.links(bedingung[:arg]).length
 			else
 				return 1
 			end
 		when 'token'
-			if self.class == Node
+			if self.is_a?(Node)
 				return @type == 't'
 			else
 				return false
 			end
 		when 'start'
-			if self.class == Edge && !@start.fulfil?(bedingung[:cond])
+			if self.is_a?(Edge) && !@start.fulfil?(bedingung[:cond])
 				return false
 			else
 				return true
 			end
 		when 'end'
-			if self.class == Edge && !@end.fulfil?(bedingung[:cond])
+			if self.is_a?(Edge) && !@end.fulfil?(bedingung[:cond])
 				return false
 			else
 				return true
@@ -860,13 +860,13 @@ class Automat
 				schritt_in_liste(h.clone, liste, false)
 			end
 		when :edge
-			if nk.class == Edge
+			if nk.is_a?(Edge)
 				schritt_in_liste(h.clone, liste) if forward and nk.fulfil?(z.uebergang)
 			else # wenn das aktuelle Element ein Knoten ist
 				schritt_in_liste(h.clone, liste, false)
 			end
 		when :redge
-			if nk.class == Edge
+			if nk.is_a?(Edge)
 				schritt_in_liste(h.clone, liste) if !forward and nk.fulfil?(z.uebergang)
 			else # wenn das aktuelle Element ein Knoten ist
 				schritt_in_liste(h.clone, liste, false)
