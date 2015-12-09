@@ -411,7 +411,7 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators
 	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros, :multi_user, :user
 
 	# initializes empty graph
@@ -425,6 +425,7 @@ class AnnoGraph
 		@allowed_anno = Tagset.new
 		@anno_makros = {}
 		@makros = []
+		@annotators = []
 		@user = ''
 		@multi_user = true
 		create_layer_makros
@@ -1286,6 +1287,30 @@ class Attributes
 
 	def to_json(*a)
 		self.to_h.to_json(*a)
+	end
+end
+
+class Annotator
+	attr_accessor :id, :name
+
+	def initialize(h)
+		@graph = h[:graph]
+		@name = h[:name]
+		@id = new_id
+	end
+
+	def new_id
+		id_list = @graph.annotators.map{|a| a.id}
+		id = 1
+		id += 1 while id_list.include?(id)
+		return id
+	end
+
+	def to_h
+		{
+			:id => @id,
+			:name => @name,
+		}
 	end
 end
 
