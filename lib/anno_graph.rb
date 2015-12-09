@@ -768,13 +768,6 @@ class AnnoGraph
 		end
 		node.delete(log_step)
 	end
-	# @return [Hash] the graph in hash format: {'nodes' => [...], 'edges' => [...]}
-	def to_h
-		{
-			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
-			'edges' => @edges.values.map{|e| e.to_h}
-		}
-	end
 
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
 	def to_h
