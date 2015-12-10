@@ -61,7 +61,7 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		@attr = Attributes.new(@graph, h[:raw], h[:attr], h[:private_attr])
+		@attr = Attributes.new(h)
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -339,7 +339,7 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		@attr = Attributes.new(@graph, h[:raw], h[:attr], h[:private_attr])
+		@attr = Attributes.new(h)
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
@@ -1211,13 +1211,13 @@ end
 class Attributes
 	@@generic_attrs = ['name', 'token']
 
-	def initialize(graph, raw, attr, private_attr = nil)
-		attr ||= {}
-		private_attr ||= {}
-		@graph = graph
-		if raw
+	def initialize(h)
+		attr = h[:attr] || {}
+		private_attr = h[:private_attr] || {}
+		@graph = h[:graph]
+		if h[:raw]
 			# set directly
-			@attr = attr
+			@attr = attr.clone
 			@private_attr = Hash[private_attr.map {|k, v| [@graph.get_annotator(k), v] }]
 		else
 			# set via key-distinguishing function
@@ -1276,6 +1276,7 @@ class Attributes
 		else
 			@attr.keep_if{|k, v| v}
 		end
+		self
 	end
 
 	def reject(&block)
@@ -1286,10 +1287,14 @@ class Attributes
 		output.select(&block)
 	end
 
+	def clone
+		Attributes.new({:graph =>@graph, :raw => true}.merge(self.to_h))
+	end
+
 	def to_h
 		h = {}
-		h.merge!(:attr => @attr) unless @attr.empty?
-		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, value| [annotator.name, value] }]) unless @private_attr.empty?
+		h.merge!(:attr => @attr.clone) unless @attr.empty?
+		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.name, attr.clone] }]) unless @private_attr.empty?
 		h
 	end
 end

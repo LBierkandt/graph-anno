@@ -122,8 +122,8 @@ class Change
 			h[:element].to_h
 		when :update
 			{
-				:before => h[:element].attr.clone,
-				:after  => h[:element].attr.merge(h[:attr]).select{|k, v| v},
+				:before => h[:element].attr.to_h,
+				:after  => h[:element].attr.clone.merge!(h[:attr]).remove_empty!.to_h
 			}
 		end
 	end
@@ -157,9 +157,9 @@ class Change
 	def create
 		case @element_type
 		when :node
-			@step.log.graph.add_node(@data)
+			@step.log.graph.add_node(@data.merge(:raw => true))
 		when :edge
-			@step.log.graph.add_edge(@data)
+			@step.log.graph.add_edge(@data.merge(:raw => true))
 		end
 	end
 
@@ -168,7 +168,7 @@ class Change
 	end
 
 	def update(before_or_after = :after)
-		element.attr = @data[before_or_after]
+		element.attr = Attributes.new({:graph => @step.log.graph, :raw => true}.merge(@data[before_or_after]))
 	end
 
 	def element
