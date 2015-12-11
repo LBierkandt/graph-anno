@@ -198,10 +198,11 @@ class GraphController
 	def save_speakers
 		@graph.info = {}
 		@sinatra.params['ids'].each do |i, id|
+			attributes = @sinatra.params['attributes'][i].parse_parameters[:attributes]
 			if id != ''
-				@graph.nodes[id].attr = @sinatra.params['attributes'][i].parse_parameters[:attributes]
+				@graph.nodes[id].attr = Attributes.new(:graph => @graph, :raw => true, :attr => attributes)
 			else
-				@graph.add_speaker_node(:attr => @sinatra.params['attributes'][i].parse_parameters[:attributes])
+				@graph.add_speaker_node(:attr => attributes)
 			end
 		end
 		return true.to_json

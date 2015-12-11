@@ -13,7 +13,7 @@
             %td
               %input{:name => "ids[0]", :type => "hidden"}
             %td
-              %textarea{:name => "values[0]"}
+              %textarea{:name => "attributes[0]"}
         - else
           - graph.speaker_nodes.each_with_index do |speaker, i|
             %tr{:no => i}
@@ -22,7 +22,7 @@
                 %input{:name => "ids[#{i}]", :type => "hidden", :value => speaker.id}
               %td
                 %textarea{:name => "attributes[#{i}]"}
-                  - speaker.attr.each do |k, v|
+                  - speaker.attr.output.each do |k, v|
                     = "#{k}:#{v}&#10;"
       //%tbody
       //  %tr
