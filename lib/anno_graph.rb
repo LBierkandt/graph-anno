@@ -496,7 +496,7 @@ class AnnoGraph
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
 			el[:id] = el[:ID] if version < 7
 		end
-		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(:id => a['id'], :name => a['name'], :graph => self)}
+		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		self.add_hash(nodes_and_edges)
 		if version >= 6
 			@anno_makros = nodes_and_edges['anno_makros'] || {}
@@ -1430,5 +1430,11 @@ class Hash
 	# @return [Hash] the new Hash
 	def map_hash(&block)
 		self.merge(self){|k, v| block.call(k, v)}
+	end
+
+	# creates a new hash that has all keys casted to symbols
+	# @return [Hash] the new Hash
+	def symbolize_keys
+		Hash[self.map{ |k, v| [k.to_sym, v] }]
 	end
 end
