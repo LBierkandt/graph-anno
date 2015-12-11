@@ -41,7 +41,7 @@ class GraphController
 		@show_refs = true
 		@found = nil
 		@filter = {:mode => 'unfilter'}
-		@user = ''
+		@user = nil
 	end
 
 	def root
@@ -620,9 +620,8 @@ class GraphController
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 		when 'user'
-			@user = parameters[:string]
+			@user = @graph.set_annotator(:name => parameters[:string])
 			@log.user = @user
-			@graph.set_annotator(:name => @user)
 
 		when 'del' # delete sentence
 			sentences = if parameters[:words] != []

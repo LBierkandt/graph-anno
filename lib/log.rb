@@ -2,7 +2,7 @@ class Log
 	attr_reader :steps, :graph, :current_index
 	attr_accessor :user
 
-	def initialize(graph, user = '')
+	def initialize(graph, user = nil)
 		@graph = graph
 		@steps = []
 		@current_index = -1
@@ -12,8 +12,8 @@ class Log
 	# @return [Hash] a hash representing the log
 	def to_h
 		{
-			'steps' => @steps.map{|step| step.to_h},
-			'current_index' => @current_index,
+			:steps => @steps.map{|step| step.to_h},
+			:current_index => @current_index,
 		}
 	end
 
@@ -80,10 +80,10 @@ class Step
 	# @return [Hash] a hash representing the step
 	def to_h
 		{
-			'user' => @user,
-			'time' => @time.to_s,
-			'command' => @command,
-			'changes' => @changes.map{|change| change.to_h},
+			:user => @user ? @user.id : nil,
+			:time => @time.to_s,
+			:command => @command,
+			:changes => @changes.map{|change| change.to_h},
 		}
 	end
 
@@ -131,9 +131,9 @@ class Change
 	# @return [Hash] a hash representing the change
 	def to_h
 		{
-			'action' => @action,
-			'element' => "#{@element_type}_#{@element_id}",
-			'data' => @data,
+			:action => @action,
+			:element => "#{@element_type}_#{@element_id}",
+			:data => @data,
 		}
 	end
 
