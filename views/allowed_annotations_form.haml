@@ -25,7 +25,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-allowed-annotations Add new key-values pair
+            %button{:onclick => 'newAllowedAnnotation(); return false;'}
+              Add new key-values pair
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

@@ -27,7 +27,8 @@
       //%tbody
       //  %tr
       //    %td{:colspan => 2}
-      //      %button#new-speaker Add speaker
+      //      %button{:onclick => 'newSpeaker(); return false;'}
+      //        Add speaker
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

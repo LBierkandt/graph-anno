@@ -25,7 +25,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-metadata Add metadata annotation
+            %button{:onclick => 'newMetadata(); return false;'}
+              Add metadata annotation
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

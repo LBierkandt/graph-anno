@@ -112,11 +112,11 @@ function taste(tast) {
 	}
 	else if (tast.which == 120) {
 		tast.preventDefault();
-		openMetadata();
+		openModal('metadata');
 	}
 	else if (tast.which == 121) {
 		tast.preventDefault();
-		openTagset();
+		openModal('allowed_annotations');
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
@@ -296,22 +296,22 @@ function makeAnfrage(anfrage, params) {
 						openImport(antworthash['type']);
 						return;
 					case 'annotators':
-						openAnnotators();
+						openModal('annotators');
 						return;
 					case 'config':
 						openConfig();
 						return;
 					case 'speakers':
-						openSpeakers();
+						openModal('speakers');
 						return;
 					case 'tagset':
-						openTagset();
+						openModal('allowed_annotations');
 						return;
 					case 'metadata':
-						openMetadata();
+						openModal('metadata');
 						return;
 					case 'makros':
-						openMakros();
+						openModal('makros');
 						return;
 				}
 				var txtcmd = document.getElementById('txtcmd');
@@ -390,102 +390,49 @@ function openConfig() {
 		});
 	}
 }
-function openMetadata() {
+function openModal(type) {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
-			url: '/metadata_form'
+			url: '/'+type+'_form'
 		})
 		.done(function(data) {
 			$('#modal-content').html(data);
-			$('#new-metadata').click(function(){
-				var i = parseInt($('.metadata tbody:first-child tr:last-child').attr('no')) + 1;
-				$('.metadata tbody:first-child tr:last-child').after(
-					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
-				);
-				return false;
-			});
 			$('#modal-background').show();
 			window.onkeydown = configKeys;
 		});
 	}
 }
-function openSpeakers() {
-	if ($('#modal-background').css('display') != 'block') {
-		$.ajax({
-			url: '/speakers_form'
-		})
-		.done(function(data) {
-			$('#modal-content').html(data);
-			$('#new-speaker').click(function(){
-				var i = parseInt($('.speakers tbody:first-child tr:last-child').attr('no')) + 1;
-				$('.speakers tbody:first-child tr:last-child').after(
-					'<tr no="'+i+'"><td><input type="hidden" name="ids['+i+']"></input></td><td><textarea name="attributes['+i+']"></textarea></td></tr>'
-				);
-				return false;
-			});
-			$('#modal-background').show();
-			window.onkeydown = configKeys;
-		});
-	}
+function newMetadata() {
+	var i = parseInt($('.metadata tbody:first-child tr:last-child').attr('no')) + 1;
+	$('.metadata tbody:first-child tr:last-child').after(
+		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
+	);
 }
-function openAnnotators() {
-	if ($('#modal-background').css('display') != 'block') {
-		$.ajax({
-			url: '/annotators_form'
-		})
-		.done(function(data) {
-			$('#modal-content').html(data);
-			$('#new-annotator').click(function(){
-				var i = parseInt($('.annotators tbody:first-child tr:last-child').attr('no')) + 1;
-				$.ajax({
-					url: '/new_annotator/' + i
-				}).done(function(data) {
-					$('.annotators tbody:first-child tr:last-child').after(data);
-				});
-				return false;
-			});
-			$('#modal-background').show();
-			window.onkeydown = configKeys;
-		});
-	}
+function newSpeaker() {
+	var i = parseInt($('.speakers tbody:first-child tr:last-child').attr('no')) + 1;
+	$('.speakers tbody:first-child tr:last-child').after(
+		'<tr no="'+i+'"><td><input type="hidden" name="ids['+i+']"></input></td><td><textarea name="attributes['+i+']"></textarea></td></tr>'
+	);
 }
-function openMakros() {
-	if ($('#modal-background').css('display') != 'block') {
-		$.ajax({
-			url: '/makros_form'
-		})
-		.done(function(data) {
-			$('#modal-content').html(data);
-			$('#new-makro').click(function(){
-				var i = parseInt($('.makros tbody:first-child tr:last-child').attr('no')) + 1;
-				$('.makros tbody:first-child tr:last-child').after(
-					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><input name="values['+i+']" type="text"></td></tr>'
-				);
-				return false;
-			});
-			$('#modal-background').show();
-			window.onkeydown = configKeys;
-		});
-	}
+function newAnnotator() {
+	var i = parseInt($('.annotators tbody:first-child tr:last-child').attr('no')) + 1;
+	$.ajax({
+		url: '/new_annotator/' + i
+	}).done(function(data) {
+		$('.annotators tbody:first-child tr:last-child').after(data);
+	});
 }
-function openTagset() {
-	if ($('#modal-background').css('display') != 'block') {
-		$.ajax({
-			url: '/allowed_annotations_form'
-		})
-		.done(function(data) {
-			$('#modal-content').html(data);
-			$('#new-allowed-annotations').click(function(){
-				var i = parseInt($('.allowed_annotations tbody:first-child tr:last-child').attr('no')) + 1;
-				$('.allowed_annotations tbody:first-child tr:last-child').after(
-					'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
-				);
-				return false;
-			});
-			$('#modal-background').show();
-			window.onkeydown = configKeys;
-		});
-	}
+function newMakro() {
+	var i = parseInt($('.makros tbody:first-child tr:last-child').attr('no')) + 1;
+	$('.makros tbody:first-child tr:last-child').after(
+		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><input name="values['+i+']" type="text"></td></tr>'
+	);
+}
+function newAllowedAnnotation() {
+	var i = parseInt($('.allowed_annotations tbody:first-child tr:last-child').attr('no')) + 1;
+	$('.allowed_annotations tbody:first-child tr:last-child').after(
+		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
+	);
 }
 function sendConfig() {
 	$.ajax({

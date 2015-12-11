@@ -23,7 +23,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-annotator Add annotator
+            %button{:onclick => 'newAnnotator(); return false;'}
+              Add annotator
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

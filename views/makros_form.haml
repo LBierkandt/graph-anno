@@ -24,7 +24,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-makro Add annotation makro
+            %button{:onclick => 'newMakro(); return false;'}
+              Add annotation makro
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }
