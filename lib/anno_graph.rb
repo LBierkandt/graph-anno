@@ -736,16 +736,20 @@ class AnnoGraph
 			:log => log_step
 		)
 		add_anno_edge(
-			:start => edge.start,
-			:end => new_node,
-			:attr => edge.attr.clone,
-			:log => log_step
+			{
+				:start => edge.start,
+				:end => new_node,
+				:raw => true,
+				:log => log_step
+			}.merge(edge.attr.to_h)
 		)
 		add_anno_edge(
-			:start => new_node,
-			:end => edge.end,
-			:attr => edge.attr.clone,
-			:log => log_step
+			{
+				:start => new_node,
+				:end => edge.end,
+				:raw => true,
+				:log => log_step
+			}.merge(edge.attr.to_h)
 		)
 		edge.delete(log_step)
 	end
@@ -759,10 +763,12 @@ class AnnoGraph
 			node.out.select{|e| e.type == 'a'}.each do |out_edge|
 				devisor = mode == :in ? out_edge : in_edge
 				add_anno_edge(
-					:start => in_edge.start,
-					:end => out_edge.end,
-					:attr => devisor.attr.clone,
-					:log => log_step
+					{
+						:start => in_edge.start,
+						:end => out_edge.end,
+						:raw => true,
+						:log => log_step
+					}.merge(devisor.attr.to_h)
 				)
 			end
 		end
