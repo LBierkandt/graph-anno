@@ -196,7 +196,6 @@ class GraphController
 	end
 
 	def save_speakers
-		@graph.info = {}
 		@sinatra.params['ids'].each do |i, id|
 			if id != ''
 				@graph.nodes[id].attr = @sinatra.params['attributes'][i].parse_parameters[:attributes]
