@@ -1209,8 +1209,6 @@ class TagsetRule
 end
 
 class Attributes
-	@@generic_attrs = ['name', 'token']
-
 	def initialize(h)
 		attr = h[:attr] || {}
 		private_attr = h[:private_attr] || {}
@@ -1227,10 +1225,14 @@ class Attributes
 		end
 	end
 
+	def generic_attrs
+		['name', 'token'] + @graph.conf.layers.map{|l| l.attr}
+	end
+
 	def output
 		if @graph.current_annotator
 			(@private_attr[@graph.current_annotator] || {}).merge(
-				@attr.select{|k, v| @@generic_attrs.include?(k)}
+				@attr.select{|k, v| generic_attrs.include?(k)}
 			)
 		else
 			@attr
@@ -1243,7 +1245,7 @@ class Attributes
 
 	def []=(key, value)
 		if @graph.current_annotator
-			if @@generic_attrs.include?(key)
+			if generic_attrs.include?(key)
 				@attr[key] = value
 			else
 				@private_attr[@graph.current_annotator] ||= {}
@@ -1261,8 +1263,8 @@ class Attributes
 	def annotate_with(hash)
 		if @graph.current_annotator
 			@private_attr[@graph.current_annotator] ||= {}
-			@attr.merge!(hash.select{|k, v| @@generic_attrs.include?(k)})
-			@private_attr[@graph.current_annotator].merge!(hash.reject{|k, v| @@generic_attrs.include?(k)})
+			@attr.merge!(hash.select{|k, v| generic_attrs.include?(k)})
+			@private_attr[@graph.current_annotator].merge!(hash.reject{|k, v| generic_attrs.include?(k)})
 		else
 			@attr.merge!(hash)
 		end
