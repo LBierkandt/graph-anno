@@ -491,7 +491,6 @@ function sendConfig() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_config',
-		async: true,
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})
@@ -512,54 +511,10 @@ function sendConfig() {
 		}
 	});
 }
-function sendMetadata() {
+function sendModal(type) {
 	$.ajax({
 		type: 'POST',
-		url: '/save_metadata',
-		dataType: 'json',
-		data: $('#modal-form').serialize()
-	})
-	.done(function(data) {
-		closeModal();
-	});
-}
-function sendSpeakers() {
-	$.ajax({
-		type: 'POST',
-		url: '/save_speakers',
-		dataType: 'json',
-		data: $('#modal-form').serialize()
-	})
-	.done(function(data) {
-		closeModal();
-	});
-}
-function sendAnnotators() {
-	$.ajax({
-		type: 'POST',
-		url: '/save_annotators',
-		dataType: 'json',
-		data: $('#modal-form').serialize()
-	})
-	.done(function(data) {
-		closeModal();
-	});
-}
-function sendMakros() {
-	$.ajax({
-		type: 'POST',
-		url: '/save_makros',
-		dataType: 'json',
-		data: $('#modal-form').serialize()
-	})
-	.done(function(data) {
-		closeModal();
-	});
-}
-function sendAllowedAnnotations() {
-	$.ajax({
-		type: 'POST',
-		url: '/save_allowed_annotations',
+		url: '/save_' + type,
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})

@@ -1,4 +1,4 @@
-%form#modal-form.allowed_annotations{ :name => 'config', :onsubmit => 'sendAllowedAnnotations(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.allowed_annotations{ :name => 'config', :onsubmit => 'sendModal("allowed_annotations"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message
   %div.modal-form-element
     %table
