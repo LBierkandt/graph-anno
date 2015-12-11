@@ -1,0 +1,30 @@
+%form#modal-form.annotators{ :name => 'config', :onsubmit => 'sendAnnotators(); return false;', :onreset => 'closeModal(); return false;' }
+  #modal-warning.error_message
+  %div.modal-form-element
+    %table
+      %tbody
+        %tr
+          %th{ :colspan => 2 } Annotators
+        %tr
+          %th ID
+          %th Name
+          %th Infos
+        - if graph.annotators == []
+          %tr{:no => '0'}
+            %td
+              %input{:name => "ids[0]", :type => "hidden", :value => 0}
+            %td
+              %input{:name => "names[0]"}
+            %td
+              %textarea{:name => "infos[0]"}
+        - else
+          - graph.annotators.each_with_index do |annotator, i|
+            = haml :annotators_form_segment, :locals => {:annotator => annotator, :i => i}
+      %tbody
+        %tr
+          %td{:colspan => 2}
+            %button#new-annotator Add annotator
+
+  #modal-submit.bottom-block
+    %input{ :type => 'reset', :value => 'Cancel' }
+    %input{ :type => 'submit', :value => 'Save' }

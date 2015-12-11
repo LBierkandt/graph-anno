@@ -143,7 +143,7 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'allowed_annotations', 'speakers'].each do |form_name|
+	['config', 'metadata', 'makros', 'allowed_annotations', 'speakers', 'annotators'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
@@ -196,13 +196,28 @@ class GraphController
 	end
 
 	def save_speakers
-		@graph.info = {}
 		@sinatra.params['ids'].each do |i, id|
 			attributes = @sinatra.params['attributes'][i].parse_parameters[:attributes]
 			if id != ''
 				@graph.nodes[id].attr = Attributes.new(:graph => @graph, :raw => true, :attr => attributes)
 			else
 				@graph.add_speaker_node(:attr => attributes)
+			end
+		end
+		return true.to_json
+	end
+
+	def save_annotators
+		@sinatra.params['ids'].each do |i, id|
+			if annotator = @graph.get_annotator(:id => id)
+				annotator.name = @sinatra.params['names'][i]
+				annotator.info = @sinatra.params['infos'][i]
+			else
+				@graph.annotators << Annotator.new(
+					:graph => @graph,
+					:name => @sinatra.params['names'][i],
+					:info => @sinatra.params['infos'][i]
+				)
 			end
 		end
 		return true.to_json
@@ -239,6 +254,16 @@ class GraphController
 				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
 				:i => i,
 				:layers => @graph.conf.layers
+			}
+		)
+	end
+
+	def new_annotator(i)
+		@sinatra.haml(
+			:annotators_form_segment,
+			:locals => {
+				:annotator => Annotator.new(:graph => @graph, :id => 0),
+				:i => i
 			}
 		)
 	end
@@ -597,7 +622,7 @@ class GraphController
 		when 'user'
 			@user = parameters[:string]
 			@log.user = @user
-			@graph.set_annotator(@user)
+			@graph.set_annotator(:name => @user)
 
 		when 'del' # delete sentence
 			sentences = if parameters[:words] != []
@@ -692,7 +717,7 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros', 'speakers'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators'
 			return {:modal => command}
 
 		when ''

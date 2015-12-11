@@ -295,6 +295,9 @@ function makeAnfrage(anfrage, params) {
 					case 'import':
 						openImport(antworthash['type']);
 						return;
+					case 'annotators':
+						openAnnotators();
+						return;
 					case 'config':
 						openConfig();
 						return;
@@ -425,6 +428,27 @@ function openSpeakers() {
 		});
 	}
 }
+function openAnnotators() {
+	if ($('#modal-background').css('display') != 'block') {
+		$.ajax({
+			url: '/annotators_form'
+		})
+		.done(function(data) {
+			$('#modal-content').html(data);
+			$('#new-annotator').click(function(){
+				var i = parseInt($('.annotators tbody:first-child tr:last-child').attr('no')) + 1;
+				$.ajax({
+					url: '/new_annotator/' + i
+				}).done(function(data) {
+					$('.annotators tbody:first-child tr:last-child').after(data);
+				});
+				return false;
+			});
+			$('#modal-background').show();
+			window.onkeydown = configKeys;
+		});
+	}
+}
 function openMakros() {
 	if ($('#modal-background').css('display') != 'block') {
 		$.ajax({
@@ -503,6 +527,17 @@ function sendSpeakers() {
 	$.ajax({
 		type: 'POST',
 		url: '/save_speakers',
+		dataType: 'json',
+		data: $('#modal-form').serialize()
+	})
+	.done(function(data) {
+		closeModal();
+	});
+}
+function sendAnnotators() {
+	$.ajax({
+		type: 'POST',
+		url: '/save_annotators',
 		dataType: 'json',
 		data: $('#modal-form').serialize()
 	})

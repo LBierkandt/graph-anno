@@ -423,8 +423,6 @@ class AnnoGraph
 		@anno_makros = {}
 		@makros = []
 		@annotators = []
-		@annotators << Annotator.new(:name => 'klaus', :graph => self)
-		@annotators << Annotator.new(:name => 'peter', :graph => self)
 		@current_annotator = nil
 		create_layer_makros
 	end
@@ -498,7 +496,7 @@ class AnnoGraph
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
 			el[:id] = el[:ID] if version < 7
 		end
-		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(:name => a['name'], :graph => self)}
+		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(:id => a['id'], :name => a['name'], :graph => self)}
 		self.add_hash(nodes_and_edges)
 		if version >= 6
 			@anno_makros = nodes_and_edges['anno_makros'] || {}
@@ -1017,12 +1015,12 @@ class AnnoGraph
 		@allowed_anno.allowed_attributes(attr)
 	end
 
-	def set_annotator(name)
-		@current_annotator = get_annotator(name)
+	def set_annotator(h)
+		@current_annotator = get_annotator(h)
 	end
 
-	def get_annotator(name)
-		@annotators.select{|a| a.name == name}[0]
+	def get_annotator(h)
+		@annotators.select{|a| h.all?{|k, v| a.send(k).to_s == v.to_s}}[0]
 	end
 
 	private
@@ -1216,7 +1214,7 @@ class Attributes
 		if h[:raw]
 			# set directly
 			@attr = attr.clone
-			@private_attr = Hash[private_attr.map {|k, v| [@graph.get_annotator(k), v] }]
+			@private_attr = Hash[private_attr.map {|k, v| [@graph.get_annotator(:id => k), v] }]
 		else
 			# set via key-distinguishing function
 			@attr = {}
@@ -1296,22 +1294,33 @@ class Attributes
 	def to_h
 		h = {}
 		h.merge!(:attr => @attr.clone) unless @attr.empty?
-		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.name, attr.clone] }]) unless @private_attr.empty?
+		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.id, attr.clone] }]) unless @private_attr.empty?
 		h
 	end
 end
 
 class Annotator
-	attr_accessor :name
+	attr_accessor :id, :name, :info
 
 	def initialize(h)
 		@graph = h[:graph]
-		@name = h[:name]
+		@name = h[:name] || ''
+		@info = h[:info] || ''
+		@id = (h[:id] || new_id).to_i
 	end
+
+	def new_id
+		id_list = @graph.annotators.map{|a| a.id}
+		id = 1
+		id += 1 while id_list.include?(id)
+		return id
+ 	end
 
 	def to_h
 		{
-			:name => @name
+			:id => @id,
+			:name => @name,
+			:info => @info,
 		}
 	end
 
