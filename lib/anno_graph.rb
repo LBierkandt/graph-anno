@@ -49,7 +49,7 @@ class NodeOrEdge
 
 	def annotate(attributes, log_step = nil)
 		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
-		@attr.merge!(attributes).remove_empty!
+		@attr.annotate_with(attributes).remove_empty!
 	end
 end
 
@@ -1223,7 +1223,7 @@ class Attributes
 			# set via key-distinguishing function
 			@attr = {}
 			@private_attr = {}
-			self.merge!(attr)
+			self.annotate_with(attr)
 		end
 	end
 
@@ -1258,7 +1258,7 @@ class Attributes
 		output.merge(hash)
 	end
 
-	def merge!(hash)
+	def annotate_with(hash)
 		if @graph.current_annotator
 			@private_attr[@graph.current_annotator] ||= {}
 			@attr.merge!(hash.select{|k, v| @@generic_attrs.include?(k)})

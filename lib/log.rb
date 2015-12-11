@@ -123,7 +123,7 @@ class Change
 		when :update
 			{
 				:before => h[:element].attr.to_h,
-				:after  => h[:element].attr.clone.merge!(h[:attr]).remove_empty!.to_h
+				:after  => h[:element].attr.clone.annotate_with(h[:attr]).remove_empty!.to_h
 			}
 		end
 	end
