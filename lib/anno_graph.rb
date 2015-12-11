@@ -1195,6 +1195,7 @@ class TagsetRule
 
 	def allowes?(value)
 		return true if value.nil?
+		return true if @values == []
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
