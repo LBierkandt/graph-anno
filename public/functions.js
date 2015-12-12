@@ -173,7 +173,7 @@ function verschiebeBild(richtung) {
 	}
 }
 function updateView(antworthash) {
-	antworthash = antworthash || {}
+	antworthash = antworthash || {};
 	if (antworthash['textline'] != undefined) $('#textline').html(antworthash['textline']);
 	if (antworthash['meta'] != undefined) $('#meta').html(antworthash['meta']);
 	if (antworthash['sentence_list'] != undefined) build_sentence_list(antworthash['sentence_list']);
