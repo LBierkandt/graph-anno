@@ -143,7 +143,7 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'allowed_annotations', 'speakers', 'annotators'].each do |form_name|
+	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
@@ -231,9 +231,9 @@ class GraphController
 		return true.to_json
 	end
 
-	def save_allowed_annotations
+	def save_tagset
 		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
-		@graph.allowed_anno = Tagset.new(tagset_hash)
+		@graph.tagset = Tagset.new(tagset_hash)
 		return true.to_json
 	end
 

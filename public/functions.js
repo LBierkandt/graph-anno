@@ -116,7 +116,7 @@ function taste(tast) {
 	}
 	else if (tast.which == 121) {
 		tast.preventDefault();
-		openModal('allowed_annotations');
+		openModal('tagset');
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
@@ -292,26 +292,13 @@ function makeAnfrage(anfrage, params) {
 			if (this.readyState == 4 && this.status == 200) {
 				var antworthash = JSON.parse(this.responseText);
 				switch (antworthash['modal']) {
+					case undefined:
+						break;
 					case 'import':
 						openImport(antworthash['type']);
 						return;
-					case 'annotators':
-						openModal('annotators');
-						return;
-					case 'config':
-						openModal('config');
-						return;
-					case 'speakers':
-						openModal('speakers');
-						return;
-					case 'tagset':
-						openModal('allowed_annotations');
-						return;
-					case 'metadata':
-						openModal('metadata');
-						return;
-					case 'makros':
-						openModal('makros');
+					default:
+						openModal(antworthash['modal']);
 						return;
 				}
 				var txtcmd = document.getElementById('txtcmd');
@@ -409,9 +396,9 @@ function newMakro() {
 		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><input name="values['+i+']" type="text"></td></tr>'
 	);
 }
-function newAllowedAnnotation() {
-	var i = parseInt($('.allowed_annotations tbody:first-child tr:last-child').attr('no')) + 1;
-	$('.allowed_annotations tbody:first-child tr:last-child').after(
+function newTagsetRule() {
+	var i = parseInt($('.tagset tbody:first-child tr:last-child').attr('no')) + 1;
+	$('.tagset tbody:first-child tr:last-child').after(
 		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
 	);
 }

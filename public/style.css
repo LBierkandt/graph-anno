@@ -275,10 +275,10 @@ th {
 #modal-form input[type="text"] {
 	width: 100%;
 }
-.metadata .modal-form-element, .metadata table, .allowed_annotations .modal-form-element, .allowed_annotations table, .makros .modal-form-element, .makros table, .speakers .modal-form-element, .speakers table {
+.metadata .modal-form-element, .metadata table, .tagset .modal-form-element, .tagset table, .makros .modal-form-element, .makros table, .speakers .modal-form-element, .speakers table {
 	width: 100%;
 }
-.metadata td:first-child, .allowed_annotations td:first-child, .makros td:first-child, .speakers td:first-child {
+.metadata td:first-child, .tagset td:first-child, .makros td:first-child, .speakers td:first-child {
 	vertical-align: top;
 	width: 8em;
 }

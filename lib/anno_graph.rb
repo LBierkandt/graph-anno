@@ -409,7 +409,7 @@ class AnnoGraph
 	include SearchableGraph
 
 	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator
-	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros
+	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
 	def initialize
@@ -419,7 +419,7 @@ class AnnoGraph
 		@highest_edge_id = 0
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = Tagset.new
+		@tagset = Tagset.new
 		@anno_makros = {}
 		@makros = []
 		@annotators = []
@@ -501,7 +501,11 @@ class AnnoGraph
 		if version >= 6
 			@anno_makros = nodes_and_edges['anno_makros'] || {}
 			@info = nodes_and_edges['info'] || {}
-			@allowed_anno = Tagset.new(nodes_and_edges['allowed_anno'])
+			if version < 8
+				@tagset = Tagset.new(nodes_and_edges['allowed_anno'])
+			else
+				@tagset = Tagset.new(nodes_and_edges['tagset'])
+			end
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
 			@makros_plain += nodes_and_edges['search_makros']
@@ -781,11 +785,11 @@ class AnnoGraph
 			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge(:version => '7').
+			merge(:version => '8').
 			merge(:conf => @conf.to_h.reject{|k,v| k == 'font'}).
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).
-			merge(:allowed_anno => @allowed_anno).
+			merge(:tagset => @tagset).
 			merge(:search_makros => @makros_plain).
 			merge(:annotators => @annotators)
 	end
@@ -828,7 +832,7 @@ class AnnoGraph
 		@highest_edge_id = other_graph.highest_edge_id
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
-		@allowed_anno = other_graph.allowed_anno.clone
+		@tagset = other_graph.tagset.clone
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
@@ -912,7 +916,7 @@ class AnnoGraph
 		@highest_edge_id = 0
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = Tagset.new
+		@tagset = Tagset.new
 		@anno_makros = {}
 		@makros_plain = []
 	end
@@ -994,7 +998,7 @@ class AnnoGraph
 	def export_tagset(name)
 		Dir.mkdir('exports/tagset') unless File.exist?('exports/tagset')
 		File.open("exports/tagset/#{name}.tagset.json", 'w') do |f|
-			f.write(JSON.pretty_generate(@allowed_anno, :indent => ' ', :space => '').encode('UTF-8'))
+			f.write(JSON.pretty_generate(@tagset, :indent => ' ', :space => '').encode('UTF-8'))
 		end
 	end
 
@@ -1010,7 +1014,7 @@ class AnnoGraph
 	# @param name [String] The name under which the file will be saved
 	def import_tagset(name)
 		File.open("exports/tagset/#{name}.tagset.json", 'r:utf-8') do |f|
-			@allowed_anno = Tagset.new(JSON.parse(f.read))
+			@tagset = Tagset.new(JSON.parse(f.read))
 		end
 	end
 
@@ -1018,7 +1022,7 @@ class AnnoGraph
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
 	def allowed_attributes(attr)
-		@allowed_anno.allowed_attributes(attr)
+		@tagset.allowed_attributes(attr)
 	end
 
 	def set_annotator(h)
