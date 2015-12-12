@@ -299,7 +299,7 @@ function makeAnfrage(anfrage, params) {
 						openModal('annotators');
 						return;
 					case 'config':
-						openConfig();
+						openModal('config');
 						return;
 					case 'speakers':
 						openModal('speakers');
@@ -342,53 +342,34 @@ function changeSentence() {
 	anfrage.open('POST', '/change_sentence');
 	makeAnfrage(anfrage, params);
 }
-function setRemoveButtonFunctions() {
-	$('.remove-layer').click(function() {
-		$(this).closest('tbody').remove();
-		removeLayerAttributes();
-	});
-	$('.remove-combination').click(function() {
-		$(this).closest('tbody').remove();
+function newLayer(element) {
+	var number = parseInt($(element).closest('tbody').prev().attr('no')) + 1;
+	$.ajax({
+		url: '/new_layer/' + (number)
+	}).done(function(data) {
+		$('#new-layer').closest('tbody').before(data);
+		$('label[for^="combinations["][for$="[attr]]"]').closest('td').next().each(function(i){
+			$(this).append("<input name='combinations["+i+"[attr["+number+"]]]' type='checkbox' value=''>\n<label for='combinations["+i+"[attr["+number+"]]]'></label>\n<br>");
+		});
 	});
 }
-function openConfig() {
-	if ($('#modal-background').css('display') != 'block') {
-		$.ajax({
-			url: '/config_form'
-		})
-		.done(function(data) {
-			$('#modal-content').html(data);
-			setRemoveButtonFunctions();
-			$('#new-layer').click(function() {
-				var number = parseInt($(this).closest('tbody').prev().attr('no')) + 1;
-				$.ajax({
-					url: '/new_layer/' + (number)
-				}).done(function(data) {
-					$('#new-layer').closest('tbody').before(data);
-					$('label[for^="combinations["][for$="[attr]]"]').closest('td').next().each(function(i){
-						$(this).append("<input name='combinations["+i+"[attr["+number+"]]]' type='checkbox' value=''>\n<label for='combinations["+i+"[attr["+number+"]]]'></label>\n<br>");
-					});
-					setRemoveButtonFunctions();
-				});
-				return false;
-			});
-			$('#new-combination').click(function() {
-				$.ajax({
-					url: '/new_combination/' + (parseInt($(this).closest('tbody').prev().attr('no')) + 1)
-				}).done(function(data) {
-					$('#new-combination').closest('tbody').before(data);
-					removeLayerAttributes();
-					$('input[name^="layers["][name$="[attr]]"]').each(function(i){
-					  setLayerAttributes(this);
-					});
-					setRemoveButtonFunctions();
-				});
-				return false;
-			});
-			$('#modal-background').show();
-			window.onkeydown = configKeys;
+function newCombination(element) {
+	$.ajax({
+		url: '/new_combination/' + (parseInt($(element).closest('tbody').prev().attr('no')) + 1)
+	}).done(function(data) {
+		$('#new-combination').closest('tbody').before(data);
+		removeLayerAttributes();
+		$('input[name^="layers["][name$="[attr]]"]').each(function(i){
+		  setLayerAttributes(this);
 		});
-	}
+	});
+}
+function removeLayer(element) {
+	$(element).closest('tbody').remove();
+	removeLayerAttributes();
+}
+function removeCombination(element) {
+	$(element).closest('tbody').remove();
 }
 function openModal(type) {
 	if ($('#modal-background').css('display') != 'block') {
