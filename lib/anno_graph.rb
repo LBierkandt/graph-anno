@@ -487,10 +487,8 @@ class AnnoGraph
 		version = nodes_and_edges['version'].to_i
 		# 'knoten' -> 'nodes', 'kanten' -> 'edges'
 		if version < 4
-			nodes_and_edges['nodes'] = nodes_and_edges['knoten']
-			nodes_and_edges['edges'] = nodes_and_edges['kanten']
-			nodes_and_edges.delete('knoten')
-			nodes_and_edges.delete('kanten')
+			nodes_and_edges['nodes'] = nodes_and_edges.delete('knoten')
+			nodes_and_edges['edges'] = nodes_and_edges.delete('kanten')
 		end
 		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
 			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
@@ -518,58 +516,57 @@ class AnnoGraph
 			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
 			(@nodes.values + @edges.values).each do |k|
 				if version < 2
-					if k['typ']
-						k['cat'] = k['typ']
-						k.attr.delete('typ')
+					if k.attr.neutral['typ']
+						k.attr.neutral['cat'] = k.attr.neutral.delete('typ')
 					end
-					if k['namespace']
-						k['sentence'] = k['namespace']
-						k.attr.delete('namespace')
+					if k.attr.neutral['namespace']
+						k.attr.neutral['sentence'] = k.attr.neutral.delete('namespace')
 					end
-					k.attr.delete('elementid')
+					k.attr.neutral.delete('elementid')
+					k.attr.neutral.delete('edgetype')
 				end
 				if version < 5
-					if k['f-ebene'] == 'y' then k['f-layer'] = 't' end
-					if k['s-ebene'] == 'y' then k['s-layer'] = 't' end
-					k.attr.delete('f-ebene')
-					k.attr.delete('s-ebene')
+					k.attr.neutral['f-layer'] = 't' if k.attr.neutral['f-ebene'] == 'y'
+					k.attr.neutral['s-layer'] = 't' if k.attr.neutral['s-ebene'] == 'y'
+					k.attr.neutral.delete('f-ebene')
+					k.attr.neutral.delete('s-ebene')
 				end
 				if version < 7
 					# introduce node types
 					if k.kind_of?(Node)
 						if k.token
 							k.type = 't'
-						elsif k['cat'] == 'meta'
+						elsif k.attr.neutral['cat'] == 'meta'
 							k.type = 's'
-							k.attr.delete('cat')
+							k.attr.neutral.delete('cat')
 						else
 							k.type = 'a'
 						end
 					else
 						k.type = 'o' if k.type == 't'
 						k.type = 'a' if k.type == 'g'
-						k.attr.delete('sentence')
+						k.attr.neutral.delete('sentence')
 					end
-					k.attr.delete('tokenid')
+					k.attr.neutral.delete('tokenid')
 				end
 			end
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
-				@nodes.values.map{|n| n['sentence']}.uniq.each do |s|
-					if sect_nodes.select{|k| k['sentence'] == s}.empty?
-						add_sect_node(:name => s)
+				@nodes.values.map{|n| n.attr.neutral['sentence']}.uniq.each do |s|
+					if sect_nodes.select{|k| k.attr.neutral['sentence'] == s}.empty?
+						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
 					end
 				end
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n['sentence']}
+				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n.attr.neutral['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
-					s.name = s.attr.delete('sentence')
-					@nodes.values.select{|n| n['sentence'] == s.name}.each do |n|
-						n.attr.delete('sentence')
+					s.name = s.attr.neutral.delete('sentence')
+					@nodes.values.select{|n| n.attr.neutral['sentence'] == s.name}.each do |n|
+						n.attr.neutral.delete('sentence')
 						add_sect_edge(:start => s, :end => n)
 					end
 				end
@@ -1233,14 +1230,14 @@ class Attributes
 		end
 	end
 
-	def generic_attrs
+	def neutral_attrs
 		['name', 'token'] + @graph.conf.layers.map{|l| l.attr}
 	end
 
 	def output
 		if @graph.current_annotator
 			(@private_attr[@graph.current_annotator] || {}).merge(
-				@attr.select{|k, v| generic_attrs.include?(k)}
+				@attr.select{|k, v| neutral_attrs.include?(k)}
 			)
 		else
 			@attr
@@ -1253,7 +1250,7 @@ class Attributes
 
 	def []=(key, value)
 		if @graph.current_annotator
-			if generic_attrs.include?(key)
+			if neutral_attrs.include?(key)
 				@attr[key] = value
 			else
 				@private_attr[@graph.current_annotator] ||= {}
@@ -1271,8 +1268,8 @@ class Attributes
 	def annotate_with(hash)
 		if @graph.current_annotator
 			@private_attr[@graph.current_annotator] ||= {}
-			@attr.merge!(hash.select{|k, v| generic_attrs.include?(k)})
-			@private_attr[@graph.current_annotator].merge!(hash.reject{|k, v| generic_attrs.include?(k)})
+			@attr.merge!(hash.select{|k, v| neutral_attrs.include?(k)})
+			@private_attr[@graph.current_annotator].merge!(hash.reject{|k, v| neutral_attrs.include?(k)})
 		else
 			@attr.merge!(hash)
 		end
@@ -1295,6 +1292,10 @@ class Attributes
 
 	def select(&block)
 		output.select(&block)
+	end
+
+	def neutral
+		@attr
 	end
 
 	def clone
