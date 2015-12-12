@@ -768,26 +768,19 @@ class AnnoGraph
 		end
 		node.delete(log_step)
 	end
-	# @return [Hash] the graph in hash format: {'nodes' => [...], 'edges' => [...]}
-	def to_h
-		{
-			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
-			'edges' => @edges.values.map{|e| e.to_h}
-		}
-	end
 
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
 	def to_h
 		{
-			'nodes' => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
-			'edges' => @edges.values.map{|e| e.to_h}
+			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
+			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge('version' => '7').
-			merge('conf' => @conf.to_h.reject{|k,v| k == 'font'}).
-			merge('info' => @info).
-			merge('anno_makros' => @anno_makros).
-			merge('allowed_anno' => @allowed_anno).
-			merge('search_makros' => @makros_plain)
+			merge(:version => '7').
+			merge(:conf => @conf.to_h.reject{|k,v| k == 'font'}).
+			merge(:info => @info).
+			merge(:anno_makros => @anno_makros).
+			merge(:allowed_anno => @allowed_anno).
+			merge(:search_makros => @makros_plain)
 	end
 
 	def inspect
@@ -1048,11 +1041,11 @@ class AnnoLayer
 
 	def to_h
 		{
-			'name' => @name,
-			'attr' => @attr,
-			'shortcut' => @shortcut,
-			'color' => @color,
-			'weight' => @weight
+			:name => @name,
+			:attr => @attr,
+			:shortcut => @shortcut,
+			:color => @color,
+			:weight => @weight
 		}
 	end
 end
@@ -1104,14 +1097,14 @@ class AnnoGraphConf
 
 	def to_h
 		{
-			'font' => @font,
-			'default_color' => @default_color,
-			'token_color' => @token_color,
-			'found_color' => @found_color,
-			'filtered_color' => @filtered_color,
-			'edge_weight' => @edge_weight,
-			'layers' => @layers.map{|l| l.to_h},
-			'combinations' => @combinations.map{|c| c.to_h}
+			:font => @font,
+			:default_color => @default_color,
+			:token_color => @token_color,
+			:found_color => @found_color,
+			:filtered_color => @filtered_color,
+			:edge_weight => @edge_weight,
+			:layers => @layers.map{|l| l.to_h},
+			:combinations => @combinations.map{|c| c.to_h}
 		}
 	end
 
@@ -1175,7 +1168,7 @@ class TagsetRule
 	end
 
 	def to_h
-		{'key' => @key, 'values' => values_string}
+		{:key => @key, :values => values_string}
 	end
 
 	def values_string
