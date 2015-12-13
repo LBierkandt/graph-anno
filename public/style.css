@@ -263,10 +263,8 @@ th {
 	text-align: right;
 }
 #modal-warning {
+	display: none;
 	padding: 10px;
-}
-#modal-warning:empty {
-	padding: 0px;
 }
 #modal-form * {
 	box-sizing: border-box;

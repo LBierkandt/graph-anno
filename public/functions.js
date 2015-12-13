@@ -415,7 +415,7 @@ function sendConfig() {
 			updateLayerOptions();
 			loadGraph();
 		} else {
-			$('#modal-warning').html('Invalid values – check your input!');
+			$('#modal-warning').show();
 			$('#modal-form label').removeClass('error_message');
 			if (data['makros'] != 'undefined') {
 				$('label[for="makros"]').html(data['makros']);
@@ -434,7 +434,8 @@ function sendModal(type) {
 		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
-		closeModal();
+		if (data == true) closeModal();
+		else $('#modal-warning').show();
 	});
 }
 function closeModal() {
