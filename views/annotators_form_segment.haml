@@ -4,6 +4,6 @@
     %input{:name => "ids[#{i}]", :type => "hidden", :value => annotator.id}
   %td
     %input{:name => "names[#{i}]", :value => annotator.name}
-  %td
+  %td.expand
     %textarea{:name => "infos[#{i}]"}
       = annotator.info

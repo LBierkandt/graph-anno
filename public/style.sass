@@ -1,0 +1,270 @@
+$theme-color: #002050
+$theme-color-highlight: #003090
+$background-color: #ddd
+$highlight-color: #d00
+
+body
+  margin: 0px
+  font-family: sans-serif
+  font-size: 13px
+  line-height: 18px
+
+h1, h2, h3, h4, h5, h6
+  margin-top: 0ex
+  margin-bottom: 1ex
+
+a
+  color: $theme-color
+
+button, input[type="submit"], input[type="reset"], input[type="button"], .button
+  color: #fff
+  background-color: $theme-color
+  border: none
+  padding: 2px 6px
+  cursor: pointer
+  &:focus
+    background-color: $theme-color-highlight
+
+ul
+  margin-top: 0ex
+  padding-left: 2em
+
+form
+  margin: 0px
+
+textarea
+  font-size: 95%
+
+table
+  font-size: 13px
+  th
+    text-align: left
+    font-weight: bold
+
+#graphdiv
+  position: absolute
+  top: 0px
+  height: 100%
+  width: 100%
+  overflow: scroll
+
+#graph
+  position: absolute
+  margin-left: auto
+  margin-right: auto
+  left: 0px
+  right: 0px
+
+#bottom
+  position: fixed
+  bottom: 0px
+  width: 100%
+
+.bottom-block
+  background-color: $background-color
+  border-top: solid 1px $theme-color
+  padding-bottom: 2px
+
+#textline, #meta
+  padding-left: 5px
+
+#cmddiv
+  padding: 5px
+
+#active_file
+  display: inline
+
+#log
+  display: none
+  position: fixed
+  top: 10px
+  right: 10px
+  width: 50%
+  height: 30%
+  padding: 5px
+  table
+    width: 100%
+  .content
+    td, th
+      padding: 0 0.3em
+      overflow: hidden
+      text-overflow: ellipsis
+      white-space: nowrap
+      max-width: 0
+    tr
+      &[index]
+        cursor: pointer
+        &:hover
+          background-color: $background-color
+      &.undone
+        color: #aaa
+  .command
+    width: 60%
+  .user, .time
+    width: 20%
+
+#filter
+  display: none
+  position: fixed
+  top: 10px
+  right: 10px
+  width: 30%
+  height: 30%
+  padding: 5px
+  input
+    width: 8em
+  table
+    border-spacing: 0
+
+.selected_filter_mode
+  font-weight: bold
+  border-color: #000
+
+#search
+  display: none
+  position: fixed
+  top: 10px
+  right: 10px
+  width: 40%
+  height: 50%
+  padding: 5px
+
+.textarea-container
+  position: absolute
+  left: 5px
+  right: 5px
+  top: 30px
+
+#query
+  margin-bottom: 5px
+
+.below-textarea
+  position: absolute
+  bottom: 5px
+
+#search
+  .textarea-container
+    bottom: 100px
+  .below-textarea
+    min-height: 90px
+
+#filter
+  .textarea-container
+    bottom: 90px
+  .below-textarea
+    height: 80px
+
+.handle
+  background-color: $theme-color
+  height: 20px
+  width: 100%
+  cursor: move
+  margin-bottom: 5px
+
+.close
+  position: absolute
+  right: 5px
+  height: 20px
+  width: 20px
+  text-align: center
+  color: #fff
+  cursor: pointer
+
+#searchresult
+  margin-top: 5px
+  width: 100%
+
+.box
+  background-color: $background-color
+  border: solid 1px $theme-color
+  textarea
+    width: 100%
+    height: 100%
+
+#help
+  display: none
+  position: fixed
+  top: 10px
+  right: 10px
+  width: 30%
+  height: 90%
+  padding: 5px
+
+.content
+  position: absolute
+  top: 30px
+  bottom: 5px
+  left: 5px
+  right: 5px
+  font-size: 80%
+  overflow: auto
+  background-color: #fff
+
+#documentation
+  position: fixed
+  right: 0px
+  bottom: 0px
+  text-align: right
+  padding: 5px
+
+#modal-background
+  position: absolute
+  overflow-y: scroll
+  display: none
+  width: 100%
+  height: 100%
+  background-color: rgba(0, 0, 0, 0.5)
+
+#modal-content
+  position: absolute
+  width: 90vw
+  margin: 1vw 5vw
+  overflow: hidden
+  background-color: $background-color
+  border: solid 1px $theme-color
+  .modal-form-element
+    float: left
+    padding: 5px
+
+#modal-form
+  *
+    box-sizing: border-box
+    -moz-box-sizing: border-box
+  input[type="text"], textarea
+    width: 100%
+  &.import input[type='text']
+    width: 30em
+
+#modal-submit
+  clear: both
+  width: auto
+  padding: 5px
+  text-align: right
+
+#modal-warning
+  display: none
+  padding: 10px
+
+.metadata, .tagset, .makros, .speakers, .annotators
+  .modal-form-element, table
+    width: 100%
+  th
+    padding-right: 1em
+  td
+    vertical-align: top
+    &:first-child
+      width: 8em
+    &.expand
+      width: 100%
+    textarea
+      height: 5em
+
+.hidden_word
+  color: #888
+
+.found_word
+  color: $highlight-color
+
+.found_sentence, .error_message
+  color: $highlight-color
+  font-weight: bold

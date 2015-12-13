@@ -15,7 +15,7 @@
               %input{:name => "ids[0]", :type => "hidden", :value => 0}
             %td
               %input{:name => "names[0]"}
-            %td
+            %td.expand
               %textarea{:name => "infos[0]"}
         - else
           - graph.annotators.each_with_index do |annotator, i|
