@@ -787,8 +787,8 @@ class AnnoGraph
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).
 			merge(:tagset => @tagset).
-			merge(:search_makros => @makros_plain).
-			merge(:annotators => @annotators)
+			merge(:annotators => @annotators).
+			merge(:search_makros => @makros_plain)
 	end
 
 	def inspect
@@ -830,6 +830,7 @@ class AnnoGraph
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
 		@tagset = other_graph.tagset.clone
+		@annotators = other_graph.annotators.clone
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
@@ -914,6 +915,7 @@ class AnnoGraph
 		@conf = AnnoGraphConf.new
 		@info = {}
 		@tagset = Tagset.new
+		@annotators = []
 		@anno_makros = {}
 		@makros_plain = []
 	end
@@ -982,7 +984,7 @@ class AnnoGraph
 	end
 
 	# export layer configuration as JSON file for import in other graphs
-	# @param name [String] The name under which the file will be saved
+	# @param name [String] The name of the file
 	def export_config(name)
 		Dir.mkdir('exports/config') unless File.exist?('exports/config')
 		File.open("exports/config/#{name}.config.json", 'w') do |f|
@@ -990,12 +992,21 @@ class AnnoGraph
 		end
 	end
 
-	# export allowed annotations as JSON file for import in other graphs
+	# export tagset as JSON file for import in other graphs
 	# @param name [String] The name of the file
 	def export_tagset(name)
 		Dir.mkdir('exports/tagset') unless File.exist?('exports/tagset')
 		File.open("exports/tagset/#{name}.tagset.json", 'w') do |f|
 			f.write(JSON.pretty_generate(@tagset, :indent => ' ', :space => '').encode('UTF-8'))
+		end
+	end
+
+	# export annotators as JSON file for import in other graphs
+	# @param name [String] The name of the file
+	def export_annotators(name)
+		Dir.mkdir('exports/annotators') unless File.exist?('exports/annotators')
+		File.open("exports/annotators/#{name}.annotators.json", 'w') do |f|
+			f.write(JSON.pretty_generate(@annotators, :indent => ' ', :space => '').encode('UTF-8'))
 		end
 	end
 
@@ -1008,10 +1019,18 @@ class AnnoGraph
 	end
 
 	# loads allowed annotations from JSON file
-	# @param name [String] The name under which the file will be saved
+	# @param name [String] The name of the file
 	def import_tagset(name)
 		File.open("exports/tagset/#{name}.tagset.json", 'r:utf-8') do |f|
 			@tagset = Tagset.new(JSON.parse(f.read))
+		end
+	end
+
+	# loads allowed annotations from JSON file
+	# @param name [String] The name of the file
+	def import_annotators(name)
+		File.open("exports/annotators/#{name}.annotators.json", 'r:utf-8') do |f|
+			@annotators = JSON.parse(f.read).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		end
 	end
 

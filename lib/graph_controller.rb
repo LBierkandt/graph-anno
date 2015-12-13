@@ -386,6 +386,7 @@ class GraphController
 		@graph.clear
 		@found = nil
 		@sentence = nil
+		@user = nil
 		@log = Log.new(@graph, @user)
 	end
 
@@ -680,22 +681,24 @@ class GraphController
 			Dir.mkdir('images') unless File.exist?('images')
 			generate_graph(format.to_sym, 'images/'+name+'.'+format)
 
-		when 'export' # export corpus in other format
+		when 'export' # export corpus in other format or export graph configurations
 			Dir.mkdir('exports') unless File.exist?('exports')
 			format = parameters[:words][0]
 			name = parameters[:words][1]
 			name2 = parameters[:words][2]
 			case format
-			when 'config'
-				@graph.export_config(name)
 			when 'paula'
 				@graph.export_paula(name, name2)
 			when 'salt'
 				@graph.export_saltxml(name)
 			when 'sql'
 				@graph.export_sql(name)
+			when 'config'
+				@graph.export_config(name)
 			when 'tagset'
 				@graph.export_tagset(name)
+			when 'annotators'
+				@graph.export_annotators(name)
 			else
 				raise "Unknown export format: #{format}"
 			end
@@ -708,6 +711,8 @@ class GraphController
 				@graph.import_config(name)
 			when 'tagset'
 				@graph.import_tagset(name)
+			when 'annotators'
+				@graph.import_annotators(name)
 			when 'toolbox'
 				return {:modal => 'import', :type => 'toolbox'}
 			when 'text'
