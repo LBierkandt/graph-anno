@@ -390,6 +390,9 @@ function newAnnotator() {
 		$('.annotators tbody:first-child tr:last-child').after(data);
 	});
 }
+function removeAnnotator(element) {
+	$(element).closest('tr').remove();
+}
 function newMakro() {
 	var i = parseInt($('.makros tbody:first-child tr:last-child').attr('no')) + 1;
 	$('.makros tbody:first-child tr:last-child').after(

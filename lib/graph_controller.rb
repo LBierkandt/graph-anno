@@ -208,10 +208,16 @@ class GraphController
 	end
 
 	def save_annotators
+		# validate
 		if @sinatra.params['names'].any?{|i, name| name == ''} or
 			 @sinatra.params['names'].values.length != @sinatra.params['names'].values.uniq.length
 			return false.to_json
 		end
+		# delete
+		@graph.delete_annotators(
+			@graph.annotators.select{|a| !@sinatra.params['ids'].values.map(&:to_i).include?(a.id)}
+		)
+		# create/update
 		@sinatra.params['ids'].each do |i, id|
 			if annotator = @graph.get_annotator(:id => id)
 				annotator.name = @sinatra.params['names'][i]

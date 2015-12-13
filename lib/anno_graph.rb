@@ -1049,6 +1049,17 @@ class AnnoGraph
 		@annotators.select{|a| h.all?{|k, v| a.send(k).to_s == v.to_s}}[0]
 	end
 
+	# delete the given annotators and all their annotations
+	# @param annotators [Array of Annotators or Annotator] the annotator(s) to be deleted
+	def delete_annotators(annotators)
+		(@nodes.values + @edges.values).each do |element|
+			annotators.each do |annotator|
+				element.attr.delete_private(annotator)
+			end
+		end
+		@annotators -= annotators
+	end
+
 	private
 
 	def create_layer_makros
@@ -1315,6 +1326,10 @@ class Attributes
 
 	def neutral
 		@attr
+	end
+
+	def delete_private(annotator)
+		@private_attr.delete(annotator)
 	end
 
 	def clone
