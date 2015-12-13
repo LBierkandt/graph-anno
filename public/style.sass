@@ -3,9 +3,11 @@ $theme-color-highlight: #003090
 $background-color: #ddd
 $highlight-color: #d00
 
+*
+  font-family: sans-serif
+
 body
   margin: 0px
-  font-family: sans-serif
   font-size: 13px
   line-height: 18px
 
@@ -21,6 +23,8 @@ button, input[type="submit"], input[type="reset"], input[type="button"], .button
   background-color: $theme-color
   border: none
   padding: 2px 6px
+  margin-bottom: 3px
+  text-align: center
   cursor: pointer
   &:focus
     background-color: $theme-color-highlight
@@ -40,6 +44,8 @@ table
   th
     text-align: left
     font-weight: bold
+  td
+    padding-top: 0
 
 #graphdiv
   position: absolute
@@ -113,6 +119,7 @@ table
   padding: 5px
   input
     width: 8em
+    margin-right: 3px
   table
     border-spacing: 0
 
