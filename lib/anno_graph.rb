@@ -61,7 +61,7 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		@attr = h[:attr] || {}
+		@attr = (h[:attr] || {}).clone
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -340,7 +340,7 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		@attr = h[:attr] || {}
+		@attr = (h[:attr] || {}).clone
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
@@ -738,13 +738,13 @@ class AnnoGraph
 		add_anno_edge(
 			:start => edge.start,
 			:end => new_node,
-			:attr => edge.attr.clone,
+			:attr => edge.attr,
 			:log => log_step
 		)
 		add_anno_edge(
 			:start => new_node,
 			:end => edge.end,
-			:attr => edge.attr.clone,
+			:attr => edge.attr,
 			:log => log_step
 		)
 		edge.delete(log_step)
@@ -761,7 +761,7 @@ class AnnoGraph
 				add_anno_edge(
 					:start => in_edge.start,
 					:end => out_edge.end,
-					:attr => devisor.attr.clone,
+					:attr => devisor.attr,
 					:log => log_step
 				)
 			end
