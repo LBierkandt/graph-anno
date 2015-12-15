@@ -916,6 +916,7 @@ class AnnoGraph
 		@info = {}
 		@tagset = Tagset.new
 		@annotators = []
+		@current_annotator = nil
 		@anno_makros = {}
 		@makros_plain = []
 	end
