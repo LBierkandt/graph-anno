@@ -22,7 +22,13 @@
             = haml :layer_options, :locals => {:controller => controller}
           %select{ :name => "sentence", :id => "sentence" }
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
-          #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end
+        %div
+          #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
+          #current_annotator= if controller.user then 'annotator: ' + controller.user.name else 'annotator:' end
+        #documentation
+          Documentation
+          %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} en
+          %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} de
 
     #search.box
       .handle
@@ -65,11 +71,6 @@
       .handle
       .content
         = haml :log_table, :locals => {:log => controller.log}
-
-    #documentation
-      Documentation
-      %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} en
-      %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} de
 
     #help.box
       .handle

@@ -25,7 +25,7 @@ require_relative 'log.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :sentence_list, :graph_file, :search_result
+	attr_reader :graph, :log, :sentence_list, :graph_file, :search_result, :user
 
 	def initialize
 		@graph = AnnoGraph.new
@@ -91,6 +91,7 @@ class GraphController
 		return value.to_json if value
 		return sentence_settings_and_graph.merge(
 			:graph_file => @graph_file,
+			:user => @user ? @user.name : '',
 			:messages => @cmd_error_messages
 		).to_json
 	end
