@@ -631,7 +631,7 @@ class GraphController
 		when 's' # change sentence
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
-		when 'user'
+		when 'user', 'annotator'
 			@user = @graph.set_annotator(:name => parameters[:string])
 			@log.user = @user
 
