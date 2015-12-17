@@ -993,7 +993,7 @@ end
 
 class Array
 	def groups_linked?(links)
-		return true if self.length == 1
+		return true if self.length <= 1
 		self[1..-1].each_with_index do |g, i|
 			if links.any?{|l| l & self[0] != [] and l & g != []}
 				new = self.clone
