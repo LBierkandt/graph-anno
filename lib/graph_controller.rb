@@ -25,7 +25,7 @@ require_relative 'log.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :sentence_list, :graph_file, :search_result, :user
+	attr_reader :graph, :log, :sentence_list, :graph_file, :search_result
 
 	def initialize
 		@graph = AnnoGraph.new
@@ -41,7 +41,6 @@ class GraphController
 		@show_refs = true
 		@found = nil
 		@filter = {:mode => 'unfilter'}
-		@user = nil
 	end
 
 	def root
@@ -91,7 +90,7 @@ class GraphController
 		return value.to_json if value
 		return sentence_settings_and_graph.merge(
 			:graph_file => @graph_file,
-			:current_annotator => @user ? @user.name : '',
+			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:messages => @cmd_error_messages
 		).to_json
 	end
@@ -322,7 +321,7 @@ class GraphController
 		return {
 			:sentence_list => @sentence_list.values,
 			:graph_file => @sentence,
-			:current_annotator => @user ? @user.name : ''
+			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
 		}.to_json
 	end
 
@@ -401,7 +400,6 @@ class GraphController
 		@graph.clear
 		@found = nil
 		@sentence = nil
-		@user = nil
 		@log = Log.new(@graph)
 	end
 
@@ -636,8 +634,7 @@ class GraphController
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
 		when 'user', 'annotator'
-			@user = @graph.set_annotator(:name => parameters[:string])
-			@log.user = @user
+			@log.user = @graph.set_annotator(:name => parameters[:string])
 
 		when 'del' # delete sentence
 			sentences = if parameters[:words] != []
