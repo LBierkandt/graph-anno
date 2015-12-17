@@ -91,7 +91,7 @@ class GraphController
 		return value.to_json if value
 		return sentence_settings_and_graph.merge(
 			:graph_file => @graph_file,
-			:user => @user ? @user.name : '',
+			:current_annotator => @user ? @user.name : '',
 			:messages => @cmd_error_messages
 		).to_json
 	end
@@ -319,7 +319,11 @@ class GraphController
 		set_sentence_list(:clear => true)
 		@sentence = @graph.nodes[sentence_list.keys.first]
 		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
-		return {:sentence_list => @sentence_list.values, :graph_file => @sentence}.to_json
+		return {
+			:sentence_list => @sentence_list.values,
+			:graph_file => @sentence,
+			:current_annotator => @user ? @user.name : ''
+		}.to_json
 	end
 
 	def export_subcorpus(filename)
@@ -398,7 +402,7 @@ class GraphController
 		@found = nil
 		@sentence = nil
 		@user = nil
-		@log = Log.new(@graph, @user)
+		@log = Log.new(@graph)
 	end
 
 	def sentence_settings_and_graph

@@ -306,7 +306,7 @@ function makeAnfrage(anfrage, params) {
 				updateLayerOptions();
 				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
 				if (antworthash['graph_file'] != undefined) $('#active_file').html('file: ' + antworthash['graph_file']);
-				if (antworthash['user'] != undefined) $('#current_annotator').html('annotator: ' + antworthash['user']);
+				if (antworthash['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + antworthash['current_annotator']);
 				if (antworthash['search_result'] != undefined) {
 					display_search_message(antworthash['search_result']);
 				} else if (antworthash['filter_applied'] != undefined) {
@@ -526,6 +526,7 @@ function sendImport(type) {
 			loadGraph();
 			$('#active_file').html('file:');
 		}
+		if (data['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + data['current_annotator']);
 	})
 	.error(function(data) {
 		alert('An error occurred while importing.');
