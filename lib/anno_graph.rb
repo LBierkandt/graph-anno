@@ -62,10 +62,10 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		@attr = Attributes.new(h.merge(:host => self))
 		@in = []
 		@out = []
 		@type = h[:type]
+		@attr = Attributes.new(h.merge(:host => self))
 		@start= h[:start]
 		@end  = h[:end]
 	end

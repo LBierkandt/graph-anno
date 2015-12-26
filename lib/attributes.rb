@@ -34,14 +34,21 @@ class Attributes
 		end
 	end
 
-	def neutral_attrs
-		['name', 'token'] + @host.graph.conf.layers.map{|l| l.attr}
+	def neutral?(key)
+		case @host.type
+		when 'a'
+			return @host.graph.conf.layers.map{|l| l.attr}.include?(key)
+		when 't'
+			return key == 'token'
+		when 's'
+			return key == 'name'
+		end
 	end
 
 	def output
 		if @host.graph.current_annotator
 			(@private_attr[@host.graph.current_annotator] || {}).merge(
-				@attr.select{|k, v| neutral_attrs.include?(k)}
+				@attr.select{|k, v| neutral?(k)}
 			)
 		else
 			@attr
@@ -54,7 +61,7 @@ class Attributes
 
 	def []=(key, value)
 		if @host.graph.current_annotator
-			if neutral_attrs.include?(key)
+			if neutral?(key)
 				@attr[key] = value
 			else
 				@private_attr[@host.graph.current_annotator] ||= {}
@@ -72,8 +79,8 @@ class Attributes
 	def annotate_with(hash)
 		if @host.graph.current_annotator
 			@private_attr[@host.graph.current_annotator] ||= {}
-			@attr.merge!(hash.select{|k, v| neutral_attrs.include?(k)})
-			@private_attr[@host.graph.current_annotator].merge!(hash.reject{|k, v| neutral_attrs.include?(k)})
+			@attr.merge!(hash.select{|k, v| neutral?(k)})
+			@private_attr[@host.graph.current_annotator].merge!(hash.reject{|k, v| neutral?(k)})
 		else
 			@attr.merge!(hash)
 		end
