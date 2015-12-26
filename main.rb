@@ -23,6 +23,7 @@ require 'fileutils.rb'
 require 'rexml/document.rb'
 
 require './lib/anno_graph.rb'
+require './lib/attributes.rb'
 require './lib/toolbox_module.rb'
 require './lib/paula_exporter.rb'
 require './lib/salt_exporter.rb'
