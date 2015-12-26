@@ -168,7 +168,7 @@ class Change
 	end
 
 	def update(before_or_after = :after)
-		element.attr = Attributes.new({:graph => @step.log.graph, :raw => true}.merge(@data[before_or_after]))
+		element.attr = Attributes.new({:host => element, :raw => true}.merge(@data[before_or_after]))
 	end
 
 	def element

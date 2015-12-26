@@ -21,11 +21,11 @@ class Attributes
 	def initialize(h)
 		attr = h[:attr] || {}
 		private_attr = h[:private_attr] || {}
-		@graph = h[:graph]
+		@host = h[:host]
 		if h[:raw]
 			# set directly
 			@attr = attr.clone
-			@private_attr = Hash[private_attr.map {|k, v| [@graph.get_annotator(:id => k), v] }]
+			@private_attr = Hash[private_attr.map {|k, v| [@host.graph.get_annotator(:id => k), v] }]
 		else
 			# set via key-distinguishing function
 			@attr = {}
@@ -35,12 +35,12 @@ class Attributes
 	end
 
 	def neutral_attrs
-		['name', 'token'] + @graph.conf.layers.map{|l| l.attr}
+		['name', 'token'] + @host.graph.conf.layers.map{|l| l.attr}
 	end
 
 	def output
-		if @graph.current_annotator
-			(@private_attr[@graph.current_annotator] || {}).merge(
+		if @host.graph.current_annotator
+			(@private_attr[@host.graph.current_annotator] || {}).merge(
 				@attr.select{|k, v| neutral_attrs.include?(k)}
 			)
 		else
@@ -53,12 +53,12 @@ class Attributes
 	end
 
 	def []=(key, value)
-		if @graph.current_annotator
+		if @host.graph.current_annotator
 			if neutral_attrs.include?(key)
 				@attr[key] = value
 			else
-				@private_attr[@graph.current_annotator] ||= {}
-				@private_attr[@graph.current_annotator][key] = value
+				@private_attr[@host.graph.current_annotator] ||= {}
+				@private_attr[@host.graph.current_annotator][key] = value
 			end
 		else
 			@attr[key] = value
@@ -70,10 +70,10 @@ class Attributes
 	end
 
 	def annotate_with(hash)
-		if @graph.current_annotator
-			@private_attr[@graph.current_annotator] ||= {}
+		if @host.graph.current_annotator
+			@private_attr[@host.graph.current_annotator] ||= {}
 			@attr.merge!(hash.select{|k, v| neutral_attrs.include?(k)})
-			@private_attr[@graph.current_annotator].merge!(hash.reject{|k, v| neutral_attrs.include?(k)})
+			@private_attr[@host.graph.current_annotator].merge!(hash.reject{|k, v| neutral_attrs.include?(k)})
 		else
 			@attr.merge!(hash)
 		end
@@ -81,9 +81,9 @@ class Attributes
 	end
 
 	def remove_empty!
-		if @graph.current_annotator
+		if @host.graph.current_annotator
 			@attr.keep_if{|k, v| v}
-			@private_attr[@graph.current_annotator].keep_if{|k, v| v}
+			@private_attr[@host.graph.current_annotator].keep_if{|k, v| v}
 		else
 			@attr.keep_if{|k, v| v}
 		end
@@ -107,7 +107,7 @@ class Attributes
 	end
 
 	def clone
-		Attributes.new({:graph =>@graph, :raw => true}.merge(self.to_h))
+		Attributes.new({:host => @host, :raw => true}.merge(self.to_h))
 	end
 
 	def to_h

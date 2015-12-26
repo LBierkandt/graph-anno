@@ -84,8 +84,8 @@ class GraphController
 		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
-		rescue StandardError => e
-			@cmd_error_messages << e.message
+		# rescue StandardError => e
+		# 	@cmd_error_messages << e.message
 		end
 		return value.to_json if value
 		return sentence_settings_and_graph.merge(
@@ -199,7 +199,7 @@ class GraphController
 		@sinatra.params['ids'].each do |i, id|
 			attributes = @sinatra.params['attributes'][i].parse_parameters[:attributes]
 			if id != ''
-				@graph.nodes[id].attr = Attributes.new(:graph => @graph, :raw => true, :attr => attributes)
+				@graph.nodes[id].attr = Attributes.new(:host => @graph.nodes[id], :raw => true, :attr => attributes)
 			else
 				@graph.add_speaker_node(:attr => attributes)
 			end

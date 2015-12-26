@@ -22,6 +22,7 @@ require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
+	attr_reader :graph
 	attr_accessor :attr, :type
 
 	# provides the to_json method needed by the JSON gem
@@ -61,7 +62,7 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		@attr = Attributes.new(h)
+		@attr = Attributes.new(h.merge(:host => self))
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -339,7 +340,7 @@ class Edge < NodeOrEdge
 		else
 			@end = h[:end]
 		end
-		@attr = Attributes.new(h)
+		@attr = Attributes.new(h.merge(:host => self))
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
