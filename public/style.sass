@@ -171,6 +171,7 @@ table
     height: 80px
 
 .handle
+  position: relative
   background-color: $theme-color
   height: 20px
   width: 100%
@@ -179,12 +180,22 @@ table
 
 .close
   position: absolute
-  right: 5px
-  height: 20px
+  right: 0
   width: 20px
-  text-align: center
-  color: #fff
+  height: 20px
   cursor: pointer
+  &:before, &:after
+    position: absolute
+    left: 9px
+    top: 2px
+    content: ' '
+    height: 16px
+    width: 2px
+    background-color: #fff
+  &:before
+    transform: rotate(45deg)
+  &:after
+    transform: rotate(-45deg)
 
 #searchresult
   margin-top: 5px

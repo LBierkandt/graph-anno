@@ -162,6 +162,7 @@ table {
   height: 80px; }
 
 .handle {
+  position: relative;
   background-color: #002050;
   height: 20px;
   width: 100%;
@@ -170,12 +171,22 @@ table {
 
 .close {
   position: absolute;
-  right: 5px;
-  height: 20px;
+  right: 0;
   width: 20px;
-  text-align: center;
-  color: white;
+  height: 20px;
   cursor: pointer; }
+  .close:before, .close:after {
+    position: absolute;
+    left: 9px;
+    top: 2px;
+    content: " ";
+    height: 16px;
+    width: 2px;
+    background-color: white; }
+  .close:before {
+    transform: rotate(45deg); }
+  .close:after {
+    transform: rotate(-45deg); }
 
 #searchresult {
   margin-top: 5px;

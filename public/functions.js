@@ -10,6 +10,12 @@ window.onload = function() {
 	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310});
 	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220});
 	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400});
+
+	$('.handle').html('<div class="close"></div>')
+	$(document).on('click', '.close', function(){
+		$(this).closest('.box').hide();
+		$('#txtcmd').focus().select();
+	});
 }
 window.onresize = graphdivEinpassen;
 
@@ -86,24 +92,22 @@ function taste(tast) {
 	}
 	else if (tast.which == 117) {
 		tast.preventDefault();
+		$('#filter').toggle();
 		if ($('#filter').css('display') == 'none') {
-			$('#filter').show();
-			$('#filterfield').focus();
+			$('#txtcmd').focus().select();
 		}
 		else {
-			$('#filter').hide();
-			$('#txtcmd').focus().select();
+			$('#filterfield').focus();
 		}
 	}
 	else if (tast.which == 118) {
 		tast.preventDefault();
+		$('#search').toggle();
 		if ($('#search').css('display') == 'none') {
-			$('#search').show();
-			$('#query').focus();
+			$('#txtcmd').focus().select();
 		}
 		else {
-			$('#search').hide();
-			$('#txtcmd').focus().select();
+			$('#query').focus();
 		}
 	}
 	else if (tast.which == 119) {
