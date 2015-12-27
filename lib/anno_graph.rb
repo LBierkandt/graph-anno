@@ -492,7 +492,7 @@ class AnnoGraph
 			nodes_and_edges['edges'] = nodes_and_edges.delete('kanten')
 		end
 		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
-			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
+			el.replace(el.symbolize_keys)
 			el[:id] = el[:ID] if version < 7
 		end
 		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}

@@ -1,3 +1,5 @@
+require 'time'
+
 class Log
 	attr_reader :steps, :graph, :current_index
 	attr_accessor :user
@@ -15,6 +17,33 @@ class Log
 			:steps => @steps.map{|step| step.to_h},
 			:current_index => @current_index,
 		}
+	end
+
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		self.to_h.to_json(*a)
+	end
+
+	# serializes self in a JSON file
+	# @param path [String] path to the JSON file
+	def write_json_file(path)
+		puts 'Writing log file "' + path + '"...'
+		file = open(path, 'w')
+		file.write(JSON.pretty_generate(self, :indent => ' ', :space => '').encode('UTF-8'))
+		file.close
+		puts 'Wrote "' + path + '".'
+	end
+
+	# reads a JSON log file into self
+	# @param path [String] path to the JSON file
+	def read_json_file(path)
+		puts 'Reading log file "' + path + '" ...'
+		file = open(path, 'r:utf-8')
+		data = JSON.parse(file.read)
+		file.close
+
+		@steps = data['steps'].map{|s| Step.new_from_hash(s.merge(:log => self))}
+		@current_index = data['current_index']
 	end
 
 	# @return [Step] the current step
@@ -67,13 +96,15 @@ class Log
 end
 
 class Step
-	attr_reader :user, :time, :command, :changes, :log
+	attr_reader :user, :time, :command, :log
+	attr_accessor :changes
 
 	def initialize(h)
 		@log = h[:log]
 		@user = h[:user] || @log.user
+		@user = @log.graph.get_annotator(:id => @user) if @user.is_a?(Integer)
     @command = h[:command]
-		@time = Time.now.utc
+		@time = h[:time] ? Time.parse(h[:time]) : Time.now.utc
     @changes = []
 	end
 
@@ -85,6 +116,12 @@ class Step
 			:command => @command,
 			:changes => @changes.map{|change| change.to_h},
 		}
+	end
+
+	def self.new_from_hash(h)
+		step = Step.new(h.symbolize_keys)
+		step.changes = h['changes'].map{|c| Change.new(c.symbolize_keys.merge(:step => step))}
+		return step
 	end
 
 	# @param h [Hash] a hash containing the keys :action, :element and, in case of ":action => :update", :attr
@@ -114,17 +151,29 @@ class Change
 
 	def initialize(h)
 		@step = h[:step]
-		@action = h[:action]
-		@element_type = h[:element].is_a?(Node) ? :node : :edge
-		@element_id = h[:element].id
-		@data = case h[:action]
+		@action = h[:action].to_sym
+		if h[:element_type] && h[:element_id]
+			@element_type = h[:element_type].to_sym
+			@element_id = h[:element_id]
+		else
+			@element_type = h[:element].is_a?(Node) ? :node : :edge
+			@element_id = h[:element].id
+		end
+		@data = case @action
 		when :create, :delete
-			h[:element].to_h
+			h[:data] ? h[:data].symbolize_keys : h[:element].to_h
 		when :update
-			{
-				:before => h[:element].attr.to_h,
-				:after  => h[:element].attr.clone.annotate_with(h[:attr]).remove_empty!.to_h
-			}
+			if h[:data]
+				{
+					:before => h[:data]['before'].symbolize_keys,
+					:after => h[:data]['after'].symbolize_keys
+				}
+			else
+				{
+					:before => h[:element].attr.to_h,
+					:after  => h[:element].attr.clone.annotate_with(h[:attr]).remove_empty!.to_h
+				}
+			end
 		end
 	end
 
@@ -132,7 +181,8 @@ class Change
 	def to_h
 		{
 			:action => @action,
-			:element => "#{@element_type}_#{@element_id}",
+			:element_type => @element_type,
+			:element_id => @element_id,
 			:data => @data,
 		}
 	end

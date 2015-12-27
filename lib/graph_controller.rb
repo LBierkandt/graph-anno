@@ -665,6 +665,11 @@ class GraphController
 			clear_workspace
 			@graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
+			begin
+				@log.read_json_file(@graph_file.sub(/.json$/, '.log.json'))
+			rescue
+				@log = Log.new(@graph)
+			end
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
 			@sentence = sentence_nodes.first unless @sentence
@@ -682,6 +687,7 @@ class GraphController
 			dir = @graph_file.rpartition('/').first
 			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
 			@graph.write_json_file(@graph_file)
+			@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'))
 
 		when 'clear', 'leeren' # clear workspace
 			clear_workspace
