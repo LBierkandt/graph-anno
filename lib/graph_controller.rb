@@ -84,8 +84,8 @@ class GraphController
 		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
-		# rescue StandardError => e
-		# 	@cmd_error_messages << e.message
+		rescue StandardError => e
+			@cmd_error_messages << e.message
 		end
 		return value.to_json if value.is_a?(Hash)
 		return sentence_settings_and_graph.merge(
