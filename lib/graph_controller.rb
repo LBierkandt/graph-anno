@@ -87,10 +87,11 @@ class GraphController
 		# rescue StandardError => e
 		# 	@cmd_error_messages << e.message
 		end
-		return value.to_json if value
+		return value.to_json if value.is_a?(Hash)
 		return sentence_settings_and_graph.merge(
 			:graph_file => @graph_file,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
+			:command => value,
 			:messages => @cmd_error_messages
 		).to_json
 	end
@@ -389,6 +390,13 @@ class GraphController
 		}.to_json
 	end
 
+	def get_log_table
+		@sinatra.haml(
+			:log_table,
+			:locals => {:log => @log}
+		)
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
@@ -661,7 +669,7 @@ class GraphController
 				sentence.delete(log_step)
 			end
 
-		when 'load', 'laden' # clear workspace and load corpus file
+		when 'load' # clear workspace and load corpus file
 			clear_workspace
 			@graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
@@ -681,7 +689,7 @@ class GraphController
 			@graph.merge!(addgraph)
 			@found = nil
 
-		when 'save', 'speichern' # save workspace to corpus file
+		when 'save' # save workspace to corpus file
 			raise 'Please specify a file name!' if @graph_file == '' and !parameters[:words][0]
 			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
 			dir = @graph_file.rpartition('/').first
@@ -689,7 +697,7 @@ class GraphController
 			@graph.write_json_file(@graph_file)
 			@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'))
 
-		when 'clear', 'leeren' # clear workspace
+		when 'clear' # clear workspace
 			clear_workspace
 
 		when 'image' # export sentence as graphics file
@@ -746,7 +754,7 @@ class GraphController
 		else
 			raise "Unknown command \"#{command}\""
 		end
-		return nil
+		return command
 	end
 
 	def generate_graph(format = :svg, path = 'public/graph.svg')

@@ -305,6 +305,7 @@ function makeAnfrage(anfrage, params) {
 				txtcmd.value = getCookie('traw_cmd');
 				updateLayerOptions();
 				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
+				if (antworthash['command'] == 'load') reloadLogTable();
 				if (antworthash['graph_file'] != undefined) $('#active_file').html('file: ' + antworthash['graph_file']);
 				if (antworthash['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + antworthash['current_annotator']);
 				if (antworthash['search_result'] != undefined) {
@@ -577,5 +578,11 @@ function updateLogTable() {
 			else if (index > data['current_index']) $(this).addClass('undone');
 			else $(this).removeClass('undone') ;
 		});
+	});
+}
+function reloadLogTable() {
+	$.get('/get_log_table')
+	.done(function(data){
+		$('#log .content').html(data);
 	});
 }
