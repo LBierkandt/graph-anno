@@ -81,7 +81,6 @@ class GraphController
 		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
-		set_segment(@sinatra.params[:sentence])
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
