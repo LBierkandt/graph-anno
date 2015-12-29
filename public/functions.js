@@ -563,11 +563,76 @@ var Segmentation = (function () {
 	var list = [];
 	var current = [];
 	var currentIndizes = [];
-
-	$(document).on('click', '#segmentation .segment', function(){
+	var keyBinding = function (e) {
+		switch (e.which) {
+			case 13:
+				Segmentation.setCurrent($.map($('.segment.chosen'), function(el){return $(el).attr('segment-id');}));
+				unchoose(e);
+				Segmentation.changeSentence();
+				break;
+			case 27:
+				unchoose(e);
+				break;
+		}
+	}
+	var scroll = function () {
+		var margin = 2;
+		var $elements = $('.segment.active');
+		var $firstElement = $elements.first();
+		var $lastElement = $elements.last();
+		var $container = $('#segmentation .content');
+		var containerViewTop = $container.scrollTop();
+		var containerViewHeight = $container.height();
+		var containerViewBottom = containerViewTop + containerViewHeight;
+		var firstElementTop = Math.ceil($firstElement.position().top + margin);
+		var lastElementTop = Math.ceil($lastElement.position().top + margin);
+		var lastElementBottom = Math.ceil(lastElementTop + $lastElement.height() + 2*margin);
+		var elementHeight = Math.ceil(lastElementTop - firstElementTop + $lastElement.height() + margin);
+		if (firstElementTop < containerViewTop || elementHeight > containerViewHeight)
+			$container.scrollTop($firstElement.position().top + margin);
+		else if (lastElementBottom > containerViewBottom)
+			$container.scrollTop(firstElementTop + elementHeight - containerViewHeight + margin);
+	}
+	var click = function (e) {
+		var clickedElement = e.target;
+		$(window).off('keydown', keyBinding).on('keydown', keyBinding);
+		if (e.ctrlKey) {
+			$(clickedElement).toggleClass('chosen');
+		} else if (e.shiftKey) {
+			var $segments = $('.layer-0 .segment');
+			var firstIndex = $segments.index($('.segment.chosen').first());
+			var lastIndex = $segments.index($('.segment.chosen').last());
+			var clickedIndex = $segments.index(clickedElement);
+			if (clickedIndex < firstIndex) {
+				$segments.slice(clickedIndex, firstIndex).addClass('chosen');
+			} else if (clickedIndex > lastIndex) {
+				$segments.slice(lastIndex, clickedIndex + 1).addClass('chosen');
+			} else if (clickedIndex > firstIndex && clickedIndex < lastIndex) {
+				if ($(clickedElement).hasClass('chosen'))
+					$segments.slice(clickedIndex, lastIndex + 1).removeClass('chosen');
+				else
+					$segments.slice(firstIndex, clickedIndex + 1).addClass('chosen');
+			} else {
+				$(clickedElement).toggleClass('chosen');
+			}
+		} else {
+			$('.segment').removeClass('chosen');
+			$(clickedElement).addClass('chosen');
+		}
+	}
+	var dblclick = function (e) {
+		unchoose(e);
 		Segmentation.setCurrent([$(this).attr('segment-id')]);
 		Segmentation.changeSentence();
-	});
+	}
+	var unchoose = function (e) {
+		e.preventDefault();
+		$(window).off('keydown', keyBinding);
+		$('.segment').removeClass('chosen');
+	}
+
+	$(document).on('dblclick', '#segmentation .segment', dblclick);
+	$(document).on('click', '#segmentation .segment', click);
 
 	return {
 		setList: function (data) {
@@ -590,7 +655,7 @@ var Segmentation = (function () {
 				var index = $.map(list, function(e){return e.id;}).indexOf(current[i]);
 				currentIndizes.push(index);
 			}
-			Segmentation.scroll();
+			scroll();
 		},
 		setCurrentIndizes: function (indizes) {
 			currentIndizes = indizes;
@@ -601,28 +666,10 @@ var Segmentation = (function () {
 				var active = $(segments[currentIndizes[i]]).addClass('active');
 				current.push(active.attr('segment-id'));
 			}
-			Segmentation.scroll();
+			scroll();
 		},
 		getCurrent: function () {
 			return current;
-		},
-		scroll: function () {
-			var margin = 2;
-			var $elements = $('.segment.active').first();
-			var $firstElement = $elements.first();
-			var $lastElement = $elements.last();
-			var $container = $('#segmentation .content');
-			var containerViewTop = $container.scrollTop();
-			var containerViewHeight = $container.height();
-			var containerViewBottom = containerViewTop + containerViewHeight;
-			var firstElementTop = Math.ceil($firstElement.position().top + margin);
-			var lastElementTop = Math.ceil($lastElement.position().top + margin);
-			var lastElementBottom = Math.ceil(lastElementTop + $lastElement.height() + 2*margin);
-			var elementHeight = Math.ceil(lastElementTop - firstElementTop + $lastElement.height() + margin);
-			if (firstElementTop < containerViewTop || elementHeight > containerViewHeight)
-				$container.scrollTop($firstElement.position().top + margin);
-			else if (lastElementBottom > containerViewBottom)
-				$container.scrollTop(firstElementTop + elementHeight - containerViewHeight + margin);
 		},
 		changeSentence: function () {
 			var anfrage = new XMLHttpRequest();

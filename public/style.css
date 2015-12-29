@@ -104,6 +104,9 @@ table {
     #segmentation .content li.active {
       color: white;
       background-color: #002050; }
+    #segmentation .content li.chosen {
+      color: white;
+      background-color: #003090; }
 
 #log {
   display: none;
