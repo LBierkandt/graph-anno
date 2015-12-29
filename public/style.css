@@ -92,6 +92,7 @@ table {
   height: 40%;
   padding: 5px; }
   #segmentation .content ul {
+    position: relative;
     padding-left: 0; }
   #segmentation .content li {
     margin: 2px;

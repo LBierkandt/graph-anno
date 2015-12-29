@@ -590,6 +590,7 @@ var Segmentation = (function () {
 				var index = $.map(list, function(e){return e.id;}).indexOf(current[i]);
 				currentIndizes.push(index);
 			}
+			Segmentation.scroll();
 		},
 		setCurrentIndizes: function (indizes) {
 			currentIndizes = indizes;
@@ -600,9 +601,28 @@ var Segmentation = (function () {
 				var active = $(segments[currentIndizes[i]]).addClass('active');
 				current.push(active.attr('segment-id'));
 			}
+			Segmentation.scroll();
 		},
 		getCurrent: function () {
 			return current;
+		},
+		scroll: function () {
+			var margin = 2;
+			var $elements = $('.segment.active').first();
+			var $firstElement = $elements.first();
+			var $lastElement = $elements.last();
+			var $container = $('#segmentation .content');
+			var containerViewTop = $container.scrollTop();
+			var containerViewHeight = $container.height();
+			var containerViewBottom = containerViewTop + containerViewHeight;
+			var firstElementTop = Math.ceil($firstElement.position().top + margin);
+			var lastElementTop = Math.ceil($lastElement.position().top + margin);
+			var lastElementBottom = Math.ceil(lastElementTop + $lastElement.height() + 2*margin);
+			var elementHeight = Math.ceil(lastElementTop - firstElementTop + $lastElement.height() + margin);
+			if (firstElementTop < containerViewTop || elementHeight > containerViewHeight)
+				$container.scrollTop($firstElement.position().top + margin);
+			else if (lastElementBottom > containerViewBottom)
+				$container.scrollTop(firstElementTop + elementHeight - containerViewHeight + margin);
 		},
 		changeSentence: function () {
 			var anfrage = new XMLHttpRequest();
