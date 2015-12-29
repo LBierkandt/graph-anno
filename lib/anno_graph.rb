@@ -687,9 +687,9 @@ class AnnoGraph
 	# @param nodes [Array] the nodes that will be connected to the new node
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
-	# @param sentence [SectNode] the sentence node to which the new node will belong
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_parent_node(nodes, node_attrs, edge_attrs, sentence, log_step = nil)
+	def add_parent_node(nodes, node_attrs, edge_attrs, log_step = nil)
+		sentence = nodes.map(&:sentence).most_frequent
 		parent_node = add_anno_node(
 			:attr => node_attrs,
 			:sentence => sentence,
@@ -709,9 +709,9 @@ class AnnoGraph
 	# @param nodes [Array] the nodes that will be connected to the new node
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
-	# @param sentence [SectNode] the sentence node to which the new node will belong
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_child_node(nodes, node_attrs, edge_attrs, sentence, log_step = nil)
+	def add_child_node(nodes, node_attrs, edge_attrs, log_step = nil)
+		sentence = nodes.map(&:sentence).most_frequent
 		child_node = add_anno_node(
 			:attr => node_attrs,
 			:sentence => sentence,
@@ -1179,6 +1179,10 @@ class AnnoGraphConf
 end
 
 class Array
+	def most_frequent
+		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
+	end
+
 	def text
 		self.map{|n| n.text} * ' '
 	end

@@ -34,7 +34,7 @@ class GraphController
 		@data_table = nil
 		@search_result = ''
 		@sentence_list = {}
-		@sentence = nil
+		@segments = nil
 		@tokens = []
 		@nodes = []
 		@edges = []
@@ -54,7 +54,7 @@ class GraphController
 	end
 
 	def draw_graph
-		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
+		set_segment(@sinatra.request.cookies['traw_sentence'])
 		return generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
 			:sentence_changed => true
@@ -81,7 +81,7 @@ class GraphController
 		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
-		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
+		set_segment(@sinatra.params[:sentence])
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
@@ -98,7 +98,7 @@ class GraphController
 
 	def change_sentence
 		set_cmd_cookies
-		@sentence = @graph.nodes[@sinatra.params[:sentence]]
+		set_segment(@sinatra.params[:sentence])
 		return generate_graph.merge(
 			:sentence_changed => true
 		).to_json
@@ -317,11 +317,10 @@ class GraphController
 			@graph.toolbox_einlesen(file, format)
 		end
 		set_sentence_list(:clear => true)
-		@sentence = @graph.nodes[sentence_list.keys.first]
-		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
+		@segments = [@graph.nodes[sentence_list.keys.first]]
+		@sinatra.response.set_cookie('traw_sentence', { :value => @segments.map(&:id), :path => '/' })
 		return {
 			:sentence_list => @sentence_list.values,
-			:graph_file => @sentence,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
 		}.to_json
 	end
@@ -407,15 +406,15 @@ class GraphController
 		@graph_file.replace('')
 		@graph.clear
 		@found = nil
-		@sentence = nil
+		@segments = nil
 		@log = Log.new(@graph)
 	end
 
 	def sentence_settings_and_graph
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
+		@sinatra.response.set_cookie('traw_sentence', {:value => @segments ? @segments.map(&:id) : nil, :path => '/'})
 		return generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
-			:sentence_changed => (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
+			:sentence_changed => (@segments && @sinatra.request.cookies['traw_sentence'] == @segments.map(&:id)) ? false : true
 		)
 	end
 
@@ -488,10 +487,18 @@ class GraphController
 		end
 	end
 
+	def set_segment(list)
+		if list && list != []
+			@segments = list.map{|id| @graph.nodes[id]}
+		else
+			@segments = nil
+		end
+	end
+
 	def element_by_identifier(identifier)
 		i = identifier.scan(/\d/).join.to_i
 		{
-			'm' => @sentence,
+			'm' => @segments.length == 1 ? @segments.first : nil,
 			'n' => @nodes[i],
 			'e' => @edges[i],
 			't' => @tokens[i],
@@ -513,7 +520,7 @@ class GraphController
 			log_step = @log.add_step(:command => command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
-			@graph.add_anno_node(:attr => properties, :sentence => @sentence, :log => log_step)
+			@graph.add_anno_node(:attr => properties, :sentence => @segments.first, :log => log_step)
 
 		when 'e' # new edge
 			sentence_set?
@@ -563,7 +570,6 @@ class GraphController
 				extract_elements(parameters[:nodes] + parameters[:tokens]),
 				properties.merge(extract_attributes(parameters)),
 				properties.clone,
-				@sentence,
 				log_step
 			)
 			undefined_references?(parameters[:nodes] + parameters[:tokens])
@@ -576,7 +582,6 @@ class GraphController
 				extract_elements(parameters[:nodes] + parameters[:tokens]),
 				properties.merge(extract_attributes(parameters)),
 				properties.clone,
-				@sentence,
 				log_step
 			)
 			undefined_references?(parameters[:nodes] + parameters[:tokens])
@@ -609,12 +614,12 @@ class GraphController
 				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last, :log => log_step)
 			end
 			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first, :log => log_step)
-			@sentence = new_nodes.first
+			@segments = [new_nodes.first]
 
 		when 't' # build tokens and append them
 			sentence_set?
 			log_step = @log.add_step(:command => command_line)
-			@graph.build_tokens(parameters[:words], :sentence => @sentence, :log => log_step)
+			@graph.build_tokens(parameters[:words], :sentence => @segments.last, :log => log_step)
 
 		when 'tb', 'ti' # build tokens and insert them before given token
 			sentence_set?
@@ -639,7 +644,7 @@ class GraphController
 			reset_sentence
 
 		when 's' # change sentence
-			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
+			@segments = [@graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]]
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
@@ -653,15 +658,15 @@ class GraphController
 					}
 				end
 			elsif sentence_set?
-				command_line << ' ' + @sentence.name
-				[@sentence]
+				command_line << ' ' + @segments.map(&:name).join(' ')
+				@segments
 			else
 				[]
 			end
 			log_step = @log.add_step(:command => command_line)
 			sentences.each do |sentence|
 				# change to next sentence
-				@sentence = sentence.node_after || sentence.node_before if sentence == @sentence
+				@segments = [sentence.node_after || sentence.node_before] if @segments.include?(sentence)
 				# join remaining sentences
 				@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after, :log => log_step)
 				# delete nodes
@@ -679,8 +684,8 @@ class GraphController
 				@log = Log.new(@graph)
 			end
 			sentence_nodes = @graph.sentence_nodes
-			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
-			@sentence = sentence_nodes.first unless @sentence
+			@segments = [sentence_nodes.select{|n| n.name == @segments.first.name}[0]] if @segments
+			@segments = [sentence_nodes.first] unless @segments
 
 		when 'add' # load corpus file and add it to the workspace
 			@graph_file.replace('')
@@ -758,11 +763,11 @@ class GraphController
 	end
 
 	def generate_graph(format = :svg, path = 'public/graph.svg')
-		puts "Generating graph for sentence \"#{@sentence.name}\"..." if @sentence
+		puts "Generating graph for segment(s) \"#{@segments.map(&:name).join(', ')}\"..." if @segments
 		satzinfo = {:textline => '', :meta => ''}
 
-		@tokens     = @sentence ? @sentence.sentence_tokens : []
-		all_nodes   = @sentence ? @sentence.nodes : []
+		@tokens     = @segments ? @segments.map(&:sentence_tokens).flatten(1) : []
+		all_nodes   = @segments ? @segments.map(&:nodes).flatten(1) : []
 		@nodes      = all_nodes.reject{|n| n.type == 't'}
 		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
 		@edges      = all_edges.select{|e| e.type == 'a'}
@@ -773,7 +778,11 @@ class GraphController
 			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
 		end
 
-		satzinfo[:meta] = build_label(@sentence) if @sentence
+		satzinfo[:meta] = if @segments && @segments.length == 1
+			build_label(@segments.first)
+		else
+			''
+		end
 
 		viz_graph = GraphViz.new(
 			:G,
@@ -923,7 +932,7 @@ class GraphController
 	end
 
 	def sentence_set?
-		if @sentence
+		if @segments
 			return true
 		else
 			raise 'Create a sentence first!'
@@ -931,7 +940,7 @@ class GraphController
 	end
 
 	def reset_sentence
-		@sentence = @graph.sentence_nodes.first unless @graph.sentence_nodes.include?(@sentence)
+		@segments = [@graph.sentence_nodes.first] unless @segments - @graph.sentence_nodes == []
 	end
 
 	def set_cmd_cookies

@@ -2,7 +2,7 @@ window.onload = function() {
 	loadGraph();
 
 	window.onkeydown = taste;
-	$('#sentence').change(changeSentence);
+	// $('#sentence').change(changeSentence);
 
 	$('#txtcmd').focus().select();
 
@@ -144,7 +144,13 @@ function navigateSentences(target) {
 		switch(target) {
 			case 'first': sentenceField.selectedIndex = 0; break;
 			case 'prev': sentenceField.selectedIndex = Math.max(sentenceField.selectedIndex - 1, 0); break;
-			case 'next': sentenceField.selectedIndex = Math.min(sentenceField.selectedIndex + 1, sentenceField.options.length - 1); break;
+			case 'next':
+				var lastSelected = 0;
+				for(var i = 0; i < sentenceField.options.length; i++) {
+					if (sentenceField.options[i].selected) lastSelected = i;
+				}
+				sentenceField.selectedIndex = Math.min(lastSelected + 1, sentenceField.options.length - 1);
+				break;
 			case 'last': sentenceField.selectedIndex = sentenceField.options.length - 1; break;
 		}
 		changeSentence();
@@ -181,7 +187,7 @@ function updateView(antworthash) {
 	if (antworthash['textline'] != undefined) $('#textline').html(antworthash['textline']);
 	if (antworthash['meta'] != undefined) $('#meta').html(antworthash['meta']);
 	if (antworthash['sentence_list'] != undefined) build_sentence_list(antworthash['sentence_list']);
-	setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
+	$('#sentence').val(getCookie('traw_sentence').split('&'));
 	graphdivEinpassen();
 	var bild = document.getElementById('graph');
 	var scrollLeft = bild.parentNode.scrollLeft;
@@ -213,7 +219,7 @@ function updateView(antworthash) {
 function sendCmd(txtcmd) {
 	if (txtcmd == undefined) txtcmd = document.cmd.txtcmd.value;
 	var layer = document.cmd.layer.value;
-	var sentence = document.cmd.sentence.value;
+	var sentence = $('#sentence').val();
 	var anfrage = new XMLHttpRequest();
 	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
 	anfrage.open('POST', '/handle_commandline');

@@ -492,7 +492,6 @@ module SearchableGraph
 							nodes,
 							attrs,
 							conf.layer_attributes[layer],
-							nodes.map{|n| n.sentence}.most_frequent
 						)
 					end
 				when 'c', 'h'
@@ -502,7 +501,6 @@ module SearchableGraph
 							nodes,
 							attrs,
 							conf.layer_attributes[layer],
-							nodes.map{|n| n.sentence}.most_frequent
 						)
 					end
 				when 'd'
@@ -1003,9 +1001,5 @@ class Array
 			end
 		end
 		return false
-	end
-
-	def most_frequent
-		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
 	end
 end

@@ -20,7 +20,7 @@
           %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
           %select{ :name => "layer", :id => "layer" }
             = haml :layer_options, :locals => {:controller => controller}
-          %select{ :name => "sentence", :id => "sentence" }
+          %select{ :name => 'sentence[]', :id => 'sentence', :multiple => true, :size => 2 }
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
         %div
           #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
