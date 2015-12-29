@@ -55,6 +55,7 @@ class GraphController
 
 	def draw_graph
 		generate_graph.merge(
+			:segments => @segments ? @segments.map(&:id) : nil,
 			:sentence_list => set_sentence_list.values,
 			:sentence_changed => true
 		).to_json
@@ -96,7 +97,6 @@ class GraphController
 	end
 
 	def change_sentence
-		set_cmd_cookies
 		set_segment(@sinatra.params[:sentence])
 		return generate_graph.merge(
 			:sentence_changed => true

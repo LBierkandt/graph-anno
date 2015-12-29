@@ -84,6 +84,26 @@ table {
   #cmddiv #documentation {
     float: right; }
 
+#segmentation {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 20%;
+  height: 40%;
+  padding: 5px; }
+  #segmentation .content ul {
+    padding-left: 0; }
+  #segmentation .content li {
+    margin: 2px;
+    padding: 0 2px;
+    height: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    background-color: #eeeeee; }
+    #segmentation .content li.active {
+      color: white;
+      background-color: #002050; }
+
 #log {
   display: none;
   position: fixed;

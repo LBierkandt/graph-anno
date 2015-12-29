@@ -1,6 +1,7 @@
 $theme-color: #002050
 $theme-color-highlight: #003090
 $background-color: #ddd
+$background-color-light: #eee
 $highlight-color: #d00
 
 *
@@ -88,6 +89,27 @@ table
     display: inline-block
   #documentation
     float: right
+
+#segmentation
+  position: fixed
+  top: 10px
+  right: 10px
+  width: 20%
+  height: 40%
+  padding: 5px
+  .content
+    ul
+      padding-left: 0
+    li
+      margin: 2px
+      padding: 0 2px
+      height: 16px
+      white-space: nowrap
+      overflow: hidden
+      background-color: $background-color-light
+      &.active
+        color: #fff
+        background-color: $theme-color
 
 #log
   display: none
