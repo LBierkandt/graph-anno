@@ -321,7 +321,6 @@ class GraphController
 		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
 		return {
 			:sentence_list => @sentence_list.values,
-			:graph_file => @sentence,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
 		}.to_json
 	end
