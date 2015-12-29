@@ -35,7 +35,7 @@ set :root, Dir.pwd
 
 before do
 	controller.sinatra = self
-	params[:sentence] = params[:sentence].split(',') if params[:sentence]
+	params[:sentence] = params[:sentence].split(',') if params[:sentence].is_a?(String)
 	request.cookies['traw_sentence'] = request.cookies['traw_sentence'].split('&') if request.cookies['traw_sentence']
 end
 

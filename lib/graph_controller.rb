@@ -54,8 +54,7 @@ class GraphController
 	end
 
 	def draw_graph
-		set_segment(@sinatra.request.cookies['traw_sentence'])
-		return generate_graph.merge(
+		generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
 			:sentence_changed => true
 		).to_json
@@ -318,8 +317,8 @@ class GraphController
 		end
 		set_sentence_list(:clear => true)
 		@segments = [@graph.nodes[sentence_list.keys.first]]
-		@sinatra.response.set_cookie('traw_sentence', { :value => @segments.map(&:id), :path => '/' })
 		return {
+			:segments => @segments.map(&:id),
 			:sentence_list => @sentence_list.values,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
 		}.to_json
@@ -411,10 +410,10 @@ class GraphController
 	end
 
 	def sentence_settings_and_graph
-		@sinatra.response.set_cookie('traw_sentence', {:value => @segments ? @segments.map(&:id) : nil, :path => '/'})
-		return generate_graph.merge(
+		generate_graph.merge(
+			:segments => @segments ? @segments.map(&:id) : nil,
 			:sentence_list => set_sentence_list.values,
-			:sentence_changed => (@segments && @sinatra.request.cookies['traw_sentence'] == @segments.map(&:id)) ? false : true
+			:sentence_changed => (@segments && @sinatra.params[:sentence] && @sinatra.params[:sentence] == @segments.map(&:id)) ? false : true
 		)
 	end
 
@@ -482,7 +481,7 @@ class GraphController
 	end
 
 	def check_cookies
-		['traw_sentence', 'traw_layer', 'traw_cmd', 'traw_query'].each do |cookie_name|
+		['traw_layer', 'traw_cmd', 'traw_query'].each do |cookie_name|
 			@sinatra.response.set_cookie(cookie_name, {:value => ''}) unless @sinatra.request.cookies[cookie_name]
 		end
 	end
@@ -946,7 +945,6 @@ class GraphController
 	def set_cmd_cookies
 		@sinatra.response.set_cookie('traw_layer', {:value => @sinatra.params[:layer]}) if @sinatra.params[:layer]
 		@sinatra.response.set_cookie('traw_cmd', {:value => @sinatra.params[:txtcmd]}) if @sinatra.params[:txtcmd]
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sinatra.params[:sentence]}) if @sinatra.params[:sentence]
 	end
 
 	def set_filter_cookies

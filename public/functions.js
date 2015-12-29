@@ -187,7 +187,7 @@ function updateView(antworthash) {
 	if (antworthash['textline'] != undefined) $('#textline').html(antworthash['textline']);
 	if (antworthash['meta'] != undefined) $('#meta').html(antworthash['meta']);
 	if (antworthash['sentence_list'] != undefined) build_sentence_list(antworthash['sentence_list']);
-	$('#sentence').val(getCookie('traw_sentence').split('&'));
+	if (antworthash['segments'] != undefined) $('#sentence').val(antworthash['segments']);
 	graphdivEinpassen();
 	var bild = document.getElementById('graph');
 	var scrollLeft = bild.parentNode.scrollLeft;
@@ -565,7 +565,7 @@ function display_search_message(message) {
 	query.focus();
 }
 function goToStep(i) {
-	$.post('/go_to_step/' + i, {}, null, 'json')
+	$.post('/go_to_step/' + i, {sentence: $('#sentence').val()}, null, 'json')
 	.done(function(data){
 		updateLogTable();
 		updateView(data);
