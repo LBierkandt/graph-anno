@@ -564,6 +564,7 @@ var Segmentation = (function () {
 	var current = [];
 	var currentIndizes = [];
 	var currentLayer = 0
+	var clickedLayer = 0
 	var keyBinding = function (e) {
 		switch (e.which) {
 			case 13:
@@ -596,15 +597,22 @@ var Segmentation = (function () {
 	}
 	var click = function (e) {
 		var clickedElement = e.target;
+		var newClickedLayer = $(e.target).closest('ul').attr('layer');
+		if (newClickedLayer != clickedLayer) {
+			$('.segment').removeClass('chosen');
+		}
+		clickedLayer = newClickedLayer;
 		$(window).off('keydown', keyBinding).on('keydown', keyBinding);
 		if (e.ctrlKey) {
 			$(clickedElement).toggleClass('chosen');
 		} else if (e.shiftKey) {
-			var $segments = $('ul[layer="'+currentLayer+'"] .segment');
+			var $segments = $('ul[layer="'+clickedLayer+'"] .segment');
 			var firstIndex = $segments.index($('.segment.chosen').first());
 			var lastIndex = $segments.index($('.segment.chosen').last());
 			var clickedIndex = $segments.index(clickedElement);
-			if (clickedIndex < firstIndex) {
+			if (firstIndex == -1) {
+				$(clickedElement).addClass('chosen');
+			} else if (clickedIndex < firstIndex) {
 				$segments.slice(clickedIndex, firstIndex).addClass('chosen');
 			} else if (clickedIndex > lastIndex) {
 				$segments.slice(lastIndex, clickedIndex + 1).addClass('chosen');
