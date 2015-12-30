@@ -135,36 +135,26 @@ class Node < NodeOrEdge
 	def sentence
 		if @type == 's'
 			self
+		elsif @type == 'p'
+			nil
 		else
 			parent_nodes{|e| e.type == 's'}[0]
 		end
 	end
 
-	# @return [Array] the directly dominated segment nodes
-	def dominated_segment_nodes
-		child_nodes{|e| e.type == 's'}.select{|n| n.type == 's'}
-	end
-
-	# @return [Boolean] true when self is a segment node and doesn't dominate other segment nodes
-	def sentence_node?
-		if @type == 's' and dominated_segment_nodes.empty?
-			true
-		else
-			false
-		end
-	end
-
 	# @return [Array] the sentence nodes self dominates
 	def sentence_nodes
-		if @type == 's'
+		if @type == 'p'
 			nodes = [self]
 			loop do
-				children = nodes.map{|n| n.dominated_segment_nodes}.flatten
+				children = nodes.map{|n| n.child_nodes{|e| e.type == 'p'}}.flatten
 				return nodes if children.empty?
 				nodes = children
 			end
+		elsif @type == 's'
+			[self]
 		else
-			return []
+			[]
 		end
 	end
 
@@ -174,19 +164,17 @@ class Node < NodeOrEdge
 		if @type == 't'
 			ordered_sister_nodes{|t| t.sentence === s}
 		elsif @type == 's'
-			if sentence_node?
-				if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
-					if first_token.speaker
-						child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
-					else
-						first_token.ordered_sister_nodes{|t| t.sentence === s}
-					end
+			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
+				if first_token.speaker
+					child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
 				else
-					[]
+					first_token.ordered_sister_nodes{|t| t.sentence === s}
 				end
 			else
-				sentence_nodes.map{|s| s.sentence_tokens}.flatten
+				[]
 			end
+		elsif @type == 'p'
+			sentence_nodes.map{|s| s.sentence_tokens}.flatten
 		else
 			s.sentence_tokens
 		end
@@ -344,12 +332,8 @@ class Node < NodeOrEdge
 		if link
 			super
 		else
-			if @type == 's'
-				if sentence_node?
-					child_nodes{|e| e.type == 's'}
-				else
-					sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
-				end
+			if @type == 'p' || @type == 's'
+				sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
 			else
 				sentence.nodes
 			end
@@ -900,8 +884,8 @@ class AnnoGraph
 
 	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
-		if first_sect_node = @nodes.values.select{|n| n.sentence_node?}[0]
-			first_sect_node.ordered_sister_nodes
+		if first_sentence_node = @nodes.values.select{|n| n.type == 's'}[0]
+			first_sentence_node.ordered_sister_nodes
 		else
 			[]
 		end
@@ -913,7 +897,7 @@ class AnnoGraph
 		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i}}]
 		loop do
 			next_layer_segments = result[layer].map do |s|
-				parent = s[:node].parent_nodes{|e| e.type == 's'}[0]
+				parent = s[:node].parent_nodes{|e| e.type == 'p'}[0]
 				s.merge(:node => parent)
 			end
 			next_layer = {}
