@@ -140,20 +140,52 @@ class Node < NodeOrEdge
 		end
 	end
 
+	# @return [Array] the directly dominated segment nodes
+	def dominated_segment_nodes
+		child_nodes{|e| e.type == 's'}.select{|n| n.type == 's'}
+	end
+
+	# @return [Boolean] true when self is a segment node and doesn't dominate other segment nodes
+	def sentence_node?
+		if @type == 's' and dominated_segment_nodes.empty?
+			true
+		else
+			false
+		end
+	end
+
+	# @return [Array] the sentence nodes self dominates
+	def sentence_nodes
+		if @type == 's'
+			nodes = [self]
+			loop do
+				children = nodes.map{|n| n.dominated_segment_nodes}.flatten
+				return nodes if children.empty?
+				nodes = children
+			end
+		else
+			return []
+		end
+	end
+
 	# @return [Array] the tokens of the sentence self belongs to
 	def sentence_tokens
 		s = sentence
 		if @type == 't'
 			ordered_sister_nodes{|t| t.sentence === s}
 		elsif @type == 's'
-			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
-				if first_token.speaker
-					child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
+			if sentence_node?
+				if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
+					if first_token.speaker
+						child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
+					else
+						first_token.ordered_sister_nodes{|t| t.sentence === s}
+					end
 				else
-					first_token.ordered_sister_nodes{|t| t.sentence === s}
+					[]
 				end
 			else
-				[]
+				sentence_nodes.map{|s| s.sentence_tokens}.flatten
 			end
 		else
 			s.sentence_tokens
@@ -313,7 +345,11 @@ class Node < NodeOrEdge
 			super
 		else
 			if @type == 's'
-				child_nodes{|e| e.type == 's'}
+				if sentence_node?
+					child_nodes{|e| e.type == 's'}
+				else
+					sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
+				end
 			else
 				sentence.nodes
 			end
@@ -864,11 +900,39 @@ class AnnoGraph
 
 	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
-		if first_sect_node = @nodes.values.select{|n| n.type == 's'}[0]
+		if first_sect_node = @nodes.values.select{|n| n.sentence_node?}[0]
 			first_sect_node.ordered_sister_nodes
 		else
 			[]
 		end
+	end
+
+	# @return [Array] a list of ordered lists of self's segment nodes, starting with the lowest level
+	def segments
+		layer = 0
+		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i}}]
+		loop do
+			next_layer_segments = result[layer].map do |s|
+				parent = s[:node].parent_nodes{|e| e.type == 's'}[0]
+				s.merge(:node => parent)
+			end
+			next_layer = {}
+			next_layer_segments.each do |s|
+				next unless s[:node]
+				if next_layer[s[:node]]
+					next_layer[s[:node]][:last] = s[:last]
+				else
+				 next_layer[s[:node]] = s
+				end
+			end
+			unless next_layer.empty?
+				result << next_layer.values
+				layer += 1
+			else
+				break
+			end
+		end
+		return result
 	end
 
 	def speaker_nodes

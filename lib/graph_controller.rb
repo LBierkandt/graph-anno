@@ -34,7 +34,8 @@ class GraphController
 		@data_table = nil
 		@search_result = ''
 		@sentence_list = {}
-		@segments = nil
+		@segments = []
+		@current_segments = nil
 		@tokens = []
 		@nodes = []
 		@edges = []
@@ -55,8 +56,8 @@ class GraphController
 
 	def draw_graph
 		generate_graph.merge(
-			:segments => @segments ? @segments.map(&:id) : nil,
-			:sentence_list => set_sentence_list.values,
+			:segments => @current_segments ? @current_segments.map(&:id) : nil,
+			:sentence_list => set_sentence_list,
 			:sentence_changed => true
 		).to_json
 	end
@@ -126,7 +127,7 @@ class GraphController
 		@sentence_list.each{|id, h| h[:found] = false}
 		set_found_sentences
 		return generate_graph.merge(
-			:sentence_list => @sentence_list.values,
+			:sentence_list => @sentence_list,
 			:search_result => @search_result,
 			:sentence_changed => false
 		).to_json
@@ -136,7 +137,7 @@ class GraphController
 		@found = nil
 		@search_result = ''
 		return generate_graph.merge(
-			:sentence_list => set_sentence_list.values,
+			:sentence_list => set_sentence_list,
 			:search_result => @search_result,
 			:sentence_changed => false
 		).to_json
@@ -315,10 +316,10 @@ class GraphController
 			@graph.toolbox_einlesen(file, format)
 		end
 		set_sentence_list(:clear => true)
-		@segments = [@graph.nodes[sentence_list.keys.first]]
+		@current_segments = [@graph.nodes[sentence_list.keys.first]]
 		return {
-			:segments => @segments.map(&:id),
-			:sentence_list => @sentence_list.values,
+			:segments => @current_segments.map(&:id),
+			:sentence_list => @sentence_list,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
 		}.to_json
 	end
@@ -361,7 +362,7 @@ class GraphController
 			@search_result = ''
 		end
 		return generate_graph.merge(
-			:sentence_list => set_sentence_list.values,
+			:sentence_list => set_sentence_list,
 			:search_result => @search_result,
 			:sentence_changed => false
 		).to_json
@@ -404,15 +405,15 @@ class GraphController
 		@graph_file.replace('')
 		@graph.clear
 		@found = nil
-		@segments = nil
+		@current_segments = nil
 		@log = Log.new(@graph)
 	end
 
 	def sentence_settings_and_graph
 		generate_graph.merge(
-			:segments => @segments ? @segments.map(&:id) : nil,
-			:sentence_list => set_sentence_list.values,
-			:sentence_changed => (@segments && @sinatra.params[:sentence] && @sinatra.params[:sentence] == @segments.map(&:id)) ? false : true
+			:segments => @current_segments ? @current_segments.map(&:id) : nil,
+			:sentence_list => set_sentence_list,
+			:sentence_changed => (@current_segments && @sinatra.params[:sentence] && @sinatra.params[:sentence] == @current_segments.map(&:id)) ? false : true
 		)
 	end
 
@@ -487,16 +488,16 @@ class GraphController
 
 	def set_segment(list)
 		if list && list != []
-			@segments = list.map{|id| @graph.nodes[id]}
+			@current_segments = list.map{|id| @graph.nodes[id]}
 		else
-			@segments = nil
+			@current_segments = nil
 		end
 	end
 
 	def element_by_identifier(identifier)
 		i = identifier.scan(/\d/).join.to_i
 		{
-			'm' => @segments.length == 1 ? @segments.first : nil,
+			'm' => @current_segments.length == 1 ? @current_segments.first : nil,
 			'n' => @nodes[i],
 			'e' => @edges[i],
 			't' => @tokens[i],
@@ -518,7 +519,7 @@ class GraphController
 			log_step = @log.add_step(:command => command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
-			@graph.add_anno_node(:attr => properties, :sentence => @segments.first, :log => log_step)
+			@graph.add_anno_node(:attr => properties, :sentence => @current_segments.first, :log => log_step)
 
 		when 'e' # new edge
 			sentence_set?
@@ -612,12 +613,12 @@ class GraphController
 				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last, :log => log_step)
 			end
 			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first, :log => log_step)
-			@segments = [new_nodes.first]
+			@current_segments = [new_nodes.first]
 
 		when 't' # build tokens and append them
 			sentence_set?
 			log_step = @log.add_step(:command => command_line)
-			@graph.build_tokens(parameters[:words], :sentence => @segments.last, :log => log_step)
+			@graph.build_tokens(parameters[:words], :sentence => @current_segments.last, :log => log_step)
 
 		when 'tb', 'ti' # build tokens and insert them before given token
 			sentence_set?
@@ -642,7 +643,7 @@ class GraphController
 			reset_sentence
 
 		when 's' # change sentence
-			@segments = [@graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]]
+			@current_segments = [@graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]]
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
@@ -656,15 +657,15 @@ class GraphController
 					}
 				end
 			elsif sentence_set?
-				command_line << ' ' + @segments.map(&:name).join(' ')
-				@segments
+				command_line << ' ' + @current_segments.map(&:name).join(' ')
+				@current_segments
 			else
 				[]
 			end
 			log_step = @log.add_step(:command => command_line)
 			sentences.each do |sentence|
 				# change to next sentence
-				@segments = [sentence.node_after || sentence.node_before] if @segments.include?(sentence)
+				@current_segments = [sentence.node_after || sentence.node_before] if @current_segments.include?(sentence)
 				# join remaining sentences
 				@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after, :log => log_step)
 				# delete nodes
@@ -682,8 +683,8 @@ class GraphController
 				@log = Log.new(@graph)
 			end
 			sentence_nodes = @graph.sentence_nodes
-			@segments = [sentence_nodes.select{|n| n.name == @segments.first.name}[0]] if @segments
-			@segments = [sentence_nodes.first] unless @segments
+			@current_segments = [sentence_nodes.select{|n| n.name == @current_segments.first.name}[0]] if @current_segments
+			@current_segments = [sentence_nodes.first] unless @current_segments
 
 		when 'add' # load corpus file and add it to the workspace
 			@graph_file.replace('')
@@ -761,11 +762,11 @@ class GraphController
 	end
 
 	def generate_graph(format = :svg, path = 'public/graph.svg')
-		puts "Generating graph for segment(s) \"#{@segments.map(&:name).join(', ')}\"..." if @segments
+		puts "Generating graph for segment(s) \"#{@current_segments.map(&:name).join(', ')}\"..." if @current_segments
 		satzinfo = {:textline => '', :meta => ''}
 
-		@tokens     = @segments ? @segments.map(&:sentence_tokens).flatten(1) : []
-		all_nodes   = @segments ? @segments.map(&:nodes).flatten(1) : []
+		@tokens     = @current_segments ? @current_segments.map(&:sentence_tokens).flatten(1) : []
+		all_nodes   = @current_segments ? @current_segments.map(&:nodes).flatten(1) : []
 		@nodes      = all_nodes.reject{|n| n.type == 't'}
 		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
 		@edges      = all_edges.select{|e| e.type == 'a'}
@@ -776,8 +777,8 @@ class GraphController
 			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
 		end
 
-		satzinfo[:meta] = if @segments && @segments.length == 1
-			build_label(@segments.first)
+		satzinfo[:meta] = if @current_segments && @current_segments.length == 1
+			build_label(@current_segments.first)
 		else
 			''
 		end
@@ -930,7 +931,7 @@ class GraphController
 	end
 
 	def sentence_set?
-		if @segments
+		if @current_segments
 			return true
 		else
 			raise 'Create a sentence first!'
@@ -938,7 +939,7 @@ class GraphController
 	end
 
 	def reset_sentence
-		@segments = [@graph.sentence_nodes.first] unless @segments - @graph.sentence_nodes == []
+		@current_segments = [@graph.sentence_nodes.first] unless @current_segments - @graph.sentence_nodes == []
 	end
 
 	def set_cmd_cookies
@@ -967,9 +968,12 @@ class GraphController
 	end
 
 	def set_sentence_list(h = {})
-		@sentence_list = Hash[@graph.sentence_nodes.map{|s| [s.id, {:id => s.id, :name => s.name, :found => false}]}]
+		@segments = @graph.segments.map do |layer|
+			layer.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false)}
+		end
+		@sentence_list = Hash[@segments.flatten.map{|s| [s[:id], s]}]
 		set_found_sentences if !h[:clear] and @found
-		@sentence_list
+		@segments
 	end
 
 	def undefined_references?(ids)

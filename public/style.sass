@@ -99,21 +99,25 @@ table
   padding: 5px
   .content
     ul
-      position: relative
+      position: absolute
       padding-left: 0
-    li
-      margin: 2px
-      padding: 0 2px
-      height: 16px
-      white-space: nowrap
-      overflow: hidden
-      background-color: $background-color-light
-      &.active
-        color: #fff
-        background-color: $theme-color
-      &.chosen
-        color: #fff
-        background-color: $theme-color-highlight
+      li
+        margin-top: 2px
+        margin-bottom: 2px
+        padding: 0 2px
+        white-space: nowrap
+        overflow: hidden
+        background-color: $background-color-light
+        &.active
+          color: #fff
+          background-color: $theme-color
+        &.chosen
+          color: #fff
+          background-color: $theme-color-highlight
+      &:not([layer="0"])
+        li
+          position: absolute
+          width: 80px
 
 #log
   display: none

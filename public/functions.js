@@ -563,6 +563,7 @@ var Segmentation = (function () {
 	var list = [];
 	var current = [];
 	var currentIndizes = [];
+	var currentLayer = 0
 	var keyBinding = function (e) {
 		switch (e.which) {
 			case 13:
@@ -589,7 +590,7 @@ var Segmentation = (function () {
 		var lastElementBottom = Math.ceil(lastElementTop + $lastElement.height() + 2*margin);
 		var elementHeight = Math.ceil(lastElementTop - firstElementTop + $lastElement.height() + margin);
 		if (firstElementTop < containerViewTop || elementHeight > containerViewHeight)
-			$container.scrollTop($firstElement.position().top + margin);
+			$container.scrollTop($firstElement.position().top);
 		else if (lastElementBottom > containerViewBottom)
 			$container.scrollTop(firstElementTop + elementHeight - containerViewHeight + margin);
 	}
@@ -599,7 +600,7 @@ var Segmentation = (function () {
 		if (e.ctrlKey) {
 			$(clickedElement).toggleClass('chosen');
 		} else if (e.shiftKey) {
-			var $segments = $('.layer-0 .segment');
+			var $segments = $('ul[layer="'+currentLayer+'"] .segment');
 			var firstIndex = $segments.index($('.segment.chosen').first());
 			var lastIndex = $segments.index($('.segment.chosen').last());
 			var clickedIndex = $segments.index(clickedElement);
@@ -637,31 +638,41 @@ var Segmentation = (function () {
 	return {
 		setList: function (data) {
 			list = data;
-			$('#segmentation .content').html('<ul class="layer-0"></ul>');
-			for (var i in list) {
-				var li = $(document.createElement('li')).appendTo('#segmentation .content ul')
-				.addClass('segment')
-				.attr('segment-id', list[i].id)
-				.html(list[i].name);
-				if (list[i].found) li.addClass('found_sentence')
+			$('#segmentation .content').html('');
+			for (var layer = list.length - 1; layer >= 0; layer--) {
+				var ul = $(document.createElement('ul')).appendTo('#segmentation .content')
+				.attr('layer', layer)
+				.css('left', (list.length - layer - 1) * 86 + 2);
+				for (var i in list[layer]) {
+					var segment = list[layer][i];
+					var li = $(document.createElement('li')).appendTo(ul)
+					.addClass('segment')
+					.css('top', segment.first * 18)
+					.css('height', (segment.last - segment.first) * 18 + 16)
+					.attr('segment-id', segment.id)
+					.html(segment.name);
+					if (segment.found) li.addClass('found_sentence')
+				}
 			}
 		},
 		setCurrent: function (segments) {
 			current = segments;
+			currentLayer = parseInt($('.segment[segment-id="'+current[0]+'"]').closest('ul').attr('layer'))
 			currentIndizes = [];
 			$('.segment').removeClass('active');
 			for (var i in current) {
 				$('.segment[segment-id="'+current[i]+'"]').addClass('active');
-				var index = $.map(list, function(e){return e.id;}).indexOf(current[i]);
+				var index = $.map(list[currentLayer], function(e){return e.id;}).indexOf(current[i]);
 				currentIndizes.push(index);
 			}
 			scroll();
 		},
-		setCurrentIndizes: function (indizes) {
+		setCurrentIndizes: function (layer, indizes) {
+			currentLayer = layer
 			currentIndizes = indizes;
 			current = [];
 			$('.segment').removeClass('active');
-			var segments = $('ul.layer-0 .segment');
+			var segments = $('ul[layer="'+currentLayer+'"] .segment');
 			for (var i in currentIndizes) {
 				var active = $(segments[currentIndizes[i]]).addClass('active');
 				current.push(active.attr('segment-id'));
@@ -690,17 +701,17 @@ var Segmentation = (function () {
 						newIndizes = $.map(currentIndizes, function(i){return i - 1;});
 					break;
 				case 'next':
-					if (currentIndizes[currentIndizes.length - 1] < list.length - 1)
+					if (currentIndizes[currentIndizes.length - 1] < list[currentLayer].length - 1)
 						newIndizes = $.map(currentIndizes, function(i){return i + 1;});
 					break;
 				case 'last':
-					var offset = list.length - 1 - currentIndizes[currentIndizes.length - 1];
+					var offset = list[currentLayer].length - 1 - currentIndizes[currentIndizes.length - 1];
 					if (offset > 0)
 						newIndizes = $.map(currentIndizes, function(i){return i + offset;});
 					break;
 			}
 			if (newIndizes != currentIndizes) {
-				Segmentation.setCurrentIndizes(newIndizes);
+				Segmentation.setCurrentIndizes(currentLayer, newIndizes);
 				Segmentation.changeSentence()
 			}
 		},
