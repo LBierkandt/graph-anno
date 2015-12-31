@@ -505,6 +505,7 @@ class AnnoGraph
 				@tagset = Tagset.new(nodes_and_edges['allowed_anno'])
 			else
 				@tagset = Tagset.new(nodes_and_edges['tagset'])
+				@file_settings = nodes_and_edges['file_settings'].symbolize_keys
 			end
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
@@ -576,14 +577,17 @@ class AnnoGraph
 		end
 
 		puts 'Read "' + path + '".'
+
+		return nodes_and_edges['log']
 	end
 
 	# serializes self in a JSON file
 	# @param path [String] path to the JSON file
-	def write_json_file(path)
+	def write_json_file(path, compact = false, log = nil)
 		puts 'Writing file "' + path + '"...'
 		file = open(path, 'w')
-		file.write(JSON.pretty_generate(self, :indent => ' ', :space => '').encode('UTF-8'))
+		json = compact ? self.to_h(log).to_json : JSON.pretty_generate(self.to_h(log), :indent => ' ', :space => '')
+		file.write(json.encode('UTF-8'))
 		file.close
 		puts 'Wrote "' + path + '".'
 	end
@@ -779,7 +783,7 @@ class AnnoGraph
 	end
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
-	def to_h
+	def to_h(log = nil)
 		{
 			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
 			:edges => @edges.values.map{|e| e.to_h}
@@ -791,7 +795,8 @@ class AnnoGraph
 			merge(:tagset => @tagset).
 			merge(:annotators => @annotators).
 			merge(:file_settings => @file_settings).
-			merge(:search_makros => @makros_plain)
+			merge(:search_makros => @makros_plain).
+			merge(log ? {:log => log.to_h} : {})
 	end
 
 	def inspect

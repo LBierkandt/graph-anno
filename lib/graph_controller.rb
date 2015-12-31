@@ -251,7 +251,7 @@ class GraphController
 	def save_file
 		@graph.file_settings.clear
 		[:compact, :save_log, :separate_log].each do |property|
-			@graph.file_settings[property] = true if @sinatra.params[property.to_s]
+			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		return true.to_json
 	end
@@ -678,12 +678,16 @@ class GraphController
 
 		when 'load' # clear workspace and load corpus file
 			clear_workspace
-			@graph.read_json_file(file_path(parameters[:words][0]))
+			log_hash = @graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
-			begin
-				@log.read_json_file(@graph_file.sub(/.json$/, '.log.json'))
-			rescue
-				@log = Log.new(@graph)
+			if @graph.file_settings[:separate_log]
+				begin
+					@log = Log.new_from_file(@graph, @graph_file.sub(/.json$/, '.log.json'))
+				rescue
+					@log = Log.new(@graph, nil, log_hash)
+				end
+			else
+				@log = Log.new(@graph, nil, log_hash)
 			end
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
@@ -701,8 +705,14 @@ class GraphController
 			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
 			dir = @graph_file.rpartition('/').first
 			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
-			@graph.write_json_file(@graph_file)
-			@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'))
+			if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
+				@graph.write_json_file(@graph_file, @graph.file_settings[:compact], @log)
+			else
+				@graph.write_json_file(@graph_file, @graph.file_settings[:compact])
+			end
+			if @graph.file_settings[:separate_log]
+				@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'), @graph.file_settings[:compact])
+			end
 
 		when 'clear' # clear workspace
 			clear_workspace
