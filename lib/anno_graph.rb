@@ -778,14 +778,14 @@ class AnnoGraph
 		node.delete(log_step)
 	end
 
-	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
+	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
 			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge(:version => '8').
-			merge(:conf => @conf.to_h.reject{|k,v| k == 'font'}).
+			merge(:version => 8).
+			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).
 			merge(:tagset => @tagset).
