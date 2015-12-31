@@ -409,7 +409,7 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator, :file_settings
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -425,6 +425,7 @@ class AnnoGraph
 		@makros = []
 		@annotators = []
 		@current_annotator = nil
+		@file_settings = {}
 		create_layer_makros
 	end
 
@@ -789,6 +790,7 @@ class AnnoGraph
 			merge(:anno_makros => @anno_makros).
 			merge(:tagset => @tagset).
 			merge(:annotators => @annotators).
+			merge(:file_settings => @file_settings).
 			merge(:search_makros => @makros_plain)
 	end
 

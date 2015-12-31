@@ -16,6 +16,14 @@ window.onload = function() {
 		$(this).closest('.box').hide();
 		$('#txtcmd').focus().select();
 	});
+
+	// behaviour of file settings modal
+	$(document).on('click', '.file #save-log', function(){
+		if ($('.file #save-log').is(':checked'))
+			$('.file #separate-log').removeAttr('disabled');
+		else
+			$('.file #separate-log').attr('disabled', '');
+	});
 }
 window.onresize = graphdivEinpassen;
 

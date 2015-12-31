@@ -144,7 +144,7 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators'].each do |form_name|
+	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
@@ -245,6 +245,14 @@ class GraphController
 	def save_tagset
 		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
+		return true.to_json
+	end
+
+	def save_file
+		@graph.file_settings.clear
+		[:compact, :save_log, :separate_log].each do |property|
+			@graph.file_settings[property] = true if @sinatra.params[property.to_s]
+		end
 		return true.to_json
 	end
 
@@ -746,7 +754,7 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file'
 			return {:modal => command}
 
 		when ''
