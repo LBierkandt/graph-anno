@@ -190,9 +190,9 @@ Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Ände
 Welche Datei geladen wurde, wird neben der Eingabeleiste angezeigt.
 
 
-\subsubsection{Datei laden: \texttt{add}}
+\subsubsection{Datei laden und anhängen: \texttt{append}}
 
-Mit dem Befehl \texttt{add} kann wie mit \texttt{load} eine Datei in den Arbeitsbereich geladen werden (die Angabe der Datei erfolgt wie dort beschrieben). Der Unterschied ist, daß der Arbeitsbereich zuvor nicht geleert wird. Die neu geladene Datei wird dem Arbeitsbereich hinzugefügt und die neuen Sätze hinter den bestehenden angefügt. Nach dem Hinzufügen wird neben der Eingabeleiste keine Datei mehr als geladen angezeigt und die Dateien können nicht mehr einzeln gespeichert werden.
+Mit dem Befehl \texttt{append} wird der Inhalt einer Datei (die Angabe der Datei erfolgt wie bei \texttt{load} beschrieben) an das im Arbeitsbereich befindliche Korpus angefügt.
 
 
 \subsubsection{Datei speichern: \texttt{save}}
@@ -475,7 +475,7 @@ befehl_ta       =   "ta " tokenreferenz " " wörter
 \subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo}}\label{befehl-undo}
 
 Mit dem Befehl \texttt{undo} können zuvor ausgeführte Annotationsbefehle rückgängig gemacht werden.
-Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{add} oder \texttt{clear}.
+Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{append} oder \texttt{clear}.
 Ein rückgängig gemachter Befehl kann mit \texttt{redo} erneut ausgeführt werden.
 Rückgängigmachen und Wiederherstellen können auch mehrfach erfolgen; wird nach einem \texttt{undo}-Befehl wieder ein Annotationsbefehl ausgeführt, können die zuvor rückgängig gemachten Befehle nicht wiederhergestellt werden (lineare Änderungshistorie).
 

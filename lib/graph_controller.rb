@@ -693,8 +693,7 @@ class GraphController
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
 			@sentence = sentence_nodes.first unless @sentence
 
-		when 'add' # load corpus file and add it to the workspace
-			@graph_file.replace('')
+		when 'append', 'add' # load corpus file and append it to the workspace
 			addgraph = AnnoGraph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)

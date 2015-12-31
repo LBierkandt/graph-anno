@@ -231,11 +231,9 @@ So, changes that were not saved explicitly (using the command \texttt{save}) are
 The name of the loaded file is shown next to the input line on the bottom of the user interface.
 
 
-\subsubsection{Load file: \texttt{add}}
+\subsubsection{Append file: \texttt{append}}
 
-Just like the command \texttt{load}, the command \texttt{add} loads a file into the work space (specify the file as described for \texttt{load}).
-The difference is that the work space is not cleared – the new file is added and the new sentences are appended to the existing ones.
-After adding the file no file is shown as loaded next to the input line and the files cannot be saved separately anymore.
+The command \texttt{append} appends the contents of the given file (specify the file as described for \texttt{load}) to the work space.
 
 
 \subsubsection{Save file: \texttt{save}}
@@ -576,7 +574,7 @@ command_ta      =   "ta " token_reference " " words
 \subsubsection{Undo/Redo: \texttt{undo} and \texttt{redo}}\label{befehl-undo}
 
 You can undo previously issued annotation commands using the command \texttt{undo}.
-These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \texttt{add} or \texttt{clear}.
+These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \texttt{append} or \texttt{clear}.
 A command you have undone can be redone with the command \texttt{redo}.
 Undoing and redoing can be used multiple times; but if you issue an annotation command after having undone other commands, the undone commands cannot be redone (linear change history).
 

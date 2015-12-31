@@ -820,6 +820,7 @@ class AnnoGraph
 		first_new_sentence_node = @nodes.values.select{|n| n.type == 's' and !s_nodes.include?(n)}[0].ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
+		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
 	end
 
 	# builds a clone of self, but does not clone the nodes and edges
