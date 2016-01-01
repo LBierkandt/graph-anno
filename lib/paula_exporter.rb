@@ -1,19 +1,19 @@
 # encoding: utf-8
 
-# Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
-# 
+# Copyright © 2014-2016 Lennart Bierkandt <post@lennartbierkandt.de>
+#
 # This file is part of GraphAnno.
-# 
+#
 # GraphAnno is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # GraphAnno is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
@@ -21,19 +21,19 @@ class AnnoGraph
 
 	def export_paula(corpus_name, doc_name = nil)
 		# einzuführender Parameter: syntaktische Kanten als dominierend ansehen?
-		
+
 		if !doc_name then doc_name = 'doc1' end
 		corpus_name.gsub!(/\s/, '_')
 		doc_name.gsub!(/\s/, '_')
 		puts "generating PAULA corpus document \"#{corpus_name}/#{doc_name}\""
-		
+
 		corpus_path = 'exports/paula/' + corpus_name
 		doc_path = corpus_path + "/#{doc_name}/"
 		FileUtils.mkdir_p(doc_path)
-		
+
 		# DTDs kopieren
 		FileUtils.cp_r('conf/PAULA_DTDs/.', doc_path)
-		
+
 		# XML-Dokumente mit grundlegender Struktur anlegen
 		dtd = {
 			'text'=>'text',
@@ -64,7 +64,7 @@ class AnnoGraph
 					paula[dt].add_element('header', {'paula_id' => "#{corpus_name}.#{doc_name}.#{dt}"})
 			end
 		end
-		
+
 		# Elementlisten für die einzelnen XML-Dokumente anlegen
 		text_body = paula['text'].add_element('body')
 		tok_list = paula['tok'].add_element('markList', {'xmlns:xlink'=>'http://www.w3.org/1999/xlink', 'type'=>'tok', 'xml:base'=>"#{corpus_name}.#{doc_name}.text.xml"})
@@ -79,7 +79,7 @@ class AnnoGraph
 		rel_list = paula['nondomrel'].add_element('relList', {'xmlns:xlink'=>'http://www.w3.org/1999/xlink', 'type'=>'nondomrel'})
 		rel_feat_list = paula['nondomrel_multiFeat'].add_element('multiFeatList', {'xmlns:xlink'=>'http://www.w3.org/1999/xlink', 'type'=>'multiFeat', 'xml:base'=>"#{corpus_name}.#{doc_name}.nondomrel.xml"})
 		anno_list = paula['anno'].add_element('structList', {'xmlns:xlink'=>'http://www.w3.org/1999/xlink', 'type'=>'annoSet'})
-		
+
 		text = ''
 		tok_no = 0
 		sentence_no = 0
@@ -189,7 +189,7 @@ class AnnoGraph
 			end
 		end
 		text_body.text = text.strip
-		
+
 		# AnnoSet anlegen
 		s = anno_list.add_element('struct', {'id'=>'anno_1'})
 			s.add_element('rel', {'id'=>'rel_1', 'xlink:href'=>"#{corpus_name}.#{doc_name}.text.xml"})
@@ -234,7 +234,7 @@ class AnnoGraph
 				output << (' '*@level + s)
 			end
 		end
-		
+
 		# Dateien schreiben
 		formatter = REXML::Formatters::Pretty.new
 		formatter.compact = true
@@ -251,6 +251,6 @@ class AnnoGraph
 				formatter.write(docs[dt], f)
 			end
 		end
-		
+
 	end
 end
