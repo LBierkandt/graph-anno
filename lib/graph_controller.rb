@@ -709,7 +709,7 @@ class GraphController
 			dir = @graph_file.rpartition('/').first
 			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
 			if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
-				@graph.write_json_file(@graph_file, @graph.file_settings[:compact], @log)
+				@graph.write_json_file(@graph_file, @graph.file_settings[:compact], {:log => @log})
 			else
 				@graph.write_json_file(@graph_file, @graph.file_settings[:compact])
 			end
