@@ -115,7 +115,7 @@ class GraphController
 	end
 
 	def search
-		@sinatra.response.set_cookie('traw_query', {:value => @sinatra.params[:query]})
+		set_cookie('traw_query', @sinatra.params[:query])
 		@found = {:tg => []}
 		begin
 			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
@@ -326,7 +326,7 @@ class GraphController
 		end
 		set_sentence_list(:clear => true)
 		@sentence = @graph.nodes[sentence_list.keys.first]
-		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
+		set_cookie('traw_sentence', @sentence.id)
 		return {
 			:sentence_list => @sentence_list.values,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
@@ -419,7 +419,7 @@ class GraphController
 	end
 
 	def sentence_settings_and_graph
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
+		set_cookie('traw_sentence', @sentence ? @sentence.id : nil)
 		return generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
 			:sentence_changed => (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
@@ -489,9 +489,13 @@ class GraphController
 		return label
 	end
 
+	def set_cookie(key, value)
+		@sinatra.response.set_cookie(key, {:value => value, :path => '/', :expires => Time.new(9999, 12, 31)})
+	end
+
 	def check_cookies
 		['traw_sentence', 'traw_layer', 'traw_cmd', 'traw_query'].each do |cookie_name|
-			@sinatra.response.set_cookie(cookie_name, {:value => ''}) unless @sinatra.request.cookies[cookie_name]
+			set_cookie(cookie_name, '') unless @sinatra.request.cookies[cookie_name]
 		end
 	end
 
@@ -951,20 +955,20 @@ class GraphController
 	end
 
 	def set_cmd_cookies
-		@sinatra.response.set_cookie('traw_layer', {:value => @sinatra.params[:layer]}) if @sinatra.params[:layer]
-		@sinatra.response.set_cookie('traw_cmd', {:value => @sinatra.params[:txtcmd]}) if @sinatra.params[:txtcmd]
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sinatra.params[:sentence]}) if @sinatra.params[:sentence]
+		set_cookie('traw_layer', @sinatra.params[:layer]) if @sinatra.params[:layer]
+		set_cookie('traw_cmd', @sinatra.params[:txtcmd]) if @sinatra.params[:txtcmd]
+		set_cookie('traw_sentence', @sinatra.params[:sentence]) if @sinatra.params[:sentence]
 	end
 
 	def set_filter_cookies
-		@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
-		@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
+		set_cookie('traw_filter', @sinatra.params[:filter])
+		set_cookie('traw_filter_mode', @sinatra.params[:mode])
 	end
 
 	def set_new_layer(words, properties)
 		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
 			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
-			@sinatra.response.set_cookie('traw_layer', { :value => layer })
+			set_cookie('traw_layer', layer)
 			properties.replace(@graph.conf.layer_attributes[layer])
 			return layer
 		end
