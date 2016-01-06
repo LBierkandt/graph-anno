@@ -16,13 +16,13 @@
           %td{:colspan => 2}
             %label{:for =>'save-log'}
               save editing history
-        %tr
-          %td
-          %td
-            %input#separate-log{:name => 'separate_log', :type => 'checkbox', :value => true, :checked => graph.file_settings[:separate_log], :disabled => !graph.file_settings[:save_log]}
-          %td
-            %label{:for =>'separate-log'}
-              save editing history in separate file
+        -#%tr
+        -#  %td
+        -#  %td
+        -#    %input#separate-log{:name => 'separate_log', :type => 'checkbox', :value => true, :checked => graph.file_settings[:separate_log], :disabled => !graph.file_settings[:save_log]}
+        -#  %td
+        -#    %label{:for =>'separate-log'}
+        -#      save editing history in separate file
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }
