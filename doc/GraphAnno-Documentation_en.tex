@@ -89,8 +89,6 @@
 
 \section{The annotation graph}
 
-\subsection{Graph format}
-
 A graph in GraphAnno consists of a set of nodes and directed edges.
 Nodes and edges bear attributes in the form of key-value pairs, that are used for the linguistic annotation as well as the structuring and visualization of the graph.
 There are some attributes – like the attribute \texttt{type}, that differentiates the types of nodes and edges (annotation nodes, tokens, sentence nodes; annotation edges, ordering edges, section edges) – that serve the internal representation of the graph and are not edited directly.
@@ -120,9 +118,9 @@ Tokens do not belong to any layer; they are displayed in black by default.
 
 
 
-\subsection{Configuration}\label{konfiguration}
+\section{Configuration}\label{konfiguration}
 
-\subsubsection{Layers and visualization}\label{ebenenkonfiguration}
+\subsection{Layers and visualization}\label{ebenenkonfiguration}
 
 The window for configuration of the layers of the currently loaded graph and its visualization is opened with the commmand line command \texttt{config}.
 
@@ -148,7 +146,7 @@ Under \textit{search makros} you can enter predefined graph-specific search makr
 These makros are then available for search queries in the graph.
 In the search makros text area, the definitions (\texttt{def ...}) have to be enterd each on its own line.
 
-\subsubsection{Permitted annotations / tagset}\label{erlaubteannotationen}
+\subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
 In the window open by the command \texttt{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
 Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
@@ -164,17 +162,44 @@ Simple values are entered without further markup; if a value contains special ch
 Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\texttt{/.../}).
 In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
 
-\subsubsection{Annotation makros}\label{annotationsmakros}
+\subsection{Annotation makros}\label{annotationsmakros}
 
 For a graph you save annotation makros, that facilitate the annotation with frquently needed attribute combinations.
 With the command \texttt{makros} you open a window where you can define these makros.
 In the fields on the left you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}); in the corresponding field on the right you enter the desired annotations for your makro.
 For these annotations you must use the same syntax as in the annotation commands, i.e. a set of attributes in the form \texttt{key:value}, separated by spaces (see Section \ref{befehl-n} for details).
 
-\subsubsection{Metadata}
+\subsection{Metadata}
 
 Additionally to the configuration of layers, visualization, makros and permitted annotations, you may save metadata for a graph as key-value pairs.
 The command \texttt{metadata} opens the window, where you can enter an arbitrary number of keys with a text as corresponding value.
+
+\subsection{Annotators}\label{annotatoren}
+
+For the case of multiple annotators working with the same corpus, GraphAnno offers the possibility of creating annotator-specific annotations.
+With this feature, the same elements can be annotated by differend annotators, which enables you, e.g., to assess the inter-annotator agreement.
+
+In order to use the multi-annotator feature, you first have to create annotators; the command \texttt{annotators} opens the window for this task.
+In this window you can create annotators, bearing a unique name (prefer short names without spaces, as these will be used for loggin in) and information about the annotator (free text).
+If, later on, you delete annotators, all their annotations will be deleted as well.
+
+If you annotate without having logged in as an annotator, your annotations will be stored as public annotations (as is the case when working without multiple annotators).
+For annotating as a specific annotator, you first have to log in using the command \texttt{annotator} (or the synonymous command \texttt{user}), followed by the annotator’s unique name.
+The current annotator’s name will now be displayed in the corresponding field (next to the input line on the bottom of the user interface), and you will see only your own annotations; the annotations of other annotators or public annotations will be hidden.
+Also for searching only your own annotations will be evaluated.
+If you want to log out the current annotator and work on the public annotations again, use the \texttt{annotator} command without argument.
+
+\subsection{File settings}
+
+The command \texttt{file} opens a window, in which you can specify the settings for the file in which the work space will be saved.
+
+First, you may decide whether the file should be stored in a compact JSON format.
+This has the advantage of reducing the file size, but the file will be less readable for potential inspection or editing in a text editor.
+
+Second, you can opt for saving the change log (cf. \ref{befehl-undo}), so that it stays available accross settings.
+The change log can be saved in the graph file or in another file (with a name of the form \texttt{<corpus name>.log.json}).
+(Attention, this option can lead to very big files and long saving/loading times.)
+
 
 
 \section{Keyboard shortcuts}
@@ -221,7 +246,7 @@ The following is a table of the available shortcuts:
 
 \subsubsection{Load file: \texttt{load}}
 
-With the command \texttt{load} you load a graph file inte the work space.
+With the command \texttt{load} you load a graph file into the work space.
 By default, the file will be loaded from the from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
 If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory, if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
 Provide the file name with or without the extension \texttt{.json}; the path has to be enclosed in double quotes (\texttt{\quo...\quo}) if it contains spaces.
@@ -411,7 +436,7 @@ token_reference =   "t" number
 \end{framed}
 
 
-\subsubsection{Annotieren: \texttt{a}}\label{befehl-a}
+\subsubsection{Annotate: \texttt{a}}\label{befehl-a}
 
 The command for annotation elements is \texttt{a}, followed by the elements to be annotated and the attributes with which they are to be annotated (all given elements will be annotated with all given attributes; also layer shortcuts can be used).
 The order of the elements and attributes is free.
@@ -571,11 +596,11 @@ command_ta      =   "ta " token_reference " " words
 \end{framed}
 
 
-\subsubsection{Undo/Redo: \texttt{undo} and \texttt{redo}}\label{befehl-undo}
+\subsubsection{Undo/Redo: \texttt{undo} and \texttt{redo} (or \texttt{z} and \texttt{y})}\label{befehl-undo}
 
-You can undo previously issued annotation commands using the command \texttt{undo}.
+You can undo previously issued annotation commands using the command \texttt{undo} (or the synonymous command \texttt{z}).
 These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \texttt{append} or \texttt{clear}.
-A command you have undone can be redone with the command \texttt{redo}.
+A command you have undone can be redone with the command \texttt{redo} (or the synonymous command \texttt{y}).
 Undoing and redoing can be used multiple times; but if you issue an annotation command after having undone other commands, the undone commands cannot be redone (linear change history).
 
 You can look at the change history in a window that is toggled with the F8 key.
@@ -597,6 +622,12 @@ command_l   =   "l " layer_shortcut
 
 
 
+\subsubsection{Log in annotator: \texttt{annotator} (or \texttt{user})}
+ 
+If you use GraphAnno’s multi-annotator feature, you log in as a specific annotator with the command \texttt{annotator} (or the synonymous command \texttt{user}), followed by the annotator’s unique name (as defined in the corresponding window, see \ref{annotatoren}).
+The logged-in annotator will be shown in the field next to the input line and only the annotator’s annotations will be displayed and searched.
+If you want to log out the current annotator and work on the public annotations again, use the \texttt{annotator} command without argument.
+ 
 
 
 \vskip4em
