@@ -845,8 +845,12 @@ class AnnoGraph
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	# @return [Node] the new segment node
 	def build_segment(name, list, log_step = nil)
-		# create node only when all given nodes are on the same level
-		if list.group_by{|n| n.segmentation_level}.keys.length == 1
+		# create node only when all given nodes are on the same level and none is already grouped under another section
+		if list.group_by{|n| n.segmentation_level}.keys.length > 1
+			raise 'all given sections have to be on the same level'
+		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
+			raise 'given sections already belong to another section'
+		else
 			segment_node = add_part_node(:name => name, :log => log_step)
 			list.each do |child_node|
 				add_part_edge(
@@ -856,8 +860,6 @@ class AnnoGraph
 				)
 			end
 			return segment_node
-		else
-			return nil
 		end
 	end
 
