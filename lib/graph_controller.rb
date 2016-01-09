@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-# Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
+# Copyright © 2014-2016 Lennart Bierkandt <post@lennartbierkandt.de>
 #
 # This file is part of GraphAnno.
 #
@@ -114,7 +114,7 @@ class GraphController
 	end
 
 	def search
-		@sinatra.response.set_cookie('traw_query', {:value => @sinatra.params[:query]})
+		set_cookie('traw_query', @sinatra.params[:query])
 		@found = {:tg => []}
 		begin
 			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
@@ -144,7 +144,7 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators'].each do |form_name|
+	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
@@ -245,6 +245,14 @@ class GraphController
 	def save_tagset
 		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
+		return true.to_json
+	end
+
+	def save_file
+		@graph.file_settings.clear
+		[:compact, :save_log, :separate_log].each do |property|
+			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
+		end
 		return true.to_json
 	end
 
@@ -481,9 +489,13 @@ class GraphController
 		return label
 	end
 
+	def set_cookie(key, value)
+		@sinatra.response.set_cookie(key, {:value => value, :path => '/', :expires => Time.new(9999, 12, 31)})
+	end
+
 	def check_cookies
 		['traw_layer', 'traw_cmd', 'traw_query'].each do |cookie_name|
-			@sinatra.response.set_cookie(cookie_name, {:value => ''}) unless @sinatra.request.cookies[cookie_name]
+			set_cookie(cookie_name, '') unless @sinatra.request.cookies[cookie_name]
 		end
 	end
 
@@ -702,19 +714,22 @@ class GraphController
 
 		when 'load' # clear workspace and load corpus file
 			clear_workspace
-			@graph.read_json_file(file_path(parameters[:words][0]))
+			log_hash = @graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
-			begin
-				@log.read_json_file(@graph_file.sub(/.json$/, '.log.json'))
-			rescue
-				@log = Log.new(@graph)
+			if @graph.file_settings[:separate_log]
+				begin
+					@log = Log.new_from_file(@graph, @graph_file.sub(/.json$/, '.log.json'))
+				rescue
+					@log = Log.new(@graph, nil, log_hash)
+				end
+			else
+				@log = Log.new(@graph, nil, log_hash)
 			end
 			sentence_nodes = @graph.sentence_nodes
 			@current_sections = [sentence_nodes.select{|n| n.name == @current_sections.first.name}[0]] if @current_sections
 			@current_sections = [sentence_nodes.first] unless @current_sections
 
-		when 'add' # load corpus file and add it to the workspace
-			@graph_file.replace('')
+		when 'append', 'add' # load corpus file and append it to the workspace
 			addgraph = AnnoGraph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
@@ -725,8 +740,14 @@ class GraphController
 			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
 			dir = @graph_file.rpartition('/').first
 			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
-			@graph.write_json_file(@graph_file)
-			@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'))
+			if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
+				@graph.write_json_file(@graph_file, @graph.file_settings[:compact], {:log => @log})
+			else
+				@graph.write_json_file(@graph_file, @graph.file_settings[:compact])
+			end
+			if @graph.file_settings[:separate_log]
+				@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'), @graph.file_settings[:compact])
+			end
 
 		when 'clear' # clear workspace
 			clear_workspace
@@ -778,7 +799,7 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file'
 			return {:modal => command}
 
 		when ''
@@ -970,19 +991,19 @@ class GraphController
 	end
 
 	def set_cmd_cookies
-		@sinatra.response.set_cookie('traw_layer', {:value => @sinatra.params[:layer]}) if @sinatra.params[:layer]
-		@sinatra.response.set_cookie('traw_cmd', {:value => @sinatra.params[:txtcmd]}) if @sinatra.params[:txtcmd]
+		set_cookie('traw_layer', @sinatra.params[:layer]) if @sinatra.params[:layer]
+		set_cookie('traw_cmd', @sinatra.params[:txtcmd]) if @sinatra.params[:txtcmd]
 	end
 
 	def set_filter_cookies
-		@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
-		@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
+		set_cookie('traw_filter', @sinatra.params[:filter])
+		set_cookie('traw_filter_mode', @sinatra.params[:mode])
 	end
 
 	def set_new_layer(words, properties)
 		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
 			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
-			@sinatra.response.set_cookie('traw_layer', { :value => layer })
+			set_cookie('traw_layer', layer)
 			properties.replace(@graph.conf.layer_attributes[layer])
 			return layer
 		end

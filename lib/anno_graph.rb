@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-# Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
+# Copyright © 2014-2016 Lennart Bierkandt <post@lennartbierkandt.de>
 #
 # This file is part of GraphAnno.
 #
@@ -451,7 +451,7 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator, :file_settings
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -467,6 +467,7 @@ class AnnoGraph
 		@makros = []
 		@annotators = []
 		@current_annotator = nil
+		@file_settings = {}
 		create_layer_makros
 	end
 
@@ -546,6 +547,7 @@ class AnnoGraph
 				@tagset = Tagset.new(nodes_and_edges['allowed_anno'])
 			else
 				@tagset = Tagset.new(nodes_and_edges['tagset'])
+				@file_settings = nodes_and_edges['file_settings'].symbolize_keys
 			end
 			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
 			create_layer_makros
@@ -617,15 +619,19 @@ class AnnoGraph
 		end
 
 		puts 'Read "' + path + '".'
+
+		return nodes_and_edges['log']
 	end
 
 	# serializes self in a JSON file
 	# @param path [String] path to the JSON file
-	def write_json_file(path)
+	def write_json_file(path, compact = false, additional = {})
 		puts 'Writing file "' + path + '"...'
-		file = open(path, 'w')
-		file.write(JSON.pretty_generate(self, :indent => ' ', :space => '').encode('UTF-8'))
-		file.close
+		hash = self.to_h.merge(additional.to_h)
+		json = compact ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
+		File.open(path, 'w') do |file|
+			file.write(json.encode('UTF-8'))
+		end
 		puts 'Wrote "' + path + '".'
 	end
 
@@ -863,18 +869,19 @@ class AnnoGraph
 		end
 	end
 
-	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
+	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
 			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge(:version => '8').
-			merge(:conf => @conf.to_h.reject{|k,v| k == 'font'}).
+			merge(:version => 8).
+			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).
 			merge(:tagset => @tagset).
 			merge(:annotators => @annotators).
+			merge(:file_settings => @file_settings).
 			merge(:search_makros => @makros_plain)
 	end
 
@@ -899,6 +906,7 @@ class AnnoGraph
 		first_new_sentence_node = @nodes.values.select{|n| n.type == 's' and !s_nodes.include?(n)}[0].ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
+		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
 	end
 
 	# builds a clone of self, but does not clone the nodes and edges

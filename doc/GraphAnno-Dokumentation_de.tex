@@ -90,8 +90,6 @@
 
 \section{Der Annotationsgraph}
 
-\subsection{Graphformat}
-
 Ein Graph in GraphAnno besteht aus einer Menge von Knoten und gerichteten Kanten. Knoten und Kanten haben Attribute in der Form von Schlüssel-Wert-Paaren, die sowohl der linguistischen Annotation als auch zum Teil der Strukturierung und Darstellung des Graphen in GraphAnno dienen. Diese Attrbiute sind im Datenmodell als Attribut \texttt{attr} zusammengefaßt und sind die einzigen Attribute, die direkt bearbeitet werden können. Diese Attribute werden in diesem Abschnitt als \textit{Annotationsattribute} bezeichnet. Knoten und Kanten tragen weitere Attribute, die nicht direkt bearbeitet werden können. Dazu zählt u.a. das \texttt{type}-Attribut, das die unterschiedliche Typen von Knoten und Kanten (Annotationsknoten, Token, Satzknoten; Annotationskanten, Ordnungskanten, Abschnittskanten) unterscheidet.
 
 Ein GraphAnno-Graph ist in Sätze eingeteilt – Einheiten die der Strukturierung und Darstellung dienen, aber natürlich nicht unbedingt (wie auch immer definierten) Sätzen entsprechen müssen.
@@ -108,9 +106,9 @@ GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Eben
 
 
 
-\subsection{Konfiguration}\label{konfiguration}
+\section{Konfiguration}\label{konfiguration}
 
-\subsubsection{Darstellung und Ebenen}\label{ebenenkonfiguration}
+\subsection{Darstellung und Ebenen}\label{ebenenkonfiguration}
 
 Das Einstellungsfenster für Darstellung und Ebenen wird mit dem Kommandozeilenbefehl \texttt{config} geöffnet.
 
@@ -122,7 +120,7 @@ Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zug
 
 Unter \textit{search makros} können graphspezifische Suchmakros, wie unter \ref{def} beschrieben, vordefiniert werden. Diese stehen dann für Suche im Graph zur Verfügung. Die Definitionen (\texttt{def ...}) werden jede in eine eigene Zeile im entsprechenden Fenster eingegeben.
 
-\subsubsection{Erlaubte Annotationen / Tagset}\label{erlaubteannotationen}
+\subsection{Erlaubte Annotationen / Tagset}\label{erlaubteannotationen}
 
 In dem mit dem Befehl \texttt{tagset} zu öffnenden Fenster können für einen Graphen erlaubte Annotationen, also das graphspezifische \textit{Tagset}, spezifiziert werden. Nur die hier spezifizierten Schlüssel-Wert-Paare sind für die Annotation von Knoten und Kanten zulässig; unerlaubte Eingaben werden mit einer Fehlermeldung quittiert. Bestehende Annotationen werden durch eine nachträgliche Änderung der erlaubten Schlüssel und Werte nicht beeinflußt.
 
@@ -130,19 +128,44 @@ Sind hier keine Schlüssel und Werte angegeben, so sind alle Annotationen zuläs
 
 Für die Notation der Werte gelten die gleichen Regeln wie bei der Suchsprache (Abschnitt \ref{node}, S.\,\pageref{zeichenketten}): Einfache Werte werden ohne weitere Markierung eingetragen, enthalten Werte Sonderzeichen (siehe S.\,\pageref{zeichenketten}), so müssen sie in Anführungszeichen (\texttt{\quo...\quo}) angegeben werden; außderdem können – ebenfalls wie bei der Suchsprache (S.\,\pageref{zeichenketten}) – reguläre Ausdrücke verwendet werden, die in Schrägstrichen angegeben werden (\texttt{/.../}). Die regulären Ausdrücke sind dabei verankert, d.h. ein Annotationswert muß dem gesamten regulären Ausdruck entsprechen, um erlaubt zu sein.
 
-\subsubsection{Annotationsmakros}\label{annotationsmakros}
+\subsection{Annotationsmakros}\label{annotationsmakros}
 
 Für einen Graphen können Annotationsmakros gespeichert werden, die die Annotation mit häufig gebrauchten Attributkombinationen erleichtern. Mit dem Befehl \texttt{makros} wird ein Fenster geöffnet, in dem diese Makros definiert werden können. Im linken Feld wird jeweils die gewünschte Abkürzung angegeben (diese muß aus alphanumerischen Zeichen und Unterstrich bestehen und sollte weder die Form einer Elementreferenz haben noch gleichlautend mit einem Ebenenkürzel sein, vgl. \ref{ebenenkonfiguration}), im rechten Feld die gewünschten Annotationen. Hierbei ist die gleiche Syntax wie für die Annotationsbefehle einzuhalten, also eine Menge von Attributen in der Form \texttt{schlüssel:wert}, mit Leerzeichen getrennt (zu Details siehe \ref{befehl-n}).
 
-\subsubsection{Metadaten}
+\subsection{Metadaten}
 
 Neben der Konfiguration von Ebenen, Darstellung, Makros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren gespeichert werden. Das Fenster dafür wird mit dem Befehl \texttt{metadata} geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
 
+\subsection{Annotatoren}\label{annotatoren}
+
+Für den Fall, daß mehrere Annotatoren an einem Korpus arbeiten, gibt es in GraphAnno die Möglichkeit, annotatorenspezifische Annotationen zu erstellen.
+So können die selben Elemente von verschiedenen Annotatoren annotiert werden, so daß in einem weiteren Schritt z.B. die Übereinstimmung zwischen Annotatoren ermittelt werden kann.
+
+Um diese Funktion zu nutzen müssen zunächst Annotatoren angelegt werden; mit dem Befehl \texttt{annotators} wird das entsprechende Fenster geöffnet.
+In diesem Fenster können nun Annotatoren mit eindeutigem Namen (möglich ein kurzer Name ohne Leerzeichen, da er auch zur Anmeldung verwendet wird) und weiteren Informationen (als Freitext) erstellt werden.
+Löscht man später Annotatoren, so werden alle ihre Annotationen ebenfalls gelöscht.
+
+Annotiert man, ohne sich vorher als ein bestimmter Annotator angemeldet zu haben, werden die erstellten Annotationen als allgemeine Annotationen gespeichert (wie dies auch der Fall ist, wenn ohne Mehr-Annotatoren-Funktion gearbeitet wird).
+Um nun als ein bestimmter Annotator zu annotieren, meldet man sich zunächst mit dem Befehl \texttt{annotator} (oder dem synonymen Befehl \texttt{user}), gefolgt vom eindeutigen Namen des Annotators, an.
+Der Name des aktuellen Annotators erscheint nun im entsprechenden Feld neben der Eingabeleiste und der Annotator sieht nur die von ihm selbst vorgenommenen Annotationen; die Annotationen anderer Annotatoren oder allgemeine Annotationen bleiben verborgen.
+Auch für die Suche werden nur die eigenen Annotationen ausgewertet.
+Um den aktuellen Annotator abzumelden und wieder an den allgemeinen Annotationen zu arbeiten wird der \texttt{annotator}-Befehl ohne Argument eingegeben – nun sind wieder nur die allgemeinen Annotationen zu sehen.
+
+\subsection{Dateieinstellungen}
+
+Mit dem Befehl \texttt{file} wird das Fenster mit den Einstellungen für die Datei, in der der Arbeitsbereich gespeichert wird, aufgerufen.
+
+Hier kann zum einen eingestellt werden, ob die Datei in kompakter JSON-Formatierung gespeichert werden soll.
+Dies führt zu kleineren Dateigrößen, jedoch ist die Datei für eventuelle Inspektion/Änderung per Texteditor weniger gut lesbar.
+
+Zum anderen kann eingestellt werden, ob das Änderungsprotokoll (vgl. \ref{befehl-undo}) gespeichert werden soll, so daß es über Sitzungen hinweg verfügbar ist.
+%Das Änderungsprotokoll kann in der Graphdatei selber, oder in einer eigenen Datei (mit einem Namen der Form \texttt{<Korpusname>.log.json}) gespeichert werden.
+(Achtung, diese Option kann zu sehr großen Dateien und entsprechend langen Speicher-/Ladezeiten führen.)
 
 
 \section{Tastaturbefehle}
 
-Die meisten Navigation und Ansicht betreffende Funktionen von GraphAnno werden direkt über Tastenbefehle angesprochen. Nachfolgend eine Tabelle der verfügbaren Befehle:
+Die meisten Navigation und Ansicht betreffenden Funktionen von GraphAnno werden direkt über Tastenbefehle angesprochen. Nachfolgend eine Tabelle der verfügbaren Befehle:
 
 \begin{center}
 	\begin{tabular*}{\textwidth}{ll}
@@ -190,9 +213,9 @@ Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Ände
 Welche Datei geladen wurde, wird neben der Eingabeleiste angezeigt.
 
 
-\subsubsection{Datei laden: \texttt{add}}
+\subsubsection{Datei laden und anhängen: \texttt{append}}
 
-Mit dem Befehl \texttt{add} kann wie mit \texttt{load} eine Datei in den Arbeitsbereich geladen werden (die Angabe der Datei erfolgt wie dort beschrieben). Der Unterschied ist, daß der Arbeitsbereich zuvor nicht geleert wird. Die neu geladene Datei wird dem Arbeitsbereich hinzugefügt und die neuen Sätze hinter den bestehenden angefügt. Nach dem Hinzufügen wird neben der Eingabeleiste keine Datei mehr als geladen angezeigt und die Dateien können nicht mehr einzeln gespeichert werden.
+Mit dem Befehl \texttt{append} wird der Inhalt einer Datei (die Angabe der Datei erfolgt wie bei \texttt{load} beschrieben) an das im Arbeitsbereich befindliche Korpus angefügt.
 
 
 \subsubsection{Datei speichern: \texttt{save}}
@@ -472,11 +495,11 @@ befehl_ta       =   "ta " tokenreferenz " " wörter
 \end{framed}
 
 
-\subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo}}\label{befehl-undo}
+\subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo} (oder \texttt{z} und \texttt{y})}\label{befehl-undo}
 
-Mit dem Befehl \texttt{undo} können zuvor ausgeführte Annotationsbefehle rückgängig gemacht werden.
-Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{add} oder \texttt{clear}.
-Ein rückgängig gemachter Befehl kann mit \texttt{redo} erneut ausgeführt werden.
+Mit dem Befehl \texttt{undo} (oder dem synonymen Befehl \texttt{z}) können zuvor ausgeführte Annotationsbefehle rückgängig gemacht werden.
+Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{append} oder \texttt{clear}.
+Ein rückgängig gemachter Befehl kann mit \texttt{redo} (oder dem synonymen Befehl \texttt{y}) erneut ausgeführt werden.
 Rückgängigmachen und Wiederherstellen können auch mehrfach erfolgen; wird nach einem \texttt{undo}-Befehl wieder ein Annotationsbefehl ausgeführt, können die zuvor rückgängig gemachten Befehle nicht wiederhergestellt werden (lineare Änderungshistorie).
 
 Die Änderungshistorie ist auch in einem Fenster zu sehen, das mit F8 ein- und ausgeblendet wird.
@@ -496,7 +519,11 @@ befehl_l    =   "l " ebenenschalter
 \end{framed}
 
 
+\subsubsection{Annotator anmelden: \texttt{annotator} (oder \texttt{user})}
 
+Mit dem Befehl \texttt{annotator} (oder dem synonymen Befehl \texttt{user}), gefolgt von dem eindeutigen Namen des Annotators (angelegt im entsprechenden Fenster, siehe \ref{annotatoren}) wird – bei Nutzung der Mehr-Annotatoren-Funktion – der entsprechende Annotator angemeldet.
+Der angemeldete Annotator wird dann im entsprechenden Feld neben der Eingabeleiste angezeigt und nur noch die Annotationen des angemeldeten Annotators werden angezeigt und durchsucht.
+Um den aktuellen Annotator abzumelden und wieder an den allgemeinen Annotationen zu arbeiten wird der \texttt{annotator}-Befehl ohne Argument eingegeben.
 
 
 

@@ -1,20 +1,33 @@
 window.onload = function() {
 	loadGraph();
 
+	for (var id in {search: 0, filter: 0, log: 0, sectioning: 0}) restoreState(id);
+
 	window.onkeydown = taste;
 
 	$('#txtcmd').focus().select();
 
-	$('.box').draggable({handle: '.handle', stack: '.box'});
-	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310});
-	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220});
-	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400});
-	$('#sectioning').resizable({handles: 'all', minHeight: 45, minWidth: 50});
+	$('.box').draggable({handle: '.handle', stack: '.box', stop: saveState});
+	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310, stop: saveState});
+	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220, stop: saveState});
+	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400, stop: saveState});
+	$('#sectioning').resizable({handles: 'all', minHeight: 45, minWidth: 50, stop: saveState});
 
+	// function of close button
 	$('.handle').html('<div class="close"></div>')
 	$(document).on('click', '.close', function(){
-		$(this).closest('.box').hide();
+		saveState({
+			target: $(this).closest('.box').hide()
+		});
 		$('#txtcmd').focus().select();
+	});
+
+	// behaviour of file settings modal
+	$(document).on('click', '.file #save-log', function(){
+		if ($('.file #save-log').is(':checked'))
+			$('.file #separate-log').removeAttr('disabled');
+		else
+			$('.file #separate-log').attr('disabled', '');
 	});
 }
 window.onresize = graphdivEinpassen;
@@ -92,27 +105,31 @@ function taste(tast) {
 	}
 	else if (tast.which == 117) {
 		tast.preventDefault();
-		$('#filter').toggle();
+		saveState({
+			target: $('#filter').toggle()
+		});
 		if ($('#filter').css('display') == 'none') {
 			$('#txtcmd').focus().select();
-		}
-		else {
+		} else {
 			$('#filterfield').focus();
 		}
 	}
 	else if (tast.which == 118) {
 		tast.preventDefault();
-		$('#search').toggle();
+		saveState({
+			target: $('#search').toggle()
+		});
 		if ($('#search').css('display') == 'none') {
 			$('#txtcmd').focus().select();
-		}
-		else {
+		} else {
 			$('#query').focus();
 		}
 	}
 	else if (tast.which == 119) {
 		tast.preventDefault();
-		$('#log').toggle();
+		saveState({
+			target: $('#log').toggle()
+		});
 	}
 	else if (tast.which == 120) {
 		tast.preventDefault();
@@ -558,6 +575,26 @@ function reloadLogTable() {
 	.done(function(data){
 		$('#log .content').html(data);
 	});
+}
+function saveState(e) {
+	var $box = $(e.target);
+	var key = $box.attr('id');
+	var value = {};
+	var attributes = ['display', 'left', 'top', 'width', 'height', 'z-index']
+	for (var i = 0; i < attributes.length; i++) {
+		value[attributes[i]] = $box.css(attributes[i]);
+	}
+	document.cookie = key + '=' + JSON.stringify(value) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
+}
+function restoreState(id) {
+	var value = getCookie(id);
+	if (value) {
+		var attributes = JSON.parse(value);
+		var $element = $('#' + id);
+		for (var i in attributes) {
+			$element.css(i, attributes[i]);
+		}
+	}
 }
 var Sectioning = (function () {
 	var list = [];

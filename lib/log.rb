@@ -4,11 +4,21 @@ class Log
 	attr_reader :steps, :graph, :current_index
 	attr_accessor :user
 
-	def initialize(graph, user = nil)
+	def initialize(graph, user = nil, data = nil)
 		@graph = graph
-		@steps = []
-		@current_index = -1
+		@steps = data ? data['steps'].map{|s| Step.new_from_hash(s.merge(:log => self))} : []
+		@current_index = data ? data['current_index'] : -1
 		@user = user
+	end
+
+	# creates a new Log from JSON file
+	# @param path [String] path to the JSON file
+	def self.new_from_file(graph, path)
+		puts 'Reading log file "' + path + '" ...'
+		file = open(path, 'r:utf-8')
+		data = JSON.parse(file.read)
+		file.close
+		return Log.new(graph, nil, data)
 	end
 
 	# @return [Hash] a hash representing the log
@@ -26,24 +36,13 @@ class Log
 
 	# serializes self in a JSON file
 	# @param path [String] path to the JSON file
-	def write_json_file(path)
+	def write_json_file(path, compact = false)
 		puts 'Writing log file "' + path + '"...'
 		file = open(path, 'w')
-		file.write(JSON.pretty_generate(self, :indent => ' ', :space => '').encode('UTF-8'))
+		json = compact ? self.to_json : JSON.pretty_generate(self, :indent => ' ', :space => '')
+		file.write(json.encode('UTF-8'))
 		file.close
 		puts 'Wrote "' + path + '".'
-	end
-
-	# reads a JSON log file into self
-	# @param path [String] path to the JSON file
-	def read_json_file(path)
-		puts 'Reading log file "' + path + '" ...'
-		file = open(path, 'r:utf-8')
-		data = JSON.parse(file.read)
-		file.close
-
-		@steps = data['steps'].map{|s| Step.new_from_hash(s.merge(:log => self))}
-		@current_index = data['current_index']
 	end
 
 	# @return [Step] the current step

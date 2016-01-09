@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-# Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
+# Copyright © 2014-2016 Lennart Bierkandt <post@lennartbierkandt.de>
 #
 # This file is part of GraphAnno.
 #
