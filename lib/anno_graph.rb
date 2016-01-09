@@ -283,6 +283,21 @@ class Node < NodeOrEdge
 		child_nodes{|e| e.type == 'o'}.select(&block)[0]
 	end
 
+	# @param link [String] a link in query language
+	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
+	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
+	def nodes(link = nil, end_node_condition = '')
+		if link
+			super
+		else
+			if @type == 'p' || @type == 's'
+				sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
+			else
+				sentence.nodes
+			end
+		end
+	end
+
 	# methods specific for token nodes:
 
 	# @return [String] self's text
@@ -313,7 +328,7 @@ class Node < NodeOrEdge
 		end
 	end
 
-	# methods specific for section nodes:
+	# methods specific for segment nodes:
 
 	# @return [String] self's name attribute
 	def name
@@ -325,18 +340,25 @@ class Node < NodeOrEdge
 		@attr['name'] = name
 	end
 
-	# @param link [String] a link in query language
-	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
-	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
-	def nodes(link = nil, end_node_condition = '')
-		if link
-			super
+	# the level of a segment node: sentence nodes have level 0, parents of sentence nodes level 1 etc.
+	# @return [Integer] the level
+	def segmentation_level
+		if @type == 's'
+			0
+		elsif @type == 'p'
+			child_nodes{|e| e.type == 'p'}.map{|n| n.segmentation_level}.max + 1
 		else
-			if @type == 'p' || @type == 's'
-				sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
-			else
-				sentence.nodes
-			end
+			nil
+		end
+	end
+
+	# @return [Array] the descendant segments of self
+	def descendant_segments
+		if segmentation_level > 0
+			children = child_nodes{|e| e.type == 'p'}
+			return children + children.map{|n| n.descendant_segments}.flatten
+		else
+			return []
 		end
 	end
 end
@@ -652,6 +674,17 @@ class AnnoGraph
 		return n
 	end
 
+	# creates a new part node and adds it to self
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Node] the new node
+	def add_part_node(h)
+		h.merge!(:attr => {}) unless h[:attr]
+		h[:attr].merge!('name' => h[:name]) if h[:name]
+		n = add_node(h.merge(:type => 'p'))
+		h[:log].add_change(:action => :create, :element => n) if h[:log]
+		return n
+	end
+
 	# creates a new speaker node and adds it to self
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
@@ -692,6 +725,15 @@ class AnnoGraph
 	# @return [Edge] the new edge
 	def add_sect_edge(h)
 		e = add_edge(h.merge(:type => 's'))
+		h[:log].add_change(:action => :create, :element => e) if h[:log]
+		return e
+	end
+
+	# creates a new part edge and adds it to self
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Edge] the new edge
+	def add_part_edge(h)
+		e = add_edge(h.merge(:type => 'p'))
 		h[:log].add_change(:action => :create, :element => e) if h[:log]
 		return e
 	end
@@ -797,6 +839,28 @@ class AnnoGraph
 		node.delete(log_step)
 	end
 
+	# create a segment node as parent of the given segment nodes
+	# @param name [String] the name of the new node
+	# @param list [Array] the segment nodes that are to be grouped under the new node
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	# @return [Node] the new segment node
+	def build_segment(name, list, log_step = nil)
+		# create node only when all given nodes are on the same level
+		if list.group_by{|n| n.segmentation_level}.keys.length == 1
+			segment_node = add_part_node(:name => name, :log => log_step)
+			list.each do |child_node|
+				add_part_edge(
+					:start => segment_node,
+					:end => child_node,
+					:log => log_step
+				)
+			end
+			return segment_node
+		else
+			return nil
+		end
+	end
+
 	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
 	def to_h
 		{
@@ -889,6 +953,11 @@ class AnnoGraph
 		else
 			[]
 		end
+	end
+
+	# @return [Array] all segment nodes (i.e. type s and p)
+	def segment_nodes
+		segments.flatten.map{|seg| seg[:node]}
 	end
 
 	# @return [Array] a list of ordered lists of self's segment nodes, starting with the lowest level

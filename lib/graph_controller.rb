@@ -504,6 +504,16 @@ class GraphController
 		}[identifier[0]]
 	end
 
+	def nodes_by_name(nodes, names)
+		nodes.select do |n|
+			names.any?{|name|
+				name.match(/^".*"$/) and n.name == name[1..-2] or
+				name.match(/^\/.*\/$/) and n.name.match(Regexp.new(name[1..-2])) or
+				n.name == name
+			}
+		end
+	end
+
 	def extract_elements(identifiers)
 		identifiers.map{|id| element_by_identifier(id)}.compact
 	end
@@ -648,14 +658,15 @@ class GraphController
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
 
-		when 'del' # delete sentence
-			sentences = if parameters[:words] != []
-				@graph.sentence_nodes.select do |n|
-					parameters[:words].any?{|arg|
-						!arg.match(/^\/.*\/$/) and n.name == arg or
-						arg.match(/^\/.*\/$/) and n.name.match(Regexp.new(arg[1..-2]))
-					}
-				end
+		when 'seg'
+			log_step = @log.add_step(:command => command_line)
+			segment_nodes = nodes_by_name(@graph.segment_nodes, parameters[:words][1..-1])
+			new_segment = @graph.build_segment(parameters[:words].first, segment_nodes, log_step)
+			raise 'all given segments have to be on the same level' unless new_segment
+
+		when 'del' # delete segment(s)
+			segments = if parameters[:words] != []
+				nodes_by_name(@graph.segment_nodes, parameters[:words])
 			elsif sentence_set?
 				command_line << ' ' + @current_segments.map(&:name).join(' ')
 				@current_segments
@@ -663,14 +674,26 @@ class GraphController
 				[]
 			end
 			log_step = @log.add_step(:command => command_line)
-			sentences.each do |sentence|
-				# change to next sentence
-				@current_segments = [sentence.node_after || sentence.node_before] if @current_segments.include?(sentence)
-				# join remaining sentences
-				@graph.add_order_edge(:start => sentence.node_before, :end => sentence.node_after, :log => log_step)
+			segments.each do |segment|
+				if segment.type == 's'
+					# change to next segment
+					@current_segments = [segment.node_after || segment.node_before || nil].compact if @current_segments.include?(segment)
+					# join remaining sentences
+					@graph.add_order_edge(:start => segment.node_before, :end => segment.node_after, :log => log_step)
+				else
+					# change to next sentence
+					@current_segments = [segment.sentence_nodes.last.node_after || segment.sentence_nodes.first.node_before]
+					# join remaining sentences
+					@graph.add_order_edge(
+						:start => segment.sentence_nodes.first.node_before,
+						:end => segment.sentence_nodes.last.node_after,
+						:log => log_step
+					)
+				end
 				# delete nodes
-				sentence.nodes.each{|n| n.delete(log_step)}
-				sentence.delete(log_step)
+				segment.nodes.each{|n| n.delete(log_step)}
+				segment.descendant_segments.each{|n| n.delete(log_step)}
+				segment.delete(log_step)
 			end
 
 		when 'load' # clear workspace and load corpus file

@@ -580,6 +580,7 @@ var Segmentation = (function () {
 	var scroll = function () {
 		var margin = 2;
 		var $elements = $('.segment.active');
+		if ($elements.length == 0) return;
 		var $firstElement = $elements.first();
 		var $lastElement = $elements.last();
 		var $container = $('#segmentation .content');
