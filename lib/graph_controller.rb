@@ -660,7 +660,11 @@ class GraphController
 
 		when 'seg'
 			log_step = @log.add_step(:command => command_line)
-			segment_nodes = nodes_by_name(@graph.segment_nodes, parameters[:words][1..-1])
+			if parameters[:words][1..-1].empty?
+				segment_nodes = @current_segments
+			else
+				segment_nodes = nodes_by_name(@graph.segment_nodes, parameters[:words][1..-1])
+			end
 			new_segment = @graph.build_segment(parameters[:words].first, segment_nodes, log_step)
 
 		when 'del' # delete segment(s)
