@@ -9,7 +9,7 @@ window.onload = function() {
 	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310});
 	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220});
 	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400});
-	$('#segmentation').resizable({handles: 'all', minHeight: 45, minWidth: 50});
+	$('#sectioning').resizable({handles: 'all', minHeight: 45, minWidth: 50});
 
 	$('.handle').html('<div class="close"></div>')
 	$(document).on('click', '.close', function(){
@@ -116,7 +116,7 @@ function taste(tast) {
 	}
 	else if (tast.which == 120) {
 		tast.preventDefault();
-		$('#segmentation').toggle();
+		$('#sectioning').toggle();
 	}
 	else if (tast.which == 121) {
 		tast.preventDefault();
@@ -124,19 +124,19 @@ function taste(tast) {
 	}
 	else if (tast.altKey && tast.which == 37) {
 		tast.preventDefault();
-		Segmentation.navigateSentences('prev');
+		Sectioning.navigateSentences('prev');
 	}
 	else if (tast.altKey && tast.which == 39) {
 		tast.preventDefault();
-		Segmentation.navigateSentences('next');
+		Sectioning.navigateSentences('next');
 	}
 	else if (tast.altKey && tast.which == 36) {
 		tast.preventDefault();
-		Segmentation.navigateSentences('first');
+		Sectioning.navigateSentences('first');
 	}
 	else if (tast.altKey && tast.which == 35) {
 		tast.preventDefault();
-		Segmentation.navigateSentences('last');
+		Sectioning.navigateSentences('last');
 	}
 }
 function aendereBildgroesze(richtung) {
@@ -170,8 +170,8 @@ function updateView(antworthash) {
 	antworthash = antworthash || {};
 	if (antworthash['textline'] != undefined) $('#textline').html(antworthash['textline']);
 	if (antworthash['meta'] != undefined) $('#meta').html(antworthash['meta']);
-	if (antworthash['sentence_list'] != undefined) Segmentation.setList(antworthash['sentence_list']);
-	if (antworthash['segments'] != undefined) Segmentation.setCurrent(antworthash['segments']);
+	if (antworthash['sections'] != undefined) Sectioning.setList(antworthash['sections']);
+	if (antworthash['current_sections'] != undefined) Sectioning.setCurrent(antworthash['current_sections']);
 	graphdivEinpassen();
 	var bild = document.getElementById('graph');
 	var scrollLeft = bild.parentNode.scrollLeft;
@@ -184,7 +184,7 @@ function updateView(antworthash) {
 		var heightRatio  = newSvgHeight / this.svgHeight;
 		this.svgWidth  = newSvgWidth;
 		this.svgHeight = newSvgHeight;
-		if (antworthash['sentence_changed']) {
+		if (antworthash['sections_changed']) {
 			graphEinpassen();
 		} else {
 			this.width  = this.width  * widthRatio;
@@ -494,7 +494,7 @@ function sendImport(type) {
 			processData: false
 	})
 	.done(function(data) {
-		if (data['sentence_list'] != undefined) {
+		if (data['sections'] != undefined) {
 			closeModal();
 			updateLayerOptions();
 			loadGraph();
@@ -528,7 +528,7 @@ function display_search_message(message) {
 	query.focus();
 }
 function goToStep(i) {
-	$.post('/go_to_step/' + i, {sentence: Segmentation.getCurrent()}, null, 'json')
+	$.post('/go_to_step/' + i, {sentence: Sectioning.getCurrent()}, null, 'json')
 	.done(function(data){
 		updateLogTable();
 		updateView(data);
@@ -559,7 +559,7 @@ function reloadLogTable() {
 		$('#log .content').html(data);
 	});
 }
-var Segmentation = (function () {
+var Sectioning = (function () {
 	var list = [];
 	var current = [];
 	var currentIndizes = [];
@@ -568,9 +568,9 @@ var Segmentation = (function () {
 	var keyBinding = function (e) {
 		switch (e.which) {
 			case 13:
-				Segmentation.setCurrent($.map($('.segment.chosen'), function(el){return $(el).attr('segment-id');}));
+				Sectioning.setCurrent($.map($('.section.chosen'), function(el){return $(el).attr('section-id');}));
 				unchoose(e);
-				Segmentation.changeSentence();
+				Sectioning.changeSentence();
 				break;
 			case 27:
 				unchoose(e);
@@ -579,11 +579,11 @@ var Segmentation = (function () {
 	}
 	var scroll = function () {
 		var margin = 2;
-		var $elements = $('.segment.active');
+		var $elements = $('.section.active');
 		if ($elements.length == 0) return;
 		var $firstElement = $elements.first();
 		var $lastElement = $elements.last();
-		var $container = $('#segmentation .content');
+		var $container = $('#sectioning .content');
 		var containerViewTop = $container.scrollTop();
 		var containerViewHeight = $container.height();
 		var containerViewBottom = containerViewTop + containerViewHeight;
@@ -600,77 +600,77 @@ var Segmentation = (function () {
 		var clickedElement = e.target;
 		var newclickedLevel = $(e.target).closest('ul').attr('level');
 		if (newclickedLevel != clickedLevel) {
-			$('.segment').removeClass('chosen');
+			$('.section').removeClass('chosen');
 		}
 		clickedLevel = newclickedLevel;
 		$(window).off('keydown', keyBinding).on('keydown', keyBinding);
 		if (e.ctrlKey) {
 			$(clickedElement).toggleClass('chosen');
 		} else if (e.shiftKey) {
-			var $segments = $('ul[level="'+clickedLevel+'"] .segment');
-			var firstIndex = $segments.index($('.segment.chosen').first());
-			var lastIndex = $segments.index($('.segment.chosen').last());
-			var clickedIndex = $segments.index(clickedElement);
+			var $sections = $('ul[level="'+clickedLevel+'"] .section');
+			var firstIndex = $sections.index($('.section.chosen').first());
+			var lastIndex = $sections.index($('.section.chosen').last());
+			var clickedIndex = $sections.index(clickedElement);
 			if (firstIndex == -1) {
 				$(clickedElement).addClass('chosen');
 			} else if (clickedIndex < firstIndex) {
-				$segments.slice(clickedIndex, firstIndex).addClass('chosen');
+				$sections.slice(clickedIndex, firstIndex).addClass('chosen');
 			} else if (clickedIndex > lastIndex) {
-				$segments.slice(lastIndex, clickedIndex + 1).addClass('chosen');
+				$sections.slice(lastIndex, clickedIndex + 1).addClass('chosen');
 			} else if (clickedIndex > firstIndex && clickedIndex < lastIndex) {
 				if ($(clickedElement).hasClass('chosen'))
-					$segments.slice(clickedIndex, lastIndex + 1).removeClass('chosen');
+					$sections.slice(clickedIndex, lastIndex + 1).removeClass('chosen');
 				else
-					$segments.slice(firstIndex, clickedIndex + 1).addClass('chosen');
+					$sections.slice(firstIndex, clickedIndex + 1).addClass('chosen');
 			} else {
 				$(clickedElement).toggleClass('chosen');
 			}
 		} else {
-			$('.segment').removeClass('chosen');
+			$('.section').removeClass('chosen');
 			$(clickedElement).addClass('chosen');
 		}
 	}
 	var dblclick = function (e) {
 		unchoose(e);
-		Segmentation.setCurrent([$(this).attr('segment-id')]);
-		Segmentation.changeSentence();
+		Sectioning.setCurrent([$(this).attr('section-id')]);
+		Sectioning.changeSentence();
 	}
 	var unchoose = function (e) {
 		e.preventDefault();
 		$(window).off('keydown', keyBinding);
-		$('.segment').removeClass('chosen');
+		$('.section').removeClass('chosen');
 	}
 
-	$(document).on('dblclick', '#segmentation .segment', dblclick);
-	$(document).on('click', '#segmentation .segment', click);
+	$(document).on('dblclick', '#sectioning .section', dblclick);
+	$(document).on('click', '#sectioning .section', click);
 
 	return {
 		setList: function (data) {
 			list = data;
-			$('#segmentation .content').html('');
+			$('#sectioning .content').html('');
 			for (var level = list.length - 1; level >= 0; level--) {
-				var ul = $(document.createElement('ul')).appendTo('#segmentation .content')
+				var ul = $(document.createElement('ul')).appendTo('#sectioning .content')
 				.attr('level', level)
 				.css('left', (list.length - level - 1) * 86 + 2);
 				for (var i in list[level]) {
-					var segment = list[level][i];
+					var section = list[level][i];
 					var li = $(document.createElement('li')).appendTo(ul)
-					.addClass('segment')
-					.css('top', segment.first * 18)
-					.css('height', (segment.last - segment.first) * 18 + 16)
-					.attr('segment-id', segment.id)
-					.html(segment.name);
-					if (segment.found) li.addClass('found_sentence')
+					.addClass('section')
+					.css('top', section.first * 18)
+					.css('height', (section.last - section.first) * 18 + 16)
+					.attr('section-id', section.id)
+					.html(section.name);
+					if (section.found) li.addClass('found_sentence')
 				}
 			}
 		},
-		setCurrent: function (segments) {
-			current = segments;
-			currentLevel = parseInt($('.segment[segment-id="'+current[0]+'"]').closest('ul').attr('level'))
+		setCurrent: function (sections) {
+			current = sections;
+			currentLevel = parseInt($('.section[section-id="'+current[0]+'"]').closest('ul').attr('level'))
 			currentIndizes = [];
-			$('.segment').removeClass('active');
+			$('.section').removeClass('active');
 			for (var i in current) {
-				$('.segment[segment-id="'+current[i]+'"]').addClass('active');
+				$('.section[section-id="'+current[i]+'"]').addClass('active');
 				var index = $.map(list[currentLevel], function(e){return e.id;}).indexOf(current[i]);
 				currentIndizes.push(index);
 			}
@@ -680,11 +680,11 @@ var Segmentation = (function () {
 			currentLevel = level;
 			currentIndizes = indizes;
 			current = [];
-			$('.segment').removeClass('active');
-			var segments = $('ul[level="'+currentLevel+'"] .segment');
+			$('.section').removeClass('active');
+			var sections = $('ul[level="'+currentLevel+'"] .section');
 			for (var i in currentIndizes) {
-				var active = $(segments[currentIndizes[i]]).addClass('active');
-				current.push(active.attr('segment-id'));
+				var active = $(sections[currentIndizes[i]]).addClass('active');
+				current.push(active.attr('section-id'));
 			}
 			scroll();
 		},
@@ -720,8 +720,8 @@ var Segmentation = (function () {
 					break;
 			}
 			if (newIndizes != currentIndizes) {
-				Segmentation.setCurrentIndizes(currentLevel, newIndizes);
-				Segmentation.changeSentence()
+				Sectioning.setCurrentIndizes(currentLevel, newIndizes);
+				Sectioning.changeSentence()
 			}
 		},
 	}

@@ -328,7 +328,7 @@ class Node < NodeOrEdge
 		end
 	end
 
-	# methods specific for segment nodes:
+	# methods specific for section nodes:
 
 	# @return [String] self's name attribute
 	def name
@@ -340,23 +340,23 @@ class Node < NodeOrEdge
 		@attr['name'] = name
 	end
 
-	# the level of a segment node: sentence nodes have level 0, parents of sentence nodes level 1 etc.
+	# the level of a section node: sentence nodes have level 0, parents of sentence nodes level 1 etc.
 	# @return [Integer] the level
-	def segmentation_level
+	def sectioning_level
 		if @type == 's'
 			0
 		elsif @type == 'p'
-			child_nodes{|e| e.type == 'p'}.map{|n| n.segmentation_level}.max + 1
+			child_nodes{|e| e.type == 'p'}.map{|n| n.sectioning_level}.max + 1
 		else
 			nil
 		end
 	end
 
-	# @return [Array] the descendant segments of self
-	def descendant_segments
-		if segmentation_level > 0
+	# @return [Array] the descendant sections of self
+	def descendant_sections
+		if sectioning_level > 0
 			children = child_nodes{|e| e.type == 'p'}
-			return children + children.map{|n| n.descendant_segments}.flatten
+			return children + children.map{|n| n.descendant_sections}.flatten
 		else
 			return []
 		end
@@ -839,27 +839,27 @@ class AnnoGraph
 		node.delete(log_step)
 	end
 
-	# create a segment node as parent of the given segment nodes
+	# create a section node as parent of the given section nodes
 	# @param name [String] the name of the new node
-	# @param list [Array] the segment nodes that are to be grouped under the new node
+	# @param list [Array] the section nodes that are to be grouped under the new node
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	# @return [Node] the new segment node
-	def build_segment(name, list, log_step = nil)
+	# @return [Node] the new section node
+	def build_section(name, list, log_step = nil)
 		# create node only when all given nodes are on the same level and none is already grouped under another section
-		if list.group_by{|n| n.segmentation_level}.keys.length > 1
+		if list.group_by{|n| n.sectioning_level}.keys.length > 1
 			raise 'all given sections have to be on the same level'
 		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
 			raise 'given sections already belong to another section'
 		else
-			segment_node = add_part_node(:name => name, :log => log_step)
+			section_node = add_part_node(:name => name, :log => log_step)
 			list.each do |child_node|
 				add_part_edge(
-					:start => segment_node,
+					:start => section_node,
 					:end => child_node,
 					:log => log_step
 				)
 			end
-			return segment_node
+			return section_node
 		end
 	end
 
@@ -957,22 +957,22 @@ class AnnoGraph
 		end
 	end
 
-	# @return [Array] all segment nodes (i.e. type s and p)
-	def segment_nodes
-		segments.flatten.map{|seg| seg[:node]}
+	# @return [Array] all section nodes (i.e. type s and p)
+	def section_nodes
+		sections.flatten.map{|seg| seg[:node]}
 	end
 
-	# @return [Array] a list of ordered lists of self's segment nodes, starting with the lowest level
-	def segments
+	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level
+	def sections
 		level = 0
 		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i}}]
 		loop do
-			next_level_segments = result[level].map do |s|
+			next_level_sections = result[level].map do |s|
 				parent = s[:node].parent_nodes{|e| e.type == 'p'}[0]
 				s.merge(:node => parent)
 			end
 			next_level = {}
-			next_level_segments.each do |s|
+			next_level_sections.each do |s|
 				next unless s[:node]
 				if next_level[s[:node]]
 					next_level[s[:node]][:last] = s[:last]

@@ -25,7 +25,7 @@ require_relative 'log.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :sentence_list, :graph_file, :search_result
+	attr_reader :graph, :log, :graph_file, :search_result
 
 	def initialize
 		@graph = AnnoGraph.new
@@ -33,9 +33,9 @@ class GraphController
 		@graph_file = ''
 		@data_table = nil
 		@search_result = ''
-		@sentence_list = {}
-		@segments = []
-		@current_segments = nil
+		@section_list = {}
+		@sections = []
+		@current_sections = nil
 		@tokens = []
 		@nodes = []
 		@edges = []
@@ -56,16 +56,16 @@ class GraphController
 
 	def draw_graph
 		generate_graph.merge(
-			:segments => @current_segments ? @current_segments.map(&:id) : nil,
-			:sentence_list => set_sentence_list,
-			:sentence_changed => true
+			:current_sections => @current_sections ? @current_sections.map(&:id) : nil,
+			:sections => set_sections,
+			:sections_changed => true
 		).to_json
 	end
 
 	def toggle_refs
 		@show_refs = !@show_refs
 		return generate_graph.merge(
-			:sentence_changed => false
+			:sections_changed => false
 		).to_json
 	end
 
@@ -88,7 +88,7 @@ class GraphController
 			@cmd_error_messages << e.message
 		end
 		return value.to_json if value.is_a?(Hash)
-		return sentence_settings_and_graph.merge(
+		return section_settings_and_graph.merge(
 			:graph_file => @graph_file,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:command => value,
@@ -97,9 +97,9 @@ class GraphController
 	end
 
 	def change_sentence
-		set_segment(@sinatra.params[:sentence])
+		set_section(@sinatra.params[:sentence])
 		return generate_graph.merge(
-			:sentence_changed => true
+			:sections_changed => true
 		).to_json
 	end
 
@@ -108,7 +108,7 @@ class GraphController
 		mode = @sinatra.params[:mode].partition(' ')
 		@filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		return generate_graph.merge(
-			:sentence_changed => false,
+			:sections_changed => false,
 			:filter_applied => true
 		).to_json
 	end
@@ -124,12 +124,13 @@ class GraphController
 		end
 		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
 		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
-		@sentence_list.each{|id, h| h[:found] = false}
+		@section_list.each{|id, h| h[:found] = false}
 		set_found_sentences
 		return generate_graph.merge(
-			:sentence_list => @sentence_list,
+			:sections => @sections,
+			:current_sections => @current_sections.map(&:id),
 			:search_result => @search_result,
-			:sentence_changed => false
+			:sections_changed => false
 		).to_json
 	end
 
@@ -137,9 +138,9 @@ class GraphController
 		@found = nil
 		@search_result = ''
 		return generate_graph.merge(
-			:sentence_list => set_sentence_list,
+			:sections => set_sections,
 			:search_result => @search_result,
-			:sentence_changed => false
+			:sections_changed => false
 		).to_json
 	end
 
@@ -315,18 +316,18 @@ class GraphController
 			format = JSON.parse(format_description)
 			@graph.toolbox_einlesen(file, format)
 		end
-		set_sentence_list(:clear => true)
-		@current_segments = [@graph.nodes[sentence_list.keys.first]]
+		set_sections(:clear => true)
+		@current_sections = [@graph.nodes[@section_list.keys.first]]
 		return {
-			:segments => @current_segments.map(&:id),
-			:sentence_list => @sentence_list,
+			:current_sections => @current_sections.map(&:id),
+			:sections => @sections,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
 		}.to_json
 	end
 
 	def export_subcorpus(filename)
 		if @found
-			subgraph = @graph.subcorpus(@sentence_list.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
+			subgraph = @graph.subcorpus(@section_list.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
 		end
@@ -362,16 +363,16 @@ class GraphController
 			@search_result = ''
 		end
 		return generate_graph.merge(
-			:sentence_list => set_sentence_list,
+			:sections => set_sections,
 			:search_result => @search_result,
-			:sentence_changed => false
+			:sections_changed => false
 		).to_json
 	end
 
 	def go_to_step(i)
 		@log.go_to_step(i.to_i)
-		reset_sentence
-		return sentence_settings_and_graph.to_json
+		reset_current_sections
+		return section_settings_and_graph.to_json
 	end
 
 	def get_log_update
@@ -405,15 +406,15 @@ class GraphController
 		@graph_file.replace('')
 		@graph.clear
 		@found = nil
-		@current_segments = nil
+		@current_sections = nil
 		@log = Log.new(@graph)
 	end
 
-	def sentence_settings_and_graph
+	def section_settings_and_graph
 		generate_graph.merge(
-			:segments => @current_segments ? @current_segments.map(&:id) : nil,
-			:sentence_list => set_sentence_list,
-			:sentence_changed => (@current_segments && @sinatra.params[:sentence] && @sinatra.params[:sentence] == @current_segments.map(&:id)) ? false : true
+			:current_sections => @current_sections ? @current_sections.map(&:id) : nil,
+			:sections => set_sections,
+			:sections_changed => (@current_sections && @sinatra.params[:sentence] && @sinatra.params[:sentence] == @current_sections.map(&:id)) ? false : true
 		)
 	end
 
@@ -486,18 +487,18 @@ class GraphController
 		end
 	end
 
-	def set_segment(list)
+	def set_section(list)
 		if list && list != []
-			@current_segments = list.map{|id| @graph.nodes[id]}
+			@current_sections = list.map{|id| @graph.nodes[id]}
 		else
-			@current_segments = nil
+			@current_sections = nil
 		end
 	end
 
 	def element_by_identifier(identifier)
 		i = identifier.scan(/\d/).join.to_i
 		{
-			'm' => @current_segments.length == 1 ? @current_segments.first : nil,
+			'm' => @current_sections.length == 1 ? @current_sections.first : nil,
 			'n' => @nodes[i],
 			'e' => @edges[i],
 			't' => @tokens[i],
@@ -529,7 +530,7 @@ class GraphController
 			log_step = @log.add_step(:command => command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
-			@graph.add_anno_node(:attr => properties, :sentence => @current_segments.first, :log => log_step)
+			@graph.add_anno_node(:attr => properties, :sentence => @current_sections.first, :log => log_step)
 
 		when 'e' # new edge
 			sentence_set?
@@ -623,12 +624,12 @@ class GraphController
 				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last, :log => log_step)
 			end
 			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first, :log => log_step)
-			@current_segments = [new_nodes.first]
+			@current_sections = [new_nodes.first]
 
 		when 't' # build tokens and append them
 			sentence_set?
 			log_step = @log.add_step(:command => command_line)
-			@graph.build_tokens(parameters[:words], :sentence => @current_segments.last, :log => log_step)
+			@graph.build_tokens(parameters[:words], :sentence => @current_sections.last, :log => log_step)
 
 		when 'tb', 'ti' # build tokens and insert them before given token
 			sentence_set?
@@ -646,57 +647,57 @@ class GraphController
 
 		when 'undo', 'z'
 			@log.undo
-			reset_sentence
+			reset_current_sections
 
 		when 'redo', 'y'
 			@log.redo
-			reset_sentence
+			reset_current_sections
 
 		when 's' # change sentence
-			@current_segments = [@graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]]
+			@current_sections = [@graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]]
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
 
-		when 'seg'
+		when 'sect'
 			log_step = @log.add_step(:command => command_line)
 			if parameters[:words][1..-1].empty?
-				segment_nodes = @current_segments
+				section_nodes = @current_sections
 			else
-				segment_nodes = nodes_by_name(@graph.segment_nodes, parameters[:words][1..-1])
+				section_nodes = nodes_by_name(@graph.section_nodes, parameters[:words][1..-1])
 			end
-			new_segment = @graph.build_segment(parameters[:words].first, segment_nodes, log_step)
+			new_section = @graph.build_section(parameters[:words].first, section_nodes, log_step)
 
-		when 'del' # delete segment(s)
-			segments = if parameters[:words] != []
-				nodes_by_name(@graph.segment_nodes, parameters[:words])
+		when 'del' # delete section(s)
+			sections = if parameters[:words] != []
+				nodes_by_name(@graph.section_nodes, parameters[:words])
 			elsif sentence_set?
-				command_line << ' ' + @current_segments.map(&:name).join(' ')
-				@current_segments
+				command_line << ' ' + @current_sections.map(&:name).join(' ')
+				@current_sections
 			else
 				[]
 			end
 			log_step = @log.add_step(:command => command_line)
-			segments.each do |segment|
-				if segment.type == 's'
-					# change to next segment
-					@current_segments = [segment.node_after || segment.node_before || nil].compact if @current_segments.include?(segment)
+			sections.each do |section|
+				if section.type == 's'
+					# change to next sentence
+					@current_sections = [section.node_after || section.node_before || nil].compact if @current_sections.include?(section)
 					# join remaining sentences
-					@graph.add_order_edge(:start => segment.node_before, :end => segment.node_after, :log => log_step)
+					@graph.add_order_edge(:start => section.node_before, :end => section.node_after, :log => log_step)
 				else
 					# change to next sentence
-					@current_segments = [segment.sentence_nodes.last.node_after || segment.sentence_nodes.first.node_before]
+					@current_sections = [section.sentence_nodes.last.node_after || section.sentence_nodes.first.node_before]
 					# join remaining sentences
 					@graph.add_order_edge(
-						:start => segment.sentence_nodes.first.node_before,
-						:end => segment.sentence_nodes.last.node_after,
+						:start => section.sentence_nodes.first.node_before,
+						:end => section.sentence_nodes.last.node_after,
 						:log => log_step
 					)
 				end
 				# delete nodes
-				segment.nodes.each{|n| n.delete(log_step)}
-				segment.descendant_segments.each{|n| n.delete(log_step)}
-				segment.delete(log_step)
+				section.nodes.each{|n| n.delete(log_step)}
+				section.descendant_sections.each{|n| n.delete(log_step)}
+				section.delete(log_step)
 			end
 
 		when 'load' # clear workspace and load corpus file
@@ -709,8 +710,8 @@ class GraphController
 				@log = Log.new(@graph)
 			end
 			sentence_nodes = @graph.sentence_nodes
-			@current_segments = [sentence_nodes.select{|n| n.name == @current_segments.first.name}[0]] if @current_segments
-			@current_segments = [sentence_nodes.first] unless @current_segments
+			@current_sections = [sentence_nodes.select{|n| n.name == @current_sections.first.name}[0]] if @current_sections
+			@current_sections = [sentence_nodes.first] unless @current_sections
 
 		when 'add' # load corpus file and add it to the workspace
 			@graph_file.replace('')
@@ -788,11 +789,11 @@ class GraphController
 	end
 
 	def generate_graph(format = :svg, path = 'public/graph.svg')
-		puts "Generating graph for segment(s) \"#{@current_segments.map(&:name).join(', ')}\"..." if @current_segments
+		puts "Generating graph for section(s) \"#{@current_sections.map(&:name).join(', ')}\"..." if @current_sections
 		satzinfo = {:textline => '', :meta => ''}
 
-		@tokens     = @current_segments ? @current_segments.map(&:sentence_tokens).flatten(1) : []
-		all_nodes   = @current_segments ? @current_segments.map(&:nodes).flatten(1) : []
+		@tokens     = @current_sections ? @current_sections.map(&:sentence_tokens).flatten(1) : []
+		all_nodes   = @current_sections ? @current_sections.map(&:nodes).flatten(1) : []
 		@nodes      = all_nodes.reject{|n| n.type == 't'}
 		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
 		@edges      = all_edges.select{|e| e.type == 'a'}
@@ -803,8 +804,8 @@ class GraphController
 			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
 		end
 
-		satzinfo[:meta] = if @current_segments && @current_segments.length == 1
-			build_label(@current_segments.first)
+		satzinfo[:meta] = if @current_sections && @current_sections.length == 1
+			build_label(@current_sections.first)
 		else
 			''
 		end
@@ -957,15 +958,15 @@ class GraphController
 	end
 
 	def sentence_set?
-		if @current_segments
+		if @current_sections
 			return true
 		else
 			raise 'Create a sentence first!'
 		end
 	end
 
-	def reset_sentence
-		@current_segments = [@graph.sentence_nodes.first] unless @current_segments - @graph.sentence_nodes == []
+	def reset_current_sections
+		@current_sections = [@graph.sentence_nodes.first] unless @current_sections - @graph.sentence_nodes == []
 	end
 
 	def set_cmd_cookies
@@ -989,17 +990,17 @@ class GraphController
 
 	def set_found_sentences
 		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
-			@sentence_list[s][:found] = true
+			@section_list[s][:found] = true
 		end
 	end
 
-	def set_sentence_list(h = {})
-		@segments = @graph.segments.map do |level|
+	def set_sections(h = {})
+		@sections = @graph.sections.map do |level|
 			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false)}
 		end
-		@sentence_list = Hash[@segments.flatten.map{|s| [s[:id], s]}]
+		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
 		set_found_sentences if !h[:clear] and @found
-		@segments
+		@sections
 	end
 
 	def undefined_references?(ids)
