@@ -991,8 +991,8 @@ class GraphController
 	end
 
 	def set_sentence_list(h = {})
-		@segments = @graph.segments.map do |layer|
-			layer.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false)}
+		@segments = @graph.segments.map do |level|
+			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false)}
 		end
 		@sentence_list = Hash[@segments.flatten.map{|s| [s[:id], s]}]
 		set_found_sentences if !h[:clear] and @found

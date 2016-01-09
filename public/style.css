@@ -107,7 +107,7 @@ table {
       #segmentation .content ul li.chosen {
         color: white;
         background-color: #003090; }
-    #segmentation .content ul:not([layer="0"]) li {
+    #segmentation .content ul:not([level="0"]) li {
       position: absolute;
       width: 80px; }
 

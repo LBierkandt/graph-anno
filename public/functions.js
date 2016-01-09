@@ -563,8 +563,8 @@ var Segmentation = (function () {
 	var list = [];
 	var current = [];
 	var currentIndizes = [];
-	var currentLayer = 0
-	var clickedLayer = 0
+	var currentLevel = 0
+	var clickedLevel = 0
 	var keyBinding = function (e) {
 		switch (e.which) {
 			case 13:
@@ -598,16 +598,16 @@ var Segmentation = (function () {
 	}
 	var click = function (e) {
 		var clickedElement = e.target;
-		var newClickedLayer = $(e.target).closest('ul').attr('layer');
-		if (newClickedLayer != clickedLayer) {
+		var newclickedLevel = $(e.target).closest('ul').attr('level');
+		if (newclickedLevel != clickedLevel) {
 			$('.segment').removeClass('chosen');
 		}
-		clickedLayer = newClickedLayer;
+		clickedLevel = newclickedLevel;
 		$(window).off('keydown', keyBinding).on('keydown', keyBinding);
 		if (e.ctrlKey) {
 			$(clickedElement).toggleClass('chosen');
 		} else if (e.shiftKey) {
-			var $segments = $('ul[layer="'+clickedLayer+'"] .segment');
+			var $segments = $('ul[level="'+clickedLevel+'"] .segment');
 			var firstIndex = $segments.index($('.segment.chosen').first());
 			var lastIndex = $segments.index($('.segment.chosen').last());
 			var clickedIndex = $segments.index(clickedElement);
@@ -648,12 +648,12 @@ var Segmentation = (function () {
 		setList: function (data) {
 			list = data;
 			$('#segmentation .content').html('');
-			for (var layer = list.length - 1; layer >= 0; layer--) {
+			for (var level = list.length - 1; level >= 0; level--) {
 				var ul = $(document.createElement('ul')).appendTo('#segmentation .content')
-				.attr('layer', layer)
-				.css('left', (list.length - layer - 1) * 86 + 2);
-				for (var i in list[layer]) {
-					var segment = list[layer][i];
+				.attr('level', level)
+				.css('left', (list.length - level - 1) * 86 + 2);
+				for (var i in list[level]) {
+					var segment = list[level][i];
 					var li = $(document.createElement('li')).appendTo(ul)
 					.addClass('segment')
 					.css('top', segment.first * 18)
@@ -666,22 +666,22 @@ var Segmentation = (function () {
 		},
 		setCurrent: function (segments) {
 			current = segments;
-			currentLayer = parseInt($('.segment[segment-id="'+current[0]+'"]').closest('ul').attr('layer'))
+			currentLevel = parseInt($('.segment[segment-id="'+current[0]+'"]').closest('ul').attr('level'))
 			currentIndizes = [];
 			$('.segment').removeClass('active');
 			for (var i in current) {
 				$('.segment[segment-id="'+current[i]+'"]').addClass('active');
-				var index = $.map(list[currentLayer], function(e){return e.id;}).indexOf(current[i]);
+				var index = $.map(list[currentLevel], function(e){return e.id;}).indexOf(current[i]);
 				currentIndizes.push(index);
 			}
 			scroll();
 		},
-		setCurrentIndizes: function (layer, indizes) {
-			currentLayer = layer
+		setCurrentIndizes: function (level, indizes) {
+			currentLevel = level;
 			currentIndizes = indizes;
 			current = [];
 			$('.segment').removeClass('active');
-			var segments = $('ul[layer="'+currentLayer+'"] .segment');
+			var segments = $('ul[level="'+currentLevel+'"] .segment');
 			for (var i in currentIndizes) {
 				var active = $(segments[currentIndizes[i]]).addClass('active');
 				current.push(active.attr('segment-id'));
@@ -710,17 +710,17 @@ var Segmentation = (function () {
 						newIndizes = $.map(currentIndizes, function(i){return i - 1;});
 					break;
 				case 'next':
-					if (currentIndizes[currentIndizes.length - 1] < list[currentLayer].length - 1)
+					if (currentIndizes[currentIndizes.length - 1] < list[currentLevel].length - 1)
 						newIndizes = $.map(currentIndizes, function(i){return i + 1;});
 					break;
 				case 'last':
-					var offset = list[currentLayer].length - 1 - currentIndizes[currentIndizes.length - 1];
+					var offset = list[currentLevel].length - 1 - currentIndizes[currentIndizes.length - 1];
 					if (offset > 0)
 						newIndizes = $.map(currentIndizes, function(i){return i + offset;});
 					break;
 			}
 			if (newIndizes != currentIndizes) {
-				Segmentation.setCurrentIndizes(currentLayer, newIndizes);
+				Segmentation.setCurrentIndizes(currentLevel, newIndizes);
 				Segmentation.changeSentence()
 			}
 		},
