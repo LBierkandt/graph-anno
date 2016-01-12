@@ -583,9 +583,11 @@ class AnnoGraph
 
 	# serializes self in a JSON file
 	# @param path [String] path to the JSON file
+	# @param compact [Boolean] write compact JSON?
+	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
 	def write_json_file(path, compact = false, additional = {})
 		puts 'Writing file "' + path + '"...'
-		hash = self.to_h.merge(additional.to_h)
+		hash = self.to_h.merge(additional)
 		json = compact ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
 		File.open(path, 'w') do |file|
 			file.write(json.encode('UTF-8'))
