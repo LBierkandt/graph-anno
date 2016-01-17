@@ -652,6 +652,13 @@ class AnnoGraph
 		add_node(h.merge(:type => 'sp'))
 	end
 
+	# creates a node that is a clone (including ID) of the given node; useful for creating subcorpora
+	# @param node [Node] the node to be cloned
+	# @return [Node] the new node
+	def add_cloned_node(node)
+		add_node(node.to_h.merge(:raw => true))
+	end
+
 	# creates a new edge and adds it to self
 	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
@@ -693,6 +700,15 @@ class AnnoGraph
 	# @return [Edge] the new edge
 	def add_speaker_edge(h)
 		add_edge(h.merge(:type => 'sp'))
+	end
+
+	# creates an edge that is a clone (without ID; start and end nodes via id) of the given edge; useful for creating subcorpora
+	# @param node [Edge] the edge to be cloned
+	# @return [Edge] the new edge
+	def add_cloned_edge(edge)
+		h = edge.to_h
+		h.delete(:id)
+		add_edge(h.merge(:raw => true))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
@@ -842,6 +858,12 @@ class AnnoGraph
 		@edges = other_graph.edges.clone
 		@highest_node_id = other_graph.highest_node_id
 		@highest_edge_id = other_graph.highest_edge_id
+		clone_graph_info(other_graph)
+		return self
+	end
+
+	# sets own settings to those of another graph
+	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
 		@tagset = other_graph.tagset.clone
@@ -849,29 +871,35 @@ class AnnoGraph
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
-		return self
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
 	# @param sentence_list [Array] a list of sentence nodes
 	# @return [Graph] the new graph
 	def subcorpus(sentence_list)
-		nodes = sentence_list.map{|s| s.nodes}.flatten
-		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
+		# create new graph
 		g = AnnoGraph.new
 		g.clone_graph_info(self)
 		last_sentence_node = nil
+		# copy speaker nodes
+		@nodes.values.select{|n| n.type == 'sp'}.each do |speaker|
+			g.add_cloned_node(speaker)
+		end
+		# copy sentence nodes and their associated nodes
 		sentence_list.each do |s|
-			ns = g.add_sect_node(:attr => s.attr, :id => s.id)
+			ns = g.add_cloned_node(s)
 			g.add_order_edge(:start => last_sentence_node, :end => ns) if last_sentence_node
 			last_sentence_node = ns
 			s.nodes.each do |n|
-				nn = g.add_node(:attr => n.attr, :type => n.type, :id => n.id)
+				nn = g.add_cloned_node(n)
 				g.add_sect_edge(:start => ns, :end => nn)
 			end
 		end
+		# copy edges
+		nodes = sentence_list.map{|s| s.nodes}.flatten
+		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
 		edges.reject{|e| e.type == 's'}.each do |e|
-			g.add_edge(:attr => e.attr, :type => e.type, :start => e.start.id, :end => e.end.id)
+			g.add_cloned_edge(e)
 		end
 		return g
 	end
