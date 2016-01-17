@@ -22,6 +22,8 @@ require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
+	include SearchableNodeOrEdge
+
 	attr_reader :graph
 	attr_accessor :attr, :type
 
@@ -55,6 +57,8 @@ class NodeOrEdge
 end
 
 class Node < NodeOrEdge
+	include SearchableNode
+
 	attr_accessor :id, :in, :out, :start, :end
 
 	# initializes node

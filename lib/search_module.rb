@@ -562,7 +562,7 @@ module SearchableGraph
 	end
 end
 
-class NodeOrEdge
+module SearchableNodeOrEdge
 	def fulfil?(bedingung)
 		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.class == String
 		return true unless bedingung
@@ -641,7 +641,7 @@ class NodeOrEdge
 	end
 end
 
-class Node < NodeOrEdge
+module SearchableNode
 	def links(pfad_oder_automat, zielknotenbedingung = nil)
 		if pfad_oder_automat.class == String
 			automat = Automat.create(@graph.parse_link(pfad_oder_automat)[:op])
