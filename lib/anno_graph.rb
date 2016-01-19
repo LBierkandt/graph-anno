@@ -65,7 +65,7 @@ class Node < NodeOrEdge
 	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
 	def initialize(h)
 		@graph = h[:graph]
-		@id = h[:id]
+		@id = h[:id].to_s
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -78,10 +78,10 @@ class Node < NodeOrEdge
 		'Node' + @id
 	end
 
-	# @return [Hash] the node transformed into a hash with all values casted to strings
+	# @return [Hash] the node transformed into a hash
 	def to_h
 		h = {
-			:id   => @id,
+			:id   => @id.to_i,
 			:type => @type
 		}.merge(@attr.to_h)
 		h.merge!(:start => @start, :end => @end) if @start || @end
@@ -332,17 +332,17 @@ class Edge < NodeOrEdge
 	# @param h [{:graph => Graph, :id => String, :start => Node or String, :end => Node or String, :attr => Hash}]
 	def initialize(h)
 		@graph = h[:graph]
-		@id = h[:id]
+		@id = h[:id].to_s
 		@type = h[:type]
-		if h[:start].class == String
-			@start = @graph.nodes[h[:start]]
-		else
+		if h[:start].is_a?(Node)
 			@start = h[:start]
-		end
-		if h[:end].class == String
-			@end = @graph.nodes[h[:end]]
 		else
+			@start = @graph.nodes[h[:start].to_s]
+		end
+		if h[:end].is_a?(Node)
 			@end = h[:end]
+		else
+			@end = @graph.nodes[h[:end].to_s]
 		end
 		@attr = Attributes.new(h.merge(:host => self))
 		if @start && @end
@@ -366,12 +366,12 @@ class Edge < NodeOrEdge
 		@graph.edges.delete(@id)
 	end
 
-	# @return [Hash] the edge transformed into a hash with all values casted to strings
+	# @return [Hash] the edge transformed into a hash
 	def to_h
 		h = {
-			:start => @start.id,
-			:end   => @end.id,
-			:id    => @id,
+			:start => @start.id.to_i,
+			:end   => @end.id.to_i,
+			:id    => @id.to_i,
 			:type  => @type
 		}.merge(@attr.to_h)
 	end
@@ -604,7 +604,7 @@ class AnnoGraph
 	# @return [Node] the new node
 	def add_node(h)
 		new_id(h, :node)
-		@nodes[h[:id]] = Node.new(h.merge(:graph => self))
+		@nodes[h[:id].to_s] = Node.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno node and adds it to self
@@ -665,7 +665,7 @@ class AnnoGraph
 	def add_edge(h)
 		return nil unless h[:start] && h[:end]
 		new_id(h, :edge)
-		@edges[h[:id]] = Edge.new(h.merge(:graph => self))
+		@edges[h[:id].to_s] = Edge.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno edge and adds it to self
@@ -808,7 +808,7 @@ class AnnoGraph
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
-			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
+			:nodes => @nodes.values.map{|n| n.to_h},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
 			merge(:version => 8).
