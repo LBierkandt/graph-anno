@@ -797,42 +797,42 @@ class GraphController
 
 		viz_graph = GraphViz.new(
 			:G,
-			:type => 'digraph',
-			:rankdir => 'TB',
-			:use => 'dot',
-			:ranksep => '.3'
+			:type => :digraph,
+			:rankdir => :TB,
+			:use => :dot,
+			:ranksep => 0.3
 		)
-		token_graph = viz_graph.subgraph(:rank => 'same')
+		token_graph = viz_graph.subgraph(:rank => :same)
 		layer_graphs = {}
 		@graph.conf.combinations.each do |c|
-			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
 		end
 		@graph.conf.layers.each do |l|
-			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
 		end
 		# speaker subgraphs
 		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map{|t| t.speaker}.include?(sp)}) != []
-			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => 'same')]}]
+			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => :same)]}]
 			# induce speaker labels and layering of speaker graphs:
 			gv_speaker_nodes = []
 			speaker_graphs.each do |speaker_node, speaker_graph|
 				gv_speaker_nodes << speaker_graph.add_nodes(
 					's' + speaker_node.id,
-					{:shape => 'plaintext', :label => speaker_node['name'], :fontname => @graph.conf.font}
+					{:shape => :plaintext, :label => speaker_node['name'], :fontname => @graph.conf.font}
 				)
-				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => 'invis'}) if gv_speaker_nodes.length > 1
+				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => :invis}) if gv_speaker_nodes.length > 1
 			end
-			timeline_graph = viz_graph.subgraph(:rank => 'same')
-			gv_anchor = timeline_graph.add_nodes('anchor', {:style => 'invis'})
-			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => 'invis'})
+			timeline_graph = viz_graph.subgraph(:rank => :same)
+			gv_anchor = timeline_graph.add_nodes('anchor', {:style => :invis})
+			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => :invis})
 		end
 
 		@tokens.each_with_index do |token, i|
 			options = {
 				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
-				:shape => 'box',
-				:style => 'bold',
+				:shape => :box,
+				:style => :bold,
 				:color => @graph.conf.token_color,
 				:fontcolor => @graph.conf.token_color
 			}
@@ -853,16 +853,16 @@ class GraphController
 				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options)
 				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
 				# add ordering edge from speaker to speaker's first token
-				viz_graph.add_edges('s' + token.speaker.id, gv_token, {:style => 'invis'}) if i == 0
+				viz_graph.add_edges('s' + token.speaker.id, gv_token, {:style => :invis}) if i == 0
 				# multiple lines between token and point on timeline in order to force correct order:
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
-				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
+				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => :none, :weight => 9999})
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
 				# order points on timeline:
 				if i > 0
-					viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => 'none'})
+					viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => :none})
 				else
-					viz_graph.add_edges(gv_anchor, gv_time, {:style => 'invis'})
+					viz_graph.add_edges(gv_anchor, gv_time, {:style => :invis})
 				end
 			end
 		end
@@ -871,7 +871,7 @@ class GraphController
 			options = {
 				:fontname => @graph.conf.font,
 				:color => @graph.conf.default_color,
-				:shape => 'box',
+				:shape => :box,
 				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
 			}
 			add_graphs = []
@@ -934,7 +934,7 @@ class GraphController
 		end
 
 		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start.id, edge.end.id, :style => 'invis', :weight => 100)
+			viz_graph.add_edges(edge.start.id, edge.end.id, :style => :invis, :weight => 100)
 		end
 
 		viz_graph.output(format => '"'+path+'"')
