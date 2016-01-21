@@ -65,7 +65,7 @@ class Node < NodeOrEdge
 	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
 	def initialize(h)
 		@graph = h[:graph]
-		@id = h[:id].to_s
+		@id = h[:id]
 		@in = []
 		@out = []
 		@type = h[:type]
@@ -81,7 +81,7 @@ class Node < NodeOrEdge
 	# @return [Hash] the node transformed into a hash
 	def to_h
 		h = {
-			:id   => @id.to_i,
+			:id   => @id,
 			:type => @type
 		}.merge(@attr.to_h)
 		h.merge!(:start => @start, :end => @end) if @start || @end
@@ -332,17 +332,17 @@ class Edge < NodeOrEdge
 	# @param h [{:graph => Graph, :id => String, :start => Node or String, :end => Node or String, :attr => Hash}]
 	def initialize(h)
 		@graph = h[:graph]
-		@id = h[:id].to_s
+		@id = h[:id]
 		@type = h[:type]
 		if h[:start].is_a?(Node)
 			@start = h[:start]
 		else
-			@start = @graph.nodes[h[:start].to_s]
+			@start = @graph.nodes[h[:start]]
 		end
 		if h[:end].is_a?(Node)
 			@end = h[:end]
 		else
-			@end = @graph.nodes[h[:end].to_s]
+			@end = @graph.nodes[h[:end]]
 		end
 		@attr = Attributes.new(h.merge(:host => self))
 		if @start && @end
@@ -369,9 +369,9 @@ class Edge < NodeOrEdge
 	# @return [Hash] the edge transformed into a hash
 	def to_h
 		h = {
-			:start => @start.id.to_i,
-			:end   => @end.id.to_i,
-			:id    => @id.to_i,
+			:start => @start.id,
+			:end   => @end.id,
+			:id    => @id,
 			:type  => @type
 		}.merge(@attr.to_h)
 	end
@@ -451,15 +451,15 @@ class AnnoGraph
 		case element_type
 		when :node
 			if !h[:id]
-				h[:id] = (@highest_node_id += 1).to_s
+				h[:id] = (@highest_node_id += 1)
 			else
-				@highest_node_id = h[:id].to_i if h[:id].to_i > @highest_node_id
+				@highest_node_id = h[:id] if h[:id] > @highest_node_id
 			end
 		when :edge
 			if !h[:id]
-				h[:id] = (@highest_edge_id += 1).to_s
+				h[:id] = (@highest_edge_id += 1)
 			else
-				@highest_edge_id = h[:id].to_i if h[:id].to_i > @highest_edge_id
+				@highest_edge_id = h[:id] if h[:id] > @highest_edge_id
 			end
 		end
 	end
@@ -499,6 +499,12 @@ class AnnoGraph
 		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
 			el.replace(el.symbolize_keys)
 			el[:id] = el[:ID] if version < 7
+			# IDs as integer
+			if version < 8
+				el[:id] = el[:id].to_i
+				el[:start] = el[:start].to_i if el[:start].is_a?(String)
+				el[:end] = el[:end].to_i if el[:end].is_a?(String)
+			end
 		end
 		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		self.add_hash(nodes_and_edges)
@@ -604,7 +610,7 @@ class AnnoGraph
 	# @return [Node] the new node
 	def add_node(h)
 		new_id(h, :node)
-		@nodes[h[:id].to_s] = Node.new(h.merge(:graph => self))
+		@nodes[h[:id]] = Node.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno node and adds it to self
@@ -665,7 +671,7 @@ class AnnoGraph
 	def add_edge(h)
 		return nil unless h[:start] && h[:end]
 		new_id(h, :edge)
-		@edges[h[:id].to_s] = Edge.new(h.merge(:graph => self))
+		@edges[h[:id]] = Edge.new(h.merge(:graph => self))
 	end
 
 	# creates a new anno edge and adds it to self
