@@ -874,20 +874,20 @@ class GraphController
 				:shape => :box,
 				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
 			}
-			add_graphs = []
+			actual_layer_graph = nil
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 				options[:color] = @graph.conf.filtered_color
 			else
 				@graph.conf.layers.each do |l|
 					if node[l.attr] == 't'
 						options[:color] = l.color
-						add_graphs << layer_graphs[l.attr]
+						actual_layer_graph = layer_graphs[l.attr]
 					end
 				end
 				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
 					if c.attr.all?{|a| node[a] == 't'}
 						options[:color] = c.color
-						add_graphs << layer_graphs[c.attr]
+						actual_layer_graph = layer_graphs[c.attr]
 					end
 				end
 			end
@@ -897,7 +897,7 @@ class GraphController
 				options[:penwidth] = 2
 			end
 			viz_graph.add_nodes(node.id, options)
-			add_graphs.each{|g| g.add_nodes(node.id)}
+			actual_layer_graph.add_nodes(node.id) if actual_layer_graph
 		end
 
 		@edges.each_with_index do |edge, i|
@@ -914,14 +914,23 @@ class GraphController
 				@graph.conf.layers.each do |l|
 					if edge[l.attr] == 't'
 						options[:color] = l.color
-						options[:weight]= l.weight
-						options[:constraint] = false if options[:weight] == 0
+						if l.weight == 0
+							options[:constraint] = false
+						else
+							options[:weight] = l.weight
+							options[:constraint] = true
+						end
 					end
 				end
 				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
 					if c.attr.all?{|a| edge[a] == 't'}
 						options[:color] = c.color
-						options[:weight] = c.weight
+						if c.weight == 0
+							options[:constraint] = false
+						else
+							options[:weight] = c.weight
+							options[:constraint] = true
+						end
 					end
 				end
 			end
