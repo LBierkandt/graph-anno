@@ -78,7 +78,7 @@ class Node < NodeOrEdge
 		'Node' + @id
 	end
 
-	# @return [Hash] the node transformed into a hash with all values casted to strings
+	# @return [Hash] the node transformed into a hash
 	def to_h
 		h = {
 			:id   => @id,
@@ -334,15 +334,15 @@ class Edge < NodeOrEdge
 		@graph = h[:graph]
 		@id = h[:id]
 		@type = h[:type]
-		if h[:start].class == String
-			@start = @graph.nodes[h[:start]]
-		else
+		if h[:start].is_a?(Node)
 			@start = h[:start]
-		end
-		if h[:end].class == String
-			@end = @graph.nodes[h[:end]]
 		else
+			@start = @graph.nodes[h[:start]]
+		end
+		if h[:end].is_a?(Node)
 			@end = h[:end]
+		else
+			@end = @graph.nodes[h[:end]]
 		end
 		@attr = Attributes.new(h.merge(:host => self))
 		if @start && @end
@@ -366,7 +366,7 @@ class Edge < NodeOrEdge
 		@graph.edges.delete(@id)
 	end
 
-	# @return [Hash] the edge transformed into a hash with all values casted to strings
+	# @return [Hash] the edge transformed into a hash
 	def to_h
 		h = {
 			:start => @start.id,
@@ -451,15 +451,15 @@ class AnnoGraph
 		case element_type
 		when :node
 			if !h[:id]
-				h[:id] = (@highest_node_id += 1).to_s
+				h[:id] = (@highest_node_id += 1)
 			else
-				@highest_node_id = h[:id].to_i if h[:id].to_i > @highest_node_id
+				@highest_node_id = h[:id] if h[:id] > @highest_node_id
 			end
 		when :edge
 			if !h[:id]
-				h[:id] = (@highest_edge_id += 1).to_s
+				h[:id] = (@highest_edge_id += 1)
 			else
-				@highest_edge_id = h[:id].to_i if h[:id].to_i > @highest_edge_id
+				@highest_edge_id = h[:id] if h[:id] > @highest_edge_id
 			end
 		end
 	end
@@ -499,6 +499,12 @@ class AnnoGraph
 		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
 			el.replace(el.symbolize_keys)
 			el[:id] = el[:ID] if version < 7
+			# IDs as integer
+			if version < 9
+				el[:id] = el[:id].to_i
+				el[:start] = el[:start].to_i if el[:start].is_a?(String)
+				el[:end] = el[:end].to_i if el[:end].is_a?(String)
+			end
 		end
 		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		self.add_hash(nodes_and_edges)
@@ -808,10 +814,10 @@ class AnnoGraph
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
-			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
+			:nodes => @nodes.values.map{|n| n.to_h},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge(:version => 8).
+			merge(:version => 9).
 			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).

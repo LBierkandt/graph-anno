@@ -54,7 +54,7 @@ class GraphController
 	end
 
 	def draw_graph
-		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
+		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence'].to_i]
 		return generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
 			:sentence_changed => true
@@ -81,7 +81,7 @@ class GraphController
 		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
-		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
+		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence].to_i]
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
@@ -98,7 +98,7 @@ class GraphController
 
 	def change_sentence
 		set_cmd_cookies
-		@sentence = @graph.nodes[@sinatra.params[:sentence]]
+		@sentence = @graph.nodes[@sinatra.params[:sentence].to_i]
 		return generate_graph.merge(
 			:sentence_changed => true
 		).to_json
@@ -422,7 +422,7 @@ class GraphController
 		set_cookie('traw_sentence', @sentence ? @sentence.id : nil)
 		return generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
-			:sentence_changed => (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
+			:sentence_changed => (@sentence && @sinatra.request.cookies['traw_sentence'].to_i == @sentence.id) ? false : true
 		)
 	end
 
@@ -817,7 +817,7 @@ class GraphController
 			gv_speaker_nodes = []
 			speaker_graphs.each do |speaker_node, speaker_graph|
 				gv_speaker_nodes << speaker_graph.add_nodes(
-					's' + speaker_node.id,
+					's' + speaker_node.id.to_s,
 					{:shape => :plaintext, :label => speaker_node['name'], :fontname => @graph.conf.font}
 				)
 				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => :invis}) if gv_speaker_nodes.length > 1
@@ -847,20 +847,20 @@ class GraphController
 				satzinfo[:textline] += token.token + ' '
 			end
 			unless token.speaker
-				token_graph.add_nodes(token.id, options)
+				token_graph.add_nodes(token.id.to_s, options)
 			else
 				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options)
-				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
+				gv_token = speaker_graphs[token.speaker].add_nodes(token.id.to_s, options)
+				gv_time  = timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
 				# add ordering edge from speaker to speaker's first token
-				viz_graph.add_edges('s' + token.speaker.id, gv_token, {:style => :invis}) if i == 0
+				viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
 				# multiple lines between token and point on timeline in order to force correct order:
 				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
 				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => :none, :weight => 9999})
 				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
 				# order points on timeline:
 				if i > 0
-					viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => :none})
+					viz_graph.add_edges('t' + @tokens[i-1].id.to_s, gv_time, {:arrowhead => :none})
 				else
 					viz_graph.add_edges(gv_anchor, gv_time, {:style => :invis})
 				end
@@ -896,8 +896,8 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_nodes(node.id, options)
-			actual_layer_graph.add_nodes(node.id) if actual_layer_graph
+			viz_graph.add_nodes(node.id.to_s, options)
+			actual_layer_graph.add_nodes(node.id.to_s) if actual_layer_graph
 		end
 
 		@edges.each_with_index do |edge, i|
@@ -939,11 +939,11 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_edges(edge.start.id, edge.end.id, options)
+			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, options)
 		end
 
 		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start.id, edge.end.id, :style => :invis, :weight => 100)
+			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, :style => :invis, :weight => 100)
 		end
 
 		viz_graph.output(format => '"'+path+'"')
