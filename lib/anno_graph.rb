@@ -500,7 +500,7 @@ class AnnoGraph
 			el.replace(el.symbolize_keys)
 			el[:id] = el[:ID] if version < 7
 			# IDs as integer
-			if version < 8
+			if version < 9
 				el[:id] = el[:id].to_i
 				el[:start] = el[:start].to_i if el[:start].is_a?(String)
 				el[:end] = el[:end].to_i if el[:end].is_a?(String)
@@ -817,7 +817,7 @@ class AnnoGraph
 			:nodes => @nodes.values.map{|n| n.to_h},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge(:version => 8).
+			merge(:version => 9).
 			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).
