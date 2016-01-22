@@ -124,8 +124,17 @@ class Node < NodeOrEdge
 	# @param link [String] a query language string describing the link from self to the tokens that will be returned
 	# @return [Array] all dominated tokens or all tokens connected via given link
 	def tokens(link = nil)
- 		link = 'edge+' unless link
-		self.nodes(link, 'token').sort_by{|token| token.tokenid}
+		case @type
+		when 'a'
+	 		link = 'edge+' unless link
+			self.nodes(link, 'token').sort_by(&:tokenid)
+		when 't'
+			[self]
+		when 's'
+			sentence_tokens
+		when 'p'
+			sentence_nodes.map(&:tokens).flatten
+		end
 	end
 
 	# like tokens method, but returns text string represented by tokens
@@ -1013,7 +1022,7 @@ class AnnoGraph
 	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level
 	def sections
 		level = 0
-		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i}}]
+		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i, :text => n.text}}]
 		loop do
 			next_level_sections = result[level].map do |s|
 				parent = s[:node].parent_nodes{|e| e.type == 'p'}[0]

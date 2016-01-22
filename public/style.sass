@@ -108,12 +108,18 @@ table
         white-space: nowrap
         overflow: hidden
         background-color: $background-color-light
+        .sentence-start
+          color: #444
         &.active
           color: #fff
           background-color: $theme-color
+          .sentence-start
+            color: #ccc
         &.chosen
           color: #fff
           background-color: $theme-color-highlight
+          .sentence-start
+            color: #ccc
       &:not([level="0"])
         li
           position: absolute

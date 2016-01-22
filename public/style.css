@@ -101,12 +101,18 @@ table {
       white-space: nowrap;
       overflow: hidden;
       background-color: #eeeeee; }
+      #sectioning .content ul li .sentence-start {
+        color: #444444; }
       #sectioning .content ul li.active {
         color: white;
         background-color: #002050; }
+        #sectioning .content ul li.active .sentence-start {
+          color: #cccccc; }
       #sectioning .content ul li.chosen {
         color: white;
         background-color: #003090; }
+        #sectioning .content ul li.chosen .sentence-start {
+          color: #cccccc; }
     #sectioning .content ul:not([level="0"]) li {
       position: absolute;
       width: 80px; }
