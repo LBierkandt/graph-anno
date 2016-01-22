@@ -97,8 +97,8 @@ class Node < NodeOrEdge
 			@in.each{|e| log_step.add_change(:action => :delete, :element => e)}
 			log_step.add_change(:action => :delete, :element => self)
 		end
-		Array.new(@out).each{|e| e.delete}
-		Array.new(@in).each{|e| e.delete}
+		Array.new(@out).each(&:delete)
+		Array.new(@in).each(&:delete)
 		@graph.nodes.delete(@id)
 	end
 
@@ -108,7 +108,7 @@ class Node < NodeOrEdge
 	def parent_nodes(&block)
 		selected = @in.select(&block)
 		selected = @in if selected.is_a?(Enumerator)
-		return selected.map{|e| e.start}
+		return selected.map(&:start)
 	end
 
 	# returns nodes connected to self by outgoing edges which fulfil the (optional) block
@@ -117,7 +117,7 @@ class Node < NodeOrEdge
 	def child_nodes(&block)
 		selected = @out.select(&block)
 		selected = @out if selected.is_a?(Enumerator)
-		return selected.map{|e| e.end}
+		return selected.map(&:end)
 	end
 
 	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
@@ -141,7 +141,7 @@ class Node < NodeOrEdge
 	# @param link [String] a query language string describing the link from self to the tokens whose text will be returned
 	# @return [String] the text formed by all dominated tokens or all tokens connected via given link
 	def text(link = nil)
-		self.tokens(link).map{|t| t.token} * ' '
+		self.tokens(link).map(&:token) * ' '
 	end
 
 	# @return [Node] the sentence node self is associated with
@@ -187,7 +187,7 @@ class Node < NodeOrEdge
 				[]
 			end
 		elsif @type == 'p'
-			sentence_nodes.map{|s| s.sentence_tokens}.flatten
+			sentence_nodes.map(&:sentence_tokens).flatten
 		else
 			s.sentence_tokens
 		end
@@ -219,7 +219,7 @@ class Node < NodeOrEdge
 
 	# @return [String] the text of the sentence self belongs to
 	def sentence_text
-		sentence_tokens.map{|t| t.token} * ' '
+		sentence_tokens.map(&:token) * ' '
 	end
 
 	# @return [Float] the position of self in terms of own tokenid or averaged tokenid of the dominated (via tokens method) tokens
@@ -359,7 +359,7 @@ class Node < NodeOrEdge
 		if @type == 's'
 			0
 		elsif @type == 'p'
-			child_nodes{|e| e.type == 'p'}.map{|n| n.sectioning_level}.max + 1
+			child_nodes{|e| e.type == 'p'}.map(&:sectioning_level).max + 1
 		else
 			nil
 		end
@@ -369,7 +369,7 @@ class Node < NodeOrEdge
 	def descendant_sections
 		if sectioning_level > 0
 			children = child_nodes{|e| e.type == 'p'}
-			return children + children.map{|n| n.descendant_sections}.flatten
+			return children + children.map(&:descendant_sections).flatten
 		else
 			return []
 		end
@@ -909,8 +909,8 @@ class AnnoGraph
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
-			:nodes => @nodes.values.map{|n| n.to_h},
-			:edges => @edges.values.map{|e| e.to_h}
+			:nodes => @nodes.values.map(&:to_h),
+			:edges => @edges.values.map(&:to_h)
 		}.
 			merge(:version => 9).
 			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
@@ -997,7 +997,7 @@ class AnnoGraph
 			end
 		end
 		# copy edges
-		nodes = sentence_list.map{|s| s.nodes}.flatten
+		nodes = sentence_list.map(&:nodes).flatten
 		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
 		edges.reject{|e| e.type == 's'}.each do |e|
 			g.add_cloned_edge(e)
@@ -1301,19 +1301,19 @@ class AnnoGraphConf
 
 	def clone
 		new_conf = super
-		new_conf.layers = @layers.map{|l| l.clone}
-		new_conf.combinations = @combinations.map{|c| c.clone}
+		new_conf.layers = @layers.map(&:clone)
+		new_conf.combinations = @combinations.map(&:clone)
 		return new_conf
 	end
 
 	def merge!(other)
 		other.layers.each do |layer|
-			unless @layers.map{|l| l.attr}.include?(layer.attr)
+			unless @layers.map(&:attr).include?(layer.attr)
 				@layers << layer
 			end
 		end
 		other.combinations.each do |combination|
-			unless @combinations.map{|c| c.attr}.include?(combination.attr)
+			unless @combinations.map(&:attr).include?(combination.attr)
 				@combinations << combination
 			end
 		end
@@ -1327,8 +1327,8 @@ class AnnoGraphConf
 			:found_color => @found_color,
 			:filtered_color => @filtered_color,
 			:edge_weight => @edge_weight,
-			:layers => @layers.map{|l| l.to_h},
-			:combinations => @combinations.map{|c| c.to_h}
+			:layers => @layers.map(&:to_h),
+			:combinations => @combinations.map(&:to_h)
 		}
 	end
 
@@ -1360,7 +1360,7 @@ class Array
 	end
 
 	def text
-		self.map{|n| n.text} * ' '
+		self.map(&:text) * ' '
 	end
 end
 
@@ -1379,7 +1379,7 @@ class Tagset < Array
 	end
 
 	def to_a
-		self.map{|rule| rule.to_h}
+		self.map(&:to_h)
 	end
 
 	def to_json(*a)
@@ -1436,7 +1436,7 @@ class Annotator
 	end
 
 	def new_id
-		id_list = @graph.annotators.map{|a| a.id}
+		id_list = @graph.annotators.map(&:id)
 		id = 1
 		id += 1 while id_list.include?(id)
 		return id

@@ -122,8 +122,8 @@ class GraphController
 		rescue StandardError => e
 			@search_result = error_message_html(e.message)
 		end
-		@found[:all_nodes] = @found[:tg].map{|tg| tg.nodes}.flatten.uniq
-		@found[:all_edges] = @found[:tg].map{|tg| tg.edges}.flatten.uniq
+		@found[:all_nodes] = @found[:tg].map(&:nodes).flatten.uniq
+		@found[:all_edges] = @found[:tg].map(&:edges).flatten.uniq
 		@section_list.each{|id, h| h[:found] = false}
 		set_found_sentences
 		return generate_graph.merge(
@@ -182,7 +182,7 @@ class GraphController
 					end
 				)
 			end
-			@graph.makros_plain = @sinatra.params['makros'].split("\n").map{|s| s.strip}
+			@graph.makros_plain = @sinatra.params['makros'].split("\n").map(&:strip)
 			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
 		end
 		return result.to_json
@@ -454,7 +454,7 @@ class GraphController
 
 	def build_label(e, i = nil)
 		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map{|l| l.attr}).include?(k)}
+		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map(&:attr)).include?(k)}
 		if e.is_a?(Node)
 			if e.type == 's'
 				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
@@ -564,7 +564,7 @@ class GraphController
 		when 'a' # annotate elements
 			sentence_set?
 			log_step = @log.add_step(:command => command_line)
-			@graph.conf.layers.map{|l| l.attr}.each do |a|
+			@graph.conf.layers.map(&:attr).each do |a|
 				properties.delete(a)
 			end
 			layer = set_new_layer(parameters[:words], properties)
@@ -851,7 +851,7 @@ class GraphController
 			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
 		end
 		# speaker subgraphs
-		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map{|t| t.speaker}.include?(sp)}) != []
+		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map(&:speaker).include?(sp)}) != []
 			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => :same)]}]
 			# induce speaker labels and layering of speaker graphs:
 			gv_speaker_nodes = []
