@@ -32,6 +32,7 @@ require './lib/graph_controller.rb'
 controller = GraphController.new
 
 set :root, Dir.pwd
+set :static_cache_control, [:'no-cache']
 
 before do
 	controller.sinatra = self

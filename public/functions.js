@@ -708,7 +708,7 @@ var Sectioning = (function () {
 			$('.section').removeClass('active');
 			for (var i in current) {
 				$('.section[section-id="'+current[i]+'"]').addClass('active');
-				var index = $.map(list[currentLevel], function(e){return e.id;}).indexOf(current[i]);
+				var index = $.map(list[currentLevel], function(e){return e.id.toString();}).indexOf(current[i]);
 				currentIndizes.push(index);
 			}
 			scroll();

@@ -22,6 +22,8 @@ require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
+	include SearchableNodeOrEdge
+
 	attr_reader :graph
 	attr_accessor :attr, :type
 
@@ -55,6 +57,8 @@ class NodeOrEdge
 end
 
 class Node < NodeOrEdge
+	include SearchableNode
+
 	attr_accessor :id, :in, :out, :start, :end
 
 	# initializes node
@@ -74,7 +78,7 @@ class Node < NodeOrEdge
 		'Node' + @id
 	end
 
-	# @return [Hash] the node transformed into a hash with all values casted to strings
+	# @return [Hash] the node transformed into a hash
 	def to_h
 		h = {
 			:id   => @id,
@@ -372,15 +376,15 @@ class Edge < NodeOrEdge
 		@graph = h[:graph]
 		@id = h[:id]
 		@type = h[:type]
-		if h[:start].class == String
-			@start = @graph.nodes[h[:start]]
-		else
+		if h[:start].is_a?(Node)
 			@start = h[:start]
-		end
-		if h[:end].class == String
-			@end = @graph.nodes[h[:end]]
 		else
+			@start = @graph.nodes[h[:start]]
+		end
+		if h[:end].is_a?(Node)
 			@end = h[:end]
+		else
+			@end = @graph.nodes[h[:end]]
 		end
 		@attr = Attributes.new(h.merge(:host => self))
 		if @start && @end
@@ -404,7 +408,7 @@ class Edge < NodeOrEdge
 		@graph.edges.delete(@id)
 	end
 
-	# @return [Hash] the edge transformed into a hash with all values casted to strings
+	# @return [Hash] the edge transformed into a hash
 	def to_h
 		h = {
 			:start => @start.id,
@@ -489,15 +493,15 @@ class AnnoGraph
 		case element_type
 		when :node
 			if !h[:id]
-				h[:id] = (@highest_node_id += 1).to_s
+				h[:id] = (@highest_node_id += 1)
 			else
-				@highest_node_id = h[:id].to_i if h[:id].to_i > @highest_node_id
+				@highest_node_id = h[:id] if h[:id] > @highest_node_id
 			end
 		when :edge
 			if !h[:id]
-				h[:id] = (@highest_edge_id += 1).to_s
+				h[:id] = (@highest_edge_id += 1)
 			else
-				@highest_edge_id = h[:id].to_i if h[:id].to_i > @highest_edge_id
+				@highest_edge_id = h[:id] if h[:id] > @highest_edge_id
 			end
 		end
 	end
@@ -537,6 +541,12 @@ class AnnoGraph
 		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
 			el.replace(el.symbolize_keys)
 			el[:id] = el[:ID] if version < 7
+			# IDs as integer
+			if version < 9
+				el[:id] = el[:id].to_i
+				el[:start] = el[:start].to_i if el[:start].is_a?(String)
+				el[:end] = el[:end].to_i if el[:end].is_a?(String)
+			end
 		end
 		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		self.add_hash(nodes_and_edges)
@@ -625,9 +635,11 @@ class AnnoGraph
 
 	# serializes self in a JSON file
 	# @param path [String] path to the JSON file
+	# @param compact [Boolean] write compact JSON?
+	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
 	def write_json_file(path, compact = false, additional = {})
 		puts 'Writing file "' + path + '"...'
-		hash = self.to_h.merge(additional.to_h)
+		hash = self.to_h.merge(additional)
 		json = compact ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
 		File.open(path, 'w') do |file|
 			file.write(json.encode('UTF-8'))
@@ -699,6 +711,13 @@ class AnnoGraph
 		add_node(h.merge(:type => 'sp'))
 	end
 
+	# creates a node that is a clone (including ID) of the given node; useful for creating subcorpora
+	# @param node [Node] the node to be cloned
+	# @return [Node] the new node
+	def add_cloned_node(node)
+		add_node(node.to_h.merge(:raw => true))
+	end
+
 	# creates a new edge and adds it to self
 	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
@@ -749,6 +768,15 @@ class AnnoGraph
 	# @return [Edge] the new edge
 	def add_speaker_edge(h)
 		add_edge(h.merge(:type => 'sp'))
+	end
+
+	# creates an edge that is a clone (without ID; start and end nodes via id) of the given edge; useful for creating subcorpora
+	# @param node [Edge] the edge to be cloned
+	# @return [Edge] the new edge
+	def add_cloned_edge(edge)
+		h = edge.to_h
+		h.delete(:id)
+		add_edge(h.merge(:raw => true))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
@@ -872,10 +900,10 @@ class AnnoGraph
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
-			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
+			:nodes => @nodes.values.map{|n| n.to_h},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge(:version => 8).
+			merge(:version => 9).
 			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).
@@ -922,6 +950,12 @@ class AnnoGraph
 		@edges = other_graph.edges.clone
 		@highest_node_id = other_graph.highest_node_id
 		@highest_edge_id = other_graph.highest_edge_id
+		clone_graph_info(other_graph)
+		return self
+	end
+
+	# sets own settings to those of another graph
+	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
 		@tagset = other_graph.tagset.clone
@@ -929,29 +963,35 @@ class AnnoGraph
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
-		return self
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
 	# @param sentence_list [Array] a list of sentence nodes
 	# @return [Graph] the new graph
 	def subcorpus(sentence_list)
-		nodes = sentence_list.map{|s| s.nodes}.flatten
-		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
+		# create new graph
 		g = AnnoGraph.new
 		g.clone_graph_info(self)
 		last_sentence_node = nil
+		# copy speaker nodes
+		@nodes.values.select{|n| n.type == 'sp'}.each do |speaker|
+			g.add_cloned_node(speaker)
+		end
+		# copy sentence nodes and their associated nodes
 		sentence_list.each do |s|
-			ns = g.add_sect_node(:attr => s.attr, :id => s.id)
+			ns = g.add_cloned_node(s)
 			g.add_order_edge(:start => last_sentence_node, :end => ns) if last_sentence_node
 			last_sentence_node = ns
 			s.nodes.each do |n|
-				nn = g.add_node(:attr => n.attr, :type => n.type, :id => n.id)
+				nn = g.add_cloned_node(n)
 				g.add_sect_edge(:start => ns, :end => nn)
 			end
 		end
+		# copy edges
+		nodes = sentence_list.map{|s| s.nodes}.flatten
+		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
 		edges.reject{|e| e.type == 's'}.each do |e|
-			g.add_edge(:attr => e.attr, :type => e.type, :start => e.start.id, :end => e.end.id)
+			g.add_cloned_edge(e)
 		end
 		return g
 	end
