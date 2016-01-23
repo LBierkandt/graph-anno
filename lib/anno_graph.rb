@@ -783,9 +783,7 @@ class AnnoGraph
 	# @param node [Edge] the edge to be cloned
 	# @return [Edge] the new edge
 	def add_cloned_edge(edge)
-		h = edge.to_h
-		h.delete(:id)
-		add_edge(h.merge(:raw => true))
+		add_edge(edge.to_h.except(:id).merge(:raw => true))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
@@ -1562,5 +1560,12 @@ class Hash
 	# @return [Hash] the new Hash
 	def symbolize_keys
 		Hash[self.map{ |k, v| [k.to_sym, v] }]
+	end
+
+	# returns a new hash that is a copy of self, but without the given key(s)
+	# @param keys [...] the key(s) to be removed
+	# @return [Hash] the new Hash
+	def except(*keys)
+		reject{|k, v| keys.include?(k)}
 	end
 end

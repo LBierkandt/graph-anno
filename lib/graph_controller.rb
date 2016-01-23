@@ -1030,7 +1030,7 @@ class GraphController
 
 	def set_sections(h = {})
 		@sections = @graph.sections.map do |level|
-			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false)}
+			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false).except(:node)}
 		end
 		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
 		set_found_sentences if !h[:clear] and @found
