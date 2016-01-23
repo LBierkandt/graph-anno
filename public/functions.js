@@ -634,7 +634,7 @@ var Sectioning = (function () {
 			$container.scrollTop(firstElementTop + elementHeight - containerViewHeight + margin);
 	}
 	var click = function (e) {
-		var clickedElement = e.target;
+		var clickedElement = e.target.closest('.section');
 		var newclickedLevel = $(e.target).closest('ul').attr('level');
 		if (newclickedLevel != clickedLevel) {
 			$('.section').removeClass('chosen');

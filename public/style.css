@@ -100,7 +100,8 @@ table {
       padding: 0 2px;
       white-space: nowrap;
       overflow: hidden;
-      background-color: #eeeeee; }
+      background-color: #eeeeee;
+      cursor: default; }
       #sectioning .content ul li .sentence-start {
         color: #444444; }
       #sectioning .content ul li.active {
