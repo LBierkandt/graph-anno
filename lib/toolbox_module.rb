@@ -243,27 +243,3 @@ class AnnoGraph
 		return record
 	end
 end
-
-class String
-	def getmarker()
-		if match = self.match(/\\(\S+)/)
-			match[1].force_encoding('utf-8')
-		else
-			 nil
-		end
-	end
-
-	def without_marker()
-		self.partition(' ')[2].strip
-	end
-
-	def sanitize
-		s = self.chars.map{|c| c.valid_encoding? ? c : '�'}.join
-		if s == self
-			return false
-		else
-			self.replace(s)
-			return true
-		end
-	end
-end

@@ -22,6 +22,7 @@ require 'haml.rb'
 require 'fileutils.rb'
 require 'rexml/document.rb'
 
+require './lib/extensions.rb'
 require './lib/anno_graph.rb'
 require './lib/attributes.rb'
 require './lib/toolbox_module.rb'

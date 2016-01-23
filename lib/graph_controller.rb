@@ -1112,38 +1112,3 @@ class GraphController
 		return result.empty? ? true : result
 	end
 end
-
-class String
-	def is_hex_color?
-		self.match(/^#[0-9a-fA-F]{6}$/)
-	end
-
-	def is_number?
-		self.match(/^\s*-?[0-9]+\s*$/)
-	end
-
-	def de_escape!
-		self.gsub!(/\\(.)/) do |s|
-			case $1
-			when '"'
-				"\""
-			when '\\'
-				"\\"
-			when 'a'
-				"\a"
-			when 'b'
-				"\b"
-			when 'n'
-				"\n"
-			when 'r'
-				"\r"
-			when 's'
-				"\s"
-			when 't'
-				"\t"
-			else
-				$&
-			end
-		end
-	end
-end
