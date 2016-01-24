@@ -535,22 +535,36 @@ class GraphController
 		identifiers.map{|id| element_by_identifier(id)}.compact
 	end
 
+	def chosen_sections(words, current_as_default = true)
+		if words != []
+			nodes_by_name(@graph.section_nodes, words)
+		elsif sentence_set? && current_as_default
+			@command_line << ' ' + @current_sections.map(&:name).join(' ')
+			@current_sections
+		elsif current_as_default
+			[]
+		else
+			@current_sections
+		end
+	end
+
 	def execute_command(command_line, layer)
-		command, foo, string = command_line.strip.partition(' ')
+		@command_line = command_line
+		command, foo, string = @command_line.strip.partition(' ')
 		parameters = string.parse_parameters
 		properties = @graph.conf.layer_attributes[layer]
 
 		case command
 		when 'n' # new node
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
 			@graph.add_anno_node(:attr => properties, :sentence => @current_sections.first, :log => log_step)
 
 		when 'e' # new edge
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
 			@graph.add_anno_edge(
@@ -563,7 +577,7 @@ class GraphController
 
 		when 'a' # annotate elements
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			@graph.conf.layers.map(&:attr).each do |a|
 				properties.delete(a)
 			end
@@ -576,7 +590,7 @@ class GraphController
 
 		when 'd' # delete elements
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			extract_elements(parameters[:nodes] + parameters[:edges]).each do |element|
 				element.delete(log_step)
 			end
@@ -590,7 +604,7 @@ class GraphController
 
 		when 'p', 'g' # group under new parent node
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			@graph.add_parent_node(
 				extract_elements(parameters[:nodes] + parameters[:tokens]),
@@ -602,7 +616,7 @@ class GraphController
 
 		when 'c', 'h' # attach new child node
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			@graph.add_child_node(
 				extract_elements(parameters[:nodes] + parameters[:tokens]),
@@ -614,7 +628,7 @@ class GraphController
 
 		when 'ni' # build node and "insert in edge"
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
 			extract_elements(parameters[:edges]).each do |edge|
@@ -624,7 +638,7 @@ class GraphController
 
 		when 'di', 'do' # remove node and connect parent/child nodes
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			extract_elements(parameters[:nodes]).each do |node|
 				@graph.delete_and_join(node, command == 'di' ? :in : :out, log_step)
@@ -632,7 +646,8 @@ class GraphController
 			undefined_references?(parameters[:nodes])
 
 		when 'ns' # create and append new sentence(s)
-			log_step = @log.add_step(:command => command_line)
+			raise 'Please specify a name!' if parameters[:words] == []
+			log_step = @log.add_step(:command => @command_line)
 			old_sentence_nodes = @graph.sentence_nodes
 			new_nodes = []
 			parameters[:words].each do |s|
@@ -644,19 +659,19 @@ class GraphController
 
 		when 't' # build tokens and append them
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			@graph.build_tokens(parameters[:words], :sentence => @current_sections.last, :log => log_step)
 
 		when 'tb', 'ti' # build tokens and insert them before given token
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			undefined_references?(parameters[:tokens][0..0])
 			node = element_by_identifier(parameters[:tokens][0])
 			@graph.build_tokens(parameters[:words][1..-1], :next_token => node, :log => log_step)
 
 		when 'ta' # build tokens and insert them after given token
 			sentence_set?
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			undefined_references?(parameters[:tokens][0..0])
 			node = element_by_identifier(parameters[:tokens][0])
 			@graph.build_tokens(parameters[:words][1..-1], :last_token => node, :log => log_step)
@@ -670,44 +685,27 @@ class GraphController
 			reset_current_sections
 
 		when 's' # change sentence
-			@current_sections = [@graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]]
+			@current_sections = chosen_sections(parameters[:words], false)
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
 
 		when 'sect'
-			log_step = @log.add_step(:command => command_line)
-			if parameters[:words][1..-1].empty?
-				section_nodes = @current_sections
-			else
-				section_nodes = nodes_by_name(@graph.section_nodes, parameters[:words][1..-1])
-			end
+			raise 'Please specify a name!' if parameters[:words] == []
+			section_nodes = chosen_sections(parameters[:words][1..-1])
+			log_step = @log.add_step(:command => @command_line)
 			new_section = @graph.build_section(parameters[:words].first, section_nodes, log_step)
 
 		when 'rem' # remove section nodes without deleting descendant nodes
-			sections = if parameters[:words] != []
-				nodes_by_name(@graph.section_nodes, parameters[:words])
-			elsif sentence_set?
-				command_line << ' ' + @current_sections.map(&:name).join(' ')
-				@current_sections
-			else
-				[]
-			end
+			sections = chosen_sections(parameters[:words])
 			raise 'You cannot remove sentences' if sections.any?{|s| s.type == 's'}
 			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
-			log_step = @log.add_step(:command => command_line)
+			log_step = @log.add_step(:command => @command_line)
 			sections.each{|s| s.delete(log_step)}
 
 		when 'del' # delete section(s)
-			sections = if parameters[:words] != []
-				nodes_by_name(@graph.section_nodes, parameters[:words])
-			elsif sentence_set?
-				command_line << ' ' + @current_sections.map(&:name).join(' ')
-				@current_sections
-			else
-				[]
-			end
-			log_step = @log.add_step(:command => command_line)
+			sections = chosen_sections(parameters[:words])
+			log_step = @log.add_step(:command => @command_line)
 			sections.each do |section|
 				if section.type == 's'
 					# change to next sentence
