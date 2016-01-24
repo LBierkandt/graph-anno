@@ -684,6 +684,20 @@ class GraphController
 			end
 			new_section = @graph.build_section(parameters[:words].first, section_nodes, log_step)
 
+		when 'rem' # remove section nodes without deleting descendant nodes
+			sections = if parameters[:words] != []
+				nodes_by_name(@graph.section_nodes, parameters[:words])
+			elsif sentence_set?
+				command_line << ' ' + @current_sections.map(&:name).join(' ')
+				@current_sections
+			else
+				[]
+			end
+			raise 'You cannot remove sentences' if sections.any?{|s| s.type == 's'}
+			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
+			log_step = @log.add_step(:command => command_line)
+			sections.each{|s| s.delete(log_step)}
+
 		when 'del' # delete section(s)
 			sections = if parameters[:words] != []
 				nodes_by_name(@graph.section_nodes, parameters[:words])
