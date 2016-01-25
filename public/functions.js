@@ -325,6 +325,10 @@ function makeAnfrage(anfrage, params) {
 				var txtcmd = document.getElementById('txtcmd');
 				txtcmd.value = getCookie('traw_cmd');
 				updateLayerOptions();
+				for (var id in antworthash['windows']) {
+					restoreState(id, antworthash['windows']);
+					saveState({target: $('#' + id)});
+				};
 				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
 				if (antworthash['command'] == 'load') reloadLogTable();
 				if (antworthash['graph_file'] != undefined) $('#active_file').html('file: ' + antworthash['graph_file']);
@@ -610,20 +614,20 @@ function reloadLogTable() {
 function saveState(e) {
 	var $box = $(e.target);
 	var key = $box.attr('id');
-	var value = {};
-	var attributes = ['display', 'left', 'top', 'width', 'height', 'z-index']
+	var data = {};
+	data[key] = {};
+	var attributes = ['display', 'left', 'top', 'width', 'height', 'z-index'];
 	for (var i = 0; i < attributes.length; i++) {
-		value[attributes[i]] = $box.css(attributes[i]);
+		data[key][attributes[i]] = $box.css(attributes[i]);
 	}
-	document.cookie = key + '=' + JSON.stringify(value) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
+	document.cookie = key + '=' + JSON.stringify(data[key]) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
+	$.post('/save_window_positions', {data: data});
 }
-function restoreState(id) {
-	var value = getCookie(id);
-	if (value) {
-		var attributes = JSON.parse(value);
-		var $element = $('#' + id);
-		for (var i in attributes) {
-			$element.css(i, attributes[i]);
-		}
+function restoreState(id, data) {
+	var $element = $('#' + id);
+	if (data == undefined) var attributes = JSON.parse(getCookie(id));
+	else var attributes = data[id];
+	for (var i in attributes) {
+		$element.css(i, attributes[i]);
 	}
 }
