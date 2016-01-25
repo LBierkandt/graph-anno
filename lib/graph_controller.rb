@@ -682,16 +682,16 @@ class GraphController
 
 		when 'load' # clear workspace and load corpus file
 			clear_workspace
-			log_hash = @graph.read_json_file(file_path(parameters[:words][0]))
+			data = @graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
 			if @graph.file_settings[:separate_log]
 				begin
 					@log = Log.new_from_file(@graph, @graph_file.sub(/.json$/, '.log.json'))
 				rescue
-					@log = Log.new(@graph, nil, log_hash)
+					@log = Log.new(@graph, nil, data['log'])
 				end
 			else
-				@log = Log.new(@graph, nil, log_hash)
+				@log = Log.new(@graph, nil, data['log'])
 			end
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
