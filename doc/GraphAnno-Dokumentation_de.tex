@@ -153,14 +153,18 @@ Um den aktuellen Annotator abzumelden und wieder an den allgemeinen Annotationen
 
 \subsection{Dateieinstellungen}
 
-Mit dem Befehl \texttt{file} wird das Fenster mit den Einstellungen für die Datei, in der der Arbeitsbereich gespeichert wird, aufgerufen.
+Mit dem Befehl \texttt{file} wird das Fenster mit den Einstellungen für die Datei, in der der Arbeitsbereich gespeichert wird, aufgerufen:
 
-Hier kann zum einen eingestellt werden, ob die Datei in kompakter JSON-Formatierung gespeichert werden soll.
-Dies führt zu kleineren Dateigrößen, jedoch ist die Datei für eventuelle Inspektion/Änderung per Texteditor weniger gut lesbar.
+\begin{itemize}
+	\item	\textit{compact file format}: Soll die Datei in kompakter JSON-Formatierung gespeichert werden?
+			Dies führt zu kleineren Dateigrößen, jedoch ist die Datei für eventuelle Inspektion/Änderung per Texteditor weniger gut lesbar.
+	\item	\textit{save editing history}: Soll das Änderungsprotokoll (vgl. \ref{befehl-undo}) gespeichert werden, so daß es über Sitzungen hinweg verfügbar ist?
+			%Das Änderungsprotokoll kann in der Graphdatei selber, oder in einer eigenen Datei (mit einem Namen der Form \texttt{<Korpusname>.log.json}) gespeichert werden.
+			(Achtung, diese Option kann zu sehr großen Dateien und entsprechend langen Speicher-/Ladezeiten führen.)
+	\item	\textit{save window positions}: Sollen die Positionen der Fenster (Filter, Suche etc.) in der Graphdatei (also projektspezifisch) gespeichert werden?
+			(Andernfalls werden die Positionen nur im Browser gespeichert.)
+\end{itemize}
 
-Zum anderen kann eingestellt werden, ob das Änderungsprotokoll (vgl. \ref{befehl-undo}) gespeichert werden soll, so daß es über Sitzungen hinweg verfügbar ist.
-%Das Änderungsprotokoll kann in der Graphdatei selber, oder in einer eigenen Datei (mit einem Namen der Form \texttt{<Korpusname>.log.json}) gespeichert werden.
-(Achtung, diese Option kann zu sehr großen Dateien und entsprechend langen Speicher-/Ladezeiten führen.)
 
 
 \section{Tastaturbefehle}
