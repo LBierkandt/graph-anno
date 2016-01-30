@@ -16,9 +16,8 @@ window.onload = function() {
 	// function of close button
 	$('.handle').html('<div class="close"></div>')
 	$(document).on('click', '.close', function(){
-		saveState({
-			target: $(this).closest('.box').hide()
-		});
+		$(this).closest('.box').hide();
+		saveState();
 		$('#txtcmd').focus().select();
 	});
 
@@ -105,9 +104,8 @@ function taste(tast) {
 	}
 	else if (tast.which == 117) {
 		tast.preventDefault();
-		saveState({
-			target: $('#filter').toggle()
-		});
+		$('#filter').toggle();
+		saveState();
 		if ($('#filter').css('display') == 'none') {
 			$('#txtcmd').focus().select();
 		} else {
@@ -116,9 +114,8 @@ function taste(tast) {
 	}
 	else if (tast.which == 118) {
 		tast.preventDefault();
-		saveState({
-			target: $('#search').toggle()
-		});
+		$('#search').toggle();
+		saveState();
 		if ($('#search').css('display') == 'none') {
 			$('#txtcmd').focus().select();
 		} else {
@@ -127,9 +124,8 @@ function taste(tast) {
 	}
 	else if (tast.which == 119) {
 		tast.preventDefault();
-		saveState({
-			target: $('#log').toggle()
-		});
+		$('#log').toggle();
+		saveState();
 	}
 	else if (tast.which == 120) {
 		tast.preventDefault();
@@ -327,8 +323,8 @@ function makeAnfrage(anfrage, params) {
 				updateLayerOptions();
 				for (var id in antworthash['windows']) {
 					restoreState(id, antworthash['windows']);
-					saveState({target: $('#' + id)});
 				};
+				saveState();
 				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
 				if (antworthash['command'] == 'load') reloadLogTable();
 				if (antworthash['graph_file'] != undefined) $('#active_file').html('file: ' + antworthash['graph_file']);
@@ -611,16 +607,18 @@ function reloadLogTable() {
 		$('#log .content').html(data);
 	});
 }
-function saveState(e) {
-	var $box = $(e.target);
-	var key = $box.attr('id');
+function saveState() {
 	var data = {};
-	data[key] = {};
-	var attributes = ['display', 'left', 'top', 'width', 'height', 'z-index'];
-	for (var i = 0; i < attributes.length; i++) {
-		data[key][attributes[i]] = $box.css(attributes[i]);
-	}
-	document.cookie = key + '=' + JSON.stringify(data[key]) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
+	$('.box').each(function(){
+		var $box = $(this);
+		var key = $box.attr('id');
+		data[key] = {};
+		var attributes = ['display', 'left', 'top', 'width', 'height', 'z-index'];
+		for (var i = 0; i < attributes.length; i++) {
+			data[key][attributes[i]] = $box.css(attributes[i]);
+		}
+		document.cookie = key + '=' + JSON.stringify(data[key]) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
+	});
 	$.post('/save_window_positions', {data: data});
 }
 function restoreState(id, data) {
