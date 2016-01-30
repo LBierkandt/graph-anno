@@ -539,15 +539,15 @@ class AnnoGraph
 		self.clear
 
 		file = open(path, 'r:utf-8')
-		nodes_and_edges = JSON.parse(file.read)
+		data = JSON.parse(file.read)
 		file.close
-		version = nodes_and_edges['version'].to_i
+		version = data['version'].to_i
 		# 'knoten' -> 'nodes', 'kanten' -> 'edges'
 		if version < 4
-			nodes_and_edges['nodes'] = nodes_and_edges.delete('knoten')
-			nodes_and_edges['edges'] = nodes_and_edges.delete('kanten')
+			data['nodes'] = data.delete('knoten')
+			data['edges'] = data.delete('kanten')
 		end
-		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
+		(data['nodes'] + data['edges']).each do |el|
 			el.replace(el.symbolize_keys)
 			el[:id] = el[:ID] if version < 7
 			# IDs as integer
@@ -557,20 +557,20 @@ class AnnoGraph
 				el[:end] = el[:end].to_i if el[:end].is_a?(String)
 			end
 		end
-		@annotators = (nodes_and_edges['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
-		self.add_hash(nodes_and_edges)
+		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
+		self.add_hash(data)
 		if version >= 6
-			@anno_makros = nodes_and_edges['anno_makros'] || {}
-			@info = nodes_and_edges['info'] || {}
+			@anno_makros = data['anno_makros'] || {}
+			@info = data['info'] || {}
 			if version < 8
-				@tagset = Tagset.new(nodes_and_edges['allowed_anno'])
+				@tagset = Tagset.new(data['allowed_anno'])
 			else
-				@tagset = Tagset.new(nodes_and_edges['tagset'])
-				@file_settings = nodes_and_edges['file_settings'].symbolize_keys
+				@tagset = Tagset.new(data['tagset'])
+				@file_settings = data['file_settings'].symbolize_keys
 			end
-			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
+			@conf = AnnoGraphConf.new(data['conf'])
 			create_layer_makros
-			@makros_plain += nodes_and_edges['search_makros']
+			@makros_plain += data['search_makros']
 			@makros += parse_query(@makros_plain * "\n")['def']
 		end
 
@@ -639,7 +639,7 @@ class AnnoGraph
 
 		puts 'Read "' + path + '".'
 
-		return nodes_and_edges['log']
+		return data
 	end
 
 	# serializes self in a JSON file

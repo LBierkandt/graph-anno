@@ -191,14 +191,17 @@ If you want to log out the current annotator and work on the public annotations 
 
 \subsection{File settings}
 
-The command \texttt{file} opens a window, in which you can specify the settings for the file in which the work space will be saved.
+The command \texttt{file} opens a window, in which you can specify the settings for the file in which the work space will be saved:
 
-First, you may decide whether the file should be stored in a compact JSON format.
-This has the advantage of reducing the file size, but the file will be less readable for potential inspection or editing in a text editor.
-
-Second, you can opt for saving the change log (cf. \ref{befehl-undo}), so that it stays available accross settings.
-%The change log can be saved in the graph file or in another file (with a name of the form \texttt{<corpus name>.log.json}).
-(Attention, this option can lead to very big files and long saving/loading times.)
+\begin{itemize}
+	\item	\textit{compact file format}: Should the file be stored in a compact JSON format?
+			This has the advantage of reducing the file size, but the file will be less readable for potential inspection or editing in a text editor.
+	\item	\textit{save editing history}: Should the the change log (cf. \ref{befehl-undo}) be saved, so that it stays available accross settings?
+			%The change log can be saved in the graph file or in another file (with a name of the form \texttt{<corpus name>.log.json}).
+			(Attention, this option can lead to very big files and long saving/loading times.)
+	\item	\textit{save window positions}: Should the position of the windows (filter, search etc.) be saved in the graph file (i.e., project-specific)?
+			(Otherwise, the positions are only saved in the browser.)
+\end{itemize}
 
 
 

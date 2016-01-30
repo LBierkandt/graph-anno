@@ -42,6 +42,7 @@ class GraphController
 		@show_refs = true
 		@found = nil
 		@filter = {:mode => 'unfilter'}
+		@windows = {}
 	end
 
 	def root
@@ -92,6 +93,7 @@ class GraphController
 			:graph_file => @graph_file,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:command => value,
+			:windows => @windows,
 			:messages => @cmd_error_messages
 		).to_json
 	end
@@ -250,7 +252,7 @@ class GraphController
 
 	def save_file
 		@graph.file_settings.clear
-		[:compact, :save_log, :separate_log].each do |property|
+		[:compact, :save_log, :separate_log, :save_windows].each do |property|
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		return true.to_json
@@ -402,6 +404,11 @@ class GraphController
 			:log_table,
 			:locals => {:log => @log}
 		)
+	end
+
+	def save_window_positions
+		@windows.merge!(@sinatra.params[:data])
+		true
 	end
 
 	def documentation(filename)
@@ -730,17 +737,18 @@ class GraphController
 
 		when 'load' # clear workspace and load corpus file
 			clear_workspace
-			log_hash = @graph.read_json_file(file_path(parameters[:words][0]))
+			data = @graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
 			if @graph.file_settings[:separate_log]
 				begin
 					@log = Log.new_from_file(@graph, @graph_file.sub(/.json$/, '.log.json'))
 				rescue
-					@log = Log.new(@graph, nil, log_hash)
+					@log = Log.new(@graph, nil, data['log'])
 				end
 			else
-				@log = Log.new(@graph, nil, log_hash)
+				@log = Log.new(@graph, nil, data['log'])
 			end
+			@windows.merge!(data['windows'].to_h) if @graph.file_settings[:save_windows]
 			sentence_nodes = @graph.sentence_nodes
 			@current_sections = [sentence_nodes.select{|n| n.name == @current_sections.first.name}[0]] if @current_sections
 			@current_sections = [sentence_nodes.first] unless @current_sections
@@ -756,11 +764,10 @@ class GraphController
 			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
 			dir = @graph_file.rpartition('/').first
 			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
-			if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
-				@graph.write_json_file(@graph_file, @graph.file_settings[:compact], {:log => @log})
-			else
-				@graph.write_json_file(@graph_file, @graph.file_settings[:compact])
-			end
+			additional = {}
+			additional.merge!(:log => @log) if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
+			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
+			@graph.write_json_file(@graph_file, @graph.file_settings[:compact], additional)
 			if @graph.file_settings[:separate_log]
 				@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'), @graph.file_settings[:compact])
 			end
