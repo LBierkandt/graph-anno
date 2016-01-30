@@ -8,7 +8,21 @@ window.onload = function() {
 
 	$('#txtcmd').focus().select();
 
+	// draggables
 	$('.box').draggable({handle: '.handle', stack: '.box', stop: saveState});
+	// draggables on top when clicked
+	$('.box').on('mouseup', function(){
+		var $box = $(this);
+		if(!$box.hasClass('ui-draggable-dragging')){
+			var zIndexList = $('.box').map(function(){return $(this).zIndex()}).get();
+			var highestZIndex = Math.max.apply(null, zIndexList);
+			if($box.zIndex() < highestZIndex){
+				$box.zIndex(highestZIndex + 1);
+				saveState();
+			}
+		}
+	});
+	// resizables
 	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310, stop: saveState});
 	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220, stop: saveState});
 	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400, stop: saveState});
