@@ -109,6 +109,10 @@ class Attributes
 		@attr
 	end
 
+	def private
+		@private_attr
+	end
+
 	def delete_private(annotator)
 		@private_attr.delete(annotator)
 	end

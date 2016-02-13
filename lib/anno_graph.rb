@@ -50,6 +50,17 @@ class NodeOrEdge
 		@attr['cat'] = arg
 	end
 
+	# accessor method for the public/neutral annotations of self
+	def public_attr
+		@attr.public
+	end
+
+	# accessor method for the private annotations of self
+	def private_attr(annotator_name)
+		annotator = @graph.get_annotator(:name => annotator_name)
+		@attr.private[annotator] || {}
+	end
+
 	def annotate(attributes, log_step = nil)
 		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
 		@attr.annotate_with(attributes).remove_empty!
