@@ -105,7 +105,7 @@ class Attributes
 		output.select(&block)
 	end
 
-	def neutral
+	def public
 		@attr
 	end
 
