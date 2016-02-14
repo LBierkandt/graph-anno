@@ -894,6 +894,10 @@ Jede \texttt{col}-Klausel steht für eine zu exportierende Spalte. Sie hat als e
 
 Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschrieben. Es gibt jedoch noch weitere für die Ausgabe nützliche Methoden: \texttt{.tokens} gibt die über syntaktische Kanten dominierten Token als Liste aus, \texttt{.text} deren Text als Zeichenkette (die einzelnen Tokentexte mit Leerzeichen getrennt). \texttt{.sentence\_tokens} gibt alle Token des Satzes, dem das Element angehört als Liste aus, \texttt{.sentence\_text} wiederum deren Text. \texttt{.position} gibt die Position eines Knotens als Durchschnitt der Positionen seiner dominierten Token aus.
 
+Bei der Arbeit mit der Mehrannotatorenfunktion (vgl. \ref{annotatoren}) gibt der direkte Zugriff auf die Attribute (mittels eckiger Klammern) die Annotationen des aktuell eingestellten Annotators aus.
+Für die Ausgabe der Annotationen anderer Annotatoren dient die Methode \texttt{.private\_attr}, die als Argument den Namen des Annotators nimmt\\(z.B. \texttt{@s.private\_attr('thomas')['cat']}).
+Für die allgemeinen Annotationen steht die Methode \texttt{.public\_attr} zur Verfügung (z.B. \texttt{@s.public\_attr['cat']}).
+
 
 
 
