@@ -626,118 +626,135 @@ command_l   =   "l " layer_shortcut
 
 
 \subsubsection{Log in annotator: \texttt{annotator} (or \texttt{user})}
- 
+
 If you use GraphAnno’s multi-annotator feature, you log in as a specific annotator with the command \texttt{annotator} (or the synonymous command \texttt{user}), followed by the annotator’s unique name (as defined in the corresponding window, see \ref{annotatoren}).
 The logged-in annotator will be shown in the field next to the input line and only the annotator’s annotations will be displayed and searched.
 If you want to log out the current annotator and work on the public annotations again, use the \texttt{annotator} command without argument.
- 
-
-
-\vskip4em
-\center{\Large tbc.}
-\kommentar{
 
 
 
 
 
 
+\section{Query language}
 
-\section{Abfragesprache}
+\subsection{Search}
 
-\subsection{Suche}
+Searching graphs in GraphAnno works by formulating a query that describes a graph fragment and is composed of a set of clauses.
+The search then finds all subgraphs of the corpus graph that match this description.
+The clauses that can be used in the description are the \texttt{node}, \texttt{nodes}, \texttt{edge}, \texttt{link}, \texttt{text}, \texttt{meta}, \texttt{cond} and \texttt{def} clauses.
+Of these, a query must at least contain one \texttt{node} clause or \texttt{text} clause, or an unconnected \texttt{edge} clause.
+The various types of clauses will be explained in the following sections.
 
-Das Prinzip der Graphsuche von GraphAnno besteht darin, mit einer Menge von Klauseln ein Graphfragment zu beschreiben. Bei der Suche werden dann alle Teilgraphen des durchsuchten Korpusgraphen gefunden, die dieser Beschreibung entsprechen.
-Es stehen die Klauseln \texttt{node}, \texttt{nodes}, \texttt{edge}, \texttt{link}, \texttt{text}, \texttt{meta}, \texttt{cond} und \texttt{def} zur Verfügung, wobei eine Anfrage mindestens eine \texttt{node}- oder \texttt{text}-Klausel oder eine unverbundene \texttt{edge}-Klausel enthalten muß. Die Klauseln werden in den folgenden Abschnitten im einzelnen beschrieben.
-
-Die einzelnen Klauseln werden in beliebiger Reihenfolge in jeweils eine eigene Zeile geschrieben; Einrückungen und Leerzeilen werden nicht interpretiert. Kommentare werden durch Voranstellen eines Doppelkreuzes \texttt{\#} markiert.
-
+In a query the clauses are each given on one line in an arbitrary order; indentations and blank lines have no impact on the semantics.
+Comments may be added as whole lines or after a line; they are preceded by a hash symbol.
 
 
 \subsubsection{\texttt{node}}\label{node}
 
-Die \texttt{node}-Klausel beschreibt einen Knoten, der im Graphfragment genau einmal vorkommen soll. Die Klausel besteht aus dem Schlüsselwort \texttt{node}, einer optionalen ID und einer Attributbeschreibung.
+The \texttt{node} clause describes a node that should occur once in the graph fragment.
+The clause is composed of the keyword \texttt{node}, an optional ID and an attribute description.
 
-Die ID besteht aus einem \texttt{@} gefolgt von einer Zeichenkette, die aus einer Folge von alphanumerischen Zeichen inkl. Unterstrich besteht, wobei das erste Zeichen keine Ziffer sein darf. Unter der ID kann der Knoten in anderen Teilen der Suchanfrage referenziert werden.
+The ID consists of a \texttt{@} followed by a string that consists of alphanumeric characters, including the underscore, with the additional restriction that the first character must not be a digit.
+Using this ID, the node can be referenced in other parts of the query.
 
-Die Attributbeschreibung besteht aus Schlüssel-Wert-Paaren der Form \texttt{schlüssel:""wert}, die mit den logischen Operatoren \texttt{!} für „nicht“, \texttt{\&} für „und“ und \texttt{|} für „oder“ (Bindungsstärke: \texttt{!} > \texttt{\&} > \texttt{|}) sowie Klammerung mit runden Klammern verknüpft sind. Als Abkürzung für Disjunktionen von Schlüssel-Wert-Paaren mit dem gleichen Schlüssel steht die Form \texttt{schlüssel:wert1|wert2|...|wertn} zur Verfügung.
+The attribute description is composed of key-value pairs of the form \texttt{key:""value}, that are joined by the logical operators \texttt{!} for “not”, \texttt{\&} for “and” and \texttt{|} for “or” (precedence: \texttt{!} > \texttt{\&} > \texttt{|}) as well as (round) parentheses.
+As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \texttt{key:value1|value2|...|valuen}.
 
-Der Schlüssel eines Schlüssel-Wert-Paares kann entweder als einfache Zeichenkette angegeben werden, wenn er keines der in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthält, oder als Zeichenkette in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}), die beliebige Zeichen enthalten darf (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}).
+The key of a key-value pair can be given as a simple string if it does not contain any of the control characters of the query language (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}), else it has to be given in double quotes (\texttt{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \texttt{\textbackslash\quo}).
 
-\phantomsection\label{zeichenketten}Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art und Weise angegeben werden können. Die erste Variante sind einfache umarkierte Zeichenketten, die alle Zeichen außer den in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthalten dürfen. Diese Zeichenketten werden bei der Suche ohne Beachtung von Groß- und Kleinschreibung verglichen.
-Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen. 
-Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/} und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit \texttt{//} gefunden werden.
+\phantomsection\label{zeichenketten}The values of the key-value pairs are strings, that can be given in three different formats.
+The first format is a simple, unmarked string that may contain all characters except the control characters of the query language (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}).
+These strings will be matched case-insensitively.
+The second format is a string in double quotes (\texttt{{\quo}xyz\quo}).
+These strings may contain any character (double quotes have to be escaped with a backslash: \texttt{\textbackslash\quo}) and will be matched exactly.
+The third format is a regular expression.
+A regular expression has to be written in slashes (\texttt{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \texttt{http://www.ruby-doc.org/""core/""Regexp.html}).
+The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \texttt{\^} or \texttt{\$}, respectively.
+You can find an arbitrary string using an empty reular expression (i.e. \texttt{//}).
 
-Wie eine Attributbeschreibung kann das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
+In the place of a key-value pair you may also use the keyword \texttt{token}, which matches token nodes.
 
-Des weiteren kann die Attributbeschreibung Kriterien für ein- und ausgehende Kanten enthalten. Diese bestehen aus dem Schlüsselwort \texttt{in} bzw. \texttt{out}, einer optionalen Attributbeschreibung in runden Klammern und einem optionalen Quantor. Der Operator \texttt{in} bzw. \texttt{out} findet alle ein- bzw. ausgehenden Kanten mit den angegebenen Attributen, der Quantor gibt an, wieviele Kanten der spezifizierten Art vorhanden sein dürfen und ist (syntaktisch) wie bei regulären Ausdrücken definiert: \texttt{\{m,n\}} für mindestens m-mal, höchstens n-mal; bei Auslassung der ersten Zahl wird 0 angenommen, bei Auslassung der zweiten unendlich. \texttt{\{n\}} steht für genau n mal. Des weiteren gibt es die Abkürzungen \texttt{?} für \texttt{\{0,1\}}, \texttt{*} für \texttt{\{0,\}} und \texttt{+} für \texttt{\{1,\}}.
-Anders als von regulären Ausdrücken gewohnt (und anders als beim Auftreten von Quantoren in anderen Kontexten der GraphAnno-Abfragesprache), wird das Fehlen eines Quantors hier als \texttt{\{1,\}} interpretiert.
+\phantomsection\label{quantifiers}In addition to key-value pairs, the attribute description may contain criteria for ingoing and outgoing edges.
+These criteria are composed of the keyword \texttt{in} or \texttt{out}, an optional attribute description in parentheses and an optional quantifier.
+The operator \texttt{in} or \texttt{out} find all ingoing or outgoing edges, respectively, that bear the given attributes.
+The quantifier specifies how many edges matching the given description have to be present; its syntax is familiar from regular expressions:
+\texttt{\{m,n\}} means at least m edges, at most n edges; if you omit the first number, it has the meaning “zero”, omitting the second number means “infinite”.
+\texttt{\{n\}} means exactly n edges.
+Additionally there are the shortcuts \texttt{?} for \texttt{\{0,1\}}, \texttt{*} for \texttt{\{0,\}} and \texttt{+} for \texttt{\{1,\}}.
+What differs from quantifiers in usual regular expressions (and from quantifiers in other contexts of the GraphAnno query language), is that a missing quantifier will be interpreted as \texttt{\{1,\}}.
 
-Für die Kanten wiederum können – zusätzlich zu den einfachen Attributen – über die Schlüsselwörter \texttt{start} bzw. \texttt{end} und Attributbeschreibungen in runden Klammern auch Eigenschaften des Start- bzw. Zielknoten angegeben werden.
+For the description of the edges (that are given in parentheses) you may specify – additionally to the attribute descriptions – properties of the start or end node using the keyword \texttt{start} or \texttt{end}, respectively, followed by the node description in parentheses.
 
-Ähnlich wie \texttt{in} und \texttt{out} funktioniert \texttt{link}, jedoch werden damit nicht nur ein- und ausgehenden Kanten abgefragt, sondern (ggf.) komplexere Verbindungen zu anderen Knoten. Wie diese Verbindungen spezifiziert werden, ist in \ref{link} beschrieben. Auch für \texttt{link} gelten die Regeln für Quantoren, wie für \texttt{in} und \texttt{out} beschrieben.
+The operator \texttt{link} works in a similar fashion to \texttt{in} and \texttt{out}, but it does not find ingoing and outgoing edges but (potentially) more complex connections to other nodes.
+In \ref{link} you can read how these connections may be specified.
+The rules for quantifiers explained above are the same as for \texttt{in} and \texttt{out}.
 
-\paragraph*{Die \texttt{node}-Klausel in modified BNF:}
+
+\paragraph*{The \texttt{node} clause in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-node-klausel    =   "node" id? " " knotenattribute
-id              =   "@" (letter | "_") alnum*
-knotenattribute =   knotenattribute " & " knotenattribute
-                    knotenattribute " | " knotenattribute
-                    "!" knotenattribute
-                    "(" knotenattribute ")"
-                    attribut
-                    kantenkriterium
+node_klausel    =   "node" id? " " node_attributes
+id              =   "@" (letter | "_") alphanumeric_char*
+node_attributes =   node_attributes " & " node_attributes
+                    node_attributes" | " node_attributes
+                    "!" node_attributes
+                    "(" node_attributes ")"
+                    attribute
+                    edge_criterion
                     "token"
-attribut        =   zeichenkette ":" attributwert ("|" attributwert)*
-zeichenkette    =   zeichen_außer_steuerzeichen+
-                    """ beliebiges_zeichen* """
-attributwert    =   zeichen_außer_steuerzeichen+
-                    """ beliebiges_zeichen* """
-                    "/" regulärer_ausdruck "/"
-kantenkriterium =   "in" ("(" kantenattribute ")")? quantor?
-                    "out" ("(" kantenattribute ")")? quantor?
-                    "link" ("(" verbindung ")") quantor?
-quantor         =   "?" | "*" | "+" | "{" zahl? ("," zahl?) "}"
-kantenattribute =   kantenattribute " & " kantenattribute
-                    kantenattribute " | " kantenattribute
-                    "!" kantenattribute
-                    "(" kantenattribute ")"
-                    attribut
-                    knotenkriterium
+attribute       =   string ":" attribute_value ("|" attribute_value)*
+string          =   char_except_control_char+
+                    """ character* """
+attribute_value =   char_except_control_char+
+                    """ character* """
+                    "/" regular_expression "/"
+edge_criterion  =   "in" ("(" edge_attributes ")")? quantifier?
+                    "out" ("(" edge_attributes ")")? quantifier?
+                    "link" ("(" connection ")") quantifier?
+quantifier      =   "?" | "*" | "+" | "{" number? ("," number?) "}"
+edge_attributes =   edge_attributes" & " edge_attributes
+                    edge_attributes" | " edge_attributes
+                    "!" edge_attributes
+                    "(" edge_attributes ")"
+                    attribute
+                    node_criterion
 knotenkriterium =   "start" ("(" knotenattribute ")")
                     "end" ("(" knotenattribute ")")
 \end{lstlisting}
 \end{framed}
 
 
-\paragraph*{Beispiele:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche alle Knoten, die die Kategorie S oder VP haben und keine Token sind:\\
+	\item Search for all nodes that bear the category S or VP and that are no tokens:\\
 	{\tt node cat:S|VP \& !token}
-	\item Suche alle Knoten, die von der Kategorie VP sind oder Token mit dem pos-Wert verb:\\
+	\item Search for all nodes of category VP or tokens bearing the pos value verb:\\
 	{\tt node cat:VP | token \& pos:verb}
-	\item Suche alle Knoten der Kategorie S, die mindestens zwei ausgehende AUX-Kanten haben:\\
+	\item Search for all nodes of category S that have at least two outgoing AUX edges:\\
 	{\tt node cat:S \& out(cat:AUX)\{2,\}}
-	\item Suche alle Knoten der Kategorie S, die mindestens einen Knoten mit dem pos-Wert pro dominieren:\\
+	\item Search for all nodes of category S that directly dominate at least one node bearing the pos value pro:\\
 	{\tt node cat:S \& out(end(pos:pro))}
 \end{itemize}
 
 
 
+
 \subsubsection{\texttt{nodes}}
 
-Die \texttt{nodes}-Klausel beschreibt eine Menge von Knoten, die im Graphfragment enthalten sein sollen – wenn die Menge nur als Ziel einer \texttt{link}- oder \texttt{edge}-Klausel auftritt, kann die Menge jedoch auch leer sein. Die \texttt{nodes}-Klausel hat, abgesehen vom Schlüsselwort,  die gleiche Syntax wie die \texttt{node}-Klausel.
+The \texttt{nodes} clause describes a set of nodes that should be present in the graph fragment.
+The set may end up being empty if it is only the target of a \texttt{link} clause or \texttt{edge} clause.
+The \texttt{nodes} clause has the same syntax as the \texttt{node} clause (except for the keyword, of course).
 
-\paragraph*{Die \texttt{nodes}-Klausel in modified BNF:}
+
+\paragraph*{The \texttt{nodes} clause in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-nodes-klausel    =   "nodes" id? " " knotenattribute
+nodes_clause    =   "nodes" id? " " node_attributes
 \end{lstlisting}
 \end{framed}
-
 
 
 
@@ -745,84 +762,97 @@ nodes-klausel    =   "nodes" id? " " knotenattribute
 
 \subsubsection{\texttt{edge}}\label{edge}
 
-Die \texttt{edge}-Klausel hat zwei Anwendungen. Zum einen kann sie verwendet werden, um einzelne Kanten zu suchen. Dann besteht die Klausel aus dem Schlüsselwort \texttt{edge}, einer optionalen ID, unter die die Kante in der Ausgabe referenziert werden kann, und einer Attributbeschreibung für Kanten wie in \ref{node} beschrieben. Zum anderen dient die \texttt{edge}-Klausel dazu, anzugeben, daß zwischen zwei Knoten bzw. Knotenmengen des Graphfragments (mit \texttt{node} bzw. \texttt{nodes} spezifiziert) eine Kante mit den angegebenen Eigenschaften existieren soll. Dazu werden nach der (optionalen) ID der Kante die IDs von Start und Ziel der Kante angegeben.
+The \texttt{edge} clause may be used in two different ways.
+First, you can use it for searching for single edges.
+Then the clause consists of the keyword \texttt{edge}, an optional ID (under which the edge can be references in the exporting function) and an attribute description for edges as explained above in \ref{node}.
+Second, you can use the \texttt{edge} clause for stating the there should be an edge with the specified properties between two nodes or sets of nodes (specified via \texttt{node} or \texttt{nodes}, respectively) of the graph fragment.
+When used in this way, you have to provide the IDs of start and end of the edge after the (optional) ID of the edge itself.
 
-Durch die optionale ID und die verschiedenen Verwendungsmöglichkeiten kann das Schlüsselwort \texttt{edge} von null bis drei IDs gefolgt sein. Die Interpretation dieser IDs ergibt sich aus ihrer Anzahl und der Reihenfolge. Eine ID: ID der Kante selber; zwei IDs: Start und Ziel der Kante; drei IDs: ID der Kante, Start und Ziel.
+Conditioned by the optional ID and the various usages, the keyword \texttt{edge} my be followed by zero up to three IDs.
+The interpretation of these IDs follows from ther number and their order.
+One ID: ID of the edge itself; two IDs: start and end of the edge; three IDs: ID of the edge, IDs of start and end.
 
 
-\paragraph*{Die \texttt{edge}-Klausel in modified BNF:}
+\paragraph*{The \texttt{edge} clause in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-edge-klausel    =   "edge" id? (id id)? " " kantenattribute
+edge_clause     =   "edge" id? (id id)? " " edge_attributes
 \end{lstlisting}
 \end{framed}
 
 
-\paragraph*{Beispiele:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche alle Kanten die die syntaktische Funktion Subjekt anzeigen:\\
+	\item Search for all edges that indicate the syntactic function subject:\\
 	{\tt edge synfunc:subj}
-	\item Suche alle Knoten der Kategorie S, jeweils mit der Menge von Knoten der Kategorie NP, die über eine Kante der Kategorie S, A oder P verbunden sind:\\
+	\item Search for all nodes of cateory S, each with the set of nodes of category NP that are linked via an edge of category S, A or P:\\
 	{\tt
-	node @s  cat:S\\[-.4ex]
-	nodes @np cat:NP\\[-.4ex]
-	edge @s@np cat:S|A|P
+	node  @s    cat:S\\[-.4ex]
+	nodes @np   cat:NP\\[-.4ex]
+	edge  @s@np cat:S|A|P
 	}
 \end{itemize}
 
 
 
-
-
-
-
 \subsubsection{\texttt{link}}\label{link}
 
-Die \texttt{link}-Klausel beschreibt, wie zwei Knoten oder Knotenmengen des Teilgraphen verbunden sein sollen. Dabei kann als Verbindung eine Kette von Knoten und Kanten ähnlich einem regulären Ausdruck beschrieben werden.
-Die \texttt{link}-Klausel besteht aus den Schlüsselwort \texttt{link}, der Angabe von Start- und Endknoten der Verbindung in der Form \texttt{@id1@id2} und der Beschreibung der Verbindung.
+A \texttt{link} clause specifies how two nodes or node sets of the graph fragment should be connected.
+The connection can be specified flexibly as a chain of nodes and edges using quantifiers and disjunctions similar to a regular expression.
+The \texttt{link} clause consists of the keyword \texttt{link}, the specification of the start and end nodes (via IDs as described for the \texttt{edge} clause above) and the description of the connection.
 
-Die Verbindungsbeschreibung besteht aus einer Abfolge von \texttt{edge}- und \texttt{node}-""Elementen. Diese bestehen aus dem jeweiligen Schlüsselwort (\texttt{edge} bzw. \texttt{node}) und optional einer Angabe von Bedingungen, die das Element erfüllen muß, in runden Klammern. Dabei handelt es sich um eine Attributbeschreibung wie oben für \texttt{node} angegeben. Gefolgt werden kann die Elementbeschreibung von einer ID, unter der die gefundenen Elemente in der Ausgabe (nicht in der Suche!) referenziert werden können.
+The description of the connection consists of a sequence of \texttt{edge} and \texttt{node} terms.
+These terms are composed of the keyword \texttt{edge} or \texttt{node} and an optional description of the element in parentheses.
+This description is an attribute description as explained for the \texttt{node} clause above.
+The element description may be followed by an ID, under which the found elements can be references in the exporting function (but not in the search query!).
 
-Für Alternativen steht der Operator \texttt{|} „oder“ zur Verfügung; bezüglich der Bindungsstärke steht er unter der Abfolge. Klammerung ist mit runden Klammern möglich. Des weiteren können Quantoren verwendet werden. Diese werden weder als gierig noch als genügsam interpretiert; alle  passenden Verbindungen werden gefunden und als separate Treffer gewertet.
+For alternatives you may use the “or” operator \texttt{|}; its precedence is lower than that of the sequence.
+You may use parentheses for adjusting the precedence.
+You may also use quantifiers (as described under \ref{nodes} on page \pageref{quantifiers}) after elements or elements grouped in parentheses.
+These quantifiers are interpreted neither as greedy nor as non-greedy – all matching connections will be found and counted as separate matches.
 
-Eine Verbindung besteht – der Natur eines Graphen entsprechend – stets aus einem Wechsel von Knoten und Kanten (beginnend und endend mit jeweils einer Kante). Bei der Angabe von einer Verbindung darf jedoch darauf verzichtet werden, stets Knoten und Kanten im Wechsel anzugeben; nur die erste Kante darf nicht ausgelassen werden. Stehen zwei Elemente des gleichen Typs (also \texttt{edge} oder \texttt{node}) hintereinander, so wird bei der Suche dazwischen ein unspezifiziertes Element des jeweils anderen Typs eingeschoben. Die Verbindungsbeschreibung \texttt{edge(a:b) edge(c:d)} beispielsweise findet eine Kante mit dem Attribut \texttt{a:b}, dann einen beliebigen Knoten und dann eine Kante mit dem Attribut \texttt{c:d}.
+Corresponding to the nature of a graph, a connection always consists of an alternating sequence of nodes and edges (starting and ending with an edge).
+When specifying a connection, however, it is not obligatory to provide an alternating sequence; only the first edge must not be omitted.
+If you provide two elements of the same type (i.e. edges or nodes) in succession, the search engine will accept any element of the other type in between.
+E.g., the connection description \texttt{edge(a:b) edge(c:d)} will match an edge bearing the attribute \texttt{a:b}, en unspecified node an then another edge, bearing the attribute \texttt{c:d}.
 
-Wird \texttt{link} als Knotenattribut (z.B. in einer \texttt{node}-Klausel) verwendet, fällt die Angabe von Start- und Endknoten weg. Startknoten ist dann der gesuchte Knoten, Endknoten der letzte in der Verbindung spezifiziert Knoten bzw., wenn die Verbindungsbeschreibung mit einer Kante endet, ein Knoten mit beliebigen Eigenschaften.
+When you use \texttt{link} in a node attribute (e.g. in a \texttt{node} clause), do not provide start and end node.
+The start node then is the node that is searched for; the end node is the last node that is described in the connection description or, if the connection description ends with an edge, an unspecified node.
 
 
-\paragraph*{Die \texttt{link}-Klausel in modified BNF:}
+\paragraph*{The \texttt{link} clause in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-link-klausel    =   "link" id id " " verbindung
-verbindung      =   verbindung " " verbindung
-                    verbindung "|" verbindung
-                    "(" verbindung ")"
-                    verbindung quantor
-                    "edge" ("(" kantenattribute ")")? id?
-                    "node" ("(" knotenattribute ")")? id?
+link_clause     =   "link" id id " " connection
+connection      =   connection " " connection
+                    connection "|" connection
+                    "(" connection ")"
+                    connection quantifier
+                    "edge" ("(" edge_attributes ")")? id?
+                    "node" ("(" node_attributes ")")? id?
 \end{lstlisting}
 \end{framed}
 
 
-\paragraph*{Beispiele:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche alle Graphfragmente, die aus einem Knoten der Kategorie P und einem der Kategorie S bestehen, wobei ersterer letzteren über eine Kante der Kategorie EX dominiert:\\
+	\item Search for all graph fragments that are composed of a node of category P and a node of cateogry S, where the former dominates the latter via an edge of category EX:\\
 	{\tt
 	node @p cat:P\\[-.4ex]
 	node @s cat:S\\[-.4ex]
 	link @p@s edge(cat:EX)
 	}
-	\item Suche einen Knoten der Kategorie S, alle Knoten der Kategorie NP, die dieser dominiert, und alle Token, die von den NPn dominiert werden:\\
+	\item Search for a node of catogory S, all nodes of category NP that are dominated by the S node and all tokens that are dominated by these NP nodes:\\
 	{\tt
 	node @s cat:S\\[-.4ex]
-	nodes @vpn cat:NP\\[-.4ex]
+	nodes @np cat:NP\\[-.4ex]
 	nodes @tok token\\[-.4ex]
-	link @s@npn edge+\\[-.4ex]
-	link @npn@tok edge+
+	link @s@np edge+\\[-.4ex]
+	link @np@tok edge+
 	}
-	\item Suche einen Knoten der Kategorie S und alle Token, die von diesem über einen NP-Knoten dominiert werden (bis auf die IDs äquivalent zum vorigen Beispiel):\\
+	\item Search for a node of catogory S and all tokens that are dominated by the S node via an NP node (this yields the same graph fragments as the last example):\\
 	{\tt
 	node @s cat:S\\[-.4ex]
 	nodes @tok token\\[-.4ex]
@@ -832,44 +862,54 @@ verbindung      =   verbindung " " verbindung
 
 
 
-
 \subsubsection{\texttt{text}}
 
-Die \texttt{text}-Klausel dient dazu, eine Abfolge von Token-Knoten zu finden. Dabei ermöglicht die Textsuche sowohl die Suche nach reinem Text als auch nach weiteren Attributen der Token-Knoten.
-Die \texttt{text}-Klausel besteht aus dem Schlüsselwort \texttt{text}, einer optionalen ID und der Beschreibung eines Textfragments, das mit \texttt{\^{}s} am Anfang bzw. Ende des Textes eines Satzes verankert werden kann.
+With the \texttt{text} clause you can find a series of token nodes by specifying their text.
+Additionally you may specify other attributes the token nodes should bear.
+The \texttt{text} clause is composed of the keyword \texttt{text}, an optional ID and the description of a text fragment.
 
-Die Beschreibung des Textfragments besteht aus einer Abfolge von Wortbeschreibungen, die aus einer Zeichenkette, die den Tokentext beschreibt (drei Varianten wie oben unter \texttt{node} für die Werte in Schlüssel-Wert-Paaren beschrieben), und einer optionalen Angabe von Attributen (Attributebeschreibung wie oben unter \texttt{node}) in runden Klammern zusammengesetzt ist.
-Für die Beschreibung des Textfragments stehen wie bei der Verbindungsbeschreibung der Operator \texttt{|} für „oder“ (Bindungsstärke schwächer als die der Sequenz), Klammerung und Quantoren zur Verfügung, wobei die Quantoren bei der Textsuche genügsam sind. Zusätzlich kann Textfragmenten eine ID nachgestellt werden, um die gefundenen Knoten in anderen Klauseln zu referenzieren. Quantoren und IDs haben eine höhere Bindungsstärke als Sequenz und Disjunktion; die Reihenfolge von Quantor und ID hinter dem selben Textfragment ist beliebig. Die optionale ID nach dem Schlüsselwort gilt für alle Knoten der \texttt{text}-Klausel. Das gesuchte Textfragment kann mit \texttt{\^{}s} am Beginn bzw. Ende eines Textes (Text eines Satzes) verankert werden.
+The description of the text fragment consists of a sequence of word descriptions that describe the token text and an optional attribute description in parentheses for each token.
+For specifying the token text there are three posiibilities as is described in \ref{node} for the values of key-value pairs: bare strings, quoted strings and regular expressions; the attribute descriptions follow the same rules as in \ref{node}, too.
 
-\paragraph*{Die \texttt{text}-Klausel in modified BNF:}
+For the description of the text fragment you may use the operator \texttt{|} for “or” (precedence lower than sequence) as well as parentheses and quantifiers (these are non-greedy in the text search).
+Additionally you can append an ID to a subgroup of your text fragment that enables referencing these nodes in other clauses.
+Quantifiers and IDs have a higher precence than sequence and disjunction; the order of quantifier and ID after the same subgroup does not matter.
+The optional ID after the keyword \texttt{text} captures all nodes that are found in by the clause.
+The fragment may be anchored to the start or end of a sentence by \texttt{\^{}s}; it is not possible to search for text accross sentences.
+
+\paragraph*{The \texttt{text}-clause in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-text-klausel    =   "text" id? " " "^s"? textfragment "^s"?
-textfragment    =   textfragment " " textfragment
-                    textfragment "|" textfragment
-                    "(" textfragment ")"
-                    textfragment quantor
-                    textfragment id
-                    wort
-wort            =   attributwert ("(" knotenattribute ")")?
+text_clause     =   "text" id? " " "^s"? text_fragment "^s"?
+text_fragment   =   text_fragment " " text_fragment
+                    text_fragment "|" text_fragment
+                    "(" text_fragment ")"
+                    text_fragmentquantor
+                    text_fragment id
+                    word
+word            =   attribute_value ("(" node_attributes")")?
 \end{lstlisting}
 \end{framed}
 
-\paragraph*{Beispiel:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche alle Sätze, in denen das Wort das Nomen „Säge“ an dritter Stelle steht:\\
+	\item Search for all sentences that contain the verb “permit” in third position:\\
 	{\tt
-	text \^{}s //\{2,2\} Säge(pos:n)
+	text \^{}s //\{2,2\} permit(pos:v)
 	}
-	\item Suche zwei Vorkommen von „er“, die von einer beliebigen Anzahl Wörter getrennt sind, wobei das erste „er“ und alle folgenden Wörter bis zum zweiten „er“ von einem Knoten vom cat S dominiert werden:\\
+	\item Search for two occurrences of “he” that are separated by an arbitrary number of words, where the first “he” and all following words before the second “he” are dominated by an S node:\\
 	{\tt
 	node @s cat:S\\
-	text (er //*)@t er\\
-	link @s@t edge*
+	text (he //*)@t he\\
+	link @s@t edge+
 	}
 \end{itemize}
 
+
+\vskip4em
+\center{\Large tbc.}
+\kommentar{
 
 
 \subsubsection{\texttt{meta}}
@@ -962,7 +1002,7 @@ Nach dem Durchführen einer Suche können unter Zuhilfenahme der in der Suche ve
 
 Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
 \begin{itemize}
-	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet. 
+	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet.
 	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
 	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
 	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
@@ -977,13 +1017,13 @@ Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
 
 \subsection{Datenexport}
 
-Die GraphAnno-Abfragesprache biete auch Funktionalität zum Exportieren von Suchergebnissen als CSV-Dateien an. 
+Die GraphAnno-Abfragesprache biete auch Funktionalität zum Exportieren von Suchergebnissen als CSV-Dateien an.
 Mit den nachfolgen beschriebenen Klauseln kann angegeben werden, wie Infomationen der in einer zuvor durchgeführten Suche gefundenen Teilgraphen ausgegeben werden sollen.
 Die Daten jedes gefundenen Teilgraphen werden in eine Zeile der CSV-Datei geschrieben, mit \texttt{sort} können die Ergebnisse sortiert werden, mit \texttt{col} wird angegeben, welche Spalten mit welchen Werten angelegt werden sollen. Als erste Spalte wird stets eine fortlaufende Numerierung der Ergebnisse mit ausgegeben.
 
 \subsubsection{\texttt{sort}}
 
-Die \texttt{sort}-Klausel dient dazu, die Ausgabe der gefundenen Teilgraphen zu sortieren. Es können mehrere \texttt{sort}-Klauseln angegeben werden, wobei weiter unten angegeben Klauseln nur ausgewertet werden, wenn  weiter oben angegebenen Klauseln keine Reihenfolge zwischen zwei Teilgraphen ergeben. 
+Die \texttt{sort}-Klausel dient dazu, die Ausgabe der gefundenen Teilgraphen zu sortieren. Es können mehrere \texttt{sort}-Klauseln angegeben werden, wobei weiter unten angegeben Klauseln nur ausgewertet werden, wenn  weiter oben angegebenen Klauseln keine Reihenfolge zwischen zwei Teilgraphen ergeben.
 Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert ergeben, der für die Sortierung verglichen werden soll. Wie bei \texttt{cond} werden die gefundenen Knoten und Kanten über die in der Suche vergebenen IDs referenziert. Bei Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen verglichen werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
 
 \paragraph*{Beispiele:}
