@@ -557,9 +557,9 @@ Der Schlüssel eines Schlüssel-Wert-Paares kann entweder als einfache Zeichenke
 
 \phantomsection\label{zeichenketten}Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art und Weise angegeben werden können. Die erste Variante sind einfache umarkierte Zeichenketten, die alle Zeichen außer den in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthalten dürfen. Diese Zeichenketten werden bei der Suche ohne Beachtung von Groß- und Kleinschreibung verglichen.
 Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen.
-Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/} und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit \texttt{//} gefunden werden.
+Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/}) und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit einem leeren regulären Ausdruck (\texttt{//}) gefunden werden.
 
-Wie eine Attributbeschreibung kann das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
+Wie ein Schlüssel-Wert-Paar kann auch das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
 
 Des weiteren kann die Attributbeschreibung Kriterien für ein- und ausgehende Kanten enthalten. Diese bestehen aus dem Schlüsselwort \texttt{in} bzw. \texttt{out}, einer optionalen Attributbeschreibung in runden Klammern und einem optionalen Quantor. Der Operator \texttt{in} bzw. \texttt{out} findet alle ein- bzw. ausgehenden Kanten mit den angegebenen Attributen, der Quantor gibt an, wieviele Kanten der spezifizierten Art vorhanden sein dürfen und ist (syntaktisch) wie bei regulären Ausdrücken definiert: \texttt{\{m,n\}} für mindestens m-mal, höchstens n-mal; bei Auslassung der ersten Zahl wird 0 angenommen, bei Auslassung der zweiten unendlich. \texttt{\{n\}} steht für genau n mal. Des weiteren gibt es die Abkürzungen \texttt{?} für \texttt{\{0,1\}}, \texttt{*} für \texttt{\{0,\}} und \texttt{+} für \texttt{\{1,\}}.
 Anders als von regulären Ausdrücken gewohnt (und anders als beim Auftreten von Quantoren in anderen Kontexten der GraphAnno-Abfragesprache), wird das Fehlen eines Quantors hier als \texttt{\{1,\}} interpretiert.
@@ -573,7 +573,7 @@ Für die Kanten wiederum können – zusätzlich zu den einfachen Attributen –
 \begin{framed}
 \begin{lstlisting}
 node-klausel    =   "node" id? " " knotenattribute
-id              =   "@" (buchstabe | "_") alnum*
+id              =   "@" (buchstabe | "_") alphanumerisches_zeichen*
 knotenattribute =   knotenattribute " & " knotenattribute
                     knotenattribute " | " knotenattribute
                     "!" knotenattribute
@@ -611,7 +611,7 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 	{\tt node cat:VP | token \& pos:verb}
 	\item Suche alle Knoten der Kategorie S, die mindestens zwei ausgehende AUX-Kanten haben:\\
 	{\tt node cat:S \& out(cat:AUX)\{2,\}}
-	\item Suche alle Knoten der Kategorie S, die mindestens einen Knoten mit dem pos-Wert pro dominieren:\\
+	\item Suche alle Knoten der Kategorie S, die mindestens einen Knoten mit dem pos-Wert pro direkt dominieren:\\
 	{\tt node cat:S \& out(end(pos:pro))}
 \end{itemize}
 
@@ -619,7 +619,7 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 
 \subsubsection{\texttt{nodes}}
 
-Die \texttt{nodes}-Klausel beschreibt eine Menge von Knoten, die im Graphfragment enthalten sein sollen – wenn die Menge nur als Ziel einer \texttt{link}- oder \texttt{edge}-Klausel auftritt, kann die Menge jedoch auch leer sein. Die \texttt{nodes}-Klausel hat, abgesehen vom Schlüsselwort,  die gleiche Syntax wie die \texttt{node}-Klausel.
+Die \texttt{nodes}-Klausel beschreibt eine Menge von Knoten, die im Graphfragment enthalten sein sollen; wenn die Menge nur als Ziel einer \texttt{link}- oder \texttt{edge}-Klausel auftritt, kann die Menge jedoch auch leer sein. Die \texttt{nodes}-Klausel hat, abgesehen vom Schlüsselwort,  die gleiche Syntax wie die \texttt{node}-Klausel.
 
 \paragraph*{Die \texttt{nodes}-Klausel in modifizierter BNF:}
 ~
@@ -656,9 +656,9 @@ edge-klausel    =   "edge" id? (id id)? " " kantenattribute
 	{\tt edge synfunc:subj}
 	\item Suche alle Knoten der Kategorie S, jeweils mit der Menge von Knoten der Kategorie NP, die über eine Kante der Kategorie S, A oder P verbunden sind:\\
 	{\tt
-	node @s  cat:S\\[-.4ex]
-	nodes @np cat:NP\\[-.4ex]
-	edge @s@np cat:S|A|P
+	node  @s    cat:S\\[-.4ex]
+	nodes @np   cat:NP\\[-.4ex]
+	edge  @s@np cat:S|A|P
 	}
 \end{itemize}
 
@@ -708,10 +708,10 @@ verbindung      =   verbindung " " verbindung
 	\item Suche einen Knoten der Kategorie S, alle Knoten der Kategorie NP, die dieser dominiert, und alle Token, die von den NPn dominiert werden:\\
 	{\tt
 	node @s cat:S\\[-.4ex]
-	nodes @vpn cat:NP\\[-.4ex]
+	nodes @np cat:NP\\[-.4ex]
 	nodes @tok token\\[-.4ex]
-	link @s@npn edge+\\[-.4ex]
-	link @npn@tok edge+
+	link @s@np edge+\\[-.4ex]
+	link @np@tok edge+
 	}
 	\item Suche einen Knoten der Kategorie S und alle Token, die von diesem über einen NP-Knoten dominiert werden (bis auf die IDs äquivalent zum vorigen Beispiel):\\
 	{\tt
@@ -727,10 +727,11 @@ verbindung      =   verbindung " " verbindung
 \subsubsection{\texttt{text}}
 
 Die \texttt{text}-Klausel dient dazu, eine Abfolge von Token-Knoten zu finden. Dabei ermöglicht die Textsuche sowohl die Suche nach reinem Text als auch nach weiteren Attributen der Token-Knoten.
-Die \texttt{text}-Klausel besteht aus dem Schlüsselwort \texttt{text}, einer optionalen ID und der Beschreibung eines Textfragments, das mit \texttt{\^{}s} am Anfang bzw. Ende des Textes eines Satzes verankert werden kann.
+Die \texttt{text}-Klausel besteht aus dem Schlüsselwort \texttt{text}, einer optionalen ID und der Beschreibung eines Textfragments.
 
 Die Beschreibung des Textfragments besteht aus einer Abfolge von Wortbeschreibungen, die aus einer Zeichenkette, die den Tokentext beschreibt (drei Varianten wie oben unter \texttt{node} für die Werte in Schlüssel-Wert-Paaren beschrieben), und einer optionalen Angabe von Attributen (Attributebeschreibung wie oben unter \texttt{node}) in runden Klammern zusammengesetzt ist.
-Für die Beschreibung des Textfragments stehen wie bei der Verbindungsbeschreibung der Operator \texttt{|} für „oder“ (Bindungsstärke schwächer als die der Sequenz), Klammerung und Quantoren zur Verfügung, wobei die Quantoren bei der Textsuche genügsam sind. Zusätzlich kann Textfragmenten eine ID nachgestellt werden, um die gefundenen Knoten in anderen Klauseln zu referenzieren. Quantoren und IDs haben eine höhere Bindungsstärke als Sequenz und Disjunktion; die Reihenfolge von Quantor und ID hinter dem selben Textfragment ist beliebig. Die optionale ID nach dem Schlüsselwort gilt für alle Knoten der \texttt{text}-Klausel. Das gesuchte Textfragment kann mit \texttt{\^{}s} am Beginn bzw. Ende eines Textes (Text eines Satzes) verankert werden.
+
+Für die Beschreibung des Textfragments stehen wie bei der Verbindungsbeschreibung der Operator \texttt{|} für „oder“ (Bindungsstärke schwächer als die der Sequenz), Klammerung und Quantoren zur Verfügung, wobei die Quantoren bei der Textsuche genügsam sind. Zusätzlich kann einer Untergruppe des gesuchten Textfragments eine ID nachgestellt werden, um die gefundenen Knoten in anderen Klauseln zu referenzieren. Quantoren und IDs haben eine höhere Bindungsstärke als Sequenz und Disjunktion; die Reihenfolge von Quantor und ID hinter dem selben Textfragment ist beliebig. Die optionale ID nach dem Schlüsselwort gilt für alle Knoten der \texttt{text}-Klausel. Das gesuchte Textfragment kann mit \texttt{\^{}s} am Beginn bzw. Ende eines Textes (Text eines Satzes) verankert werden; es ist nicht möglich, Text über Satzgrenzen hinweg zu suchen.
 
 \paragraph*{Die \texttt{text}-Klausel in modifizierter BNF:}
 ~
@@ -747,9 +748,9 @@ wort            =   attributwert ("(" knotenattribute ")")?
 \end{lstlisting}
 \end{framed}
 
-\paragraph*{Beispiel:}
+\paragraph*{Beispiele:}
 \begin{itemize}
-	\item Suche alle Sätze, in denen das Wort das Nomen „Säge“ an dritter Stelle steht:\\
+	\item Suche alle Sätze, in denen das Nomen „Säge“ an dritter Stelle steht:\\
 	{\tt
 	text \^{}s //\{2,2\} Säge(pos:n)
 	}
@@ -893,6 +894,10 @@ Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert erge
 Jede \texttt{col}-Klausel steht für eine zu exportierende Spalte. Sie hat als ersten Parameter den Spaltentitel (der keine Leerzeichen enthalten darf), gefolgt von Ruby-Kode, der den auszugebenden Wert ergibt. Knoten und Kanten werden wie gehabt über ihre in der Suche vergebene ID referenziert, dabei ist zu beachten, daß es sich bei den mit \texttt{node} gefundenen Knoten um einzelne Knoten, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten hingegen um Arrays von Knoten handelt.
 
 Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschrieben. Es gibt jedoch noch weitere für die Ausgabe nützliche Methoden: \texttt{.tokens} gibt die über syntaktische Kanten dominierten Token als Liste aus, \texttt{.text} deren Text als Zeichenkette (die einzelnen Tokentexte mit Leerzeichen getrennt). \texttt{.sentence\_tokens} gibt alle Token des Satzes, dem das Element angehört als Liste aus, \texttt{.sentence\_text} wiederum deren Text. \texttt{.position} gibt die Position eines Knotens als Durchschnitt der Positionen seiner dominierten Token aus.
+
+Bei der Arbeit mit der Mehrannotatorenfunktion (vgl. \ref{annotatoren}) gibt der direkte Zugriff auf die Attribute (mittels eckiger Klammern) die Annotationen des aktuell eingestellten Annotators aus.
+Für die Ausgabe der Annotationen anderer Annotatoren dient die Methode \texttt{.private\_attr}, die als Argument den Namen des Annotators nimmt\\(z.B. \texttt{@s.private\_attr('thomas')['cat']}).
+Für die allgemeinen Annotationen steht die Methode \texttt{.public\_attr} zur Verfügung (z.B. \texttt{@s.public\_attr['cat']}).
 
 
 

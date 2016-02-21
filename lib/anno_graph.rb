@@ -50,6 +50,17 @@ class NodeOrEdge
 		@attr['cat'] = arg
 	end
 
+	# accessor method for the public/neutral annotations of self
+	def public_attr
+		@attr.public
+	end
+
+	# accessor method for the private annotations of self
+	def private_attr(annotator_name)
+		annotator = @graph.get_annotator(:name => annotator_name)
+		@attr.private[annotator] || {}
+	end
+
 	def annotate(attributes, log_step = nil)
 		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
 		@attr.annotate_with(attributes).remove_empty!
@@ -580,57 +591,57 @@ class AnnoGraph
 			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
 			(@nodes.values + @edges.values).each do |k|
 				if version < 2
-					if k.attr.neutral['typ']
-						k.attr.neutral['cat'] = k.attr.neutral.delete('typ')
+					if k.attr.public['typ']
+						k.attr.public['cat'] = k.attr.public.delete('typ')
 					end
-					if k.attr.neutral['namespace']
-						k.attr.neutral['sentence'] = k.attr.neutral.delete('namespace')
+					if k.attr.public['namespace']
+						k.attr.public['sentence'] = k.attr.public.delete('namespace')
 					end
-					k.attr.neutral.delete('elementid')
-					k.attr.neutral.delete('edgetype')
+					k.attr.public.delete('elementid')
+					k.attr.public.delete('edgetype')
 				end
 				if version < 5
-					k.attr.neutral['f-layer'] = 't' if k.attr.neutral['f-ebene'] == 'y'
-					k.attr.neutral['s-layer'] = 't' if k.attr.neutral['s-ebene'] == 'y'
-					k.attr.neutral.delete('f-ebene')
-					k.attr.neutral.delete('s-ebene')
+					k.attr.public['f-layer'] = 't' if k.attr.public['f-ebene'] == 'y'
+					k.attr.public['s-layer'] = 't' if k.attr.public['s-ebene'] == 'y'
+					k.attr.public.delete('f-ebene')
+					k.attr.public.delete('s-ebene')
 				end
 				if version < 7
 					# introduce node types
 					if k.kind_of?(Node)
 						if k.token
 							k.type = 't'
-						elsif k.attr.neutral['cat'] == 'meta'
+						elsif k.attr.public['cat'] == 'meta'
 							k.type = 's'
-							k.attr.neutral.delete('cat')
+							k.attr.public.delete('cat')
 						else
 							k.type = 'a'
 						end
 					else
 						k.type = 'o' if k.type == 't'
 						k.type = 'a' if k.type == 'g'
-						k.attr.neutral.delete('sentence')
+						k.attr.public.delete('sentence')
 					end
-					k.attr.neutral.delete('tokenid')
+					k.attr.public.delete('tokenid')
 				end
 			end
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
-				@nodes.values.map{|n| n.attr.neutral['sentence']}.uniq.each do |s|
-					if sect_nodes.select{|k| k.attr.neutral['sentence'] == s}.empty?
+				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
+					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
 						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
 					end
 				end
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n.attr.neutral['sentence']}
+				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n.attr.public['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
-					s.name = s.attr.neutral.delete('sentence')
-					@nodes.values.select{|n| n.attr.neutral['sentence'] == s.name}.each do |n|
-						n.attr.neutral.delete('sentence')
+					s.name = s.attr.public.delete('sentence')
+					@nodes.values.select{|n| n.attr.public['sentence'] == s.name}.each do |n|
+						n.attr.public.delete('sentence')
 						add_sect_edge(:start => s, :end => n)
 					end
 				end

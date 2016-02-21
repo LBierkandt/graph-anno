@@ -105,8 +105,12 @@ class Attributes
 		output.select(&block)
 	end
 
-	def neutral
+	def public
 		@attr
+	end
+
+	def private
+		@private_attr
 	end
 
 	def delete_private(annotator)
