@@ -83,6 +83,7 @@ class Node < NodeOrEdge
 		@attr = Attributes.new(h.merge(:host => self))
 		@start= h[:start]
 		@end  = h[:end]
+		@custom = h[:custom]
 	end
 
 	def inspect
@@ -96,6 +97,7 @@ class Node < NodeOrEdge
 			:type => @type
 		}.merge(@attr.to_h)
 		h.merge!(:start => @start, :end => @end) if @start || @end
+		h.merge!({:custom => @custom}.compact)
 		h
 	end
 
@@ -345,6 +347,7 @@ class Edge < NodeOrEdge
 		@graph = h[:graph]
 		@id = h[:id]
 		@type = h[:type]
+		@custom  = h[:custom]
 		if h[:start].is_a?(Node)
 			@start = h[:start]
 		else
@@ -384,7 +387,7 @@ class Edge < NodeOrEdge
 			:end   => @end.id,
 			:id    => @id,
 			:type  => @type
-		}.merge(@attr.to_h)
+		}.merge(@attr.to_h).merge({:custom => @custom}.compact)
 	end
 
 	def inspect
@@ -1442,4 +1445,10 @@ class Hash
 	def symbolize_keys
 		Hash[self.map{ |k, v| [k.to_sym, v] }]
 	end
+
+	# returns a hash that is a copy of self, but without the key whose values are nil
+	# @return [Hash] the new Hash
+	def compact
+    self.select{|k, v| !v.nil? }
+  end
 end
