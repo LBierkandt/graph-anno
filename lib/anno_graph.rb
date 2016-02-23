@@ -83,6 +83,7 @@ class Node < NodeOrEdge
 		@attr = Attributes.new(h.merge(:host => self))
 		@start= h[:start]
 		@end  = h[:end]
+		@custom = h[:custom]
 	end
 
 	def inspect
@@ -92,11 +93,12 @@ class Node < NodeOrEdge
 	# @return [Hash] the node transformed into a hash
 	def to_h
 		h = {
-			:id   => @id,
-			:type => @type
-		}.merge(@attr.to_h)
-		h.merge!(:start => @start, :end => @end) if @start || @end
-		h
+			:id     => @id,
+			:type   => @type,
+			:start  => @start,
+			:end    => @end,
+			:custom => @custom,
+		}.merge(@attr.to_h).compact
 	end
 
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
@@ -396,6 +398,7 @@ class Edge < NodeOrEdge
 		@graph = h[:graph]
 		@id = h[:id]
 		@type = h[:type]
+		@custom  = h[:custom]
 		if h[:start].is_a?(Node)
 			@start = h[:start]
 		else
@@ -431,11 +434,12 @@ class Edge < NodeOrEdge
 	# @return [Hash] the edge transformed into a hash
 	def to_h
 		h = {
-			:start => @start.id,
-			:end   => @end.id,
-			:id    => @id,
-			:type  => @type
-		}.merge(@attr.to_h)
+			:start  => @start.id,
+			:end    => @end.id,
+			:id     => @id,
+			:type   => @type,
+			:custom => @custom,
+		}.merge(@attr.to_h).compact
 	end
 
 	def inspect

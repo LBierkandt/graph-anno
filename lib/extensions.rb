@@ -70,6 +70,12 @@ class Hash
 	def except(*keys)
 		reject{|k, v| keys.include?(k)}
 	end
+
+	# returns a hash that is a copy of self, but without the key whose values are nil
+	# @return [Hash] the new Hash
+	def compact
+		self.select{|k, v| !v.nil? }
+	end
 end
 
 class String
