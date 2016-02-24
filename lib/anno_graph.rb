@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-# Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
+# Copyright © 2014-2016 Lennart Bierkandt <post@lennartbierkandt.de>
 #
 # This file is part of GraphAnno.
 #
@@ -22,6 +22,9 @@ require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
+	include SearchableNodeOrEdge
+
+	attr_reader :graph
 	attr_accessor :attr, :type
 
 	# provides the to_json method needed by the JSON gem
@@ -29,12 +32,12 @@ class NodeOrEdge
 		self.to_h.to_json(*a)
 	end
 
-	# getter for @attr hash
+	# alternative getter for @attr hash
 	def [](key)
 		@attr[key]
 	end
 
-	# setter for @attr hash
+	# alternative setter for @attr hash
 	def []=(key, value)
 		@attr[key] = value
 	end
@@ -47,13 +50,26 @@ class NodeOrEdge
 		@attr['cat'] = arg
 	end
 
-	def annotate(attr, log_step = nil)
-		log_step.add_change(:action => :update, :element => self, :attr => attr) if log_step
-		@attr.merge!(attr).keep_if{|k, v| v}
+	# accessor method for the public/neutral annotations of self
+	def public_attr
+		@attr.public
+	end
+
+	# accessor method for the private annotations of self
+	def private_attr(annotator_name)
+		annotator = @graph.get_annotator(:name => annotator_name)
+		@attr.private[annotator] || {}
+	end
+
+	def annotate(attributes, log_step = nil)
+		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
+		@attr.annotate_with(attributes).remove_empty!
 	end
 end
 
 class Node < NodeOrEdge
+	include SearchableNode
+
 	attr_accessor :id, :in, :out, :start, :end
 
 	# initializes node
@@ -61,27 +77,28 @@ class Node < NodeOrEdge
 	def initialize(h)
 		@graph = h[:graph]
 		@id = h[:id]
-		@attr = (h[:attr] || {}).clone
 		@in = []
 		@out = []
 		@type = h[:type]
+		@attr = Attributes.new(h.merge(:host => self))
 		@start= h[:start]
 		@end  = h[:end]
+		@custom = h[:custom]
 	end
 
 	def inspect
 		'Node' + @id
 	end
 
-	# @return [Hash] the node transformed into a hash with all values casted to strings
+	# @return [Hash] the node transformed into a hash
 	def to_h
 		h = {
-			:attr => @attr,
-			:id   => @id,
-			:type => @type
-		}
-		h.merge!(:start => @start, :end => @end) if @start || @end
-		@attr == {} ? h.reject{|k,v| k == :attr} : h
+			:id     => @id,
+			:type   => @type,
+			:start  => @start,
+			:end    => @end,
+			:custom => @custom,
+		}.merge(@attr.to_h).compact
 	end
 
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
@@ -330,17 +347,18 @@ class Edge < NodeOrEdge
 		@graph = h[:graph]
 		@id = h[:id]
 		@type = h[:type]
-		if h[:start].class == String
-			@start = @graph.nodes[h[:start]]
-		else
+		@custom  = h[:custom]
+		if h[:start].is_a?(Node)
 			@start = h[:start]
-		end
-		if h[:end].class == String
-			@end = @graph.nodes[h[:end]]
 		else
-			@end = h[:end]
+			@start = @graph.nodes[h[:start]]
 		end
-		@attr = (h[:attr] || {}).clone
+		if h[:end].is_a?(Node)
+			@end = h[:end]
+		else
+			@end = @graph.nodes[h[:end]]
+		end
+		@attr = Attributes.new(h.merge(:host => self))
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
@@ -362,16 +380,15 @@ class Edge < NodeOrEdge
 		@graph.edges.delete(@id)
 	end
 
-	# @return [Hash] the edge transformed into a hash with all values casted to strings
+	# @return [Hash] the edge transformed into a hash
 	def to_h
 		h = {
-			:start => @start.id,
-			:end   => @end.id,
-			:attr  => @attr,
-			:id    => @id,
-			:type  => @type
-		}
-		@attr == {} ? h.reject{|k,v| k == :attr} : h
+			:start  => @start.id,
+			:end    => @end.id,
+			:id     => @id,
+			:type   => @type,
+			:custom => @custom,
+		}.merge(@attr.to_h).compact
 	end
 
 	def inspect
@@ -411,8 +428,8 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id
-	attr_accessor :conf, :makros_plain, :makros, :info, :allowed_anno, :anno_makros
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator, :file_settings
+	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
 	def initialize
@@ -422,9 +439,12 @@ class AnnoGraph
 		@highest_edge_id = 0
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = Tagset.new
+		@tagset = Tagset.new
 		@anno_makros = {}
 		@makros = []
+		@annotators = []
+		@current_annotator = nil
+		@file_settings = {}
 		create_layer_makros
 	end
 
@@ -432,10 +452,10 @@ class AnnoGraph
 	# @param h [Hash] the graph to be added in hash format
 	def add_hash(h)
 		h['nodes'].each do |n|
-			self.add_node(n)
+			self.add_node(n.merge(:raw => true))
 		end
 		h['edges'].each do |e|
-			self.add_edge(e)
+			self.add_edge(e.merge(:raw => true))
 		end
 	end
 
@@ -446,15 +466,15 @@ class AnnoGraph
 		case element_type
 		when :node
 			if !h[:id]
-				h[:id] = (@highest_node_id += 1).to_s
+				h[:id] = (@highest_node_id += 1)
 			else
-				@highest_node_id = h[:id].to_i if h[:id].to_i > @highest_node_id
+				@highest_node_id = h[:id] if h[:id] > @highest_node_id
 			end
 		when :edge
 			if !h[:id]
-				h[:id] = (@highest_edge_id += 1).to_s
+				h[:id] = (@highest_edge_id += 1)
 			else
-				@highest_edge_id = h[:id].to_i if h[:id].to_i > @highest_edge_id
+				@highest_edge_id = h[:id] if h[:id] > @highest_edge_id
 			end
 		end
 	end
@@ -483,28 +503,38 @@ class AnnoGraph
 		self.clear
 
 		file = open(path, 'r:utf-8')
-		nodes_and_edges = JSON.parse(file.read)
+		data = JSON.parse(file.read)
 		file.close
-		version = nodes_and_edges['version'].to_i
+		version = data['version'].to_i
 		# 'knoten' -> 'nodes', 'kanten' -> 'edges'
 		if version < 4
-			nodes_and_edges['nodes'] = nodes_and_edges['knoten']
-			nodes_and_edges['edges'] = nodes_and_edges['kanten']
-			nodes_and_edges.delete('knoten')
-			nodes_and_edges.delete('kanten')
+			data['nodes'] = data.delete('knoten')
+			data['edges'] = data.delete('kanten')
 		end
-		(nodes_and_edges['nodes'] + nodes_and_edges['edges']).each do |el|
-			el.replace(Hash[el.map{|k,v| [k.to_sym, v]}])
+		(data['nodes'] + data['edges']).each do |el|
+			el.replace(el.symbolize_keys)
 			el[:id] = el[:ID] if version < 7
+			# IDs as integer
+			if version < 9
+				el[:id] = el[:id].to_i
+				el[:start] = el[:start].to_i if el[:start].is_a?(String)
+				el[:end] = el[:end].to_i if el[:end].is_a?(String)
+			end
 		end
-		self.add_hash(nodes_and_edges)
+		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
+		self.add_hash(data)
 		if version >= 6
-			@anno_makros = nodes_and_edges['anno_makros'] || {}
-			@info = nodes_and_edges['info'] || {}
-			@allowed_anno = Tagset.new(nodes_and_edges['allowed_anno'])
-			@conf = AnnoGraphConf.new(nodes_and_edges['conf'])
+			@anno_makros = data['anno_makros'] || {}
+			@info = data['info'] || {}
+			if version < 8
+				@tagset = Tagset.new(data['allowed_anno'])
+			else
+				@tagset = Tagset.new(data['tagset'])
+				@file_settings = data['file_settings'].symbolize_keys
+			end
+			@conf = AnnoGraphConf.new(data['conf'])
 			create_layer_makros
-			@makros_plain += nodes_and_edges['search_makros']
+			@makros_plain += data['search_makros']
 			@makros += parse_query(@makros_plain * "\n")['def']
 		end
 
@@ -514,58 +544,57 @@ class AnnoGraph
 			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
 			(@nodes.values + @edges.values).each do |k|
 				if version < 2
-					if k['typ']
-						k['cat'] = k['typ']
-						k.attr.delete('typ')
+					if k.attr.public['typ']
+						k.attr.public['cat'] = k.attr.public.delete('typ')
 					end
-					if k['namespace']
-						k['sentence'] = k['namespace']
-						k.attr.delete('namespace')
+					if k.attr.public['namespace']
+						k.attr.public['sentence'] = k.attr.public.delete('namespace')
 					end
-					k.attr.delete('elementid')
+					k.attr.public.delete('elementid')
+					k.attr.public.delete('edgetype')
 				end
 				if version < 5
-					if k['f-ebene'] == 'y' then k['f-layer'] = 't' end
-					if k['s-ebene'] == 'y' then k['s-layer'] = 't' end
-					k.attr.delete('f-ebene')
-					k.attr.delete('s-ebene')
+					k.attr.public['f-layer'] = 't' if k.attr.public['f-ebene'] == 'y'
+					k.attr.public['s-layer'] = 't' if k.attr.public['s-ebene'] == 'y'
+					k.attr.public.delete('f-ebene')
+					k.attr.public.delete('s-ebene')
 				end
 				if version < 7
 					# introduce node types
 					if k.kind_of?(Node)
 						if k.token
 							k.type = 't'
-						elsif k['cat'] == 'meta'
+						elsif k.attr.public['cat'] == 'meta'
 							k.type = 's'
-							k.attr.delete('cat')
+							k.attr.public.delete('cat')
 						else
 							k.type = 'a'
 						end
 					else
 						k.type = 'o' if k.type == 't'
 						k.type = 'a' if k.type == 'g'
-						k.attr.delete('sentence')
+						k.attr.public.delete('sentence')
 					end
-					k.attr.delete('tokenid')
+					k.attr.public.delete('tokenid')
 				end
 			end
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @nodes.values.select{|k| k.type == 's'}
-				@nodes.values.map{|n| n['sentence']}.uniq.each do |s|
-					if sect_nodes.select{|k| k['sentence'] == s}.empty?
-						add_sect_node(:name => s)
+				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
+					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
+						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
 					end
 				end
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n['sentence']}
+				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n.attr.public['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
-					s.name = s.attr.delete('sentence')
-					@nodes.values.select{|n| n['sentence'] == s.name}.each do |n|
-						n.attr.delete('sentence')
+					s.name = s.attr.public.delete('sentence')
+					@nodes.values.select{|n| n.attr.public['sentence'] == s.name}.each do |n|
+						n.attr.public.delete('sentence')
 						add_sect_edge(:start => s, :end => n)
 					end
 				end
@@ -573,15 +602,21 @@ class AnnoGraph
 		end
 
 		puts 'Read "' + path + '".'
+
+		return data
 	end
 
 	# serializes self in a JSON file
 	# @param path [String] path to the JSON file
-	def write_json_file(path)
+	# @param compact [Boolean] write compact JSON?
+	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
+	def write_json_file(path, compact = false, additional = {})
 		puts 'Writing file "' + path + '"...'
-		file = open(path, 'w')
-		file.write(JSON.pretty_generate(self, :indent => ' ', :space => '').encode('UTF-8'))
-		file.close
+		hash = self.to_h.merge(additional)
+		json = compact ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
+		File.open(path, 'w') do |file|
+			file.write(json.encode('UTF-8'))
+		end
 		puts 'Wrote "' + path + '".'
 	end
 
@@ -638,6 +673,13 @@ class AnnoGraph
 		add_node(h.merge(:type => 'sp'))
 	end
 
+	# creates a node that is a clone (including ID) of the given node; useful for creating subcorpora
+	# @param node [Node] the node to be cloned
+	# @return [Node] the new node
+	def add_cloned_node(node)
+		add_node(node.to_h.merge(:raw => true))
+	end
+
 	# creates a new edge and adds it to self
 	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
@@ -679,6 +721,15 @@ class AnnoGraph
 	# @return [Edge] the new edge
 	def add_speaker_edge(h)
 		add_edge(h.merge(:type => 'sp'))
+	end
+
+	# creates an edge that is a clone (without ID; start and end nodes via id) of the given edge; useful for creating subcorpora
+	# @param node [Edge] the edge to be cloned
+	# @return [Edge] the new edge
+	def add_cloned_edge(edge)
+		h = edge.to_h
+		h.delete(:id)
+		add_edge(h.merge(:raw => true))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
@@ -736,16 +787,20 @@ class AnnoGraph
 			:log => log_step
 		)
 		add_anno_edge(
-			:start => edge.start,
-			:end => new_node,
-			:attr => edge.attr,
-			:log => log_step
+			{
+				:start => edge.start,
+				:end => new_node,
+				:raw => true,
+				:log => log_step
+			}.merge(edge.attr.to_h)
 		)
 		add_anno_edge(
-			:start => new_node,
-			:end => edge.end,
-			:attr => edge.attr,
-			:log => log_step
+			{
+				:start => new_node,
+				:end => edge.end,
+				:raw => true,
+				:log => log_step
+			}.merge(edge.attr.to_h)
 		)
 		edge.delete(log_step)
 	end
@@ -759,27 +814,31 @@ class AnnoGraph
 			node.out.select{|e| e.type == 'a'}.each do |out_edge|
 				devisor = mode == :in ? out_edge : in_edge
 				add_anno_edge(
-					:start => in_edge.start,
-					:end => out_edge.end,
-					:attr => devisor.attr,
-					:log => log_step
+					{
+						:start => in_edge.start,
+						:end => out_edge.end,
+						:raw => true,
+						:log => log_step
+					}.merge(devisor.attr.to_h)
 				)
 			end
 		end
 		node.delete(log_step)
 	end
 
-	# @return [Hash] the graph in hash format with version number: {'nodes' => [...], 'edges' => [...], 'version' => String, ...}
+	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
-			:nodes => @nodes.values.map{|n| n.to_h}.reject{|n| n['id'] == '0'},
+			:nodes => @nodes.values.map{|n| n.to_h},
 			:edges => @edges.values.map{|e| e.to_h}
 		}.
-			merge(:version => '7').
-			merge(:conf => @conf.to_h.reject{|k,v| k == 'font'}).
+			merge(:version => 9).
+			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
 			merge(:info => @info).
 			merge(:anno_makros => @anno_makros).
-			merge(:allowed_anno => @allowed_anno).
+			merge(:tagset => @tagset).
+			merge(:annotators => @annotators).
+			merge(:file_settings => @file_settings).
 			merge(:search_makros => @makros_plain)
 	end
 
@@ -804,6 +863,7 @@ class AnnoGraph
 		first_new_sentence_node = @nodes.values.select{|n| n.type == 's' and !s_nodes.include?(n)}[0].ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
+		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
 	end
 
 	# builds a clone of self, but does not clone the nodes and edges
@@ -819,35 +879,48 @@ class AnnoGraph
 		@edges = other_graph.edges.clone
 		@highest_node_id = other_graph.highest_node_id
 		@highest_edge_id = other_graph.highest_edge_id
+		clone_graph_info(other_graph)
+		return self
+	end
+
+	# sets own settings to those of another graph
+	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
-		@allowed_anno = other_graph.allowed_anno.clone
+		@tagset = other_graph.tagset.clone
+		@annotators = other_graph.annotators.clone
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
-		return self
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
 	# @param sentence_list [Array] a list of sentence nodes
 	# @return [Graph] the new graph
 	def subcorpus(sentence_list)
-		nodes = sentence_list.map{|s| s.nodes}.flatten
-		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
+		# create new graph
 		g = AnnoGraph.new
 		g.clone_graph_info(self)
 		last_sentence_node = nil
+		# copy speaker nodes
+		@nodes.values.select{|n| n.type == 'sp'}.each do |speaker|
+			g.add_cloned_node(speaker)
+		end
+		# copy sentence nodes and their associated nodes
 		sentence_list.each do |s|
-			ns = g.add_sect_node(:attr => s.attr, :id => s.id)
+			ns = g.add_cloned_node(s)
 			g.add_order_edge(:start => last_sentence_node, :end => ns) if last_sentence_node
 			last_sentence_node = ns
 			s.nodes.each do |n|
-				nn = g.add_node(:attr => n.attr, :type => n.type, :id => n.id)
+				nn = g.add_cloned_node(n)
 				g.add_sect_edge(:start => ns, :end => nn)
 			end
 		end
+		# copy edges
+		nodes = sentence_list.map{|s| s.nodes}.flatten
+		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
 		edges.reject{|e| e.type == 's'}.each do |e|
-			g.add_edge(:attr => e.attr, :type => e.type, :start => e.start.id, :end => e.end.id)
+			g.add_cloned_edge(e)
 		end
 		return g
 	end
@@ -905,7 +978,9 @@ class AnnoGraph
 		@highest_edge_id = 0
 		@conf = AnnoGraphConf.new
 		@info = {}
-		@allowed_anno = Tagset.new
+		@tagset = Tagset.new
+		@annotators = []
+		@current_annotator = nil
 		@anno_makros = {}
 		@makros_plain = []
 	end
@@ -974,7 +1049,7 @@ class AnnoGraph
 	end
 
 	# export layer configuration as JSON file for import in other graphs
-	# @param name [String] The name under which the file will be saved
+	# @param name [String] The name of the file
 	def export_config(name)
 		Dir.mkdir('exports/config') unless File.exist?('exports/config')
 		File.open("exports/config/#{name}.config.json", 'w') do |f|
@@ -982,12 +1057,21 @@ class AnnoGraph
 		end
 	end
 
-	# export allowed annotations as JSON file for import in other graphs
+	# export tagset as JSON file for import in other graphs
 	# @param name [String] The name of the file
 	def export_tagset(name)
 		Dir.mkdir('exports/tagset') unless File.exist?('exports/tagset')
 		File.open("exports/tagset/#{name}.tagset.json", 'w') do |f|
-			f.write(JSON.pretty_generate(@allowed_anno, :indent => ' ', :space => '').encode('UTF-8'))
+			f.write(JSON.pretty_generate(@tagset, :indent => ' ', :space => '').encode('UTF-8'))
+		end
+	end
+
+	# export annotators as JSON file for import in other graphs
+	# @param name [String] The name of the file
+	def export_annotators(name)
+		Dir.mkdir('exports/annotators') unless File.exist?('exports/annotators')
+		File.open("exports/annotators/#{name}.annotators.json", 'w') do |f|
+			f.write(JSON.pretty_generate(@annotators, :indent => ' ', :space => '').encode('UTF-8'))
 		end
 	end
 
@@ -1000,10 +1084,18 @@ class AnnoGraph
 	end
 
 	# loads allowed annotations from JSON file
-	# @param name [String] The name under which the file will be saved
+	# @param name [String] The name of the file
 	def import_tagset(name)
 		File.open("exports/tagset/#{name}.tagset.json", 'r:utf-8') do |f|
-			@allowed_anno = Tagset.new(JSON.parse(f.read))
+			@tagset = Tagset.new(JSON.parse(f.read))
+		end
+	end
+
+	# loads allowed annotations from JSON file
+	# @param name [String] The name of the file
+	def import_annotators(name)
+		File.open("exports/annotators/#{name}.annotators.json", 'r:utf-8') do |f|
+			@annotators = JSON.parse(f.read).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		end
 	end
 
@@ -1011,7 +1103,26 @@ class AnnoGraph
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
 	def allowed_attributes(attr)
-		@allowed_anno.allowed_attributes(attr)
+		@tagset.allowed_attributes(attr)
+	end
+
+	def set_annotator(h)
+		@current_annotator = get_annotator(h)
+	end
+
+	def get_annotator(h)
+		@annotators.select{|a| h.all?{|k, v| a.send(k).to_s == v.to_s}}[0]
+	end
+
+	# delete the given annotators and all their annotations
+	# @param annotators [Array of Annotators or Annotator] the annotator(s) to be deleted
+	def delete_annotators(annotators)
+		(@nodes.values + @edges.values).each do |element|
+			annotators.each do |annotator|
+				element.attr.delete_private(annotator)
+			end
+		end
+		@annotators -= annotators
 	end
 
 	private
@@ -1185,8 +1296,7 @@ class TagsetRule
 	end
 
 	def allowes?(value)
-		return true if value.nil?
-		return true if @values == []
+		return true if value.nil? || @values == []
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
@@ -1195,6 +1305,37 @@ class TagsetRule
 				value.match('^' + rule[:str] + '$')
 			end
 		end
+	end
+end
+
+class Annotator
+	attr_accessor :id, :name, :info
+
+	def initialize(h)
+		@graph = h[:graph]
+		@name = h[:name] || ''
+		@info = h[:info] || ''
+		@id = (h[:id] || new_id).to_i
+	end
+
+	def new_id
+		id_list = @graph.annotators.map{|a| a.id}
+		id = 1
+		id += 1 while id_list.include?(id)
+		return id
+ 	end
+
+	def to_h
+		{
+			:id => @id,
+			:name => @name,
+			:info => @info,
+		}
+	end
+
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		self.to_h.to_json(*a)
 	end
 end
 
@@ -1298,5 +1439,17 @@ class Hash
 	# @return [Hash] the new Hash
 	def map_hash(&block)
 		self.merge(self){|k, v| block.call(k, v)}
+	end
+
+	# creates a new hash that has all keys casted to symbols
+	# @return [Hash] the new Hash
+	def symbolize_keys
+		Hash[self.map{ |k, v| [k.to_sym, v] }]
+	end
+
+	# returns a hash that is a copy of self, but without the key whose values are nil
+	# @return [Hash] the new Hash
+	def compact
+		self.select{|k, v| !v.nil? }
 	end
 end

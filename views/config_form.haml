@@ -1,5 +1,5 @@
 %form#modal-form.config{ :action => '/save_config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeModal(); return false;' }
-  #modal-warning.error_message 
+  #modal-warning.error_message Invalid values – check your input!
   %div.modal-form-element
     %table
       %tr
@@ -40,7 +40,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-layer New layer
+            %button#new-layer{:onclick => 'newLayer(this); return false;'}
+              New layer
 
   %div.modal-form-element
     %table.combinations
@@ -52,7 +53,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-combination New combination
+            %button#new-combination{:onclick => 'newCombination(this); return false;'}
+              New combination
 
   %div.modal-form-element
     %table

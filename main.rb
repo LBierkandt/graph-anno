@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-# Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
+# Copyright © 2014-2016 Lennart Bierkandt <post@lennartbierkandt.de>
 #
 # This file is part of GraphAnno.
 #
@@ -23,6 +23,7 @@ require 'fileutils.rb'
 require 'rexml/document.rb'
 
 require './lib/anno_graph.rb'
+require './lib/attributes.rb'
 require './lib/toolbox_module.rb'
 require './lib/paula_exporter.rb'
 require './lib/salt_exporter.rb'
@@ -31,6 +32,7 @@ require './lib/graph_controller.rb'
 controller = GraphController.new
 
 set :root, Dir.pwd
+set :static_cache_control, [:'no-cache']
 
 before do
 	controller.sinatra = self

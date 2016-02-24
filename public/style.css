@@ -1,304 +1,283 @@
-/*
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, font, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td {
-	background: transparent;
-	border: 0;
-	margin: 0;
-	padding: 0;
-	vertical-align: baseline;
-	text-decoration: none;
-	font-family: sans-serif;
-	font-size: 11pt;
-}
-*/
+* {
+  font-family: sans-serif; }
 
 body {
-	margin: 0px;
-	font-family: sans-serif;
-	font-size: 13px;
-	line-height: 18px;
-}
+  margin: 0px;
+  font-size: 13px;
+  line-height: 18px; }
+
 h1, h2, h3, h4, h5, h6 {
-	margin-top: 0ex;
-	margin-bottom: 1ex;
-}
+  margin-top: 0ex;
+  margin-bottom: 1ex; }
+
 a {
-	color: #002050;
-}
+  color: #002050; }
+
 button, input[type="submit"], input[type="reset"], input[type="button"], .button {
-	color: #ffffff;
-	background-color: #002050;
-	border: none;
-	padding: 2px 6px;
-	cursor: pointer;
-}
-button:focus, input[type="submit"]:focus, input[type="reset"]:focus, input[type="button"]:focus, .button:focus {
-	background-color: #003090;
-}
+  color: white;
+  background-color: #002050;
+  border: none;
+  padding: 2px 6px;
+  margin-bottom: 3px;
+  text-align: center;
+  cursor: pointer; }
+  button:focus, input[type="submit"]:focus, input[type="reset"]:focus, input[type="button"]:focus, .button:focus {
+    background-color: #003090; }
+
 ul {
-	margin-top: 0ex;
-	padding-left: 2em;
-}
+  margin-top: 0ex;
+  padding-left: 2em; }
+
 form {
-	margin: 0px;
-}
+  margin: 0px; }
+
 textarea {
-	font-size: 95%;
-}
+  font-size: 95%; }
+
 table {
-	font-size: 13px;
-}
-th {
-	text-align: left;
-	font-weight: bold;
-}
+  font-size: 13px; }
+  table th {
+    text-align: left;
+    font-weight: bold; }
+  table td {
+    padding-top: 0; }
+
 #graphdiv {
-	position: absolute;
-	top: 0px;
-	height: 100%;
-	width: 100%;
-	overflow: scroll;
-}
+  position: absolute;
+  top: 0px;
+  height: 100%;
+  width: 100%;
+  overflow: scroll; }
+
 #graph {
-	position: absolute;
-	margin-left: auto;
-	margin-right: auto;
-	left: 0px;
-	right: 0px;
-}
+  position: absolute;
+  margin-left: auto;
+  margin-right: auto;
+  left: 0px;
+  right: 0px; }
+
 #bottom {
-	position: fixed;
-	bottom: 0px;
-	width: 100%;
-}
+  position: fixed;
+  bottom: 0px;
+  width: 100%; }
+
 .bottom-block {
-	background-color: #ddd;
-	border-top: solid 1px #002050;
-	padding-bottom: 2px;
-}
+  background-color: #dddddd;
+  border-top: solid 1px #002050;
+  padding-bottom: 2px;
+  overflow: auto; }
+
 #textline, #meta {
-	padding-left: 5px;
-}
+  padding-left: 5px; }
+
 #cmddiv {
-	padding: 5px;
-}
-#active_file {
-	display: inline;
-}
+  padding: 5px 0 0 5px; }
+  #cmddiv > * {
+    display: block;
+    float: left;
+    margin-right: 5px;
+    margin-bottom: 0; }
+  #cmddiv #active_file, #cmddiv #current_annotator {
+    background-color: white;
+    padding: 0 0.5em;
+    display: inline-block; }
+  #cmddiv #documentation {
+    float: right; }
+
 #log {
-	display: none;
-	position: fixed;
-	top: 10px;
-	right: 10px;
-	width: 50%;
-	height: 30%;
-	padding: 5px;
-}
-#log table {
-	width: 100%;
-}
-#log .content td, #log .content th {
-	padding: 0 0.3em;
-	overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 0;
-}
-#log .content tr[index] {
-	cursor: pointer;
-}
-#log .content tr[index]:hover {
-	background-color: #ddd;
-}
-#log .content tr.undone {
-	color: #aaa;
-}
-#log .command {width: 60%;}
-#log .user {width: 20%;}
-#log .time {width: 20%;}
+  display: none;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 50%;
+  height: 30%;
+  padding: 5px; }
+  #log table {
+    width: 100%; }
+  #log .content td, #log .content th {
+    padding: 0 0.3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 0; }
+  #log .content tr[index] {
+    cursor: pointer; }
+    #log .content tr[index]:hover {
+      background-color: #dddddd; }
+  #log .content tr.undone {
+    color: #aaaaaa; }
+  #log .command {
+    width: 60%; }
+  #log .user, #log .time {
+    width: 20%; }
+
 #filter {
-	display: none;
-	position: fixed;
-	top: 10px;
-	right: 10px;
-	width: 30%;
-	height: 30%;
-	padding: 5px;
-}
-#filter input {
-	width: 8em;
-}
-#filter table {
-	border-spacing: 0;
-}
+  display: none;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 30%;
+  height: 30%;
+  padding: 5px; }
+  #filter input {
+    width: 8em;
+    margin-right: 3px; }
+  #filter table {
+    border-spacing: 0; }
+
 .selected_filter_mode {
-	font-weight: bold;
-	border-color: #000;
-}
+  font-weight: bold;
+  border-color: black; }
+
 #search {
-	display: none;
-	position: fixed;
-	top: 10px;
-	right: 10px;
-	width: 40%;
-	height: 50%;
-	padding: 5px;
-}
+  display: none;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 40%;
+  height: 50%;
+  padding: 5px; }
+
 .textarea-container {
-	position: absolute;
-	left: 5px;
-	right: 5px;
-	top: 30px;
-}
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  top: 30px; }
+
 #query {
-	margin-bottom: 5px;
-}
+  margin-bottom: 5px; }
+
 .below-textarea {
-	position: absolute;
-	bottom: 5px;
-}
+  position: absolute;
+  bottom: 5px; }
+
 #search .textarea-container {
-	bottom: 100px;
-}
+  bottom: 100px; }
 #search .below-textarea {
-	min-height: 90px;
-}
+  min-height: 90px; }
+
 #filter .textarea-container {
-	bottom: 90px;
-}
+  bottom: 90px; }
 #filter .below-textarea {
-	height: 80px;
-}
+  height: 80px; }
+
 .handle {
-	background-color: #002050;
-	height: 20px;
-	width: 100%;
-	cursor: move;
-	margin-bottom: 5px;
-}
+  position: relative;
+  background-color: #002050;
+  height: 20px;
+  width: 100%;
+  cursor: move;
+  margin-bottom: 5px; }
+
 .close {
-	position: absolute;
-	right: 5px;
-	height: 20px;
-	width: 20px;
-	text-align: center;
-	color: #ffffff;
-	cursor: pointer;
-}
+  position: absolute;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer; }
+  .close:before, .close:after {
+    position: absolute;
+    left: 9px;
+    top: 2px;
+    content: " ";
+    height: 16px;
+    width: 2px;
+    background-color: white; }
+  .close:before {
+    transform: rotate(45deg); }
+  .close:after {
+    transform: rotate(-45deg); }
+
 #searchresult {
-	margin-top: 5px;
-	width: 100%;
-}
+  margin-top: 5px;
+  width: 100%; }
+
 .box {
-	background-color: #ddd;
-	border: solid 1px #002050;
-}
-.box textarea {
-	width: 100%;
-	height: 100%;
-}
+  background-color: #dddddd;
+  border: solid 1px #002050; }
+  .box textarea {
+    width: 100%;
+    height: 100%; }
+
 #help {
-	display: none;
-	position: fixed;
-	top: 10px;
-	right: 10px;
-	width: 30%;
-	height: 90%;
-	padding: 5px;
-}
+  display: none;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 30%;
+  height: 90%;
+  padding: 5px; }
+
 .content {
-	position: absolute;
-	top: 30px;
-	bottom: 5px;
-	left: 5px;
-	right: 5px;
-	font-size: 80%;
-	overflow: auto;
-	background-color: #ffffff;
-}
-#documentation {
-	position: fixed;
-	right: 0px;
-	bottom: 0px;
-	text-align: right;
-	padding: 5px;
-}
+  position: absolute;
+  top: 30px;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
+  font-size: 80%;
+  overflow: auto;
+  background-color: white; }
+
 #modal-background {
-	position: absolute;
-	overflow-y: scroll;
-	display: none;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0,0,0,0.5);
-}
+  position: absolute;
+  overflow-y: scroll;
+  display: none;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 99; }
+
 #modal-content {
-	position: absolute;
-	width: 90vw;
-	margin: 1vw 5vw;
-	overflow: hidden;
-	background-color: #ddd;
-	border: solid 1px #002050;
-}
-#modal-content .modal-form-element {
-	float: left;
-	padding: 5px;
-}
-#modal-form.import input[type='text'] {
-	width: 30em;
-}
-#modal-form textarea {
-	width: 100%;
-}
-#modal-submit {
-	clear: both;
-	width: auto;
-	padding: 5px;
-	text-align: right;
-}
-#modal-warning {
-	padding: 10px;
-}
-#modal-warning:empty {
-	padding: 0px;
-}
+  position: absolute;
+  width: 90vw;
+  margin: 1vw 5vw;
+  overflow: hidden;
+  background-color: #dddddd;
+  border: solid 1px #002050; }
+  #modal-content .modal-form-element {
+    float: left;
+    padding: 5px; }
+
 #modal-form * {
-	box-sizing: border-box;
-	-moz-box-sizing: border-box;
-}
-#modal-form input[type="text"] {
-	width: 100%;
-}
-.metadata .modal-form-element, .metadata table, .allowed_annotations .modal-form-element, .allowed_annotations table, .makros .modal-form-element, .makros table, .speakers .modal-form-element, .speakers table {
-	width: 100%;
-}
-.metadata td:first-child, .allowed_annotations td:first-child, .makros td:first-child, .speakers td:first-child {
-	vertical-align: top;
-	width: 8em;
-}
-/* .metadata textarea {
-	width: 20em;
-} */
-.speakers textarea {
-	height: 5em;
-}
+  box-sizing: border-box;
+  -moz-box-sizing: border-box; }
+#modal-form input[type="text"], #modal-form textarea {
+  width: 100%; }
+#modal-form.import input[type='text'] {
+  width: 30em; }
+
+#modal-submit {
+  clear: both;
+  width: auto;
+  padding: 5px;
+  text-align: right; }
+
+#modal-warning {
+  display: none;
+  padding: 10px; }
+
+.metadata .modal-form-element, .metadata table, .tagset .modal-form-element, .tagset table, .makros .modal-form-element, .makros table, .speakers .modal-form-element, .speakers table, .annotators .modal-form-element, .annotators table {
+  width: 100%; }
+.metadata th, .tagset th, .makros th, .speakers th, .annotators th {
+  padding-right: 1em; }
+.metadata td, .tagset td, .makros td, .speakers td, .annotators td {
+  vertical-align: top; }
+  .metadata td:first-child, .tagset td:first-child, .makros td:first-child, .speakers td:first-child, .annotators td:first-child {
+    width: 8em; }
+  .metadata td.expand, .tagset td.expand, .makros td.expand, .speakers td.expand, .annotators td.expand {
+    width: 100%; }
+  .metadata td textarea, .tagset td textarea, .makros td textarea, .speakers td textarea, .annotators td textarea {
+    height: 5em; }
+
+.file input {
+  margin-left: 0; }
+
 .hidden_word {
-	color: #888;
-}
+  color: #888888; }
+
 .found_word {
-	color: #d00;
-}
-.found_sentence {
-	color: #f22;
-	font-weight: bold;
-}
-.error_message {
-	color: #d00;
-	font-weight: bold;
-}
+  color: #dd0000; }
+
+.found_sentence, .error_message {
+  color: #dd0000;
+  font-weight: bold; }

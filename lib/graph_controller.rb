@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-# Copyright © 2014 Lennart Bierkandt <post@lennartbierkandt.de>
+# Copyright © 2014-2016 Lennart Bierkandt <post@lennartbierkandt.de>
 #
 # This file is part of GraphAnno.
 #
@@ -41,7 +41,7 @@ class GraphController
 		@show_refs = true
 		@found = nil
 		@filter = {:mode => 'unfilter'}
-		@user = ''
+		@windows = {}
 	end
 
 	def root
@@ -55,7 +55,7 @@ class GraphController
 	end
 
 	def draw_graph
-		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence']]
+		@sentence = @graph.nodes[@sinatra.request.cookies['traw_sentence'].to_i]
 		return generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
 			:sentence_changed => true
@@ -82,22 +82,25 @@ class GraphController
 		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
-		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence]]
+		@sentence = @sinatra.params[:sentence] == '' ? nil : @graph.nodes[@sinatra.params[:sentence].to_i]
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
 			@cmd_error_messages << e.message
 		end
-		return value.to_json if value
+		return value.to_json if value.is_a?(Hash)
 		return sentence_settings_and_graph.merge(
 			:graph_file => @graph_file,
+			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
+			:command => value,
+			:windows => @windows,
 			:messages => @cmd_error_messages
 		).to_json
 	end
 
 	def change_sentence
 		set_cmd_cookies
-		@sentence = @graph.nodes[@sinatra.params[:sentence]]
+		@sentence = @graph.nodes[@sinatra.params[:sentence].to_i]
 		return generate_graph.merge(
 			:sentence_changed => true
 		).to_json
@@ -114,7 +117,7 @@ class GraphController
 	end
 
 	def search
-		@sinatra.response.set_cookie('traw_query', {:value => @sinatra.params[:query]})
+		set_cookie('traw_query', @sinatra.params[:query])
 		@found = {:tg => []}
 		begin
 			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
@@ -143,7 +146,7 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'allowed_annotations', 'speakers'].each do |form_name|
+	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
@@ -197,10 +200,37 @@ class GraphController
 
 	def save_speakers
 		@sinatra.params['ids'].each do |i, id|
+			attributes = @sinatra.params['attributes'][i].parse_parameters[:attributes]
 			if id != ''
-				@graph.nodes[id].attr = @sinatra.params['attributes'][i].parse_parameters[:attributes]
+				@graph.nodes[id].attr = Attributes.new(:host => @graph.nodes[id], :raw => true, :attr => attributes)
 			else
-				@graph.add_speaker_node(:attr => @sinatra.params['attributes'][i].parse_parameters[:attributes])
+				@graph.add_speaker_node(:attr => attributes)
+			end
+		end
+		return true.to_json
+	end
+
+	def save_annotators
+		# validate
+		if @sinatra.params['names'].any?{|i, name| name == ''} or
+			 @sinatra.params['names'].values.length != @sinatra.params['names'].values.uniq.length
+			return false.to_json
+		end
+		# delete
+		@graph.delete_annotators(
+			@graph.annotators.select{|a| !@sinatra.params['ids'].values.map(&:to_i).include?(a.id)}
+		)
+		# create/update
+		@sinatra.params['ids'].each do |i, id|
+			if annotator = @graph.get_annotator(:id => id)
+				annotator.name = @sinatra.params['names'][i]
+				annotator.info = @sinatra.params['infos'][i]
+			else
+				@graph.annotators << Annotator.new(
+					:graph => @graph,
+					:name => @sinatra.params['names'][i],
+					:info => @sinatra.params['infos'][i]
+				)
 			end
 		end
 		return true.to_json
@@ -214,9 +244,17 @@ class GraphController
 		return true.to_json
 	end
 
-	def save_allowed_annotations
+	def save_tagset
 		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
-		@graph.allowed_anno = Tagset.new(tagset_hash)
+		@graph.tagset = Tagset.new(tagset_hash)
+		return true.to_json
+	end
+
+	def save_file
+		@graph.file_settings.clear
+		[:compact, :save_log, :separate_log, :save_windows].each do |property|
+			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
+		end
 		return true.to_json
 	end
 
@@ -237,6 +275,16 @@ class GraphController
 				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
 				:i => i,
 				:layers => @graph.conf.layers
+			}
+		)
+	end
+
+	def new_annotator(i)
+		@sinatra.haml(
+			:annotators_form_segment,
+			:locals => {
+				:annotator => Annotator.new(:graph => @graph, :id => 0),
+				:i => i
 			}
 		)
 	end
@@ -280,8 +328,11 @@ class GraphController
 		end
 		set_sentence_list(:clear => true)
 		@sentence = @graph.nodes[sentence_list.keys.first]
-		@sinatra.response.set_cookie('traw_sentence', { :value => @sentence.id, :path => '/' })
-		return {:sentence_list => @sentence_list.values, :graph_file => @sentence}.to_json
+		set_cookie('traw_sentence', @sentence.id)
+		return {
+			:sentence_list => @sentence_list.values,
+			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : ''
+		}.to_json
 	end
 
 	def export_subcorpus(filename)
@@ -348,6 +399,18 @@ class GraphController
 		}.to_json
 	end
 
+	def get_log_table
+		@sinatra.haml(
+			:log_table,
+			:locals => {:log => @log}
+		)
+	end
+
+	def save_window_positions
+		@windows.merge!(@sinatra.params[:data])
+		true
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
@@ -359,14 +422,14 @@ class GraphController
 		@graph.clear
 		@found = nil
 		@sentence = nil
-		@log = Log.new(@graph, @user)
+		@log = Log.new(@graph)
 	end
 
 	def sentence_settings_and_graph
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sentence ? @sentence.id : nil, :path => '/'})
+		set_cookie('traw_sentence', @sentence ? @sentence.id : nil)
 		return generate_graph.merge(
 			:sentence_list => set_sentence_list.values,
-			:sentence_changed => (@sentence && @sinatra.request.cookies['traw_sentence'] == @sentence.id) ? false : true
+			:sentence_changed => (@sentence && @sinatra.request.cookies['traw_sentence'].to_i == @sentence.id) ? false : true
 		)
 	end
 
@@ -433,9 +496,13 @@ class GraphController
 		return label
 	end
 
+	def set_cookie(key, value)
+		@sinatra.response.set_cookie(key, {:value => value, :path => '/', :expires => Time.new(9999, 12, 31)})
+	end
+
 	def check_cookies
 		['traw_sentence', 'traw_layer', 'traw_cmd', 'traw_query'].each do |cookie_name|
-			@sinatra.response.set_cookie(cookie_name, {:value => ''}) unless @sinatra.request.cookies[cookie_name]
+			set_cookie(cookie_name, '') unless @sinatra.request.cookies[cookie_name]
 		end
 	end
 
@@ -581,20 +648,19 @@ class GraphController
 			node = element_by_identifier(parameters[:tokens][0])
 			@graph.build_tokens(parameters[:words][1..-1], :last_token => node, :log => log_step)
 
-		when 'undo'
+		when 'undo', 'z'
 			@log.undo
 			reset_sentence
 
-		when 'redo'
+		when 'redo', 'y'
 			@log.redo
 			reset_sentence
 
 		when 's' # change sentence
 			@sentence = @graph.sentence_nodes.select{|n| n.name == parameters[:words][0]}[0]
 
-		when 'user'
-			@user = parameters[:string]
-			@log.user = @user
+		when 'user', 'annotator'
+			@log.user = @graph.set_annotator(:name => parameters[:string])
 
 		when 'del' # delete sentence
 			sentences = if parameters[:words] != []
@@ -621,29 +687,44 @@ class GraphController
 				sentence.delete(log_step)
 			end
 
-		when 'load', 'laden' # clear workspace and load corpus file
+		when 'load' # clear workspace and load corpus file
 			clear_workspace
-			@graph.read_json_file(file_path(parameters[:words][0]))
+			data = @graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
+			if @graph.file_settings[:separate_log]
+				begin
+					@log = Log.new_from_file(@graph, @graph_file.sub(/.json$/, '.log.json'))
+				rescue
+					@log = Log.new(@graph, nil, data['log'])
+				end
+			else
+				@log = Log.new(@graph, nil, data['log'])
+			end
+			@windows.merge!(data['windows'].to_h) if @graph.file_settings[:save_windows]
 			sentence_nodes = @graph.sentence_nodes
 			@sentence = sentence_nodes.select{|n| n.name == @sentence.name}[0] if @sentence
 			@sentence = sentence_nodes.first unless @sentence
 
-		when 'add' # load corpus file and add it to the workspace
-			@graph_file.replace('')
+		when 'append', 'add' # load corpus file and append it to the workspace
 			addgraph = AnnoGraph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
 			@found = nil
 
-		when 'save', 'speichern' # save workspace to corpus file
+		when 'save' # save workspace to corpus file
 			raise 'Please specify a file name!' if @graph_file == '' and !parameters[:words][0]
 			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
 			dir = @graph_file.rpartition('/').first
 			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
-			@graph.write_json_file(@graph_file)
+			additional = {}
+			additional.merge!(:log => @log) if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
+			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
+			@graph.write_json_file(@graph_file, @graph.file_settings[:compact], additional)
+			if @graph.file_settings[:separate_log]
+				@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'), @graph.file_settings[:compact])
+			end
 
-		when 'clear', 'leeren' # clear workspace
+		when 'clear' # clear workspace
 			clear_workspace
 
 		when 'image' # export sentence as graphics file
@@ -653,22 +734,24 @@ class GraphController
 			Dir.mkdir('images') unless File.exist?('images')
 			generate_graph(format.to_sym, 'images/'+name+'.'+format)
 
-		when 'export' # export corpus in other format
+		when 'export' # export corpus in other format or export graph configurations
 			Dir.mkdir('exports') unless File.exist?('exports')
 			format = parameters[:words][0]
 			name = parameters[:words][1]
 			name2 = parameters[:words][2]
 			case format
-			when 'config'
-				@graph.export_config(name)
 			when 'paula'
 				@graph.export_paula(name, name2)
 			when 'salt'
 				@graph.export_saltxml(name)
 			when 'sql'
 				@graph.export_sql(name)
+			when 'config'
+				@graph.export_config(name)
 			when 'tagset'
 				@graph.export_tagset(name)
+			when 'annotators'
+				@graph.export_annotators(name)
 			else
 				raise "Unknown export format: #{format}"
 			end
@@ -681,6 +764,8 @@ class GraphController
 				@graph.import_config(name)
 			when 'tagset'
 				@graph.import_tagset(name)
+			when 'annotators'
+				@graph.import_annotators(name)
 			when 'toolbox'
 				return {:modal => 'import', :type => 'toolbox'}
 			when 'text'
@@ -689,19 +774,18 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros', 'speakers'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file'
 			return {:modal => command}
 
 		when ''
 		else
 			raise "Unknown command \"#{command}\""
 		end
-		return nil
+		return command
 	end
 
 	def generate_graph(format = :svg, path = 'public/graph.svg')
 		puts "Generating graph for sentence \"#{@sentence.name}\"..." if @sentence
-
 		satzinfo = {:textline => '', :meta => ''}
 
 		@tokens     = @sentence ? @sentence.sentence_tokens : []
@@ -720,42 +804,42 @@ class GraphController
 
 		viz_graph = GraphViz.new(
 			:G,
-			:type => 'digraph',
-			:rankdir => 'TB',
-			:use => 'dot',
-			:ranksep => '.3'
+			:type => :digraph,
+			:rankdir => :TB,
+			:use => :dot,
+			:ranksep => 0.3
 		)
-		token_graph = viz_graph.subgraph(:rank => 'same')
+		token_graph = viz_graph.subgraph(:rank => :same)
 		layer_graphs = {}
 		@graph.conf.combinations.each do |c|
-			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
 		end
 		@graph.conf.layers.each do |l|
-			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => 'same') : viz_graph.subgraph
+			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
 		end
 		# speaker subgraphs
 		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map{|t| t.speaker}.include?(sp)}) != []
-			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => 'same')]}]
+			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => :same)]}]
 			# induce speaker labels and layering of speaker graphs:
 			gv_speaker_nodes = []
 			speaker_graphs.each do |speaker_node, speaker_graph|
 				gv_speaker_nodes << speaker_graph.add_nodes(
-					's' + speaker_node.id,
-					{:shape => 'plaintext', :label => speaker_node['name'], :fontname => @graph.conf.font}
+					's' + speaker_node.id.to_s,
+					{:shape => :plaintext, :label => speaker_node['name'], :fontname => @graph.conf.font}
 				)
-				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => 'invis'}) if gv_speaker_nodes.length > 1
+				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => :invis}) if gv_speaker_nodes.length > 1
 			end
-			timeline_graph = viz_graph.subgraph(:rank => 'same')
-			gv_anchor = timeline_graph.add_nodes('anchor', {:style => 'invis'})
-			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => 'invis'})
+			timeline_graph = viz_graph.subgraph(:rank => :same)
+			gv_anchor = timeline_graph.add_nodes('anchor', {:style => :invis})
+			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => :invis})
 		end
 
 		@tokens.each_with_index do |token, i|
 			options = {
 				:fontname => @graph.conf.font,
 				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
-				:shape => 'box',
-				:style => 'bold',
+				:shape => :box,
+				:style => :bold,
 				:color => @graph.conf.token_color,
 				:fontcolor => @graph.conf.token_color
 			}
@@ -770,22 +854,22 @@ class GraphController
 				satzinfo[:textline] += token.token + ' '
 			end
 			unless token.speaker
-				token_graph.add_nodes(token.id, options)
+				token_graph.add_nodes(token.id.to_s, options)
 			else
 				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token.id, options)
-				gv_time  = timeline_graph.add_nodes('t' + token.id, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
+				gv_token = speaker_graphs[token.speaker].add_nodes(token.id.to_s, options)
+				gv_time  = timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
 				# add ordering edge from speaker to speaker's first token
-				viz_graph.add_edges('s' + token.speaker.id, gv_token, {:style => 'invis'}) if i == 0
+				viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
 				# multiple lines between token and point on timeline in order to force correct order:
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
-				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => 'none', :weight => 9999})
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => 'invis'})
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
+				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => :none, :weight => 9999})
+				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
 				# order points on timeline:
 				if i > 0
-					viz_graph.add_edges('t' + @tokens[i-1].id, gv_time, {:arrowhead => 'none'})
+					viz_graph.add_edges('t' + @tokens[i-1].id.to_s, gv_time, {:arrowhead => :none})
 				else
-					viz_graph.add_edges(gv_anchor, gv_time, {:style => 'invis'})
+					viz_graph.add_edges(gv_anchor, gv_time, {:style => :invis})
 				end
 			end
 		end
@@ -794,23 +878,23 @@ class GraphController
 			options = {
 				:fontname => @graph.conf.font,
 				:color => @graph.conf.default_color,
-				:shape => 'box',
+				:shape => :box,
 				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
 			}
-			add_graphs = []
+			actual_layer_graph = nil
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 				options[:color] = @graph.conf.filtered_color
 			else
 				@graph.conf.layers.each do |l|
 					if node[l.attr] == 't'
 						options[:color] = l.color
-						add_graphs << layer_graphs[l.attr]
+						actual_layer_graph = layer_graphs[l.attr]
 					end
 				end
 				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
 					if c.attr.all?{|a| node[a] == 't'}
 						options[:color] = c.color
-						add_graphs << layer_graphs[c.attr]
+						actual_layer_graph = layer_graphs[c.attr]
 					end
 				end
 			end
@@ -819,8 +903,8 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_nodes(node.id, options)
-			add_graphs.each{|g| g.add_nodes(node.id)}
+			viz_graph.add_nodes(node.id.to_s, options)
+			actual_layer_graph.add_nodes(node.id.to_s) if actual_layer_graph
 		end
 
 		@edges.each_with_index do |edge, i|
@@ -837,14 +921,23 @@ class GraphController
 				@graph.conf.layers.each do |l|
 					if edge[l.attr] == 't'
 						options[:color] = l.color
-						options[:weight]= l.weight
-						options[:constraint] = false if options[:weight] == 0
+						if l.weight == 0
+							options[:constraint] = false
+						else
+							options[:weight] = l.weight
+							options[:constraint] = true
+						end
 					end
 				end
 				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
 					if c.attr.all?{|a| edge[a] == 't'}
 						options[:color] = c.color
-						options[:weight] = c.weight
+						if c.weight == 0
+							options[:constraint] = false
+						else
+							options[:weight] = c.weight
+							options[:constraint] = true
+						end
 					end
 				end
 			end
@@ -853,11 +946,11 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_edges(edge.start.id, edge.end.id, options)
+			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, options)
 		end
 
 		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start.id, edge.end.id, :style => 'invis', :weight => 100)
+			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, :style => :invis, :weight => 100)
 		end
 
 		viz_graph.output(format => '"'+path+'"')
@@ -878,20 +971,20 @@ class GraphController
 	end
 
 	def set_cmd_cookies
-		@sinatra.response.set_cookie('traw_layer', {:value => @sinatra.params[:layer]}) if @sinatra.params[:layer]
-		@sinatra.response.set_cookie('traw_cmd', {:value => @sinatra.params[:txtcmd]}) if @sinatra.params[:txtcmd]
-		@sinatra.response.set_cookie('traw_sentence', {:value => @sinatra.params[:sentence]}) if @sinatra.params[:sentence]
+		set_cookie('traw_layer', @sinatra.params[:layer]) if @sinatra.params[:layer]
+		set_cookie('traw_cmd', @sinatra.params[:txtcmd]) if @sinatra.params[:txtcmd]
+		set_cookie('traw_sentence', @sinatra.params[:sentence]) if @sinatra.params[:sentence]
 	end
 
 	def set_filter_cookies
-		@sinatra.response.set_cookie('traw_filter', { :value => @sinatra.params[:filter] })
-		@sinatra.response.set_cookie('traw_filter_mode', { :value => @sinatra.params[:mode] })
+		set_cookie('traw_filter', @sinatra.params[:filter])
+		set_cookie('traw_filter_mode', @sinatra.params[:mode])
 	end
 
 	def set_new_layer(words, properties)
 		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
 			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
-			@sinatra.response.set_cookie('traw_layer', { :value => layer })
+			set_cookie('traw_layer', layer)
 			properties.replace(@graph.conf.layer_attributes[layer])
 			return layer
 		end
@@ -924,32 +1017,32 @@ class GraphController
 		data['combinations'] = data['combinations'] || {}
 		data['general'].each do |attr, value|
 			if attr.match(/_color$/)
-				result["general[#{attr}]"] = '' unless value.is_hex_color?
+				result["general[#{attr}]"] = true unless value.is_hex_color?
 			elsif attr.match(/weight$/)
-				result["general[#{attr}]"] = '' unless value.is_number?
+				result["general[#{attr}]"] = true unless value.is_number?
 			end
 		end
 		data['layers'].each do |i, layer|
 			layer.each do |k, v|
 				if k == 'color'
-					result["layers[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+					result["layers[#{i}[#{k}]]"] = true unless v.is_hex_color?
 				elsif k == 'weight'
-					result["layers[#{i}[#{k}]]"] = '' unless v.is_number?
+					result["layers[#{i}[#{k}]]"] = true unless v.is_number?
 				elsif ['name', 'attr', 'shortcut'].include?(k)
-					result["layers[#{i}[#{k}]]"] = '' unless v != ''
+					result["layers[#{i}[#{k}]]"] = true unless v != ''
 				end
 			end
 			['name', 'attr', 'shortcut'].each do |key|
 				data['layers'].each do |i2, l2|
 					if !layer.equal?(l2) and layer[key] == l2[key]
-						result["layers[#{i}[#{key}]]"] = ''
-						result["layers[#{i2}[#{key}]]"] = ''
+						result["layers[#{i}[#{key}]]"] = true
+						result["layers[#{i2}[#{key}]]"] = true
 					end
 				end
 				data['combinations'].each do |i2, c|
 					if layer[key] == c[key]
-						result["layers[#{i}[#{key}]]"] = ''
-						result["combinations[#{i2}[#{key}]]"] = ''
+						result["layers[#{i}[#{key}]]"] = true
+						result["combinations[#{i2}[#{key}]]"] = true
 					end
 				end
 			end
@@ -957,21 +1050,21 @@ class GraphController
 		data['combinations'].each do |i, combination|
 			combination.each do |k, v|
 				if k == 'color'
-					result["combinations[#{i}[#{k}]]"] = '' unless v.is_hex_color?
+					result["combinations[#{i}[#{k}]]"] = true unless v.is_hex_color?
 				elsif k == 'weight'
-					result["combinations[#{i}[#{k}]]"] = '' unless v.is_number?
+					result["combinations[#{i}[#{k}]]"] = true unless v.is_number?
 				elsif ['name', 'shortcut'].include?(k)
-					result["combinations[#{i}[#{k}]]"] = '' unless v != ''
+					result["combinations[#{i}[#{k}]]"] = true unless v != ''
 				end
 				if !combination['attr'] or combination['attr'].length == 1
-					result["combinations[#{i}[attr]]"] = ''
+					result["combinations[#{i}[attr]]"] = true
 				end
 			end
 			['name', 'attr', 'shortcut'].each do |key|
 				data['combinations'].each do |i2, c2|
 					if !combination.equal?(c2) and combination[key] == c2[key]
-						result["combinations[#{i}[#{key}]]"] = ''
-						result["combinations[#{i2}[#{key}]]"] = ''
+						result["combinations[#{i}[#{key}]]"] = true
+						result["combinations[#{i2}[#{key}]]"] = true
 					end
 				end
 			end

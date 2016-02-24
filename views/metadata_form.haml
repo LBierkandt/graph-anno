@@ -1,4 +1,4 @@
-%form#modal-form.metadata{ :name => 'config', :onsubmit => 'sendMetadata(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.metadata{ :name => 'config', :onsubmit => 'sendModal("metadata"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message
   %div.modal-form-element
     %table
@@ -25,7 +25,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-metadata Add metadata annotation
+            %button{:onclick => 'newMetadata(); return false;'}
+              Add metadata annotation
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

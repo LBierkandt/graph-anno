@@ -2,7 +2,7 @@
   - step = log.steps[i]
   %tr{class: step.done? ? '' : 'undone', :index => i, :onclick => "goToStep(#{i})" }
     %td.command= step.command
-    %td.user= step.user
+    %td.user= step.user ? step.user.name : ''
     %td.time= step.time.strftime('%y-%m-%d %H:%M')
 - else
   %tr{:index => -1, :onclick => "goToStep(-1)" }

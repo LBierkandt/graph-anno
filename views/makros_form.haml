@@ -1,4 +1,4 @@
-%form#modal-form.makros{ :name => 'config', :onsubmit => 'sendMakros(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.makros{ :name => 'config', :onsubmit => 'sendModal("makros"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message
   %div.modal-form-element
     %table
@@ -24,7 +24,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-makro Add annotation makro
+            %button{:onclick => 'newMakro(); return false;'}
+              Add annotation makro
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

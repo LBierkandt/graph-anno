@@ -1,0 +1,14 @@
+%tr{:no => i}
+  %td
+    = annotator.id if annotator.id > 0
+    %input{:name => "ids[#{i}]", :type => "hidden", :value => annotator.id}
+  %td
+    %input{:name => "names[#{i}]", :value => annotator.name}
+  %td.expand
+    %textarea{:name => "infos[#{i}]"}
+      = annotator.info
+  %td
+    .button{:onclick => 'removeAnnotator(this);'}
+      delete
+      %br
+      (incl.&nbsp;annotations)

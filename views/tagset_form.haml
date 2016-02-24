@@ -1,21 +1,21 @@
-%form#modal-form.allowed_annotations{ :name => 'config', :onsubmit => 'sendAllowedAnnotations(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.tagset{ :name => 'config', :onsubmit => 'sendModal("tagset"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message
   %div.modal-form-element
     %table
       %tbody
         %tr
-          %th{ :colspan => 2 } Allowed annotations
+          %th{ :colspan => 2 } Tagset
         %tr
           %th Key
           %th Value
-        - if graph.allowed_anno.empty?
+        - if graph.tagset.empty?
           %tr{:no => '0'}
             %td
               %input{:name => "keys[0]", :type => 'text', :value => ''}
             %td
               %textarea{:name => "values[0]"}
         - else
-          - graph.allowed_anno.each_with_index do |rule, i|
+          - graph.tagset.each_with_index do |rule, i|
             %tr{:no => i}
               %td
                 %input{:name => "keys[#{i}]", :type => 'text', :value => rule.key}
@@ -25,7 +25,8 @@
       %tbody
         %tr
           %td{:colspan => 2}
-            %button#new-allowed-annotations Add new key-values pair
+            %button{:onclick => 'newTagsetRule(); return false;'}
+              Add new key-values pair
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

@@ -1,4 +1,4 @@
-%form#modal-form.speakers{ :name => 'config', :onsubmit => 'sendSpeakers(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.speakers{ :name => 'config', :onsubmit => 'sendModal("speakers"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message
   %div.modal-form-element
     %table
@@ -22,12 +22,13 @@
                 %input{:name => "ids[#{i}]", :type => "hidden", :value => speaker.id}
               %td
                 %textarea{:name => "attributes[#{i}]"}
-                  - speaker.attr.each do |k, v|
+                  - speaker.attr.output.each do |k, v|
                     = "#{k}:#{v}&#10;"
       //%tbody
       //  %tr
       //    %td{:colspan => 2}
-      //      %button#new-speaker Add speaker
+      //      %button{:onclick => 'newSpeaker(); return false;'}
+      //        Add speaker
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

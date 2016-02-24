@@ -90,8 +90,6 @@
 
 \section{Der Annotationsgraph}
 
-\subsection{Graphformat}
-
 Ein Graph in GraphAnno besteht aus einer Menge von Knoten und gerichteten Kanten. Knoten und Kanten haben Attribute in der Form von Schlüssel-Wert-Paaren, die sowohl der linguistischen Annotation als auch zum Teil der Strukturierung und Darstellung des Graphen in GraphAnno dienen. Diese Attrbiute sind im Datenmodell als Attribut \texttt{attr} zusammengefaßt und sind die einzigen Attribute, die direkt bearbeitet werden können. Diese Attribute werden in diesem Abschnitt als \textit{Annotationsattribute} bezeichnet. Knoten und Kanten tragen weitere Attribute, die nicht direkt bearbeitet werden können. Dazu zählt u.a. das \texttt{type}-Attribut, das die unterschiedliche Typen von Knoten und Kanten (Annotationsknoten, Token, Satzknoten; Annotationskanten, Ordnungskanten, Abschnittskanten) unterscheidet.
 
 Ein GraphAnno-Graph ist in Sätze eingeteilt – Einheiten die der Strukturierung und Darstellung dienen, aber natürlich nicht unbedingt (wie auch immer definierten) Sätzen entsprechen müssen.
@@ -108,9 +106,9 @@ GraphAnno bietet auch die Möglichkeit, Knoten und Kanten unterschiedlichen Eben
 
 
 
-\subsection{Konfiguration}\label{konfiguration}
+\section{Konfiguration}\label{konfiguration}
 
-\subsubsection{Darstellung und Ebenen}\label{ebenenkonfiguration}
+\subsection{Darstellung und Ebenen}\label{ebenenkonfiguration}
 
 Das Einstellungsfenster für Darstellung und Ebenen wird mit dem Kommandozeilenbefehl \texttt{config} geöffnet.
 
@@ -122,7 +120,7 @@ Unter \textit{layer combinations} können für Elemente, die mehreren Ebenen zug
 
 Unter \textit{search makros} können graphspezifische Suchmakros, wie unter \ref{def} beschrieben, vordefiniert werden. Diese stehen dann für Suche im Graph zur Verfügung. Die Definitionen (\texttt{def ...}) werden jede in eine eigene Zeile im entsprechenden Fenster eingegeben.
 
-\subsubsection{Erlaubte Annotationen / Tagset}\label{erlaubteannotationen}
+\subsection{Erlaubte Annotationen / Tagset}\label{erlaubteannotationen}
 
 In dem mit dem Befehl \texttt{tagset} zu öffnenden Fenster können für einen Graphen erlaubte Annotationen, also das graphspezifische \textit{Tagset}, spezifiziert werden. Nur die hier spezifizierten Schlüssel-Wert-Paare sind für die Annotation von Knoten und Kanten zulässig; unerlaubte Eingaben werden mit einer Fehlermeldung quittiert. Bestehende Annotationen werden durch eine nachträgliche Änderung der erlaubten Schlüssel und Werte nicht beeinflußt.
 
@@ -130,19 +128,48 @@ Sind hier keine Schlüssel und Werte angegeben, so sind alle Annotationen zuläs
 
 Für die Notation der Werte gelten die gleichen Regeln wie bei der Suchsprache (Abschnitt \ref{node}, S.\,\pageref{zeichenketten}): Einfache Werte werden ohne weitere Markierung eingetragen, enthalten Werte Sonderzeichen (siehe S.\,\pageref{zeichenketten}), so müssen sie in Anführungszeichen (\texttt{\quo...\quo}) angegeben werden; außderdem können – ebenfalls wie bei der Suchsprache (S.\,\pageref{zeichenketten}) – reguläre Ausdrücke verwendet werden, die in Schrägstrichen angegeben werden (\texttt{/.../}). Die regulären Ausdrücke sind dabei verankert, d.h. ein Annotationswert muß dem gesamten regulären Ausdruck entsprechen, um erlaubt zu sein.
 
-\subsubsection{Annotationsmakros}\label{annotationsmakros}
+\subsection{Annotationsmakros}\label{annotationsmakros}
 
 Für einen Graphen können Annotationsmakros gespeichert werden, die die Annotation mit häufig gebrauchten Attributkombinationen erleichtern. Mit dem Befehl \texttt{makros} wird ein Fenster geöffnet, in dem diese Makros definiert werden können. Im linken Feld wird jeweils die gewünschte Abkürzung angegeben (diese muß aus alphanumerischen Zeichen und Unterstrich bestehen und sollte weder die Form einer Elementreferenz haben noch gleichlautend mit einem Ebenenkürzel sein, vgl. \ref{ebenenkonfiguration}), im rechten Feld die gewünschten Annotationen. Hierbei ist die gleiche Syntax wie für die Annotationsbefehle einzuhalten, also eine Menge von Attributen in der Form \texttt{schlüssel:wert}, mit Leerzeichen getrennt (zu Details siehe \ref{befehl-n}).
 
-\subsubsection{Metadaten}
+\subsection{Metadaten}
 
 Neben der Konfiguration von Ebenen, Darstellung, Makros und erlaubten Annotationen können für einen Graph Metadaten in Form von Schlüssel-Wert-Paaren gespeichert werden. Das Fenster dafür wird mit dem Befehl \texttt{metadata} geöffnet; hier kann eine beliebige Anzahl von beliebigen Schlüsseln mit jeweils einem Text als Wert eingetragen werden.
+
+\subsection{Annotatoren}\label{annotatoren}
+
+Für den Fall, daß mehrere Annotatoren an einem Korpus arbeiten, gibt es in GraphAnno die Möglichkeit, annotatorenspezifische Annotationen zu erstellen.
+So können die selben Elemente von verschiedenen Annotatoren annotiert werden, so daß in einem weiteren Schritt z.B. die Übereinstimmung zwischen Annotatoren ermittelt werden kann.
+
+Um diese Funktion zu nutzen müssen zunächst Annotatoren angelegt werden; mit dem Befehl \texttt{annotators} wird das entsprechende Fenster geöffnet.
+In diesem Fenster können nun Annotatoren mit eindeutigem Namen (möglich ein kurzer Name ohne Leerzeichen, da er auch zur Anmeldung verwendet wird) und weiteren Informationen (als Freitext) erstellt werden.
+Löscht man später Annotatoren, so werden alle ihre Annotationen ebenfalls gelöscht.
+
+Annotiert man, ohne sich vorher als ein bestimmter Annotator angemeldet zu haben, werden die erstellten Annotationen als allgemeine Annotationen gespeichert (wie dies auch der Fall ist, wenn ohne Mehr-Annotatoren-Funktion gearbeitet wird).
+Um nun als ein bestimmter Annotator zu annotieren, meldet man sich zunächst mit dem Befehl \texttt{annotator} (oder dem synonymen Befehl \texttt{user}), gefolgt vom eindeutigen Namen des Annotators, an.
+Der Name des aktuellen Annotators erscheint nun im entsprechenden Feld neben der Eingabeleiste und der Annotator sieht nur die von ihm selbst vorgenommenen Annotationen; die Annotationen anderer Annotatoren oder allgemeine Annotationen bleiben verborgen.
+Auch für die Suche werden nur die eigenen Annotationen ausgewertet.
+Um den aktuellen Annotator abzumelden und wieder an den allgemeinen Annotationen zu arbeiten wird der \texttt{annotator}-Befehl ohne Argument eingegeben – nun sind wieder nur die allgemeinen Annotationen zu sehen.
+
+\subsection{Dateieinstellungen}
+
+Mit dem Befehl \texttt{file} wird das Fenster mit den Einstellungen für die Datei, in der der Arbeitsbereich gespeichert wird, aufgerufen:
+
+\begin{itemize}
+	\item	\textit{compact file format}: Soll die Datei in kompakter JSON-Formatierung gespeichert werden?
+			Dies führt zu kleineren Dateigrößen, jedoch ist die Datei für eventuelle Inspektion/Änderung per Texteditor weniger gut lesbar.
+	\item	\textit{save editing history}: Soll das Änderungsprotokoll (vgl. \ref{befehl-undo}) gespeichert werden, so daß es über Sitzungen hinweg verfügbar ist?
+			%Das Änderungsprotokoll kann in der Graphdatei selber, oder in einer eigenen Datei (mit einem Namen der Form \texttt{<Korpusname>.log.json}) gespeichert werden.
+			(Achtung, diese Option kann zu sehr großen Dateien und entsprechend langen Speicher-/Ladezeiten führen.)
+	\item	\textit{save window positions}: Sollen die Positionen der Fenster (Filter, Suche etc.) in der Graphdatei (also projektspezifisch) gespeichert werden?
+			(Andernfalls werden die Positionen nur im Browser gespeichert.)
+\end{itemize}
 
 
 
 \section{Tastaturbefehle}
 
-Die meisten Navigation und Ansicht betreffende Funktionen von GraphAnno werden direkt über Tastenbefehle angesprochen. Nachfolgend eine Tabelle der verfügbaren Befehle:
+Die meisten Navigation und Ansicht betreffenden Funktionen von GraphAnno werden direkt über Tastenbefehle angesprochen. Nachfolgend eine Tabelle der verfügbaren Befehle:
 
 \begin{center}
 	\begin{tabular*}{\textwidth}{ll}
@@ -190,9 +217,9 @@ Vor dem Laden werden Daten aus dem Arbeitsbereich von GraphAnno gelöscht. Ände
 Welche Datei geladen wurde, wird neben der Eingabeleiste angezeigt.
 
 
-\subsubsection{Datei laden: \texttt{add}}
+\subsubsection{Datei laden und anhängen: \texttt{append}}
 
-Mit dem Befehl \texttt{add} kann wie mit \texttt{load} eine Datei in den Arbeitsbereich geladen werden (die Angabe der Datei erfolgt wie dort beschrieben). Der Unterschied ist, daß der Arbeitsbereich zuvor nicht geleert wird. Die neu geladene Datei wird dem Arbeitsbereich hinzugefügt und die neuen Sätze hinter den bestehenden angefügt. Nach dem Hinzufügen wird neben der Eingabeleiste keine Datei mehr als geladen angezeigt und die Dateien können nicht mehr einzeln gespeichert werden.
+Mit dem Befehl \texttt{append} wird der Inhalt einer Datei (die Angabe der Datei erfolgt wie bei \texttt{load} beschrieben) an das im Arbeitsbereich befindliche Korpus angefügt.
 
 
 \subsubsection{Datei speichern: \texttt{save}}
@@ -472,11 +499,11 @@ befehl_ta       =   "ta " tokenreferenz " " wörter
 \end{framed}
 
 
-\subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo}}\label{befehl-undo}
+\subsubsection{Rückgängig/Wiederherstellen: \texttt{undo} und \texttt{redo} (oder \texttt{z} und \texttt{y})}\label{befehl-undo}
 
-Mit dem Befehl \texttt{undo} können zuvor ausgeführte Annotationsbefehle rückgängig gemacht werden.
-Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{add} oder \texttt{clear}.
-Ein rückgängig gemachter Befehl kann mit \texttt{redo} erneut ausgeführt werden.
+Mit dem Befehl \texttt{undo} (oder dem synonymen Befehl \texttt{z}) können zuvor ausgeführte Annotationsbefehle rückgängig gemacht werden.
+Zu diesen Befehlen zählen diejenigen Befehle, die Knoten oder Kanten erstellen oder löschen sowie auch das Erstellen und Löschen von Sätzen, nicht jedoch arbeitsbereichsbezogene Befehle wie \texttt{append} oder \texttt{clear}.
+Ein rückgängig gemachter Befehl kann mit \texttt{redo} (oder dem synonymen Befehl \texttt{y}) erneut ausgeführt werden.
 Rückgängigmachen und Wiederherstellen können auch mehrfach erfolgen; wird nach einem \texttt{undo}-Befehl wieder ein Annotationsbefehl ausgeführt, können die zuvor rückgängig gemachten Befehle nicht wiederhergestellt werden (lineare Änderungshistorie).
 
 Die Änderungshistorie ist auch in einem Fenster zu sehen, das mit F8 ein- und ausgeblendet wird.
@@ -496,7 +523,11 @@ befehl_l    =   "l " ebenenschalter
 \end{framed}
 
 
+\subsubsection{Annotator anmelden: \texttt{annotator} (oder \texttt{user})}
 
+Mit dem Befehl \texttt{annotator} (oder dem synonymen Befehl \texttt{user}), gefolgt von dem eindeutigen Namen des Annotators (angelegt im entsprechenden Fenster, siehe \ref{annotatoren}) wird – bei Nutzung der Mehr-Annotatoren-Funktion – der entsprechende Annotator angemeldet.
+Der angemeldete Annotator wird dann im entsprechenden Feld neben der Eingabeleiste angezeigt und nur noch die Annotationen des angemeldeten Annotators werden angezeigt und durchsucht.
+Um den aktuellen Annotator abzumelden und wieder an den allgemeinen Annotationen zu arbeiten wird der \texttt{annotator}-Befehl ohne Argument eingegeben.
 
 
 
@@ -526,9 +557,9 @@ Der Schlüssel eines Schlüssel-Wert-Paares kann entweder als einfache Zeichenke
 
 \phantomsection\label{zeichenketten}Die Werte der Schlüssel-Wert-Paare sind Zeichenketten, die auf dreierlei Art und Weise angegeben werden können. Die erste Variante sind einfache umarkierte Zeichenketten, die alle Zeichen außer den in der Abfragesprache verwendeten Steuerzeichen (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}) enthalten dürfen. Diese Zeichenketten werden bei der Suche ohne Beachtung von Groß- und Kleinschreibung verglichen.
 Die zweite Variante sind Zeichenketten in doppelten Anführungsstrichen (\texttt{{\quo}xyz\quo}). Diese dürfen beliebige Zeichen enthalten (doppelte Anführungsstriche müssen mit einem Backslash maskiert werden: \texttt{\textbackslash\quo}) und werden unter Beachtung von Groß- und Kleinschreibung verglichen.
-Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/} und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit \texttt{//} gefunden werden.
+Die dritte Variante sind reguläre Ausdrücke. Diese werden in Schrägstrichen angegeben (\texttt{/x.z/}) und gehorchen den Regeln für reguläre Ausdrücke in Ruby (siehe \texttt{http://www.ruby-doc.org/""core/""Regexp.html}). Die regulären Ausdrücke sind nicht verankert; um den Ausdruck am Anfang bzw. Ende einer Zeichenkette zu verankern müssen also \texttt{\^} bzw. \texttt{\$} verwendet werden; eine beliebige Zeichenkette kann mit einem leeren regulären Ausdruck (\texttt{//}) gefunden werden.
 
-Wie eine Attributbeschreibung kann das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
+Wie ein Schlüssel-Wert-Paar kann auch das Schlüsselwort \texttt{token} verwendet werden, welches prüft, ob es sich beim Knoten um ein Token handelt.
 
 Des weiteren kann die Attributbeschreibung Kriterien für ein- und ausgehende Kanten enthalten. Diese bestehen aus dem Schlüsselwort \texttt{in} bzw. \texttt{out}, einer optionalen Attributbeschreibung in runden Klammern und einem optionalen Quantor. Der Operator \texttt{in} bzw. \texttt{out} findet alle ein- bzw. ausgehenden Kanten mit den angegebenen Attributen, der Quantor gibt an, wieviele Kanten der spezifizierten Art vorhanden sein dürfen und ist (syntaktisch) wie bei regulären Ausdrücken definiert: \texttt{\{m,n\}} für mindestens m-mal, höchstens n-mal; bei Auslassung der ersten Zahl wird 0 angenommen, bei Auslassung der zweiten unendlich. \texttt{\{n\}} steht für genau n mal. Des weiteren gibt es die Abkürzungen \texttt{?} für \texttt{\{0,1\}}, \texttt{*} für \texttt{\{0,\}} und \texttt{+} für \texttt{\{1,\}}.
 Anders als von regulären Ausdrücken gewohnt (und anders als beim Auftreten von Quantoren in anderen Kontexten der GraphAnno-Abfragesprache), wird das Fehlen eines Quantors hier als \texttt{\{1,\}} interpretiert.
@@ -542,7 +573,7 @@ Für die Kanten wiederum können – zusätzlich zu den einfachen Attributen –
 \begin{framed}
 \begin{lstlisting}
 node-klausel    =   "node" id? " " knotenattribute
-id              =   "@" (buchstabe | "_") alnum*
+id              =   "@" (buchstabe | "_") alphanumerisches_zeichen*
 knotenattribute =   knotenattribute " & " knotenattribute
                     knotenattribute " | " knotenattribute
                     "!" knotenattribute
@@ -580,7 +611,7 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 	{\tt node cat:VP | token \& pos:verb}
 	\item Suche alle Knoten der Kategorie S, die mindestens zwei ausgehende AUX-Kanten haben:\\
 	{\tt node cat:S \& out(cat:AUX)\{2,\}}
-	\item Suche alle Knoten der Kategorie S, die mindestens einen Knoten mit dem pos-Wert pro dominieren:\\
+	\item Suche alle Knoten der Kategorie S, die mindestens einen Knoten mit dem pos-Wert pro direkt dominieren:\\
 	{\tt node cat:S \& out(end(pos:pro))}
 \end{itemize}
 
@@ -588,7 +619,7 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 
 \subsubsection{\texttt{nodes}}
 
-Die \texttt{nodes}-Klausel beschreibt eine Menge von Knoten, die im Graphfragment enthalten sein sollen – wenn die Menge nur als Ziel einer \texttt{link}- oder \texttt{edge}-Klausel auftritt, kann die Menge jedoch auch leer sein. Die \texttt{nodes}-Klausel hat, abgesehen vom Schlüsselwort,  die gleiche Syntax wie die \texttt{node}-Klausel.
+Die \texttt{nodes}-Klausel beschreibt eine Menge von Knoten, die im Graphfragment enthalten sein sollen; wenn die Menge nur als Ziel einer \texttt{link}- oder \texttt{edge}-Klausel auftritt, kann die Menge jedoch auch leer sein. Die \texttt{nodes}-Klausel hat, abgesehen vom Schlüsselwort,  die gleiche Syntax wie die \texttt{node}-Klausel.
 
 \paragraph*{Die \texttt{nodes}-Klausel in modifizierter BNF:}
 ~
@@ -625,9 +656,9 @@ edge-klausel    =   "edge" id? (id id)? " " kantenattribute
 	{\tt edge synfunc:subj}
 	\item Suche alle Knoten der Kategorie S, jeweils mit der Menge von Knoten der Kategorie NP, die über eine Kante der Kategorie S, A oder P verbunden sind:\\
 	{\tt
-	node @s  cat:S\\[-.4ex]
-	nodes @np cat:NP\\[-.4ex]
-	edge @s@np cat:S|A|P
+	node  @s    cat:S\\[-.4ex]
+	nodes @np   cat:NP\\[-.4ex]
+	edge  @s@np cat:S|A|P
 	}
 \end{itemize}
 
@@ -677,10 +708,10 @@ verbindung      =   verbindung " " verbindung
 	\item Suche einen Knoten der Kategorie S, alle Knoten der Kategorie NP, die dieser dominiert, und alle Token, die von den NPn dominiert werden:\\
 	{\tt
 	node @s cat:S\\[-.4ex]
-	nodes @vpn cat:NP\\[-.4ex]
+	nodes @np cat:NP\\[-.4ex]
 	nodes @tok token\\[-.4ex]
-	link @s@npn edge+\\[-.4ex]
-	link @npn@tok edge+
+	link @s@np edge+\\[-.4ex]
+	link @np@tok edge+
 	}
 	\item Suche einen Knoten der Kategorie S und alle Token, die von diesem über einen NP-Knoten dominiert werden (bis auf die IDs äquivalent zum vorigen Beispiel):\\
 	{\tt
@@ -696,10 +727,11 @@ verbindung      =   verbindung " " verbindung
 \subsubsection{\texttt{text}}
 
 Die \texttt{text}-Klausel dient dazu, eine Abfolge von Token-Knoten zu finden. Dabei ermöglicht die Textsuche sowohl die Suche nach reinem Text als auch nach weiteren Attributen der Token-Knoten.
-Die \texttt{text}-Klausel besteht aus dem Schlüsselwort \texttt{text}, einer optionalen ID und der Beschreibung eines Textfragments, das mit \texttt{\^{}s} am Anfang bzw. Ende des Textes eines Satzes verankert werden kann.
+Die \texttt{text}-Klausel besteht aus dem Schlüsselwort \texttt{text}, einer optionalen ID und der Beschreibung eines Textfragments.
 
 Die Beschreibung des Textfragments besteht aus einer Abfolge von Wortbeschreibungen, die aus einer Zeichenkette, die den Tokentext beschreibt (drei Varianten wie oben unter \texttt{node} für die Werte in Schlüssel-Wert-Paaren beschrieben), und einer optionalen Angabe von Attributen (Attributebeschreibung wie oben unter \texttt{node}) in runden Klammern zusammengesetzt ist.
-Für die Beschreibung des Textfragments stehen wie bei der Verbindungsbeschreibung der Operator \texttt{|} für „oder“ (Bindungsstärke schwächer als die der Sequenz), Klammerung und Quantoren zur Verfügung, wobei die Quantoren bei der Textsuche genügsam sind. Zusätzlich kann Textfragmenten eine ID nachgestellt werden, um die gefundenen Knoten in anderen Klauseln zu referenzieren. Quantoren und IDs haben eine höhere Bindungsstärke als Sequenz und Disjunktion; die Reihenfolge von Quantor und ID hinter dem selben Textfragment ist beliebig. Die optionale ID nach dem Schlüsselwort gilt für alle Knoten der \texttt{text}-Klausel. Das gesuchte Textfragment kann mit \texttt{\^{}s} am Beginn bzw. Ende eines Textes (Text eines Satzes) verankert werden.
+
+Für die Beschreibung des Textfragments stehen wie bei der Verbindungsbeschreibung der Operator \texttt{|} für „oder“ (Bindungsstärke schwächer als die der Sequenz), Klammerung und Quantoren zur Verfügung, wobei die Quantoren bei der Textsuche genügsam sind. Zusätzlich kann einer Untergruppe des gesuchten Textfragments eine ID nachgestellt werden, um die gefundenen Knoten in anderen Klauseln zu referenzieren. Quantoren und IDs haben eine höhere Bindungsstärke als Sequenz und Disjunktion; die Reihenfolge von Quantor und ID hinter dem selben Textfragment ist beliebig. Die optionale ID nach dem Schlüsselwort gilt für alle Knoten der \texttt{text}-Klausel. Das gesuchte Textfragment kann mit \texttt{\^{}s} am Beginn bzw. Ende eines Textes (Text eines Satzes) verankert werden; es ist nicht möglich, Text über Satzgrenzen hinweg zu suchen.
 
 \paragraph*{Die \texttt{text}-Klausel in modifizierter BNF:}
 ~
@@ -716,9 +748,9 @@ wort            =   attributwert ("(" knotenattribute ")")?
 \end{lstlisting}
 \end{framed}
 
-\paragraph*{Beispiel:}
+\paragraph*{Beispiele:}
 \begin{itemize}
-	\item Suche alle Sätze, in denen das Wort das Nomen „Säge“ an dritter Stelle steht:\\
+	\item Suche alle Sätze, in denen das Nomen „Säge“ an dritter Stelle steht:\\
 	{\tt
 	text \^{}s //\{2,2\} Säge(pos:n)
 	}
@@ -862,6 +894,10 @@ Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert erge
 Jede \texttt{col}-Klausel steht für eine zu exportierende Spalte. Sie hat als ersten Parameter den Spaltentitel (der keine Leerzeichen enthalten darf), gefolgt von Ruby-Kode, der den auszugebenden Wert ergibt. Knoten und Kanten werden wie gehabt über ihre in der Suche vergebene ID referenziert, dabei ist zu beachten, daß es sich bei den mit \texttt{node} gefundenen Knoten um einzelne Knoten, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten hingegen um Arrays von Knoten handelt.
 
 Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschrieben. Es gibt jedoch noch weitere für die Ausgabe nützliche Methoden: \texttt{.tokens} gibt die über syntaktische Kanten dominierten Token als Liste aus, \texttt{.text} deren Text als Zeichenkette (die einzelnen Tokentexte mit Leerzeichen getrennt). \texttt{.sentence\_tokens} gibt alle Token des Satzes, dem das Element angehört als Liste aus, \texttt{.sentence\_text} wiederum deren Text. \texttt{.position} gibt die Position eines Knotens als Durchschnitt der Positionen seiner dominierten Token aus.
+
+Bei der Arbeit mit der Mehrannotatorenfunktion (vgl. \ref{annotatoren}) gibt der direkte Zugriff auf die Attribute (mittels eckiger Klammern) die Annotationen des aktuell eingestellten Annotators aus.
+Für die Ausgabe der Annotationen anderer Annotatoren dient die Methode \texttt{.private\_attr}, die als Argument den Namen des Annotators nimmt\\(z.B. \texttt{@s.private\_attr('thomas')['cat']}).
+Für die allgemeinen Annotationen steht die Methode \texttt{.public\_attr} zur Verfügung (z.B. \texttt{@s.public\_attr['cat']}).
 
 
 

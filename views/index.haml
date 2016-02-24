@@ -22,7 +22,13 @@
             = haml :layer_options, :locals => {:controller => controller}
           %select{ :name => "sentence", :id => "sentence" }
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
-          #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else '' end
+        %div
+          #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
+          #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
+        #documentation
+          Documentation
+          %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} en
+          %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} de
 
     #search.box
       .handle
@@ -66,11 +72,6 @@
       .content
         = haml :log_table, :locals => {:log => controller.log}
 
-    #documentation
-      Documentation
-      %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} en
-      %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} de
-
     #help.box
       .handle
       .content
@@ -88,7 +89,7 @@
         %h4 Data and navigation
         %ul
           %li load file: <i>load file_name_without_extension</i>
-          %li load and add file: <i>add file_name_without_extension</i>
+          %li append file: <i>append file_name_without_extension</i>
           %li save workspace to file: <i>save (file_name_without_extension)</i>
           %li clear workspace: <i>clear</i>
           %li create new sentence: <i>ns sentence_name</i>

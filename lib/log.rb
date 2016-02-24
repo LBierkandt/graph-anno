@@ -1,20 +1,48 @@
+require 'time'
+
 class Log
 	attr_reader :steps, :graph, :current_index
 	attr_accessor :user
 
-	def initialize(graph, user = '')
+	def initialize(graph, user = nil, data = nil)
 		@graph = graph
-		@steps = []
-		@current_index = -1
+		@steps = data ? data['steps'].map{|s| Step.new_from_hash(s.merge(:log => self))} : []
+		@current_index = data ? data['current_index'] : -1
 		@user = user
+	end
+
+	# creates a new Log from JSON file
+	# @param path [String] path to the JSON file
+	def self.new_from_file(graph, path)
+		puts 'Reading log file "' + path + '" ...'
+		file = open(path, 'r:utf-8')
+		data = JSON.parse(file.read)
+		file.close
+		return Log.new(graph, nil, data)
 	end
 
 	# @return [Hash] a hash representing the log
 	def to_h
 		{
-			'steps' => @steps.map{|step| step.to_h},
-			'current_index' => @current_index,
+			:steps => @steps.map{|step| step.to_h},
+			:current_index => @current_index,
 		}
+	end
+
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		self.to_h.to_json(*a)
+	end
+
+	# serializes self in a JSON file
+	# @param path [String] path to the JSON file
+	def write_json_file(path, compact = false)
+		puts 'Writing log file "' + path + '"...'
+		file = open(path, 'w')
+		json = compact ? self.to_json : JSON.pretty_generate(self, :indent => ' ', :space => '')
+		file.write(json.encode('UTF-8'))
+		file.close
+		puts 'Wrote "' + path + '".'
 	end
 
 	# @return [Step] the current step
@@ -67,24 +95,32 @@ class Log
 end
 
 class Step
-	attr_reader :user, :time, :command, :changes, :log
+	attr_reader :user, :time, :command, :log
+	attr_accessor :changes
 
 	def initialize(h)
 		@log = h[:log]
 		@user = h[:user] || @log.user
+		@user = @log.graph.get_annotator(:id => @user) if @user.is_a?(Integer)
     @command = h[:command]
-		@time = Time.now.utc
+		@time = h[:time] ? Time.parse(h[:time]) : Time.now.utc
     @changes = []
 	end
 
 	# @return [Hash] a hash representing the step
 	def to_h
 		{
-			'user' => @user,
-			'time' => @time.to_s,
-			'command' => @command,
-			'changes' => @changes.map{|change| change.to_h},
+			:user => @user ? @user.id : nil,
+			:time => @time.to_s,
+			:command => @command,
+			:changes => @changes.map{|change| change.to_h},
 		}
+	end
+
+	def self.new_from_hash(h)
+		step = Step.new(h.symbolize_keys)
+		step.changes = h['changes'].map{|c| Change.new(c.symbolize_keys.merge(:step => step))}
+		return step
 	end
 
 	# @param h [Hash] a hash containing the keys :action, :element and, in case of ":action => :update", :attr
@@ -114,26 +150,39 @@ class Change
 
 	def initialize(h)
 		@step = h[:step]
-		@action = h[:action]
-		@element_type = h[:element].is_a?(Node) ? :node : :edge
-		@element_id = h[:element].id
-		@data = case h[:action]
+		@action = h[:action].to_sym
+		if h[:element_type] && h[:element_id]
+			@element_type = h[:element_type].to_sym
+			@element_id = h[:element_id]
+		else
+			@element_type = h[:element].is_a?(Node) ? :node : :edge
+			@element_id = h[:element].id
+		end
+		@data = case @action
 		when :create, :delete
-			h[:element].to_h
+			h[:data] ? h[:data].symbolize_keys : h[:element].to_h
 		when :update
-			{
-				:before => h[:element].attr.clone,
-				:after  => h[:element].attr.merge(h[:attr]).select{|k, v| v},
-			}
+			if h[:data]
+				{
+					:before => h[:data]['before'].symbolize_keys,
+					:after => h[:data]['after'].symbolize_keys
+				}
+			else
+				{
+					:before => h[:element].attr.to_h,
+					:after  => h[:element].attr.clone.annotate_with(h[:attr]).remove_empty!.to_h
+				}
+			end
 		end
 	end
 
 	# @return [Hash] a hash representing the change
 	def to_h
 		{
-			'action' => @action,
-			'element' => "#{@element_type}_#{@element_id}",
-			'data' => @data,
+			:action => @action,
+			:element_type => @element_type,
+			:element_id => @element_id,
+			:data => @data,
 		}
 	end
 
@@ -157,9 +206,9 @@ class Change
 	def create
 		case @element_type
 		when :node
-			@step.log.graph.add_node(@data)
+			@step.log.graph.add_node(@data.merge(:raw => true))
 		when :edge
-			@step.log.graph.add_edge(@data)
+			@step.log.graph.add_edge(@data.merge(:raw => true))
 		end
 	end
 
@@ -168,7 +217,7 @@ class Change
 	end
 
 	def update(before_or_after = :after)
-		element.attr = @data[before_or_after]
+		element.attr = Attributes.new({:host => element, :raw => true}.merge(@data[before_or_after]))
 	end
 
 	def element
