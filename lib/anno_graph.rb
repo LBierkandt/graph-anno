@@ -530,11 +530,11 @@ class AnnoGraph
 				@tagset = Tagset.new(data['allowed_anno'])
 			else
 				@tagset = Tagset.new(data['tagset'])
-				@file_settings = data['file_settings'].symbolize_keys
+				@file_settings = (data['file_settings'] || {}).symbolize_keys
 			end
 			@conf = AnnoGraphConf.new(data['conf'])
 			create_layer_makros
-			@makros_plain += data['search_makros']
+			@makros_plain += data['search_makros'] || []
 			@makros += parse_query(@makros_plain * "\n")['def']
 		end
 
@@ -1165,6 +1165,7 @@ class AnnoGraphConf
 	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :layers, :combinations
 
 	def initialize(h = {})
+		h ||= {}
 		default = File::open('conf/display.yml'){|f| YAML::load(f)}
 		default.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
 
