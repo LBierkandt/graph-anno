@@ -1,6 +1,7 @@
 $theme-color: #002050
 $theme-color-highlight: #003090
 $background-color: #ddd
+$background-color-light: #eee
 $highlight-color: #d00
 
 *
@@ -88,6 +89,42 @@ table
     display: inline-block
   #documentation
     float: right
+
+#sectioning
+  position: fixed
+  top: 10px
+  right: 10px
+  width: 20%
+  height: 40%
+  padding: 5px
+  .content
+    ul
+      position: absolute
+      padding-left: 0
+      li
+        margin-top: 2px
+        margin-bottom: 2px
+        padding: 0 2px
+        white-space: nowrap
+        overflow: hidden
+        background-color: $background-color-light
+        cursor: default
+        .sentence-start
+          color: #444
+        &.active
+          color: #fff
+          background-color: $theme-color
+          .sentence-start
+            color: #ccc
+        &.chosen
+          color: #fff
+          background-color: $theme-color-highlight
+          .sentence-start
+            color: #ccc
+      &:not([level="0"])
+        li
+          position: absolute
+          width: 80px
 
 #log
   display: none

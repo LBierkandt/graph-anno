@@ -492,7 +492,6 @@ module SearchableGraph
 							nodes,
 							attrs,
 							conf.layer_attributes[layer],
-							nodes.map{|n| n.sentence}.most_frequent
 						)
 					end
 				when 'c', 'h'
@@ -502,7 +501,6 @@ module SearchableGraph
 							nodes,
 							attrs,
 							conf.layer_attributes[layer],
-							nodes.map{|n| n.sentence}.most_frequent
 						)
 					end
 				when 'd'
@@ -972,40 +970,5 @@ class Teilgraph
 
 	def execute(code)
 		@id_mapping.instance_eval(code)
-	end
-end
-
-class String
-	def xstrip(chars = nil)
-		if !chars
-			return self.strip
-		else
-			klasse = '[\u{'
-			chars.each_char do |c|
-				klasse += c.ord.to_s(16) + ' '
-			end
-			klasse = klasse[0..-2] + '}]'
-			reg = Regexp.new('^' + klasse + '*(.*?)' + klasse + '*$')
-			return self.sub(reg, '\1')
-		end
-	end
-end
-
-class Array
-	def groups_linked?(links)
-		return true if self.length <= 1
-		self[1..-1].each_with_index do |g, i|
-			if links.any?{|l| l & self[0] != [] and l & g != []}
-				new = self.clone
-				new[0] += new.delete_at(i)
-				return new.groups_linked?(links)
-				break
-			end
-		end
-		return false
-	end
-
-	def most_frequent
-		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
 	end
 end

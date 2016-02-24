@@ -84,6 +84,40 @@ table {
   #cmddiv #documentation {
     float: right; }
 
+#sectioning {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 20%;
+  height: 40%;
+  padding: 5px; }
+  #sectioning .content ul {
+    position: absolute;
+    padding-left: 0; }
+    #sectioning .content ul li {
+      margin-top: 2px;
+      margin-bottom: 2px;
+      padding: 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      background-color: #eeeeee;
+      cursor: default; }
+      #sectioning .content ul li .sentence-start {
+        color: #444444; }
+      #sectioning .content ul li.active {
+        color: white;
+        background-color: #002050; }
+        #sectioning .content ul li.active .sentence-start {
+          color: #cccccc; }
+      #sectioning .content ul li.chosen {
+        color: white;
+        background-color: #003090; }
+        #sectioning .content ul li.chosen .sentence-start {
+          color: #cccccc; }
+    #sectioning .content ul:not([level="0"]) li {
+      position: absolute;
+      width: 80px; }
+
 #log {
   display: none;
   position: fixed;

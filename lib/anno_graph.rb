@@ -110,8 +110,8 @@ class Node < NodeOrEdge
 			@in.each{|e| log_step.add_change(:action => :delete, :element => e)}
 			log_step.add_change(:action => :delete, :element => self)
 		end
-		Array.new(@out).each{|e| e.delete}
-		Array.new(@in).each{|e| e.delete}
+		Array.new(@out).each(&:delete)
+		Array.new(@in).each(&:delete)
 		@graph.nodes.delete(@id)
 	end
 
@@ -121,7 +121,7 @@ class Node < NodeOrEdge
 	def parent_nodes(&block)
 		selected = @in.select(&block)
 		selected = @in if selected.is_a?(Enumerator)
-		return selected.map{|e| e.start}
+		return selected.map(&:start)
 	end
 
 	# returns nodes connected to self by outgoing edges which fulfil the (optional) block
@@ -130,30 +130,57 @@ class Node < NodeOrEdge
 	def child_nodes(&block)
 		selected = @out.select(&block)
 		selected = @out if selected.is_a?(Enumerator)
-		return selected.map{|e| e.end}
+		return selected.map(&:end)
 	end
 
 	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
 	# @param link [String] a query language string describing the link from self to the tokens that will be returned
 	# @return [Array] all dominated tokens or all tokens connected via given link
 	def tokens(link = nil)
- 		link = 'edge+' unless link
-		self.nodes(link, 'token').sort_by{|token| token.tokenid}
+		case @type
+		when 'a'
+	 		link = 'edge+' unless link
+			self.nodes(link, 'token').sort_by(&:tokenid)
+		when 't'
+			[self]
+		when 's'
+			sentence_tokens
+		when 'p'
+			sentence_nodes.map(&:tokens).flatten
+		end
 	end
 
 	# like tokens method, but returns text string represented by tokens
 	# @param link [String] a query language string describing the link from self to the tokens whose text will be returned
 	# @return [String] the text formed by all dominated tokens or all tokens connected via given link
 	def text(link = nil)
-		self.tokens(link).map{|t| t.token} * ' '
+		self.tokens(link).map(&:token) * ' '
 	end
 
 	# @return [Node] the sentence node self is associated with
 	def sentence
 		if @type == 's'
 			self
+		elsif @type == 'p'
+			nil
 		else
 			parent_nodes{|e| e.type == 's'}[0]
+		end
+	end
+
+	# @return [Array] the sentence nodes self dominates
+	def sentence_nodes
+		if @type == 'p'
+			nodes = [self]
+			loop do
+				children = nodes.map{|n| n.child_nodes{|e| e.type == 'p'}}.flatten
+				return nodes if children.empty?
+				nodes = children
+			end
+		elsif @type == 's'
+			[self]
+		else
+			[]
 		end
 	end
 
@@ -172,6 +199,8 @@ class Node < NodeOrEdge
 			else
 				[]
 			end
+		elsif @type == 'p'
+			sentence_nodes.map(&:sentence_tokens).flatten
 		else
 			s.sentence_tokens
 		end
@@ -203,7 +232,7 @@ class Node < NodeOrEdge
 
 	# @return [String] the text of the sentence self belongs to
 	def sentence_text
-		sentence_tokens.map{|t| t.token} * ' '
+		sentence_tokens.map(&:token) * ' '
 	end
 
 	# @return [Float] the position of self in terms of own tokenid or averaged tokenid of the dominated (via tokens method) tokens
@@ -280,6 +309,21 @@ class Node < NodeOrEdge
 		child_nodes{|e| e.type == 'o'}.select(&block)[0]
 	end
 
+	# @param link [String] a link in query language
+	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
+	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
+	def nodes(link = nil, end_node_condition = '')
+		if link
+			super
+		else
+			if @type == 'p' || @type == 's'
+				sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
+			else
+				sentence.nodes
+			end
+		end
+	end
+
 	# methods specific for token nodes:
 
 	# @return [String] self's text
@@ -322,18 +366,25 @@ class Node < NodeOrEdge
 		@attr['name'] = name
 	end
 
-	# @param link [String] a link in query language
-	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
-	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
-	def nodes(link = nil, end_node_condition = '')
-		if link
-			super
+	# the level of a section node: sentence nodes have level 0, parents of sentence nodes level 1 etc.
+	# @return [Integer] the level
+	def sectioning_level
+		if @type == 's'
+			0
+		elsif @type == 'p'
+			child_nodes{|e| e.type == 'p'}.map(&:sectioning_level).max + 1
 		else
-			if @type == 's'
-				child_nodes{|e| e.type == 's'}
-			else
-				sentence.nodes
-			end
+			nil
+		end
+	end
+
+	# @return [Array] the descendant sections of self
+	def descendant_sections
+		if sectioning_level > 0
+			children = child_nodes{|e| e.type == 'p'}
+			return children + children.map(&:descendant_sections).flatten
+		else
+			return []
 		end
 	end
 end
@@ -665,6 +716,17 @@ class AnnoGraph
 		return n
 	end
 
+	# creates a new part node and adds it to self
+	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Node] the new node
+	def add_part_node(h)
+		h.merge!(:attr => {}) unless h[:attr]
+		h[:attr].merge!('name' => h[:name]) if h[:name]
+		n = add_node(h.merge(:type => 'p'))
+		h[:log].add_change(:action => :create, :element => n) if h[:log]
+		return n
+	end
+
 	# creates a new speaker node and adds it to self
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
@@ -716,6 +778,15 @@ class AnnoGraph
 		return e
 	end
 
+	# creates a new part edge and adds it to self
+	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
+	# @return [Edge] the new edge
+	def add_part_edge(h)
+		e = add_edge(h.merge(:type => 'p'))
+		h[:log].add_change(:action => :create, :element => e) if h[:log]
+		return e
+	end
+
 	# creates a new speaker edge and adds it to self
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
@@ -727,18 +798,16 @@ class AnnoGraph
 	# @param node [Edge] the edge to be cloned
 	# @return [Edge] the new edge
 	def add_cloned_edge(edge)
-		h = edge.to_h
-		h.delete(:id)
-		add_edge(h.merge(:raw => true))
+		add_edge(edge.to_h.except(:id).merge(:raw => true))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
 	# @param nodes [Array] the nodes that will be connected to the new node
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
-	# @param sentence [SectNode] the sentence node to which the new node will belong
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_parent_node(nodes, node_attrs, edge_attrs, sentence, log_step = nil)
+	def add_parent_node(nodes, node_attrs, edge_attrs, log_step = nil)
+		sentence = nodes.map(&:sentence).most_frequent
 		parent_node = add_anno_node(
 			:attr => node_attrs,
 			:sentence => sentence,
@@ -758,9 +827,9 @@ class AnnoGraph
 	# @param nodes [Array] the nodes that will be connected to the new node
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
-	# @param sentence [SectNode] the sentence node to which the new node will belong
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_child_node(nodes, node_attrs, edge_attrs, sentence, log_step = nil)
+	def add_child_node(nodes, node_attrs, edge_attrs, log_step = nil)
+		sentence = nodes.map(&:sentence).most_frequent
 		child_node = add_anno_node(
 			:attr => node_attrs,
 			:sentence => sentence,
@@ -826,11 +895,35 @@ class AnnoGraph
 		node.delete(log_step)
 	end
 
+	# create a section node as parent of the given section nodes
+	# @param name [String] the name of the new node
+	# @param list [Array] the section nodes that are to be grouped under the new node
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	# @return [Node] the new section node
+	def build_section(name, list, log_step = nil)
+		# create node only when all given nodes are on the same level and none is already grouped under another section
+		if list.group_by{|n| n.sectioning_level}.keys.length > 1
+			raise 'all given sections have to be on the same level'
+		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
+			raise 'given sections already belong to another section'
+		else
+			section_node = add_part_node(:name => name, :log => log_step)
+			list.each do |child_node|
+				add_part_edge(
+					:start => section_node,
+					:end => child_node,
+					:log => log_step
+				)
+			end
+			return section_node
+		end
+	end
+
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
-			:nodes => @nodes.values.map{|n| n.to_h},
-			:edges => @edges.values.map{|e| e.to_h}
+			:nodes => @nodes.values.map(&:to_h),
+			:edges => @edges.values.map(&:to_h)
 		}.
 			merge(:version => 9).
 			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
@@ -917,7 +1010,7 @@ class AnnoGraph
 			end
 		end
 		# copy edges
-		nodes = sentence_list.map{|s| s.nodes}.flatten
+		nodes = sentence_list.map(&:nodes).flatten
 		edges = nodes.map{|n| n.in + n.out}.flatten.uniq
 		edges.reject{|e| e.type == 's'}.each do |e|
 			g.add_cloned_edge(e)
@@ -927,11 +1020,44 @@ class AnnoGraph
 
 	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
-		if first_sect_node = @nodes.values.select{|n| n.type == 's'}[0]
-			first_sect_node.ordered_sister_nodes
+		if first_sentence_node = @nodes.values.select{|n| n.type == 's'}[0]
+			first_sentence_node.ordered_sister_nodes
 		else
 			[]
 		end
+	end
+
+	# @return [Array] all section nodes (i.e. type s and p)
+	def section_nodes
+		sections.flatten.map{|seg| seg[:node]}
+	end
+
+	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level
+	def sections
+		level = 0
+		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i, :text => n.text}}]
+		loop do
+			next_level_sections = result[level].map do |s|
+				parent = s[:node].parent_nodes{|e| e.type == 'p'}[0]
+				s.merge(:node => parent)
+			end
+			next_level = {}
+			next_level_sections.each do |s|
+				next unless s[:node]
+				if next_level[s[:node]]
+					next_level[s[:node]][:last] = s[:last]
+				else
+				 next_level[s[:node]] = s
+				end
+			end
+			unless next_level.empty?
+				result << next_level.values
+				level += 1
+			else
+				break
+			end
+		end
+		return result
 	end
 
 	def speaker_nodes
@@ -1189,19 +1315,19 @@ class AnnoGraphConf
 
 	def clone
 		new_conf = super
-		new_conf.layers = @layers.map{|l| l.clone}
-		new_conf.combinations = @combinations.map{|c| c.clone}
+		new_conf.layers = @layers.map(&:clone)
+		new_conf.combinations = @combinations.map(&:clone)
 		return new_conf
 	end
 
 	def merge!(other)
 		other.layers.each do |layer|
-			unless @layers.map{|l| l.attr}.include?(layer.attr)
+			unless @layers.map(&:attr).include?(layer.attr)
 				@layers << layer
 			end
 		end
 		other.combinations.each do |combination|
-			unless @combinations.map{|c| c.attr}.include?(combination.attr)
+			unless @combinations.map(&:attr).include?(combination.attr)
 				@combinations << combination
 			end
 		end
@@ -1215,8 +1341,8 @@ class AnnoGraphConf
 			:found_color => @found_color,
 			:filtered_color => @filtered_color,
 			:edge_weight => @edge_weight,
-			:layers => @layers.map{|l| l.to_h},
-			:combinations => @combinations.map{|c| c.to_h}
+			:layers => @layers.map(&:to_h),
+			:combinations => @combinations.map(&:to_h)
 		}
 	end
 
@@ -1242,12 +1368,6 @@ class AnnoGraphConf
 	end
 end
 
-class Array
-	def text
-		self.map{|n| n.text} * ' '
-	end
-end
-
 class Tagset < Array
 	def initialize(a = [])
 		a.to_a.each do |rule|
@@ -1263,7 +1383,7 @@ class Tagset < Array
 	end
 
 	def to_a
-		self.map{|rule| rule.to_h}
+		self.map(&:to_h)
 	end
 
 	def to_json(*a)
@@ -1320,7 +1440,7 @@ class Annotator
 	end
 
 	def new_id
-		id_list = @graph.annotators.map{|a| a.id}
+		id_list = @graph.annotators.map(&:id)
 		id = 1
 		id += 1 while id_list.include?(id)
 		return id
@@ -1337,120 +1457,5 @@ class Annotator
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)
-	end
-end
-
-class String
-	def parse_parameters
-		str = self.strip
-		h = {
-			:string => str,
-			:attributes => {},
-			:elements => [],
-			:words => [],
-			:all_nodes => [],
-			:meta => [],
-			:nodes => [],
-			:edges => [],
-			:tokens => [],
-			:ids => [],
-		}
-
-		r = {}
-		r[:ctrl] = '(\s|:)'
-		r[:comment] = '#'
-		r[:bstring] = '[^\s:"#]+'
-		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
-		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
-		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
-		r[:attribute] = r[:string] + ':' + r[:string] + '?'
-		r[:id] = '@' + '[_[:alnum:]]+'
-		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
-
-		while str != ''
-			m = nil
-			if m = str.match(r[:comment])
-				break
-			elsif m = str.match(r[:ctrl])
-			elsif m = str.match(r[:attribute])
-				key = m[2] ? m[2].gsub('\"', '"') : m[1]
-				val = m[6] ? m[6].gsub('\"', '"') : m[5]
-				h[:attributes][key] = val
-			elsif m = str.match(r[:string])
-				word = m[2] ? m[2].gsub('\"', '"') : m[1]
-				h[:words] << word
-				if word.match(/^(([ent]\d+)|m)$/)
-					h[:elements] << word
-					case word[0]
-					when 'm'
-						h[:meta] << word
-					when 'n'
-						h[:nodes] << word
-						h[:all_nodes] << word
-					when 't'
-						h[:tokens] << word
-						h[:all_nodes] << word
-					when 'e'
-						h[:edges] << word
-					end
-				elsif mm = word.match(/^([ent])(\d+)\.\.\1(\d+)$/)
-					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
-						h[:elements] << mm[1] + n.to_s
-						case word[0]
-						when 'n'
-							h[:nodes] << mm[1] + n.to_s
-							h[:all_nodes] << mm[1] + n.to_s
-						when 't'
-							h[:tokens] << mm[1] + n.to_s
-							h[:all_nodes] << mm[1] + n.to_s
-						when 'e'
-							h[:edges] << mm[1] + n.to_s
-						end
-					end
-				elsif word.match(r[:id])
-					h[:ids] << word
-				end
-			else
-				break
-			end
-			str = str[m[0].length..-1]
-		end
-
-		return h
-	end
-
-	def sql_json_escape_quotes
-		self.gsub("'", "\\\\'").gsub('\\"', '\\\\\\"')
-	end
-end
-
-class Hash
-	# @param h2 [Hash] the hash to be tested for inclusion in self
-	# @return [Boolean] true if the key-value pairs of h2 are a subset of self
-	def includes(h2)
-		if h2.to_h == {}
-			return true
-		else
-			return h2.any?{|k,v| self[k] == v}
-		end
-	end
-
-	# creates a new hash by applying the given block to every key-value pair of self and assigning the result as value to the unaltered key
-	# @param block [Proc] the block to be applied to the key-value pairs of self
-	# @return [Hash] the new Hash
-	def map_hash(&block)
-		self.merge(self){|k, v| block.call(k, v)}
-	end
-
-	# creates a new hash that has all keys casted to symbols
-	# @return [Hash] the new Hash
-	def symbolize_keys
-		Hash[self.map{ |k, v| [k.to_sym, v] }]
-	end
-
-	# returns a hash that is a copy of self, but without the key whose values are nil
-	# @return [Hash] the new Hash
-	def compact
-		self.select{|k, v| !v.nil? }
 	end
 end
