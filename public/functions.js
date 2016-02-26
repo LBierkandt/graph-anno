@@ -227,20 +227,14 @@ function updateView(antworthash) {
 	}
 	bild.data = '/graph.svg?v=' + new Date().getTime();
 }
-function sendCmd(txtcmd) {
-	if (txtcmd == undefined) txtcmd = document.cmd.txtcmd.value;
-	var layer = document.cmd.layer.value;
-	var anfrage = new XMLHttpRequest();
-	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer);
-	anfrage.open('POST', '/handle_commandline');
-	makeAnfrage(anfrage, params);
+function sendCmd() {
+	postRequest('/handle_commandline', {
+		txtcmd: document.cmd.txtcmd.value,
+		layer: document.cmd.layer.value,
+	});
 }
 function sendFilter(mode) {
-	var filterfield = document.filter.filterfield.value;
-	var anfrage = new XMLHttpRequest();
-	var params = 'filter=' + encodeURIComponent(filterfield) + '&mode=' + encodeURIComponent(mode);
-	anfrage.open('POST', '/filter');
-	makeAnfrage(anfrage, params);
+	postRequest('/filter', {filter: document.filter.filterfield.value, mode: mode});
 
 	document.getElementById('hide rest').className = '';
 	document.getElementById('hide selected').className = '';
@@ -252,17 +246,10 @@ function sendFilter(mode) {
 	//$('#txtcmd').focus().select();
 }
 function sendSearch() {
-	var query = document.search.query.value;
-	var anfrage = new XMLHttpRequest();
-	var params = 'query=' + encodeURIComponent(query);
-	anfrage.open('POST', '/search');
-	makeAnfrage(anfrage, params);
+	postRequest('/search', {query: document.search.query.value});
 }
 function clearSearch() {
-	var anfrage = new XMLHttpRequest();
-	var params = '';
-	anfrage.open('POST', '/clear_search');
-	makeAnfrage(anfrage, params);
+	postRequest('/clear_search', {});
 }
 function sendDataExport() {
 	var query = document.search.query.value;
@@ -282,11 +269,7 @@ function sendDataExport() {
 	anfrage.send(params);
 }
 function sendAnnotateQuery() {
-	var query = document.search.query.value;
-	var anfrage = new XMLHttpRequest();
-	var params = 'query=' + encodeURIComponent(query);
-	anfrage.open('POST', '/annotate_query');
-	makeAnfrage(anfrage, params);
+	postRequest('/annotate_query', {query: document.search.query.value});
 }
 function setSelectedIndex(s, v) {
 	for ( var i = 0; i < s.options.length; i++ ) {
@@ -306,45 +289,45 @@ function getCookie(name) {
     }
     return null;
 }
-function makeAnfrage(anfrage, params) {
-		anfrage.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		anfrage.onreadystatechange = function() {
-			if (this.readyState == 4 && this.status == 200) {
-				var antworthash = JSON.parse(this.responseText);
-				switch (antworthash['modal']) {
-					case undefined:
-						break;
-					case 'import':
-						openImport(antworthash['type']);
-						return;
-					default:
-						openModal(antworthash['modal']);
-						return;
-				}
-				var txtcmd = document.getElementById('txtcmd');
-				txtcmd.value = getCookie('traw_cmd');
-				updateLayerOptions();
-				for (var id in antworthash['windows']) {
-					restoreState(id, antworthash['windows']);
-				};
-				saveState();
-				if (antworthash['messages'] != undefined && antworthash['messages'].length > 0) alert(antworthash['messages'].join("\n"));
-				if (antworthash['command'] == 'load') reloadLogTable();
-				if (antworthash['graph_file'] != undefined) $('#active_file').html('file: ' + antworthash['graph_file']);
-				if (antworthash['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + antworthash['current_annotator']);
-				if (antworthash['search_result'] != undefined) {
-					display_search_message(antworthash['search_result']);
-				} else if (antworthash['filter_applied'] != undefined) {
-					filterfield.focus();
-				} else {
-					txtcmd.focus();
-					txtcmd.select();
-				}
-				updateView(antworthash);
-				updateLogTable();
-			}
+function postRequest(path, params) {
+	$.post(
+		path,
+		params,
+		null,
+		'json'
+	).done(function(data) {
+		switch (data['modal']) {
+			case undefined:
+				break;
+			case 'import':
+				openImport(data['type']);
+				return;
+			default:
+				openModal(data['modal']);
+				return;
 		}
-		anfrage.send(params);
+		var txtcmd = document.getElementById('txtcmd');
+		txtcmd.value = getCookie('traw_cmd');
+		updateLayerOptions();
+		for (var id in data['windows']) {
+			restoreState(id, data['windows']);
+		};
+		saveState();
+		if (data['messages'] != undefined && data['messages'].length > 0) alert(data['messages'].join("\n"));
+		if (data['command'] == 'load') reloadLogTable();
+		if (data['graph_file'] != undefined) $('#active_file').html('file: ' + data['graph_file']);
+		if (data['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + data['current_annotator']);
+		if (data['search_result'] != undefined) {
+			display_search_message(data['search_result']);
+		} else if (data['filter_applied'] != undefined) {
+			filterfield.focus();
+		} else {
+			txtcmd.focus();
+			txtcmd.select();
+		}
+		updateView(data);
+		updateLogTable();
+	});
 }
 function newLayer(element) {
 	var number = parseInt($(element).closest('tbody').prev().attr('no')) + 1;

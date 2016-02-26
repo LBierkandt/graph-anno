@@ -155,10 +155,7 @@ var Sectioning = (function () {
 			return current;
 		},
 		changeSentence: function () {
-			var anfrage = new XMLHttpRequest();
-			var params = 'sentence='+encodeURIComponent(current);
-			anfrage.open('POST', '/change_sentence');
-			makeAnfrage(anfrage, params);
+			postRequest('/change_sentence', {sentence: current});
 		},
 		navigateSentences: function (target) {
 			var newIndizes = currentIndizes;
