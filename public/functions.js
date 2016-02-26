@@ -63,37 +63,37 @@ function graphEinpassen() {
 	bild.width = Math.round(bild.svgWidth / bild.svgHeight * newHeight);
 	bild.style.top = outerHeight - bild.height;
 }
-function taste(tast) {
-	var ctrlShift = tast.ctrlKey && tast.shiftKey;
+function taste(e) {
+	var ctrlShift = e.ctrlKey && e.shiftKey;
 	if (ctrlShift) {
-		switch (tast.which) {
-			case  33: verschiebeBild('oo'); tast.preventDefault(); break;
-			case  34: verschiebeBild('uu'); tast.preventDefault(); break;
-			case  35: verschiebeBild('e'); tast.preventDefault(); break;
-			case  36: verschiebeBild('a'); tast.preventDefault(); break;
-			case  37: verschiebeBild('l'); tast.preventDefault(); break;
-			case  38: verschiebeBild('o'); tast.preventDefault(); break;
-			case  39: verschiebeBild('r'); tast.preventDefault(); break;
-			case  40: verschiebeBild('u'); tast.preventDefault(); break;
+		switch (e.which) {
+			case  33: verschiebeBild('oo'); e.preventDefault(); break;
+			case  34: verschiebeBild('uu'); e.preventDefault(); break;
+			case  35: verschiebeBild('e'); e.preventDefault(); break;
+			case  36: verschiebeBild('a'); e.preventDefault(); break;
+			case  37: verschiebeBild('l'); e.preventDefault(); break;
+			case  38: verschiebeBild('o'); e.preventDefault(); break;
+			case  39: verschiebeBild('r'); e.preventDefault(); break;
+			case  40: verschiebeBild('u'); e.preventDefault(); break;
 			case 173:
 			case 189:
-			case 109: aendereBildgroesze('-'); tast.preventDefault(); break;
+			case 109: aendereBildgroesze('-'); e.preventDefault(); break;
 			case 171:
 			case 187:
-			case 107: aendereBildgroesze('+'); tast.preventDefault(); break;
-			case  48: graphEinpassen(); tast.preventDefault(); break;
+			case 107: aendereBildgroesze('+'); e.preventDefault(); break;
+			case  48: graphEinpassen(); e.preventDefault(); break;
 		}
 	}
-	else if (tast.altKey) {
+	else if (e.altKey) {
 		var mapping = {
 			37: 'prev',
 			39: 'next',
 			36: 'first',
 			35: 'last',
 		};
-		if (tast.which in mapping) {
-			tast.preventDefault();
-			Sectioning.navigateSentences(mapping[tast.which]);
+		if (e.which in mapping) {
+			e.preventDefault();
+			Sectioning.navigateSentences(mapping[e.which]);
 		}
 	}
 	else {
@@ -147,9 +147,9 @@ function taste(tast) {
 				saveState();
 			},
 		};
-		if (tast.which in mapping) {
-			tast.preventDefault();
-			mapping[tast.which]();
+		if (e.which in mapping) {
+			e.preventDefault();
+			mapping[e.which]();
 		}
 	}
 }
@@ -222,15 +222,8 @@ function sendCmd() {
 }
 function sendFilter(mode) {
 	postRequest('/filter', {filter: document.filter.filterfield.value, mode: mode});
-
-	document.getElementById('hide rest').className = '';
-	document.getElementById('hide selected').className = '';
-	document.getElementById('filter rest').className = '';
-	document.getElementById('filter selected').className = '';
-	document.getElementById('display all').className = '';
+	$('#filter input').removeClass('selected_filter_mode');
 	document.getElementById(mode).className = 'selected_filter_mode';
-	//filter.style.display = 'none';
-	//$('#txtcmd').focus().select();
 }
 function sendSearch() {
 	postRequest('/search', {query: document.search.query.value});
@@ -269,12 +262,8 @@ function getCookie(name) {
 	return null;
 }
 function postRequest(path, params) {
-	$.post(
-		path,
-		params,
-		null,
-		'json'
-	).done(function(data) {
+	$.post(path, params, null, 'json')
+	.done(function(data) {
 		switch (data['modal']) {
 			case undefined:
 				break;
@@ -338,9 +327,7 @@ function removeCombination(element) {
 }
 function openModal(type) {
 	if ($('#modal-background').css('display') != 'block') {
-		$.get('/' + type + '_form')
-		.done(function(data) {
-			$('#modal-content').html(data);
+		$('#modal-content').load('/' + type + '_form', function(){
 			$('#modal-background').show();
 			window.onkeydown = configKeys;
 		});
@@ -422,15 +409,13 @@ function closeModal() {
 	window.onkeydown = taste;
 }
 function updateLayerOptions() {
-	$.get('/layer_options')
-	.done(function(data) {
-		$('#layer').html(data);
+	$('#layer').load('/layer_options', function(){
 		setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
 	});
 }
-function configKeys(tast) {
-	if (tast.which == 27 || tast.which == 119) {
-		tast.preventDefault();
+function configKeys(e) {
+	if (e.which == 27 || e.which == 119) {
+		e.preventDefault();
 		closeModal();
 	}
 }
@@ -452,31 +437,29 @@ function removeLayerAttributes(number) {
 	});
 }
 function openImport(type) {
-	$.get('/import_form/' + type)
-	.done(function(data) {
-		$('#modal-content').html(data);
+	$('#modal-content').load('/import_form/' + type, function(){
 		disable_import_form_fields(type);
 		$('#modal-background').show();
 		window.onkeydown = importKeys;
 	});
 }
-function importKeys(tast) {
-	if (tast.which == 27) {
-		tast.preventDefault();
+function importKeys(e) {
+	if (e.which == 27) {
+		e.preventDefault();
 		closeModal();
 	}
 }
 function sendImport(type) {
 	var formData = new FormData($('#modal-form')[0]);
 	$.ajax({
-			url: '/import/' + type,
-			type: 'POST',
-			data: formData,
-			dataType: 'json',
-			//Options to tell jQuery not to process data or worry about content-type.
-			cache: false,
-			contentType: false,
-			processData: false
+		url: '/import/' + type,
+		type: 'POST',
+		data: formData,
+		dataType: 'json',
+		//Options to tell jQuery not to process data or worry about content-type.
+		cache: false,
+		contentType: false,
+		processData: false
 	})
 	.done(function(data) {
 		if (data['sections'] != undefined) {
@@ -539,10 +522,7 @@ function updateLogTable() {
 	});
 }
 function reloadLogTable() {
-	$.get('/get_log_table')
-	.done(function(data){
-		$('#log .content').html(data);
-	});
+	$('#log .content').load('/get_log_table');
 }
 function saveState() {
 	var data = {};
@@ -550,9 +530,8 @@ function saveState() {
 		var $box = $(this);
 		var key = $box.attr('id');
 		data[key] = {};
-		var attributes = ['display', 'left', 'top', 'width', 'height', 'z-index'];
-		for (var i = 0; i < attributes.length; i++) {
-			data[key][attributes[i]] = $box.css(attributes[i]);
+		for (var attr in {display: 0, left: 0, top: 0, width: 0, height: 0, 'z-index': 0}) {
+			data[key][attr] = $box.css(attr);
 		}
 		document.cookie = key + '=' + JSON.stringify(data[key]) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
 	});
