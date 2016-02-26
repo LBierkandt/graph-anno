@@ -618,6 +618,7 @@ var Sectioning = (function () {
 	var currentIndizes = [];
 	var currentLevel = 0
 	var clickedLevel = 0
+	var clickedElement = null;
 	var keyBinding = function (e) {
 		switch (e.which) {
 			case 13:
@@ -628,11 +629,33 @@ var Sectioning = (function () {
 			case 27:
 				unchoose(e);
 				break;
+			case 38:
+			case 40:
+				chooseByKey(e);
+				break;
 		}
 	}
-	var scroll = function () {
+	var chooseByKey = function (e) {
+		e.preventDefault();
+		var $sections = $('ul[level="'+clickedLevel+'"] .section');
+		var index = $sections.index(clickedElement);
+		if (e.which == 38 && index > 0) {
+			var direction = -1;
+		} else if (e.which == 40 && index < $sections.length - 1) {
+			var direction = 1;
+		}
+		if (direction == undefined) return;
+		if (e.shiftKey) {
+			if ($sections.slice(index + direction, index + direction + 1).hasClass('chosen')) clickedElement.removeClass('chosen');
+		} else {
+			$sections.removeClass('chosen');
+		}
+		clickedElement = $sections.slice(index + direction, index + direction + 1).addClass('chosen');
+		scroll('.chosen');
+	}
+	var scroll = function (klass) {
 		var margin = 2;
-		var $elements = $('.section.active');
+		var $elements = $('.section' + klass);
 		if ($elements.length == 0) return;
 		var $firstElement = $elements.first();
 		var $lastElement = $elements.last();
@@ -650,7 +673,7 @@ var Sectioning = (function () {
 			$container.scrollTop(firstElementTop + elementHeight - containerViewHeight + margin);
 	}
 	var click = function (e) {
-		var clickedElement = e.target.closest('.section');
+		clickedElement = e.target.closest('.section');
 		var newclickedLevel = $(e.target).closest('ul').attr('level');
 		if (newclickedLevel != clickedLevel) {
 			$('.section').removeClass('chosen');
@@ -728,7 +751,7 @@ var Sectioning = (function () {
 				var index = $.map(list[currentLevel], function(e){return e.id.toString();}).indexOf(current[i]);
 				currentIndizes.push(index);
 			}
-			scroll();
+			scroll('.active');
 		},
 		setCurrentIndizes: function (level, indizes) {
 			currentLevel = level;
@@ -740,7 +763,7 @@ var Sectioning = (function () {
 				var active = $(sections[currentIndizes[i]]).addClass('active');
 				current.push(active.attr('section-id'));
 			}
-			scroll();
+			scroll('.active');
 		},
 		getCurrent: function () {
 			return current;
