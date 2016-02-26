@@ -146,9 +146,6 @@ function taste(tast) {
 				$('#sectioning').toggle();
 				saveState();
 			},
-			121: function(){
-				openModal('tagset');
-			},
 		};
 		if (tast.which in mapping) {
 			tast.preventDefault();
