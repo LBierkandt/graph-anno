@@ -484,19 +484,7 @@ class AnnoGraph
 
 	# initializes empty graph
 	def initialize
-		@nodes = {}
-		@edges = {}
-		@highest_node_id = 0
-		@highest_edge_id = 0
-		@conf = AnnoGraphConf.new
-		@info = {}
-		@tagset = Tagset.new
-		@anno_makros = {}
-		@makros = []
-		@annotators = []
-		@current_annotator = nil
-		@file_settings = {}
-		create_layer_makros
+		clear
 	end
 
 	# adds a graph in hash format to self
@@ -1098,8 +1086,8 @@ class AnnoGraph
 
 	# clear all nodes and edges from self, reset layer configuration and search makros
 	def clear
-		@nodes.clear
-		@edges.clear
+		@nodes = {}
+		@edges = {}
 		@highest_node_id = 0
 		@highest_edge_id = 0
 		@conf = AnnoGraphConf.new
@@ -1108,7 +1096,8 @@ class AnnoGraph
 		@annotators = []
 		@current_annotator = nil
 		@anno_makros = {}
-		@makros_plain = []
+		@file_settings = {}
+		create_layer_makros
 	end
 
 	# import corpus from pre-formatted text
