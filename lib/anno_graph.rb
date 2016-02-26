@@ -562,20 +562,14 @@ class AnnoGraph
 		end
 		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		self.add_hash(data)
-		if version >= 6
-			@anno_makros = data['anno_makros'] || {}
-			@info = data['info'] || {}
-			if version < 8
-				@tagset = Tagset.new(data['allowed_anno'])
-			else
-				@tagset = Tagset.new(data['tagset'])
-				@file_settings = (data['file_settings'] || {}).symbolize_keys
-			end
-			@conf = AnnoGraphConf.new(data['conf'])
-			create_layer_makros
-			@makros_plain += data['search_makros'] || []
-			@makros += parse_query(@makros_plain * "\n")['def']
-		end
+		@anno_makros = data['anno_makros'] || {}
+		@info = data['info'] || {}
+		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
+		@file_settings = (data['file_settings'] || {}).symbolize_keys
+		@conf = AnnoGraphConf.new(data['conf'])
+		create_layer_makros
+		@makros_plain += data['search_makros'] || []
+		@makros += parse_query(@makros_plain * "\n")['def']
 
 		# ggf. Format aktualisieren
 		if version < 7
