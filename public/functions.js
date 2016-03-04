@@ -282,7 +282,7 @@ function postRequest(path, params) {
 		};
 		saveState();
 		if (data['messages'] != undefined && data['messages'].length > 0) alert(data['messages'].join("\n"));
-		if (data['command'] == 'load') reloadLogTable();
+		if (data['command'] == 'load') Log.load();
 		if (data['graph_file'] != undefined) $('#active_file').html('file: ' + data['graph_file']);
 		if (data['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + data['current_annotator']);
 		if (data['search_result'] != undefined) {
@@ -294,7 +294,7 @@ function postRequest(path, params) {
 			txtcmd.select();
 		}
 		updateView(data);
-		updateLogTable();
+		Log.update();
 	});
 }
 function newLayer(element) {
@@ -494,35 +494,6 @@ function disable_import_form_fields(type) {
 function display_search_message(message) {
 	$('#searchresult').html(message);
 	query.focus();
-}
-function goToStep(i) {
-	$.post('/go_to_step/' + i, {sentence: Sectioning.getCurrent()}, null, 'json')
-	.done(function(data){
-		updateLogTable();
-		updateView(data);
-	});
-}
-function updateLogTable() {
-	$.getJSON('/get_log_update')
-	.done(function(data){
-		if (data['current_index'] == data['max_index']) {
-			var currentStep = $('#log table tr[index="'+data['current_index']+'"]');
-			if (currentStep.length == 0) {
-				$('#log .content table').append(data['html']);
-			} else {
-				currentStep.replaceWith(data['html']);
-			}
-		}
-		$('#log table tr[index]').each(function(){
-			var index = $(this).attr('index');
-			if (index > data['max_index']) $(this).remove();
-			else if (index > data['current_index']) $(this).addClass('undone');
-			else $(this).removeClass('undone') ;
-		});
-	});
-}
-function reloadLogTable() {
-	$('#log .content').load('/get_log_table');
 }
 function saveState() {
 	var data = {};
