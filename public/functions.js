@@ -190,29 +190,34 @@ function updateView(data) {
 	var bild = document.getElementById('graph');
 	var scrollLeft = bild.parentNode.scrollLeft;
 	var scrollTop  = bild.parentNode.scrollTop;
-	bild.onload = function(){
-		var svgElement = this.contentDocument.documentElement;
-		var newSvgWidth  = svgElement.getAttribute('width').match(/\d+/);
-		var newSvgHeight = svgElement.getAttribute('height').match(/\d+/);
-		var widthRatio = newSvgWidth  / this.svgWidth;
-		var heightRatio  = newSvgHeight / this.svgHeight;
-		this.svgWidth  = newSvgWidth;
-		this.svgHeight = newSvgHeight;
-		if (data['sections_changed']) {
-			graphEinpassen();
-		} else {
-			this.width  = this.width  * widthRatio;
-			this.height = this.height * heightRatio;
-			this.parentNode.scrollLeft = scrollLeft * widthRatio;
-			this.parentNode.scrollTop  = scrollTop  * heightRatio;
-			// Graphik ggf. "am Boden" halten:
-			if (scrollTop == 0) {
-				var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
-				this.style.top = Math.max(outerHeight - this.height, 0);
-			}
-		}
-	}
-	bild.data = '/graph.svg?v=' + new Date().getTime();
+	// bild.onload = function(){
+		// var svgElement = this.contentDocument.documentElement;
+		var svgString = Viz(data['dot'], 'svg');
+		$(bild).html(svgString);
+// var parser = new DOMParser();
+// var svgElement = parser.parseFromString(svgString, 'image/svg+xml');
+// bild.appendChild(svgElement);
+		// var newSvgWidth  = svgElement.getAttribute('width').match(/\d+/);
+		// var newSvgHeight = svgElement.getAttribute('height').match(/\d+/);
+		// var widthRatio = newSvgWidth  / this.svgWidth;
+		// var heightRatio  = newSvgHeight / this.svgHeight;
+		// this.svgWidth  = newSvgWidth;
+		// this.svgHeight = newSvgHeight;
+		// if (data['sections_changed']) {
+		// 	graphEinpassen();
+		// } else {
+		// 	this.width  = this.width  * widthRatio;
+		// 	this.height = this.height * heightRatio;
+		// 	this.parentNode.scrollLeft = scrollLeft * widthRatio;
+		// 	this.parentNode.scrollTop  = scrollTop  * heightRatio;
+		// 	// Graphik ggf. "am Boden" halten:
+		// 	if (scrollTop == 0) {
+		// 		var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
+		// 		this.style.top = Math.max(outerHeight - this.height, 0);
+		// 	}
+		// }
+	// }
+	// bild.data = '/graph.svg?v=' + new Date().getTime();
 }
 function sendCmd() {
 	postRequest('/handle_commandline', {
