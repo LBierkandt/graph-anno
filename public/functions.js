@@ -53,18 +53,16 @@ function loadGraph() {
 	}).done(updateView);
 }
 function graphdivEinpassen() {
-	var graphdiv = document.getElementById('graphdiv');
-	var bottom   = document.getElementById('bottom');
-	graphdiv.style.height = window.innerHeight - bottom.offsetHeight;
+	$('#graph').height(window.innerHeight - $('#bottom').height());
 }
 function graphEinpassen() {
 	var $div = $('#graph');
 	var $svg = $div.find('svg');
-	var outerHeight = $('#graphdiv').height() - 20;
+	var outerHeight = $div.height() - 20;
 	var newHeight = Math.min(outerHeight, $svg.height());
-	$div.height(newHeight);
-	$div.width($svg.width() / $svg.height() * newHeight);
-	$div.css('top', outerHeight - $div.height());
+	$svg.width($svg.width() / $svg.height() * newHeight);
+	$svg.height(newHeight);
+	$svg.css('top', outerHeight - $svg.height());
 }
 function taste(tast) {
 	var ctrlShift = tast.ctrlKey && tast.shiftKey;
@@ -178,9 +176,8 @@ function navigateSentences(target) {
 		changeSentence();
 }
 function aendereBildgroesze(richtung) {
-	var $bild = $('#graph');
-	var $svg = $bild.find('svg');
-	var $div = $('#graphdiv');
+	var $div = $('#graph');
+	var $svg = $div.find('svg');
 	var xmitte = $div.scrollLeft() + $div.width() / 2;
 	var ymitte = $div.scrollTop() + $div.height() / 2;
 	var faktor = 1;
@@ -190,10 +187,10 @@ function aendereBildgroesze(richtung) {
 	$svg.height($svg.height() * faktor);
 	$div.scrollLeft(xmitte * faktor - $div.width() / 2);
 	$div.scrollTop(ymitte * faktor - $div.height() / 2);
-	$bild.css('top', Math.max(($div.height()-20) - $bild.height(), 0));
+	tieToBottom($svg, $div);
 }
 function verschiebeBild(richtung) {
-	var div = document.getElementById('graphdiv');
+	var div = document.getElementById('graph');
 	switch (richtung) {
 		case 'oo': div.scrollTop = 0; break;
 		case 'uu': div.scrollTop = 9999; break;
@@ -212,36 +209,29 @@ function updateView(antworthash) {
 	if (antworthash['sentence_list'] != undefined) build_sentence_list(antworthash['sentence_list']);
 	setSelectedIndex(document.getElementById('sentence'), getCookie('traw_sentence'));
 	graphdivEinpassen();
-	var bild = document.getElementById('graph');
-	var scrollLeft = bild.parentNode.scrollLeft;
-	var scrollTop  = bild.parentNode.scrollTop;
-	var oldSvgWidth = $(bild).find('svg').width() || 1;
-	var oldSvgHeight = $(bild).find('svg').height() || 1;
-	var svgString = Viz(data['dot'], 'svg');
+	// insert svg
+	var $div = $('#graph');
+	var oldSvgWidth = $div.find('svg').width() || 1;
+	var oldSvgHeight = $div.find('svg').height() || 1;
 	var parser = new DOMParser();
-	var svgElement = parser.parseFromString(svgString, 'image/svg+xml');
+	var svgElement = parser.parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
 	var newSvgWidth = svgElement.documentElement.getAttribute('width').match(/\d+/);
 	var newSvgHeight = svgElement.documentElement.getAttribute('height').match(/\d+/);
-	while (bild.firstChild) bild.removeChild(bild.firstChild);
-	var widthRatio = newSvgWidth / oldSvgWidth;
-	var heightRatio  = newSvgHeight / oldSvgHeight;
-	bild.appendChild(svgElement.documentElement);
-	$(bild).find('svg').width(newSvgWidth);
-	$(bild).find('svg').height(newSvgHeight);
-
+	$div.empty().append(svgElement.documentElement);
+	var $svg = $div.find('svg');
+	// scale svg
 	if (data['sections_changed']) {
+		$svg.width(newSvgWidth);
+		$svg.height(newSvgHeight);
 		graphEinpassen();
 	} else {
-		$(bild).find('svg').width(newSvgWidth  * widthRatio);
-		$(bild).find('svg').height(newSvgHeight * heightRatio);
-		bild.parentNode.scrollLeft = scrollLeft * widthRatio;
-		bild.parentNode.scrollTop  = scrollTop  * heightRatio;
-		// Graphik ggf. "am Boden" halten:
-		if (scrollTop == 0) {
-			var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
-			bild.style.top = Math.max(outerHeight - bild.height, 0);
-		}
+		$svg.width(oldSvgWidth);
+		$svg.height(oldSvgHeight);
+		if ($div.scrollTop() == 0) tieToBottom($svg, $div);
 	}
+}
+function tieToBottom($svg, $div) {
+	$svg.css('top', Math.max(($div.height()-20) - $svg.height(), 0));
 }
 function sendCmd(txtcmd) {
 	if (txtcmd == undefined) txtcmd = document.cmd.txtcmd.value;
