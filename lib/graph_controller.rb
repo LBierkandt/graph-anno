@@ -434,7 +434,7 @@ class GraphController
 		generate_graph.merge(
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections => set_sections,
-			:sections_changed => (@current_sections && @sinatra.params[:sentence] && @sinatra.params[:sentence] == current_section_ids) ? false : true
+			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
 		)
 	end
 
