@@ -1,4 +1,7 @@
 class DotGraph
+	DotNode = Struct.new(:id, :options)
+	DotEdge = Struct.new(:start, :end, :options)
+
 	def initialize(name, options = {})
 		@name = name
 		@options = options
@@ -7,43 +10,37 @@ class DotGraph
 		@subgraphs = []
 	end
 
-	def add_nodes(id, options = {})
-		@nodes << {:id => id, :options => options}
+	def add_nodes(source, options = {})
+		@nodes << DotNode.new(get_id(source), options)
+		@nodes.last
 	end
 
-	def add_edges(start_id, end_id, options = {})
-		@edges << {:start => start_id, :end => end_id, :options => options}
+	def add_edges(start, target, options = {})
+		@edges << DotEdge.new(get_id(start), get_id(target), options)
+		@edges.last
 	end
 
 	def subgraph(options = {})
-		g = DotGraph.new(('a'..'z').to_a.shuffle[0..7].join, options)
-		@subgraphs << g
-		return g
+		@subgraphs << DotGraph.new(('a'..'z').to_a.shuffle[0..15].join, options)
+		@subgraphs.last
 	end
 
 	def to_s(type = 'digraph')
-		s = "#{type} #{@name}{"
-		s << options_string(@options, ';')
-		@nodes.each do |n|
-			s << "#{n[:id]}[#{options_string(n[:options])}]"
-		end
-		@edges.each do |e|
-			s << "#{e[:start]}->#{e[:end]}[#{options_string(e[:options])}]"
-		end
-		@subgraphs.each do |sg|
-			s << sg.to_s('subgraph')
-		end
-		s << '}'
-		return s
+		"#{type} #{@name}{" +
+			options_string(@options, ';') +
+			@nodes.map{|n| "#{n.id}[#{options_string(n.options)}]"}.join +
+			@edges.map{|e| "#{e.start}->#{e.end}[#{options_string(e.options)}]"}.join +
+			@subgraphs.map{|sg| sg.to_s('subgraph')}.join +
+			'}'
 	end
 
 	private
 
 	def options_string(h, sep = ',')
-		s = ''
-		h.each do |k, v|
-			s << "#{k}=\"#{v}\"#{sep}"
-		end
-		return s
+		h.map{|k, v| "#{k}=\"#{v}\"#{sep}"}.join
+	end
+
+	def get_id(source)
+		source.respond_to?(:id) ? source.id.to_s : source.to_s
 	end
 end

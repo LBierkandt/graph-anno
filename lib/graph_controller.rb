@@ -855,10 +855,10 @@ class GraphController
 				satzinfo[:textline] += token.token + ' '
 			end
 			unless token.speaker
-				token_graph.add_nodes(token.id.to_s, options)
+				token_graph.add_nodes(token, options)
 			else
 				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token.id.to_s, options)
+				gv_token = speaker_graphs[token.speaker].add_nodes(token, options)
 				gv_time  = timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
 				# add ordering edge from speaker to speaker's first token
 				viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
@@ -904,8 +904,8 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_nodes(node.id.to_s, options)
-			actual_layer_graph.add_nodes(node.id.to_s) if actual_layer_graph
+			viz_graph.add_nodes(node, options)
+			actual_layer_graph.add_nodes(node) if actual_layer_graph
 		end
 
 		@edges.each_with_index do |edge, i|
@@ -947,11 +947,11 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, options)
+			viz_graph.add_edges(edge.start, edge.end, options)
 		end
 
 		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, :style => :invis, :weight => 100)
+			viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 
 		return satzinfo.merge(:dot => viz_graph.to_s)
