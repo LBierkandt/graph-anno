@@ -56,12 +56,13 @@ function graphdivEinpassen() {
 	$('#graphdiv').height(window.innerHeight - $('#bottom').height());
 }
 function graphEinpassen() {
-	var bild = document.getElementById('graph');
-	var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
-	var newHeight = Math.min(outerHeight, bild.svgHeight);
-	bild.height = Math.round(newHeight);
-	bild.width = Math.round(bild.svgWidth / bild.svgHeight * newHeight);
-	bild.style.top = outerHeight - bild.height;
+	var $div = $('#graph');
+	var $svg = $div.find('svg');
+	var outerHeight = $('#graphdiv').height() - 20;
+	var newHeight = Math.min(outerHeight, $svg.height());
+	$div.height(newHeight);
+	$div.width($svg.width() / $svg.height() * newHeight);
+	$div.css('top', outerHeight - $div.height());
 }
 function taste(e) {
 	var ctrlShift = e.ctrlKey && e.shiftKey;
@@ -154,18 +155,19 @@ function taste(e) {
 	}
 }
 function aendereBildgroesze(richtung) {
-	var bild = document.getElementById('graph');
-	var div = document.getElementById('graphdiv');
-	var xmitte = div.scrollLeft + div.offsetWidth / 2
-	var ymitte = div.scrollTop + div.offsetHeight / 2
+	var $bild = $('#graph');
+	var $svg = $bild.find('svg');
+	var $div = $('#graphdiv');
+	var xmitte = $div.scrollLeft() + $div.width() / 2;
+	var ymitte = $div.scrollTop() + $div.height() / 2;
 	var faktor = 1;
 	if (richtung == '+') {faktor = 1.25}
 	else if (richtung == '-') {faktor = 0.8}
-	bild.width  *= faktor;
-	bild.height *= faktor;
-	div.scrollLeft = xmitte * faktor - div.offsetWidth / 2;
-	div.scrollTop  = ymitte * faktor - div.offsetHeight / 2;
-	bild.style.top = Math.max((div.offsetHeight-20) - bild.height, 0);
+	$svg.width($svg.width() * faktor);
+	$svg.height($svg.height() * faktor);
+	$div.scrollLeft(xmitte * faktor - $div.width() / 2);
+	$div.scrollTop(ymitte * faktor - $div.height() / 2);
+	$bild.css('top', Math.max(($div.height()-20) - $bild.height(), 0));
 }
 function verschiebeBild(richtung) {
 	var div = document.getElementById('graphdiv');
@@ -190,34 +192,33 @@ function updateView(data) {
 	var bild = document.getElementById('graph');
 	var scrollLeft = bild.parentNode.scrollLeft;
 	var scrollTop  = bild.parentNode.scrollTop;
-	// bild.onload = function(){
-		// var svgElement = this.contentDocument.documentElement;
-		var svgString = Viz(data['dot'], 'svg');
-		$(bild).html(svgString);
-// var parser = new DOMParser();
-// var svgElement = parser.parseFromString(svgString, 'image/svg+xml');
-// bild.appendChild(svgElement);
-		// var newSvgWidth  = svgElement.getAttribute('width').match(/\d+/);
-		// var newSvgHeight = svgElement.getAttribute('height').match(/\d+/);
-		// var widthRatio = newSvgWidth  / this.svgWidth;
-		// var heightRatio  = newSvgHeight / this.svgHeight;
-		// this.svgWidth  = newSvgWidth;
-		// this.svgHeight = newSvgHeight;
-		// if (data['sections_changed']) {
-		// 	graphEinpassen();
-		// } else {
-		// 	this.width  = this.width  * widthRatio;
-		// 	this.height = this.height * heightRatio;
-		// 	this.parentNode.scrollLeft = scrollLeft * widthRatio;
-		// 	this.parentNode.scrollTop  = scrollTop  * heightRatio;
-		// 	// Graphik ggf. "am Boden" halten:
-		// 	if (scrollTop == 0) {
-		// 		var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
-		// 		this.style.top = Math.max(outerHeight - this.height, 0);
-		// 	}
-		// }
-	// }
-	// bild.data = '/graph.svg?v=' + new Date().getTime();
+	var oldSvgWidth = $(bild).find('svg').width() || 1;
+	var oldSvgHeight = $(bild).find('svg').height() || 1;
+	var svgString = Viz(data['dot'], 'svg');
+	var parser = new DOMParser();
+	var svgElement = parser.parseFromString(svgString, 'image/svg+xml');
+	var newSvgWidth = svgElement.documentElement.getAttribute('width').match(/\d+/);
+	var newSvgHeight = svgElement.documentElement.getAttribute('height').match(/\d+/);
+	while (bild.firstChild) bild.removeChild(bild.firstChild);
+	var widthRatio = newSvgWidth / oldSvgWidth;
+	var heightRatio  = newSvgHeight / oldSvgHeight;
+	bild.appendChild(svgElement.documentElement);
+	$(bild).find('svg').width(newSvgWidth);
+	$(bild).find('svg').height(newSvgHeight);
+
+	if (data['sections_changed']) {
+		graphEinpassen();
+	} else {
+		$(bild).find('svg').width(newSvgWidth  * widthRatio);
+		$(bild).find('svg').height(newSvgHeight * heightRatio);
+		bild.parentNode.scrollLeft = scrollLeft * widthRatio;
+		bild.parentNode.scrollTop  = scrollTop  * heightRatio;
+		// Graphik ggf. "am Boden" halten:
+		if (scrollTop == 0) {
+			var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
+			bild.style.top = Math.max(outerHeight - bild.height, 0);
+		}
+	}
 }
 function sendCmd() {
 	postRequest('/handle_commandline', {
