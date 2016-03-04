@@ -22,6 +22,7 @@ require 'graphviz.rb'
 	require 'open3.rb'
 require 'htmlentities.rb'
 require_relative 'log.rb'
+require_relative 'dot_graph.rb'
 
 class GraphController
 	attr_writer :sinatra
@@ -802,7 +803,7 @@ class GraphController
 
 		satzinfo[:meta] = build_label(@sentence) if @sentence
 
-		viz_graph = GraphViz.new(
+		viz_graph = DotGraph.new(
 			:G,
 			:type => :digraph,
 			:rankdir => :TB,
@@ -953,9 +954,7 @@ class GraphController
 			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, :style => :invis, :weight => 100)
 		end
 
-		viz_graph.output(format => '"'+path+'"')
-
-		return satzinfo
+		return satzinfo.merge(:dot => viz_graph.to_s)
 	end
 
 	def sentence_set?
