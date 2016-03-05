@@ -87,7 +87,7 @@ class String
 			:elements => [],
 			:words => [],
 			:all_nodes => [],
-			:meta => [],
+			:sections => [],
 			:nodes => [],
 			:edges => [],
 			:tokens => [],
@@ -117,11 +117,11 @@ class String
 			elsif m = str.match(r[:string])
 				word = m[2] ? m[2].gsub('\"', '"') : m[1]
 				h[:words] << word
-				if word.match(/^(([ent]\d+)|m)$/)
+				if word.match(/^(([ents]\d+)|m)$/)
 					h[:elements] << word
 					case word[0]
-					when 'm'
-						h[:meta] << word
+					when 'm', 's'
+						h[:sections] << word
 					when 'n'
 						h[:nodes] << word
 						h[:all_nodes] << word

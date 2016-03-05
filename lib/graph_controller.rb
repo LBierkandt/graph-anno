@@ -463,7 +463,7 @@ class GraphController
 		label = ''
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map(&:attr)).include?(k)}
 		if e.is_a?(Node)
-			if e.type == 's'
+			if e.type == 's' || e.type == 'p'
 				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
 			elsif e.type == 't'
 				display_attr.each do |key, value|
@@ -521,7 +521,8 @@ class GraphController
 	def element_by_identifier(identifier)
 		i = identifier.scan(/\d/).join.to_i
 		{
-			'm' => @current_sections.length == 1 ? @current_sections.first : nil,
+			'm' => @current_sections,
+			's' => @graph.sections_hierarchy(@current_sections)[i - 1],
 			'n' => @nodes[i],
 			'e' => @edges[i],
 			't' => @tokens[i],
@@ -539,7 +540,7 @@ class GraphController
 	end
 
 	def extract_elements(identifiers)
-		identifiers.map{|id| element_by_identifier(id)}.compact
+		identifiers.map{|id| element_by_identifier(id)}.flatten.compact
 	end
 
 	def chosen_sections(words, current_as_default = true)

@@ -1042,6 +1042,36 @@ class AnnoGraph
 		return result
 	end
 
+	# @param sections [Array] a list of section nodes of the same level
+	# @return [Array] the ancestor and descendant sections of the given sections, grouped by level, starting with sentence level
+	def sections_hierarchy(sections)
+		return nil unless sections.map{|n| n.sectioning_level}.uniq.length == 1
+		hierarchy = [sections]
+		# get ancestors
+		current = sections
+		loop do
+			parents = current.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten.uniq
+			if parents.empty?
+				break
+			else
+				hierarchy << parents
+				current = parents
+			end
+		end
+		# get descendants
+		current = sections
+		loop do
+			children = current.map{|n| n.child_nodes{|e| e.type == 'p'}}.flatten.uniq
+			if children.empty?
+				break
+			else
+				hierarchy.unshift(children)
+				current = children
+			end
+		end
+		return hierarchy
+	end
+
 	def speaker_nodes
 		@nodes.values.select{|n| n.type == 'sp'}
 	end
