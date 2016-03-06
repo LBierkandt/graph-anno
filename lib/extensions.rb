@@ -88,6 +88,7 @@ class String
 			:words => [],
 			:all_nodes => [],
 			:sections => [],
+			:name_sequences => [],
 			:nodes => [],
 			:edges => [],
 			:tokens => [],
@@ -101,6 +102,7 @@ class String
 		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
 		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
+		r[:sequence] = r[:string] + '\.\.' + r[:string]
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
 		r[:id] = '@' + '[_[:alnum:]]+'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
@@ -110,6 +112,27 @@ class String
 			if m = str.match(r[:comment])
 				break
 			elsif m = str.match(r[:ctrl])
+			elsif m = str.match(r[:sequence])
+				if mm = str.match(/^([ent])(\d+)\.\.\1(\d+)$/)
+					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
+						h[:elements] << mm[1] + n.to_s
+						case str[0]
+						when 'n'
+							h[:nodes] << mm[1] + n.to_s
+							h[:all_nodes] << mm[1] + n.to_s
+						when 't'
+							h[:tokens] << mm[1] + n.to_s
+							h[:all_nodes] << mm[1] + n.to_s
+						when 'e'
+							h[:edges] << mm[1] + n.to_s
+						end
+					end
+				else
+					h[:name_sequences] << [
+						m[2] ? m[2].gsub('\"', '"') : m[1],
+						m[6] ? m[6].gsub('\"', '"') : m[5],
+					]
+				end
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
 				val = m[6] ? m[6].gsub('\"', '"') : m[5]
@@ -130,20 +153,6 @@ class String
 						h[:all_nodes] << word
 					when 'e'
 						h[:edges] << word
-					end
-				elsif mm = word.match(/^([ent])(\d+)\.\.\1(\d+)$/)
-					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
-						h[:elements] << mm[1] + n.to_s
-						case word[0]
-						when 'n'
-							h[:nodes] << mm[1] + n.to_s
-							h[:all_nodes] << mm[1] + n.to_s
-						when 't'
-							h[:tokens] << mm[1] + n.to_s
-							h[:all_nodes] << mm[1] + n.to_s
-						when 'e'
-							h[:edges] << mm[1] + n.to_s
-						end
 					end
 				elsif word.match(r[:id])
 					h[:ids] << word
