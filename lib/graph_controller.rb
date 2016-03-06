@@ -549,7 +549,7 @@ class GraphController
 				sequences.map{|sequence|
 					first, last = nodes_by_name(@graph.section_nodes, sequence)
 					if first and last
-						level_sections = @graph.sections[first.sectioning_level].map{|s| s[:node]}
+						level_sections = first.same_level_sections
 						level_sections[level_sections.index(first)..level_sections.index(last)]
 					else
 						[]
@@ -1059,7 +1059,7 @@ class GraphController
 	end
 
 	def set_sections(h = {})
-		@sections = @graph.sections.map do |level|
+		@sections = @graph.section_structure.map do |level|
 			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false).except(:node)}
 		end
 		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]

@@ -387,6 +387,11 @@ class Node < NodeOrEdge
 			return []
 		end
 	end
+
+	# @return [Array] an ordered list of the sections that are on the same level as self
+	def same_level_sections
+		@graph.section_structure_nodes[sectioning_level]
+	end
 end
 
 class Edge < NodeOrEdge
@@ -885,9 +890,11 @@ class AnnoGraph
 	def build_section(name, list, log_step = nil)
 		# create node only when all given nodes are on the same level and none is already grouped under another section
 		if list.group_by{|n| n.sectioning_level}.keys.length > 1
-			raise 'all given sections have to be on the same level'
+			raise 'All given sections have to be on the same level!'
 		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
-			raise 'given sections already belong to another section'
+			raise 'Given sections already belong to another section!'
+		elsif !list.map{|sect| sect.same_level_sections.index(sect)}.sort.each_cons(2).all?{|a, b| b == a + 1}
+			raise 'Sections have to be continuous!'
 		else
 			section_node = add_part_node(:name => name, :log => log_step)
 			list.each do |child_node|
@@ -1011,11 +1018,11 @@ class AnnoGraph
 
 	# @return [Array] all section nodes (i.e. type s and p)
 	def section_nodes
-		sections.flatten.map{|seg| seg[:node]}
+		section_structure_nodes.flatten
 	end
 
-	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level
-	def sections
+	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level, enriched with additional information
+	def section_structure
 		level = 0
 		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i, :text => n.text}}]
 		loop do
@@ -1040,6 +1047,11 @@ class AnnoGraph
 			end
 		end
 		return result
+	end
+
+	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level
+	def section_structure_nodes
+		section_structure.map{|level| level.map{|sect| sect[:node]}}
 	end
 
 	# @param sections [Array] a list of section nodes of the same level
