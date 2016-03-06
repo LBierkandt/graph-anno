@@ -87,7 +87,7 @@ class Node < NodeOrEdge
 	end
 
 	def inspect
-		'Node' + @id
+		"Node#{@id}"
 	end
 
 	# @return [Hash] the node transformed into a hash
@@ -443,7 +443,7 @@ class Edge < NodeOrEdge
 	end
 
 	def inspect
-		'Edge' + @id
+		"Edge#{@id}"
 	end
 
 	# sets the start node of self
