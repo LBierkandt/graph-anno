@@ -100,7 +100,7 @@ class String
 		r[:comment] = '#'
 		r[:bstring] = '[^\s:"#]+'
 		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
-		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\"))?"'
+		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\")|)"'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
 		r[:sequence] = r[:string] + '\.\.' + r[:string]
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
