@@ -543,9 +543,18 @@ class GraphController
 		identifiers.map{|id| element_by_identifier(id)}.flatten.compact
 	end
 
-	def chosen_sections(words, current_as_default = true)
-		if words != []
-			nodes_by_name(@graph.section_nodes, words)
+	def chosen_sections(words, sequences, current_as_default = true)
+		if !words.empty? || !sequences.empty?
+			nodes_by_name(@graph.section_nodes, words) +
+				sequences.map{|sequence|
+					first, last = nodes_by_name(@graph.section_nodes, sequence)
+					if first and last
+						level_sections = @graph.sections[first.sectioning_level].map{|s| s[:node]}
+						level_sections[level_sections.index(first)..level_sections.index(last)]
+					else
+						[]
+					end
+				}.flatten
 		elsif sentence_set? && current_as_default
 			@command_line << ' ' + @current_sections.map(&:name).join(' ')
 			@current_sections
@@ -693,26 +702,27 @@ class GraphController
 			reset_current_sections
 
 		when 's' # change sentence
-			@current_sections = chosen_sections(parameters[:words], false)
+			@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
 
 		when 'sect'
 			raise 'Please specify a name!' if parameters[:words] == []
-			section_nodes = chosen_sections(parameters[:words][1..-1])
+			section_nodes = chosen_sections(parameters[:words][1..-1], parameters[:name_sequences])
+			raise 'Please specify the sections to be grouped!' if section_nodes.empty?
 			log_step = @log.add_step(:command => @command_line)
 			new_section = @graph.build_section(parameters[:words].first, section_nodes, log_step)
 
 		when 'rem' # remove section nodes without deleting descendant nodes
-			sections = chosen_sections(parameters[:words])
+			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			raise 'You cannot remove sentences' if sections.any?{|s| s.type == 's'}
 			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
 			log_step = @log.add_step(:command => @command_line)
 			sections.each{|s| s.delete(log_step)}
 
 		when 'del' # delete section(s)
-			sections = chosen_sections(parameters[:words])
+			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
 			sections.each do |section|
 				if section.type == 's'
