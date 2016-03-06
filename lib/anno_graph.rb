@@ -883,11 +883,10 @@ class AnnoGraph
 	end
 
 	# create a section node as parent of the given section nodes
-	# @param name [String] the name of the new node
 	# @param list [Array] the section nodes that are to be grouped under the new node
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	# @return [Node] the new section node
-	def build_section(name, list, log_step = nil)
+	def build_section(list, log_step = nil)
 		# create node only when all given nodes are on the same level and none is already grouped under another section
 		if list.group_by{|n| n.sectioning_level}.keys.length > 1
 			raise 'All given sections have to be on the same level!'
@@ -896,7 +895,7 @@ class AnnoGraph
 		elsif !list.map{|sect| sect.same_level_sections.index(sect)}.sort.each_cons(2).all?{|a, b| b == a + 1}
 			raise 'Sections have to be continuous!'
 		else
-			section_node = add_part_node(:name => name, :log => log_step)
+			section_node = add_part_node(:log => log_step)
 			list.each do |child_node|
 				add_part_edge(
 					:start => section_node,

@@ -708,11 +708,11 @@ class GraphController
 			@log.user = @graph.set_annotator(:name => parameters[:string])
 
 		when 'sect'
-			raise 'Please specify a name!' if parameters[:words] == []
-			section_nodes = chosen_sections(parameters[:words][1..-1], parameters[:name_sequences])
+			section_nodes = chosen_sections(parameters[:words], parameters[:name_sequences])
 			raise 'Please specify the sections to be grouped!' if section_nodes.empty?
 			log_step = @log.add_step(:command => @command_line)
-			new_section = @graph.build_section(parameters[:words].first, section_nodes, log_step)
+			new_section = @graph.build_section(section_nodes, log_step)
+			new_section.annotate(parameters[:attributes], log_step)
 
 		when 'rem' # remove section nodes without deleting descendant nodes
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
