@@ -392,6 +392,16 @@ class Node < NodeOrEdge
 	def same_level_sections
 		@graph.section_structure_nodes[sectioning_level]
 	end
+
+	# return true if the sentences self contains are before and after the sentences the other section contains;
+	# in this case, the other section has to be dominated by self
+	# @param other [Node] the other section
+	# @return [Boolean] whether the other section's sentences are comprised
+	def comprise_section?(other)
+		all_sentence_nodes = @graph.sentence_nodes
+		return all_sentence_nodes.index(sentence_nodes.first) < all_sentence_nodes.index(other.sentence_nodes.first) &&
+			all_sentence_nodes.index(sentence_nodes.last) > all_sentence_nodes.index(other.sentence_nodes.last)
+	end
 end
 
 class Edge < NodeOrEdge
@@ -893,13 +903,20 @@ class AnnoGraph
 		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
 			raise 'Given sections already belong to another section!'
 		elsif !list.map{|sect| sect.same_level_sections.index(sect)}.sort.each_cons(2).all?{|a, b| b == a + 1}
-			raise 'Sections have to be continuous!'
+			raise 'Sections have to be contiguous!'
 		else
 			section_node = add_part_node(:log => log_step)
 			list.each do |child_node|
 				add_part_edge(
 					:start => section_node,
 					:end => child_node,
+					:log => log_step
+				)
+			end
+			if parent = section_nodes.select{|n| n.comprise_section?(section_node)}[0]
+				add_part_edge(
+					:start => parent,
+					:end => section_node,
 					:log => log_step
 				)
 			end
