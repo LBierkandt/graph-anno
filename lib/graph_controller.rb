@@ -716,10 +716,9 @@ class GraphController
 
 		when 'rem' # remove section nodes without deleting descendant nodes
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
-			raise 'You cannot remove sentences' if sections.any?{|s| s.type == 's'}
-			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
 			log_step = @log.add_step(:command => @command_line)
-			sections.each{|s| s.delete(log_step)}
+			@graph.remove_sections(sections, log_step)
+			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
 
 		when 'del' # delete section(s)
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])

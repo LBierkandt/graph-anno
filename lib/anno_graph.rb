@@ -174,7 +174,7 @@ class Node < NodeOrEdge
 			nodes = [self]
 			loop do
 				children = nodes.map{|n| n.child_nodes{|e| e.type == 'p'}}.flatten
-				return nodes if children.empty?
+				return @graph.sentence_nodes & nodes if children.empty? # use "&"" to preserve sentence order
 				nodes = children
 			end
 		elsif @type == 's'
@@ -922,6 +922,18 @@ class AnnoGraph
 			end
 			return section_node
 		end
+	end
+
+	# deletes the given sections if allowed
+	def remove_sections(list, log_step = nil)
+		raise 'You cannot remove sentences' if list.any?{|s| s.type == 's'}
+		if list.any?{|s| s.parent_nodes{|e| e.type == 'p'}[0] && s.parent_nodes{|e| e.type == 'p'}[0].comprise_section?(s)}
+			raise 'You cannot remove sections from the middle of a containing section'
+		end
+		if list.any?{|s| s.parent_nodes{|e| e.type == 'p'}[0].sentence_nodes == s.sentence_nodes}
+			raise 'You cannot remove intermediate sections'
+		end
+		list.each{|s| s.delete(log_step)}
 	end
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
