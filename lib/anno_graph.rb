@@ -173,7 +173,7 @@ class Node < NodeOrEdge
 		if @type == 'p'
 			nodes = [self]
 			loop do
-				children = nodes.map{|n| n.child_nodes{|e| e.type == 'p'}}.flatten
+				children = nodes.map{|n| n.child_sections}.flatten
 				return @graph.sentence_nodes & nodes if children.empty? # use "&"" to preserve sentence order
 				nodes = children
 			end
@@ -406,6 +406,11 @@ class Node < NodeOrEdge
 	# @return [Node] the parent section if present, else nil
 	def parent_section
 		parent_nodes{|e| e.type == 'p'}[0]
+	end
+
+	# @return [Array] the child sections
+	def child_sections
+		child_nodes{|e| e.type == 'p'}
 	end
 end
 
@@ -905,9 +910,9 @@ class AnnoGraph
 		# create node only when all given nodes are on the same level and none is already grouped under another section
 		if list.group_by{|n| n.sectioning_level}.keys.length > 1
 			raise 'All given sections have to be on the same level!'
-		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
+		elsif list.map{|n| n.parent_section}.compact != []
 			raise 'Given sections already belong to another section!'
-		elsif !list.map{|sect| sect.same_level_sections.index(sect)}.sort.each_cons(2).all?{|a, b| b == a + 1}
+		elsif !sections_contiguous?(list)
 			raise 'Sections have to be contiguous!'
 		else
 			section_node = add_part_node(:log => log_step)
@@ -933,9 +938,9 @@ class AnnoGraph
 	def remove_sections(list, log_step = nil)
 		if list.any?{|s| s.type == 's'}
 			raise 'You cannot remove sentences'
-		elsif list.any?{|s| s.parent_nodes{|e| e.type == 'p'}[0] && s.parent_nodes{|e| e.type == 'p'}[0].comprise_section?(s)}
+		elsif list.any?{|s| s.parent_section && s.parent_section.comprise_section?(s)}
 			raise 'You cannot remove sections from the middle of a containing section'
-		elsif list.any?{|s| s.parent_nodes{|e| e.type == 'p'}[0].sentence_nodes == s.sentence_nodes}
+		elsif list.any?{|s| s.parent_section && s.parent_section.sentence_nodes == s.sentence_nodes}
 			raise 'You cannot remove intermediate sections'
 		end
 		list.each{|s| s.delete(log_step)}
@@ -945,11 +950,9 @@ class AnnoGraph
 	def add_sections(parent, list, log_step = nil)
 		if list.any?{|s| s.sectioning_level != parent.sectioning_level - 1}
 			raise 'Sections to be added have to be one level below their new parent'
-		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
+		elsif list.map{|n| n.parent_section}.compact != []
 			raise 'Given sections already belong to another section!'
-		elsif !(list + parent.child_nodes{|e| e.type == 'p'}).map{|sect|
-				sect.same_level_sections.index(sect)}.sort.each_cons(2).all?{|a, b| b == a + 1
-			}
+		elsif !sections_contiguous?(list + parent.child_sections)
 			raise 'Sections have to be contiguous!'
 		end
 		list.each do |section|
@@ -959,9 +962,9 @@ class AnnoGraph
 
 	# detaches the given sections from their parent section
 	def detach_sections(list, log_step = nil)
-		if list.any?{|s| s.parent_section && s.parent_section.child_nodes{|e| e.type == 'p'} - list == []}
+		if list.any?{|s| s.parent_section && s.parent_section.child_sections - list == []}
 			raise 'You cannot detach all sections from their containing section'
-		elsif list.any?{|s| s.parent_section && !sections_contiguous?(s.parent_section.child_nodes{|e| e.type == 'p'} - list)}
+		elsif list.any?{|s| s.parent_section && !sections_contiguous?(s.parent_section.child_sections - list)}
 			raise 'You cannot detach sections from the middle of their containing section'
 		end
 		list.each do |section|
@@ -1094,8 +1097,7 @@ class AnnoGraph
 		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i, :text => n.text}}]
 		loop do
 			next_level_sections = result[level].map do |s|
-				parent = s[:node].parent_nodes{|e| e.type == 'p'}[0]
-				s.merge(:node => parent)
+				s.merge(:node => s[:node].parent_section)
 			end
 			next_level = {}
 			next_level_sections.each do |s|
@@ -1129,7 +1131,7 @@ class AnnoGraph
 		# get ancestors
 		current = sections
 		loop do
-			parents = current.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten.uniq
+			parents = current.map{|n| n.parent_section}.compact.uniq
 			if parents.empty?
 				break
 			else
@@ -1140,7 +1142,7 @@ class AnnoGraph
 		# get descendants
 		current = sections
 		loop do
-			children = current.map{|n| n.child_nodes{|e| e.type == 'p'}}.flatten.uniq
+			children = current.map{|n| n.child_sections}.flatten.uniq
 			if children.empty?
 				break
 			else
