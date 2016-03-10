@@ -707,14 +707,14 @@ class GraphController
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
 
-		when 'sect'
+		when 's-new' # create new section as parent of other sections
 			section_nodes = chosen_sections(parameters[:words], parameters[:name_sequences])
 			raise 'Please specify the sections to be grouped!' if section_nodes.empty?
 			log_step = @log.add_step(:command => @command_line)
 			new_section = @graph.build_section(section_nodes, log_step)
 			new_section.annotate(parameters[:attributes], log_step)
 
-		when 'rem' # remove section nodes without deleting descendant nodes
+		when 's-rem' # remove section nodes without deleting descendant nodes
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
 			@graph.remove_sections(sections, log_step)
