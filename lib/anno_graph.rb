@@ -936,6 +936,22 @@ class AnnoGraph
 		list.each{|s| s.delete(log_step)}
 	end
 
+	# adds the given sections to parent section
+	def add_sections(parent, list, log_step = nil)
+		if list.any?{|s| s.sectioning_level != parent.sectioning_level - 1}
+			raise 'Sections to be added have to be one level below their new parent'
+		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
+			raise 'Given sections already belong to another section!'
+		elsif !(list + parent.child_nodes{|e| e.type == 'p'}).map{|sect|
+				sect.same_level_sections.index(sect)}.sort.each_cons(2).all?{|a, b| b == a + 1
+			}
+			raise 'Sections have to be contiguous!'
+		end
+		sections.each do |section|
+			@graph.add_part_edge(:start => parent, :end => section, :log => log_step)
+		end
+	end
+
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{

@@ -720,6 +720,12 @@ class GraphController
 			@graph.remove_sections(sections, log_step)
 			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
 
+		when 's-add' # add section(s) to existing section
+			parent = chosen_sections(parameters[:words][0..0], [])[0]
+			sections = chosen_sections(parameters[:words][1..-1], parameters[:name_sequences])
+			log_step = @log.add_step(:command => @command_line)
+			@graph.add_sections(parent, sections, log_step)
+
 		when 'del' # delete section(s)
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
