@@ -726,6 +726,11 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			@graph.add_sections(parent, sections, log_step)
 
+		when 's-det' # detach section(s) from existing section
+			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
+			log_step = @log.add_step(:command => @command_line)
+			@graph.detach_sections(sections)
+
 		when 'del' # delete section(s)
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)

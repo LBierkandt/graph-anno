@@ -402,6 +402,11 @@ class Node < NodeOrEdge
 		return all_sentence_nodes.index(sentence_nodes.first) < all_sentence_nodes.index(other.sentence_nodes.first) &&
 			all_sentence_nodes.index(sentence_nodes.last) > all_sentence_nodes.index(other.sentence_nodes.last)
 	end
+
+	# @return [Node] the parent section if present, else nil
+	def parent_section
+		parent_nodes{|e| e.type == 'p'}[0]
+	end
 end
 
 class Edge < NodeOrEdge
@@ -950,6 +955,24 @@ class AnnoGraph
 		sections.each do |section|
 			@graph.add_part_edge(:start => parent, :end => section, :log => log_step)
 		end
+	end
+
+	# detaches the given sections from their parent section
+	def detach_sections(list, log_step = nil)
+		if list.any?{|s| s.parent_section && s.parent_section.child_nodes{|e| e.type == 'p'} - list == []}
+			raise 'You cannot detach all sections from their containing section'
+		elsif list.any?{|s| s.parent_section && !sections_contiguous?(s.parent_section.child_nodes{|e| e.type == 'p'} - list)}
+			raise 'You cannot detach sections from the middle of their containing section'
+		end
+		list.each do |section|
+			section.in.select{|e| e.type == 'p'}.each{|e| e.delete(log_step)}
+		end
+	end
+
+	# true it the given sections are contiguous
+	def sections_contiguous?(sections)
+		sections.map{|sect| sect.same_level_sections.index(sect)}
+			.sort.each_cons(2).all?{|a, b| b == a + 1}
 	end
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
