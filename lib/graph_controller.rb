@@ -522,7 +522,7 @@ class GraphController
 		i = identifier.scan(/\d/).join.to_i
 		{
 			'm' => @current_sections,
-			's' => @graph.sections_hierarchy(@current_sections)[i - 1],
+			's' => @graph.sections_hierarchy(@current_sections)[i],
 			'n' => @nodes[i],
 			'e' => @edges[i],
 			't' => @tokens[i],
