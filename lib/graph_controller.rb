@@ -729,6 +729,8 @@ class GraphController
 					@current_sections = [section.node_after || section.node_before || nil].compact if @current_sections.include?(section)
 					# join remaining sentences
 					@graph.add_order_edge(:start => section.node_before, :end => section.node_after, :log => log_step)
+					# delete dependent nodes
+					section.nodes.each{|n| n.delete(log_step)}
 				else
 					# change to next sentence
 					@current_sections = [section.sentence_nodes.last.node_after || section.sentence_nodes.first.node_before]
@@ -738,10 +740,12 @@ class GraphController
 						:end => section.sentence_nodes.last.node_after,
 						:log => log_step
 					)
+					# delete dependent nodes
+					section.descendant_sections.each do |n|
+						n.nodes.each{|n| n.delete(log_step)}
+						n.delete(log_step)
+					end
 				end
-				# delete nodes
-				section.nodes.each{|n| n.delete(log_step)}
-				section.descendant_sections.each{|n| n.delete(log_step)}
 				section.delete(log_step)
 			end
 
