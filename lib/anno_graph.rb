@@ -952,8 +952,8 @@ class AnnoGraph
 			}
 			raise 'Sections have to be contiguous!'
 		end
-		sections.each do |section|
-			@graph.add_part_edge(:start => parent, :end => section, :log => log_step)
+		list.each do |section|
+			add_part_edge(:start => parent, :end => section, :log => log_step)
 		end
 	end
 
