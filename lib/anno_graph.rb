@@ -935,6 +935,8 @@ class AnnoGraph
 	end
 
 	# deletes the given sections if allowed
+	# @param list [Array] the sections to be removed
+	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def remove_sections(list, log_step = nil)
 		if list.any?{|s| s.type == 's'}
 			raise 'You cannot remove sentences'
@@ -947,6 +949,9 @@ class AnnoGraph
 	end
 
 	# adds the given sections to parent section
+	# @param parent [Node] the section to which the sections should be added
+	# @param list [Array] the sections to be added
+	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def add_sections(parent, list, log_step = nil)
 		if list.any?{|s| s.sectioning_level != parent.sectioning_level - 1}
 			raise 'Sections to be added have to be one level below their new parent'
@@ -961,6 +966,8 @@ class AnnoGraph
 	end
 
 	# detaches the given sections from their parent section
+	# @param list [Array] the sections to be detached
+	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def detach_sections(list, log_step = nil)
 		if list.any?{|s| s.parent_section && s.parent_section.child_sections - list == []}
 			raise 'You cannot detach all sections from their containing section'
@@ -973,6 +980,8 @@ class AnnoGraph
 	end
 
 	# true it the given sections are contiguous
+	# @param sections [Array] the sections to be tested
+	# @return [Boolean]
 	def sections_contiguous?(sections)
 		sections.map{|sect| sect.same_level_sections.index(sect)}
 			.sort.each_cons(2).all?{|a, b| b == a + 1}
