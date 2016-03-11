@@ -171,9 +171,9 @@ function verschiebeBild(richtung) {
 	var div = document.getElementById('graphdiv');
 	switch (richtung) {
 		case 'oo': div.scrollTop = 0; break;
-		case 'uu': div.scrollTop = 9999; break;
+		case 'uu': div.scrollTop = 999999; break;
 		case 'a': div.scrollLeft = 0; break;
-		case 'e': div.scrollLeft = 9999; break;
+		case 'e': div.scrollLeft = 999999; break;
 		case 'l': div.scrollLeft -= 50; break;
 		case 'o': div.scrollTop  -= 50; break;
 		case 'r': div.scrollLeft += 50; break;
