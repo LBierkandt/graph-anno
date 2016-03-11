@@ -731,33 +731,24 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			@graph.detach_sections(sections)
 
-		when 'del' # delete section(s)
+		when 's-del', 'del' # delete section(s)
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
-			sections.each do |section|
-				if section.type == 's'
-					# change to next sentence
-					@current_sections = [section.node_after || section.node_before || nil].compact if @current_sections.include?(section)
-					# join remaining sentences
-					@graph.add_order_edge(:start => section.node_before, :end => section.node_after, :log => log_step)
-					# delete dependent nodes
-					section.nodes.each{|n| n.delete(log_step)}
-				else
-					# change to next sentence
-					@current_sections = [section.sentence_nodes.last.node_after || section.sentence_nodes.first.node_before]
-					# join remaining sentences
-					@graph.add_order_edge(
-						:start => section.sentence_nodes.first.node_before,
-						:end => section.sentence_nodes.last.node_after,
-						:log => log_step
-					)
-					# delete dependent nodes
-					section.descendant_sections.each do |n|
-						n.nodes.each{|n| n.delete(log_step)}
-						n.delete(log_step)
-					end
-				end
-				section.delete(log_step)
+			# change to next section
+			old_current_sections = @current_sections
+			if (@current_sections = @current_sections - sections).empty?
+				current_level_sections_to_be_deleted = old_current_sections.first.same_level_sections & sections
+				@current_sections = [
+					current_level_sections_to_be_deleted.last.sentence_nodes.last.node_after ||
+						current_level_sections_to_be_deleted.first.sentence_nodes.first.node_before
+				].compact
+			end
+			# delete
+			begin
+				@graph.delete_sections(sections, log_step)
+			rescue StandardError => e
+				@current_sections = old_current_sections
+				raise e
 			end
 
 		when 'load' # clear workspace and load corpus file

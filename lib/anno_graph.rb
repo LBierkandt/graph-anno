@@ -979,6 +979,34 @@ class AnnoGraph
 		end
 	end
 
+	# deletes the given sections including their child sections and their content
+	# @param list [Array] the sections to be deleted
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def delete_sections(list, log_step = nil)
+		if list.any?{|s| s.parent_section && s.parent_section.child_sections - list == []}
+			raise 'You cannot delete all sections from their containing section'
+		end
+		list.each do |section|
+				# join remaining sentences
+				add_order_edge(
+					:start => section.sentence_nodes.first.node_before,
+					:end => section.sentence_nodes.last.node_after,
+					:log => log_step
+				)
+			# delete dependent nodes
+			if section.type == 's'
+				section.nodes.each{|n| n.delete(log_step)}
+			else
+				section.descendant_sections.each do |n|
+					n.nodes.each{|n| n.delete(log_step)}
+					n.delete(log_step)
+				end
+			end
+			# delete the section node itself
+			section.delete(log_step)
+		end
+	end
+
 	# true it the given sections are contiguous
 	# @param sections [Array] the sections to be tested
 	# @return [Boolean]
