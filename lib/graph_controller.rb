@@ -717,8 +717,14 @@ class GraphController
 		when 's-rem' # remove section nodes without deleting descendant nodes
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
-			@graph.remove_sections(sections, log_step)
+			old_current_sections = @current_sections
 			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
+			begin
+				@graph.remove_sections(sections, log_step)
+			rescue StandardError => e
+				@current_sections = old_current_sections
+				raise e
+			end
 
 		when 's-add' # add section(s) to existing section
 			parent = chosen_sections(parameters[:words][0..0], [])[0]
