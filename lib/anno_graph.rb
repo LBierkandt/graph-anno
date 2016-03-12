@@ -1499,67 +1499,6 @@ class AnnoGraphConf
 	end
 end
 
-class Tagset < Array
-	def initialize(a = [])
-		a.to_a.each do |rule|
-			self << TagsetRule.new(rule['key'], rule['values']) if rule['key'].strip != ''
-		end
-	end
-
-	def allowed_attributes(attr)
-		return attr.clone if self.empty?
-		attr.select do |key, value|
-			self.any?{|rule| rule.key == key and rule.allowes?(value)}
-		end
-	end
-
-	def to_a
-		self.map(&:to_h)
-	end
-
-	def to_json(*a)
-		self.to_a.to_json(*a)
-	end
-end
-
-class TagsetRule
-	attr_accessor :key, :values
-
-	def initialize(key, values)
-		@key = key.strip
-		@values = values.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
-	end
-
-	def to_h
-		{:key => @key, :values => values_string}
-	end
-
-	def values_string
-		@values.map do |tok|
-			case tok[:cl]
-			when :bstring
-				tok[:str]
-			when :qstring
-				'"' + tok[:str] + '"'
-			when :regex
-				'/' + tok[:str] + '/'
-			end
-		end * ' '
-	end
-
-	def allowes?(value)
-		return true if value.nil? || @values == []
-		@values.any? do |rule|
-			case rule[:cl]
-			when :bstring, :qstring
-				value == rule[:str]
-			when :regex
-				value.match('^' + rule[:str] + '$')
-			end
-		end
-	end
-end
-
 class Annotator
 	attr_accessor :id, :name, :info
 
