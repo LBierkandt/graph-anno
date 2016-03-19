@@ -523,11 +523,11 @@ module SearchableGraph
 					end
 				when 'tb', 'ti'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.is_a?(Node) && e.type == 't'}.first
+					node = nodes.select{|e| e.is_a?(Node)}.of_type('t').first
 					build_tokens(command[:words][1..-1], :next_token => node)
 				when 'ta'
 					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.is_a?(Node) && e.type == 't'}.last
+					node = nodes.select{|e| e.is_a?(Node)}.of_type('t').last
 					build_tokens(command[:words][1..-1], :last_token => node)
 				when 'l'
 				end
@@ -889,10 +889,10 @@ class Automat
 		end
 		if nk.kind_of?(Node)
 			tg.nodes << nk
-			nk.out.select{|k| k.type == 'a'}.each do |auskante|
+			nk.out.of_type('a').each do |auskante|
 				liste << {:zustand => naechster_zustand, :tg => tg, :el => auskante, :forward => true}
 			end
-			nk.in.select{|k| k.type == 'a'}.each do |einkante|
+			nk.in.of_type('a').each do |einkante|
 				liste << {:zustand => naechster_zustand, :tg => tg, :el => einkante, :forward => false}
 			end
 		else # wenn nk eine Kante ist

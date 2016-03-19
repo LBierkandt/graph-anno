@@ -190,9 +190,9 @@ class Node < NodeOrEdge
 		if @type == 't'
 			ordered_sister_nodes{|t| t.sentence === s}
 		elsif @type == 's'
-			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
+			if first_token = child_nodes{|e| e.type == 's'}.of_type('t')[0]
 				if first_token.speaker
-					child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
+					child_nodes{|e| e.type == 's'}.of_type('t').sort{|a, b| a.start <=> b.start}
 				else
 					first_token.ordered_sister_nodes{|t| t.sentence === s}
 				end
@@ -638,7 +638,7 @@ class AnnoGraph
 			end
 			if version < 2
 				# SectNode für jeden Satz
-				sect_nodes = @nodes.values.select{|k| k.type == 's'}
+				sect_nodes = @nodes.values.of_type('s')
 				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
 					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
 						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
@@ -647,7 +647,7 @@ class AnnoGraph
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n.attr.public['sentence']}
+				sect_nodes = @nodes.values.of_type('s').sort_by{|n| n.attr.public['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
 					s.name = s.attr.public.delete('sentence')
@@ -886,8 +886,8 @@ class AnnoGraph
 	# @param mode [Symbol] :in or :out - whether to delete the ingoing or outgoing edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def delete_and_join(node, mode, log_step = nil)
-		node.in.select{|e| e.type == 'a'}.each do |in_edge|
-			node.out.select{|e| e.type == 'a'}.each do |out_edge|
+		node.in.of_type('a').each do |in_edge|
+			node.out.of_type('a').each do |out_edge|
 				devisor = mode == :in ? out_edge : in_edge
 				add_anno_edge(
 					{
@@ -975,7 +975,7 @@ class AnnoGraph
 			raise 'You cannot detach sections from the middle of their containing section'
 		end
 		list.each do |section|
-			section.in.select{|e| e.type == 'p'}.each{|e| e.delete(log_step)}
+			section.in.of_type('p').each{|e| e.delete(log_step)}
 		end
 	end
 
@@ -1049,7 +1049,7 @@ class AnnoGraph
 				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
 			end
 		end
-		first_new_sentence_node = @nodes.values.select{|n| n.type == 's' and !s_nodes.include?(n)}[0].ordered_sister_nodes.first
+		first_new_sentence_node = @nodes.values.of_type('s').select{|n| !s_nodes.include?(n)}[0].ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
@@ -1092,7 +1092,7 @@ class AnnoGraph
 		g.clone_graph_info(self)
 		last_sentence_node = nil
 		# copy speaker nodes
-		@nodes.values.select{|n| n.type == 'sp'}.each do |speaker|
+		@nodes.values.of_type('sp').each do |speaker|
 			g.add_cloned_node(speaker)
 		end
 		# copy sentence nodes and their associated nodes
@@ -1116,7 +1116,7 @@ class AnnoGraph
 
 	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
-		if first_sentence_node = @nodes.values.select{|n| n.type == 's'}[0]
+		if first_sentence_node = @nodes.values.of_type('s')[0]
 			first_sentence_node.ordered_sister_nodes
 		else
 			[]
@@ -1191,7 +1191,7 @@ class AnnoGraph
 	end
 
 	def speaker_nodes
-		@nodes.values.select{|n| n.type == 'sp'}
+		@nodes.values.of_type('sp')
 	end
 
 	# builds token nodes from a list of words, concatenates them and appends them if a sentence is given and the given sentence contains tokens; if next_token is given, the new tokens are inserted before next_token; if last_token is given, the new tokens are inserted after last_token

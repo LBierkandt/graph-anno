@@ -862,8 +862,8 @@ class GraphController
 		all_nodes   = @current_sections ? @current_sections.map(&:nodes).flatten(1) : []
 		@nodes      = all_nodes.reject{|n| n.type == 't'}
 		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
-		@edges      = all_edges.select{|e| e.type == 'a'}
-		order_edges = all_edges.select{|e| e.type == 'o'}
+		@edges      = all_edges.of_type('a')
+		order_edges = all_edges.of_type('o')
 
 		if @filter[:mode] == 'filter'
 			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
