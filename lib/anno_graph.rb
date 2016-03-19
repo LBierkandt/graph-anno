@@ -84,6 +84,7 @@ class Node < NodeOrEdge
 		@start= h[:start]
 		@end  = h[:end]
 		@custom = h[:custom]
+		@graph.node_index[@type][@id] = self
 	end
 
 	def inspect
@@ -112,6 +113,7 @@ class Node < NodeOrEdge
 		end
 		Array.new(@out).each(&:delete)
 		Array.new(@in).each(&:delete)
+		@graph.node_index[@type].delete(@id)
 		@graph.nodes.delete(@id)
 	end
 
@@ -504,7 +506,7 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator, :file_settings
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -638,7 +640,7 @@ class AnnoGraph
 			end
 			if version < 2
 				# SectNode für jeden Satz
-				sect_nodes = @nodes.values.select{|k| k.type == 's'}
+				sect_nodes = @node_index['s'].values
 				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
 					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
 						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
@@ -647,7 +649,7 @@ class AnnoGraph
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n.attr.public['sentence']}
+				sect_nodes = @node_index['s'].values.sort_by{|n| n.attr.public['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
 					s.name = s.attr.public.delete('sentence')
@@ -1049,7 +1051,7 @@ class AnnoGraph
 				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
 			end
 		end
-		first_new_sentence_node = @nodes.values.select{|n| n.type == 's' and !s_nodes.include?(n)}[0].ordered_sister_nodes.first
+		first_new_sentence_node = @node_index['s'].values.select{|n| !s_nodes.include?(n)}[0].ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
@@ -1092,7 +1094,7 @@ class AnnoGraph
 		g.clone_graph_info(self)
 		last_sentence_node = nil
 		# copy speaker nodes
-		@nodes.values.select{|n| n.type == 'sp'}.each do |speaker|
+		@node_index['sp'].values.each do |speaker|
 			g.add_cloned_node(speaker)
 		end
 		# copy sentence nodes and their associated nodes
@@ -1116,7 +1118,7 @@ class AnnoGraph
 
 	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
-		if first_sentence_node = @nodes.values.select{|n| n.type == 's'}[0]
+		if first_sentence_node = @node_index['s'].values[0]
 			first_sentence_node.ordered_sister_nodes
 		else
 			[]
@@ -1191,7 +1193,7 @@ class AnnoGraph
 	end
 
 	def speaker_nodes
-		@nodes.values.select{|n| n.type == 'sp'}
+		@node_index['sp'].values
 	end
 
 	# builds token nodes from a list of words, concatenates them and appends them if a sentence is given and the given sentence contains tokens; if next_token is given, the new tokens are inserted before next_token; if last_token is given, the new tokens are inserted after last_token
@@ -1232,6 +1234,7 @@ class AnnoGraph
 		@edges = {}
 		@highest_node_id = 0
 		@highest_edge_id = 0
+		@node_index = Hash.new{|h, k| h[k] = {}}
 		@conf = AnnoGraphConf.new
 		@info = {}
 		@tagset = Tagset.new
