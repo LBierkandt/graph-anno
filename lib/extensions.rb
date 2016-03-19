@@ -38,6 +38,10 @@ class Array
 		end
 		return false
 	end
+
+	def of_type(type)
+		select{|element| element.type == type}
+	end
 end
 
 class Hash
