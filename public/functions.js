@@ -1,7 +1,7 @@
 window.onload = function() {
 	loadGraph();
 
-	for (var id in {search: 0, filter: 0, log: 0, sectioning: 0}) restoreState(id);
+	for (var id in {search: 0, filter: 0, log: 0, sectioning: 0, independent: 0}) restoreState(id);
 
 	window.onkeydown = taste;
 
@@ -26,6 +26,7 @@ window.onload = function() {
 	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220, stop: saveState});
 	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400, stop: saveState});
 	$('#sectioning').resizable({handles: 'all', minHeight: 45, minWidth: 50, stop: saveState});
+	$('#independent').resizable({handles: 'all', minHeight: 45, minWidth: 50, stop: saveState});
 
 	// function of close button
 	$('.handle').html('<div class="close"></div>')
@@ -144,6 +145,10 @@ function taste(e) {
 			},
 			120: function(){
 				$('#sectioning').toggle();
+				saveState();
+			},
+			121: function(){
+				$('#independent').toggle();
 				saveState();
 			},
 		};
