@@ -858,12 +858,14 @@ class GraphController
 		puts "Generating graph for section(s) \"#{@current_sections.map(&:name).join(', ')}\"..." if @current_sections
 		satzinfo = {:textline => '', :meta => ''}
 
-		@tokens     = @current_sections ? @current_sections.map(&:sentence_tokens).flatten(1) : []
-		all_nodes   = @current_sections ? @current_sections.map(&:nodes).flatten(1) : []
-		@nodes      = all_nodes.reject{|n| n.type == 't'}
-		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
-		@edges      = all_edges.of_type('a')
-		order_edges = all_edges.of_type('o')
+		sentence_tokens = @current_sections ? @current_sections.map(&:sentence_tokens).flatten : []
+		sentence_nodes  = @current_sections ? @current_sections.map(&:nodes).flatten : []
+		all_edges       = sentence_nodes.map{|n| n.in + n.out}.flatten.uniq
+		all_nodes       = all_edges.map{|e| [e.start, e.end]}.flatten.uniq
+		@tokens         = (sentence_tokens + all_nodes.of_type('t')).uniq
+		@nodes          = all_nodes.of_type('a')
+		@edges          = all_edges.of_type('a')
+		order_edges     = all_edges.of_type('o')
 
 		if @filter[:mode] == 'filter'
 			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
