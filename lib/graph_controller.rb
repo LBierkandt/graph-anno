@@ -18,8 +18,6 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'yaml.rb'
-require 'graphviz.rb'
-	require 'open3.rb'
 require 'htmlentities.rb'
 require_relative 'log.rb'
 require_relative 'dot_graph.rb'
