@@ -214,13 +214,13 @@ function updateView(antworthash) {
 	var oldSvgWidth = $div.find('svg').width() || 1;
 	var oldSvgHeight = $div.find('svg').height() || 1;
 	var parser = new DOMParser();
-	var svgElement = parser.parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
+	var svgElement = parser.parseFromString(Viz(antworthash['dot'], 'svg'), 'image/svg+xml');
 	var newSvgWidth = svgElement.documentElement.getAttribute('width').match(/\d+/);
 	var newSvgHeight = svgElement.documentElement.getAttribute('height').match(/\d+/);
 	$div.empty().append(svgElement.documentElement);
 	var $svg = $div.find('svg');
 	// scale svg
-	if (data['sections_changed']) {
+	if (antworthash['sentence_changed']) {
 		$svg.width(newSvgWidth);
 		$svg.height(newSvgHeight);
 		graphEinpassen();
