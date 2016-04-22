@@ -904,42 +904,45 @@ word            =   attribute_value ("(" node_attributes")")?
 \end{itemize}
 
 
-\vskip4em
-\center{\Large tbc.}
-\kommentar{
-
 
 \subsubsection{\texttt{meta}}
 
-Die \texttt{meta}-Klausel schränkt die Menge der zu durchsuchenden Sätze ein. Über diese Klausel können Eigenschaften angegeben werden, die der Satznoten eines Satzes haben muß. Die Klausel besteht aus dem Schlüsselwort \texttt{meta} und einer Attributbeschreibung wie oben unter \texttt{node} beschrieben.
+The \texttt{meta} clause restricts the set of sentences to be searched.
+In this clause you can declare properties the sentence node should have.
+The clause is coposed of the keyword \texttt{meta} and an attribute description as described in \ref{node} for \texttt{node}.
 
-\paragraph*{Die \texttt{meta}-Klausel in modified BNF:}
+\paragraph*{The \texttt{meta} clause in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-text-klausel    =   "meta " attribute
+text-clause     =   "meta " attributes
 \end{lstlisting}
 \end{framed}
 
 
-
 \subsubsection{\texttt{cond}}\label{cond}
 
-Die \texttt{cond}-Klausel gibt Bedingung an, die das Graphfragment erfüllen muß und wirkt wie ein Filter. Die Klausel besteht aus dem Schlüsselwort \texttt{cond} und der Bedingung in Ruby-Kode. Die Knoten und Knotenmengen werden dabei durch die vergebenen IDs referenziert. Bei der Referenzierung ist zu beachten, daß es sich bei den mit \texttt{node} und \texttt{edge} gefundenen Knoten und Kanten um einzelne Elemente, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten und Kanten hingegen um Arrays von Elementen handelt.
+With the \texttt{cond} clause you can specify conditions the graph fragment has to fulfil.
+It works as a filter on the set of graph fragments found based on the rest of the query.
+The clause is composed of the keyword \texttt{cond} and the condition in Ruby code.
+The nodes and node sets are referenced with the IDs used in the other clauses of the query.
+When using IDs, note that the nodes and edges found by \texttt{node} and \texttt{edge} are single elements, whereas those found by \texttt{nodes}, \texttt{text} and \texttt{link} are arrays of elements.
 
-Auf die Attribute der Knoten wird in der Form \texttt{['schlüssel']} zugegriffen; für die Attribute \texttt{token} und \texttt{cat} stehen Abkürzungen der Form \texttt{.token} und \texttt{.cat} zur Verfügung. Über die Methode \texttt{.sentence} kann auf den Satznoten des Satzes, zu dem das Element gehört, zugegriffen werden. Bei der Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen behandelt werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
+In the condition, you may access the attributes of elements using square brackets like this: \texttt{['key']}; for the attributes \texttt{token} and \texttt{cat} you can use as a shortcut the accessor methods \texttt{.token} and \texttt{.cat}.
+Via the method \texttt{.sentence} you can access the sentence node the element belongs to.
+When using attribute values, bear in mind that these are always string; you may cast them to numbers with \texttt{.to\_i} or \texttt{.to\_f} for integers or floating point numbers, respectively.
 
 
-\paragraph*{Beispiele:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche zwei S-Knoten, die über eine ad-Kante verbunden sind und den gleichen Wert für tns haben:\\
+	\item Search for two S nodes that are linked via an ad edge and bear the same value for tns:\\
 	{\tt
 	node @s1 cat:S\\[-.4ex]
 	node @s2 cat:S\\[-.4ex]
 	link @s1@s2 cat:ad\\[-.4ex]
 	cond @s1['tns'] == @s2['tns']
 	}
-	\item Suche alle S-Knoten, die mindestens drei Token dominieren:\\
+	\item Search for all S nodes that dominate at least three tokens:\\
 	{\tt
 	node @s cat:S\\[-.4ex]
 	nodes @tok token\\[-.4ex]
@@ -951,30 +954,29 @@ Auf die Attribute der Knoten wird in der Form \texttt{['schlüssel']} zugegriffe
 
 \subsubsection{\texttt{def}}\label{def}
 
-Mit \texttt{def} besteht die Möglichkeit, für die Suche Makros zu definieren. Dabei wird ein Name angegeben, unter dem das Makro in den Suchklauseln angesprochen werden kann, und eine Attribut- oder Verbindungsbeschreibung, die durch den Namen vertreten wird. Die Attribut-/Verbindungsbeschreibung ist aufgebaut wie für \texttt{node} und \texttt{link} in \ref{node} bzw. \ref{link} beschrieben.
+With \texttt{def} you can define makros for use in your query.
+After the keyword \texttt{def} you specify a name for the makro and an attribute description or connection description that will be filled in for your makro.
+The attribute or connection description is formulated as described for \texttt{node} and \texttt{link} in \ref{node} and \ref{link}, respectively.
 
-Es ist zu beachten, daß ein Makro quasi automatisch geklammert wird, also stets zuerst ausgewertet wird. Nehmen wir beispielsweise an, man definiert ein Makro als \texttt{cat:S | cat:VP} wie unten im Beispiel und kombiniert es durch den Operator \texttt{\&} mit einer weiteren Bedingung – \texttt{tns:prs} wie beim zweiten Knoten im Beispiel. Dann wird dies nicht als \texttt{cat:S | cat:VP \& tns:prs} ausgewertet, in welchem Falle das \texttt{\&} Präzedenz über das \texttt{|} nähme, sondern als \texttt{(cat:S | cat:VP) \& tns:prs}.
+Bear in mind that a makro will be interpreted as it was in parentheses, i.e. it will be evaluated first.
+E.g., if you define a makro \texttt{cat:S | cat:VP} and combine it with the condition \texttt{tns:prs} using the operator \texttt{\&}, this will not be evaluated as \texttt{cat:S | cat:VP \& tns:prs} with the \texttt{\&} preceding the \texttt{|} but as \texttt{(cat:S | cat:VP) \& tns:prs}.
 
-\paragraph*{Die Makrodefinition \texttt{def} in modified BNF:}
+\paragraph*{The makro definition \texttt{def} in modified BNF:}
 ~
 \begin{framed}
 \begin{lstlisting}
-makrodefinition =   "def " name " " makro
-makro           =   kantenattribute
-                    knotenattribute
-                    verbindung
-name            =   alnum+
+makro_definition =   "def " name " " makro
+makro            =   edge_attributes
+                     node_attributes
+                     connection
+name             =   alnum+
 \end{lstlisting}
-%\begin{lstlisting}
-%makrodefinition =   "def " name " " (kantenattribute | knotenattribute)
-%name            =   alnum+
-%\end{lstlisting}
 \end{framed}
 
 
-\paragraph*{Beispiel:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche zwei Knoten mit \texttt{cat:S} oder \texttt{cat:VP}, die über eine Kante verbunden sind, und von denen der zweite im Präsens steht:\\
+	\item Search for two nodes with \texttt{cat:S} or \texttt{cat:VP} that are linked via one edge and where the second one is in present tense:\\
 	{\tt
 	def svp cat:S | cat:VP\\[-.4ex]
 	node @s1 svp\\[-.4ex]
@@ -995,15 +997,16 @@ name            =   alnum+
 
 \subsection{Annotation}
 
-Nach dem Durchführen einer Suche können unter Zuhilfenahme der in der Suche vergebenen IDs automatisch Annotationen durchgeführt werden. Dazu stehen die in Abschnitt \ref{annotationsbefehle} vorgestellten Annotationsbefehle (außer \texttt{t}) zur Verfügung.
+After performing a search you can automatically annotate elements of the found graph fragments using the IDs used in your search query.
+For this purpose you can use the annotation commands described in \ref{annotationsbefehle} (except for \texttt{t}).
 
-Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
+Because of the other using context you have take account of some changes:
 \begin{itemize}
-	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet.
-	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
-	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
-	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
-	\item Bei der Angabe von Attributen kann für den Wert auf die in der Suche gefundenen Elemente zurückgegriffen werden. Dazu wird die Zeichenkette für den Wert in doppelten Anführungszeichen angegeben und darin kann, wie in Ruby gebräuchlich, in geschweiften Klammern mit vorangestelltem Rautenzeichen Ruby-Kode verwendet werden, in dem die gefundenen Elemente mit ihren IDs referenziert werden. Eine Such-/Annotationskombination, die alle Satzknoten mit dem von ihnen dominierten Text versieht (mit Punkt abgeschlossen) könnte z.B. folgendermaßen aussehen:
+	\item Instead of the node and edge references in the form of \texttt{n7}, \texttt{t8} or \texttt{e13} you use the IDs defined in your search query (in the form of \texttt{@s1} or the like).
+	\item There is no annotation layer set. You should use a layer switch in your first annotation command (if needed).
+	\item When using the command \texttt{n}, you have to specify a node that determines the sentence the new node will belong to.
+	\item As the IDs can stand for single elements as well as for sets of elements, you have to note some particularities: For the command \texttt{e} you have to give exactly two IDs; if these are single element IDs, a single edge will be created; if they are one single element IDs and one set ID or two set IDs, an edge will be created for each of the node combinations from the two IDs. For the tokenizing commands \texttt{tb} and \texttt{ta} the first or last token of the set, respectively, will be used if you give a set IDs. In all other commands you can give an arbitrary number of set IDs or single element IDs. All given elements then will be treated as \texttt{one} set of elements.
+	\item When specifying attributes, you can use the elements found in your search. For this purpose, write the value string in double quotes and interpolate a part of the string in Ruby code (in which you can use your IDs) wrapped in braces with a prepended hash sign (as you also do in plain Ruby). As an example, a search/annotation combination that annotates all nodes of category S with their dominated text (terminated with a full stop) could look like this:
 	\begin{verbatim}
 		node @s cat:S
 		a @s text:"#{@s.text}."
@@ -1012,41 +1015,49 @@ Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
 
 
 
-\subsection{Datenexport}
+\subsection{Data export}
 
-Die GraphAnno-Abfragesprache biete auch Funktionalität zum Exportieren von Suchergebnissen als CSV-Dateien an.
-Mit den nachfolgen beschriebenen Klauseln kann angegeben werden, wie Infomationen der in einer zuvor durchgeführten Suche gefundenen Teilgraphen ausgegeben werden sollen.
-Die Daten jedes gefundenen Teilgraphen werden in eine Zeile der CSV-Datei geschrieben, mit \texttt{sort} können die Ergebnisse sortiert werden, mit \texttt{col} wird angegeben, welche Spalten mit welchen Werten angelegt werden sollen. Als erste Spalte wird stets eine fortlaufende Numerierung der Ergebnisse mit ausgegeben.
+The GraphAnno query language also gives you the possiblity to export search results as CSV files.
+With the clauses \texttt{col} and \texttt{sort}, described in the following, you can specify which information about the graph fragments found in your search should be exported and in which form.
+The data of each found graph fragment will be written in one line of the CSV file; with \texttt{sort} you can sort the matches and with \texttt{col} you specify which columns with which values are to be created.
+There will always be a first column with a consecutive numbering of the matches.
+
+
+\subsubsection{\texttt{col}}
+
+Each \texttt{col} clause stands for a column in the CSV data to be exported.
+Its first parameter is the column title (which must not contain spaces); it is followed by Ruby code that yields the value to emit.
+Nodes and edges are referenced using the IDs defined in your search query.
+Again, bear in mind that the nodes and edges found by \texttt{node} and \texttt{edge} are single elements, whereas those found by \texttt{nodes}, \texttt{text} and \texttt{link} are arrays of elements.
+
+You can access the attributes as described in \ref{cond} for \texttt{cond}.
+There are also other useful methods for exporting data:
+E.g., \texttt{.tokens} returns a list of the dominated tokens (you may also give a more specific link description string as argument of the method); \texttt{.text} works in the same way but returns the token text as a string.
+\texttt{.sentence\_tokens} returns a list of all token nodes of the sentence the element belongs to, \texttt{.sentence\_text}, again, their text. 
+
+When working with the multi-annotator feature (cf. \ref{annotatoren}), the direct access to the attributes (using square brackets) will return the annotations of the current annotator.
+If you want to access the annotations of other annotators, use the method \texttt{.private\_attr}, which takes as argument the name of the annotator\\e.g., \texttt{@s.private\_attr('thomas')['cat']}).
+For the public annotations, use the method \texttt{.public\_attr} (e.g., \texttt{@s.public\_attr['cat']}).
+
 
 \subsubsection{\texttt{sort}}
 
-Die \texttt{sort}-Klausel dient dazu, die Ausgabe der gefundenen Teilgraphen zu sortieren. Es können mehrere \texttt{sort}-Klauseln angegeben werden, wobei weiter unten angegeben Klauseln nur ausgewertet werden, wenn  weiter oben angegebenen Klauseln keine Reihenfolge zwischen zwei Teilgraphen ergeben.
-Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert ergeben, der für die Sortierung verglichen werden soll. Wie bei \texttt{cond} werden die gefundenen Knoten und Kanten über die in der Suche vergebenen IDs referenziert. Bei Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen verglichen werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
+The \texttt{sort} clause can be used for sorting the matches.
+When you use multiple \texttt{sort} clauses, clauses specified later will only be evaluated when the clauses specified further up do not yield an order.
 
-\paragraph*{Beispiele:}
+The \texttt{sort} clause uses Ruby code which yields the value that will be compared for sorting the matches.
+Like with \texttt{col}, the nodes and edges are references via the IDs defined in your search query.
+Again, bear in mind that attribute values are always strings and have to be casted to numbers (\texttt{.to\_i} or \texttt{.to\_f}) when you expect them to be compared as numbers.
+
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Sortiere die Ergebnisse nach Satznamen, bzw. nach Tokennummer (die Methode \texttt{.tokenid} gibt die Stelle des Tokens im Satz, beginnend mit 0, aus), wenn sie dem gleichen Satz angehören (durch die Suchanfrage sei gegeben: ein Token mit der ID \texttt{@t1}):\\
+	\item Sort the matches by sentence name or, if they belong to the same sentence, token ID (the method \texttt{.tokenid} returns the position of the token in its sentence, starting with 0). Given by the search query: the ID \texttt{@t1} referring to a token:\\
 	{\tt
 	sort @t1.sentence.name\\[-.4ex]
 	sort @t1.tokenid\\[-.4ex]
 	}
 \end{itemize}
 
-
-
-\subsubsection{\texttt{col}}
-
-Jede \texttt{col}-Klausel steht für eine zu exportierende Spalte. Sie hat als ersten Parameter den Spaltentitel (der keine Leerzeichen enthalten darf), gefolgt von Ruby-Kode, der den auszugebenden Wert ergibt. Knoten und Kanten werden wie gehabt über ihre in der Suche vergebene ID referenziert, dabei ist zu beachten, daß es sich bei den mit \texttt{node} gefundenen Knoten um einzelne Knoten, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten hingegen um Arrays von Knoten handelt.
-
-Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschrieben. Es gibt jedoch noch weitere für die Ausgabe nützliche Methoden: \texttt{.tokens} gibt die über syntaktische Kanten dominierten Token als Liste aus, \texttt{.text} deren Text als Zeichenkette (die einzelnen Tokentexte mit Leerzeichen getrennt). \texttt{.sentence\_tokens} gibt alle Token des Satzes, dem das Element angehört als Liste aus, \texttt{.sentence\_text} wiederum deren Text. \texttt{.position} gibt die Position eines Knotens als Durchschnitt der Positionen seiner dominierten Token aus.
-
-Bei der Arbeit mit der Mehrannotatorenfunktion (vgl. \ref{annotatoren}) gibt der direkte Zugriff auf die Attribute (mittels eckiger Klammern) die Annotationen des aktuell eingestellten Annotators aus.
-Für die Ausgabe der Annotationen anderer Annotatoren dient die Methode \texttt{.private\_attr}, die als Argument den Namen des Annotators nimmt\\(z.B. \texttt{@s.private\_attr('thomas')['cat']}).
-Für die allgemeinen Annotationen steht die Methode \texttt{.public\_attr} zur Verfügung (z.B. \texttt{@s.public\_attr['cat']}).
-
-
-
-}
 
 
 \end{document}
