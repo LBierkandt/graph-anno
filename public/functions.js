@@ -188,26 +188,34 @@ function updateView(data) {
 	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
 	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
 	graphdivEinpassen();
-	// insert svg
+	// get old dimensions
 	var $div = $('#graph');
-	var oldSvgWidth = $div.find('svg').width() || 1;
-	var oldSvgHeight = $div.find('svg').height() || 1;
-	var parser = new DOMParser();
-	var svgElement = parser.parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
-	var newSvgWidth = svgElement.documentElement.getAttribute('width').match(/\d+/);
-	var newSvgHeight = svgElement.documentElement.getAttribute('height').match(/\d+/);
+	var oldImageSize = {
+		width: $div.find('svg').width() || 1,
+		height: $div.find('svg').height() || 1,
+	};
+	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
+	// create svg
+	var svgElement = new DOMParser().parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
+	// get new dimensions
+	var newSvgSize = {
+		width: parseInt(svgElement.documentElement.getAttribute('width')),
+		height: parseInt(svgElement.documentElement.getAttribute('height')),
+	};
+	// insert svg
 	$div.empty().append(svgElement.documentElement);
 	var $svg = $div.find('svg');
 	// scale svg
 	if (data['sections_changed']) {
-		$svg.width(newSvgWidth);
-		$svg.height(newSvgHeight);
+		$svg.width(newSvgSize.width);
+		$svg.height(newSvgSize.height);
 		graphEinpassen();
 	} else {
-		$svg.width(oldSvgWidth);
-		$svg.height(oldSvgHeight);
+		$svg.width(newSvgSize.width * oldImageSize.width / originalSvgSize.width);
+		$svg.height(newSvgSize.height * oldImageSize.height / originalSvgSize.height);
 		if ($div.scrollTop() == 0) tieToBottom($svg, $div);
 	}
+	originalSvgSize = newSvgSize;
 }
 function tieToBottom($svg, $div) {
 	$svg.css('top', Math.max(($div.height()-20) - $svg.height(), 0));
