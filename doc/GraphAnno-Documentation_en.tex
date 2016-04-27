@@ -1,12 +1,13 @@
 \documentclass[12pt]{scrartcl}
 \usepackage{fontspec}
-\usepackage{linguex}
+\usepackage[ngerman,english]{babel}
+\useshorthands{"}
+\addto\extrasenglish{\languageshorthands{ngerman}}\usepackage{linguex}
 \usepackage{booktabs}
 \usepackage{listings}
-\usepackage{framed}
 \usepackage{url}
 \usepackage{xcolor}
-\definecolor{darkblue}{rgb}{0,0,.5}
+\usepackage{soul}
 \usepackage[pdfpagemode=UseNone, colorlinks=true, allcolors=darkblue]{hyperref}
 
 %\KOMAoptions{BCOR=16mm}
@@ -46,8 +47,23 @@
 \renewcommand{\topfraction}{1}
 %\renewcommand{\bottomfraction}{1}
 
-\lstset{basicstyle=\renewcommand{\baselinestretch}{1}\tt, aboveskip=0em, belowskip=0em, tabsize=4, xleftmargin=.5em}
+\definecolor{darkblue}{rgb}{0,0,.5}
+\definecolor{lightgray}{rgb}{.92,.92,.92}
+\sethlcolor{lightgray}
 
+\newcommand{\code}[1]{\hl{\texttt{#1}}}
+\lstset{
+	basicstyle=\renewcommand{\baselinestretch}{1}\tt,
+	tabsize=4,
+	backgroundcolor=\color{lightgray},
+	aboveskip=.8em,
+	belowskip=.8em,
+	xleftmargin=.7em,
+	frame=tblr,
+	framesep=.3em,
+	framexleftmargin=.4em,
+	framerule=0pt
+}
 
 \title{\LARGE GraphAnno\\ \large An annotation and query tool\\for graph-based linguistic annotations}
 \author{Lennart Bierkandt\\\large Friedrich-Schiller-Universität Jena\\[-.2em]\large post@lennartbierkandt.de}
@@ -91,27 +107,27 @@
 
 A graph in GraphAnno consists of a set of nodes and directed edges.
 Nodes and edges bear attributes in the form of key-value pairs, that are used for the linguistic annotation as well as the structuring and visualization of the graph.
-There are some attributes – like the attribute \texttt{type}, that differentiates the types of nodes and edges (annotation nodes, tokens, sentence nodes; annotation edges, ordering edges, section edges) – that serve the internal representation of the graph and are not edited directly.
-Under the key \texttt{attr}, however, there is a group of key-value pairs which serve the linguistic annotations and the representation of layers and which are edited by the user directly.
+There are some attributes – like the attribute \code{type}, that differentiates the types of nodes and edges (annotation nodes, tokens, sentence nodes; annotation edges, ordering edges, section edges) – that serve the internal representation of the graph and are not edited directly.
+Under the key \code{attr}, however, there is a group of key-value pairs which serve the linguistic annotations and the representation of layers and which are edited by the user directly.
 They will be called \textit{annotation attributes} in the following.
 
 The graph in GraphAnno is segmented in sentences – units that that are used for structuring and displaying the corpus, but that do not necessarily correspond to real sentences (how ever these may be defined).
-There is a sentence node (bearing the attribute \texttt{type:s}) for every sentence, that bears information concerning the whole sentence.
+There is a sentence node (bearing the attribute \code{type:s}) for every sentence, that bears information concerning the whole sentence.
 This includes, e.g., source, medium, speaker or the like.
 The annotations of this node is displayed in the light grey area below the sentence graph and under the text of the sentence (blue font) in black font.
-The information to which sentence a node of the graph belongs is represented by an (invisible) edge with \texttt{type:s} that links the node in question to the sentence node.
+The information to which sentence a node of the graph belongs is represented by an (invisible) edge with \code{type:s} that links the node in question to the sentence node.
 Edges are not linked to a sentence node; their affiliation follows from the affiliation of their start and end nodes.
 
-Token nodes are characterized by the attribute \texttt{type:t} and they carry the annotation attribute \texttt{token} with the token text as value.
-The order of the tokens of a sentence (as well as the sentence nodes themselves) is defined by ordering edges (with \texttt{type:o}) that link each node to its successor.
+Token nodes are characterized by the attribute \code{type:t} and they carry the annotation attribute \code{token} with the token text as value.
+The order of the tokens of a sentence (as well as the sentence nodes themselves) is defined by ordering edges (with \code{type:o}) that link each node to its successor.
 These edges are needed for the correct visualization and for traversal; the are, however, not displayed and cannot be manipulated directly.
 
-Among the annotation attributes, nodes and edges may bear the \texttt{cat} attribute, that has no special meaning for the graph, but which is desplayed prominently on top of the other annotations and without the key.
-Nodes and edges show numbers like \texttt{t23} for tokens, \texttt{n23} for other nodes and \texttt{e23} for edges, that are used for referencing the elements in annotation commands.
+Among the annotation attributes, nodes and edges may bear the \code{cat} attribute, that has no special meaning for the graph, but which is desplayed prominently on top of the other annotations and without the key.
+Nodes and edges show numbers like \code{t23} for tokens, \code{n23} for other nodes and \code{e23} for edges, that are used for referencing the elements in annotation commands.
 These numbers are not stored in the graph model but generated dynamically each time the displayed graph is rendered.
 
 GraphAnno also provides the possibility to assign nodes and edges to different layers.
-The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation (among the annotation attributes) with the key corresponding to the layer and the value \texttt{t} (for \textit{true}).
+The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation (among the annotation attributes) with the key corresponding to the layer and the value \code{t} (for \textit{true}).
 This representation allows for elements to belong to more than one layer, with the consequence that layers my overlap in an arbitrary manner.
 Nodes and edges of different layers may be displayed in different colors and aligned in different ways (hierachically or horizontally).
 Tokens do not belong to any layer; they are displayed in black by default.
@@ -122,20 +138,20 @@ Tokens do not belong to any layer; they are displayed in black by default.
 
 \subsection{Layers and visualization}\label{ebenenkonfiguration}
 
-The window for configuration of the layers of the currently loaded graph and its visualization is opened with the commmand line command \texttt{config}.
+The window for configuration of the layers of the currently loaded graph and its visualization is opened with the commmand line command \code{config}.
 
-In the section \textit{general settings}, you can configure the settings for nodes and edges that do not belong to any layer.\footnote{Depending on the browser you use, the color fields are displayed as color picker or as simple text field. In the latter case, you have to provide the color as hexadecimal RGB value: A hash (\texttt{\#}) followed by three two-digit hexadecimal numbers for red, green and blue, respectively. \texttt{\#000000}, e.g., stands for black, \texttt{\#ffffff} for white, \texttt{\#ff0000} for light red etc.}
+In the section \textit{general settings}, you can configure the settings for nodes and edges that do not belong to any layer.\footnote{Depending on the browser you use, the color fields are displayed as color picker or as simple text field. In the latter case, you have to provide the color as hexadecimal RGB value: A hash (\code{\#}) followed by three two-digit hexadecimal numbers for red, green and blue, respectively. \code{\#000000}, e.g., stands for black, \code{\#ffffff} for white, \code{\#ff0000} for light red etc.}
 \textit{Default color} applies to all nodes and edges that are not tokens and that do not belong to any layer, \textit{token color} applies to tokens, \textit{found color} is used for the highlighting of nodes and edges found in a search, and \textit{filtered color} for elements that are filtered out by the filter function.
 The setting for \textit{edge weight} affects the layout of the displayed graph and shows its effect only when edges with different weight are present (details will follow in the next paragraph).
 
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
-\textit{Attribute} is the attribute that will be set to \texttt{t} for elements that belong to the layer in question.
-The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. \ref{befehl-n} or \ref{befehl-l}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \texttt{t}, \texttt{n} or \texttt{e} followed by a number, or  \texttt{m}; cf. \ref{befehl-a}).
+\textit{Attribute} is the attribute that will be set to \code{t} for elements that belong to the layer in question.
+The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. \ref{befehl-n} or \ref{befehl-l}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n} or \code{e} followed by a number, or  \code{m}; cf. \ref{befehl-a}).
 \textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
 The heigher this value (integer values), the shorter the rendering algorithm will try to make the edges.
 When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
-If you enter \texttt{0} as edge weight, the edges will not enforce a hierachy between the nodes of that layer (otherwise, the start node of an edge is always placed higher than the end node).
+If you enter \textit{0} as edge weight, the edges will not enforce a hierachy between the nodes of that layer (otherwise, the start node of an edge is always placed higher than the end node).
 If a negative value is entered, all nodes of that layer are displayed horizontally on one tier.
 
 The section \textit{layer combinations} contains the settings for elements that belong to multiple layers.
@@ -144,11 +160,11 @@ The other settings work like those described for the \textit{layers}, and for th
 
 Under \textit{search makros} you can enter predefined graph-specific search makros as described in Section \ref{def}.
 These makros are then available for search queries in the graph.
-In the search makros text area, the definitions (\texttt{def ...}) have to be enterd each on its own line.
+In the search makros text area, the definitions (\code{def ...}) have to be enterd each on its own line.
 
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
-In the window open by the command \texttt{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
+In the window open by the command \code{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
 Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
 Already existing annotations are not affected by changes of the permitted keys and values.
 
@@ -158,46 +174,46 @@ If you leave the value field for a key empty, then all values are permitted for 
 If you want to restrict the possible values for a key, you may enter these into the value field of the key in question, separated by spaces.
 
 The notation of the values is subject to the same rules as in the query language (cf. Section \ref{node}, p.\,\pageref{zeichenketten}):
-Simple values are entered without further markup; if a value contains special characters (see p.\,\pageref{zeichenketten}) it has to be enclosed in double quotes (\texttt{\quo...\quo}).
-Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\texttt{/.../}).
+Simple values are entered without further markup; if a value contains special characters (see p.\,\pageref{zeichenketten}) it has to be enclosed in double quotes (\code{\quo...\quo}).
+Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\code{/.../}).
 In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
 
 \subsection{Annotation makros}\label{annotationsmakros}
 
 For a graph you save annotation makros, that facilitate the annotation with frquently needed attribute combinations.
-With the command \texttt{makros} you open a window where you can define these makros.
+With the command \code{makros} you open a window where you can define these makros.
 In the fields on the left you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}); in the corresponding field on the right you enter the desired annotations for your makro.
-For these annotations you must use the same syntax as in the annotation commands, i.e. a set of attributes in the form \texttt{key:value}, separated by spaces (see Section \ref{befehl-n} for details).
+For these annotations you must use the same syntax as in the annotation commands, i.e. a set of attributes in the form \code{key:value}, separated by spaces (see Section \ref{befehl-n} for details).
 
 \subsection{Metadata}
 
 Additionally to the configuration of layers, visualization, makros and permitted annotations, you may save metadata for a graph as key-value pairs.
-The command \texttt{metadata} opens the window, where you can enter an arbitrary number of keys with a text as corresponding value.
+The command \code{metadata} opens the window, where you can enter an arbitrary number of keys with a text as corresponding value.
 
 \subsection{Annotators}\label{annotatoren}
 
 For the case of multiple annotators working with the same corpus, GraphAnno offers the possibility of creating annotator-specific annotations.
 With this feature, the same elements can be annotated by differend annotators, which enables you, e.g., to assess the inter-annotator agreement.
 
-In order to use the multi-annotator feature, you first have to create annotators; the command \texttt{annotators} opens the window for this task.
+In order to use the multi-annotator feature, you first have to create annotators; the command \code{annotators} opens the window for this task.
 In this window you can create annotators, bearing a unique name (prefer short names without spaces, as these will be used for loggin in) and information about the annotator (free text).
 If, later on, you delete annotators, all their annotations will be deleted as well.
 
 If you annotate without having logged in as an annotator, your annotations will be stored as public annotations (as is the case when working without multiple annotators).
-For annotating as a specific annotator, you first have to log in using the command \texttt{annotator} (or the synonymous command \texttt{user}), followed by the annotator’s unique name.
+For annotating as a specific annotator, you first have to log in using the command \code{annotator} (or the synonymous command \code{user}), followed by the annotator’s unique name.
 The current annotator’s name will now be displayed in the corresponding field (next to the input line on the bottom of the user interface), and you will see only your own annotations; the annotations of other annotators or public annotations will be hidden.
 Also for searching only your own annotations will be evaluated.
-If you want to log out the current annotator and work on the public annotations again, use the \texttt{annotator} command without argument.
+If you want to log out the current annotator and work on the public annotations again, use the \code{annotator} command without argument.
 
 \subsection{File settings}
 
-The command \texttt{file} opens a window, in which you can specify the settings for the file in which the work space will be saved:
+The command \code{file} opens a window, in which you can specify the settings for the file in which the work space will be saved:
 
 \begin{itemize}
 	\item	\textit{compact file format}: Should the file be stored in a compact JSON format?
 			This has the advantage of reducing the file size, but the file will be less readable for potential inspection or editing in a text editor.
 	\item	\textit{save editing history}: Should the the change log (cf. \ref{befehl-undo}) be saved, so that it stays available accross settings?
-			%The change log can be saved in the graph file or in another file (with a name of the form \texttt{<corpus name>.log.json}).
+			%The change log can be saved in the graph file or in another file (with a name of the form \code{<corpus name>.log.json}).
 			(Attention, this option can lead to very big files and long saving/loading times.)
 	\item	\textit{save window positions}: Should the position of the windows (filter, search etc.) be saved in the graph file (i.e., project-specific)?
 			(Otherwise, the positions are only saved in the browser.)
@@ -249,58 +265,58 @@ The following is a table of the available shortcuts:
 
 \subsubsection{Load file: \texttt{load}}
 
-With the command \texttt{load} you load a graph file into the work space.
+With the command \code{load} you load a graph file into the work space.
 By default, the file will be loaded from the from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
 If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory, if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
-Provide the file name with or without the extension \texttt{.json}; the path has to be enclosed in double quotes (\texttt{\quo...\quo}) if it contains spaces.
+Provide the file name with or without the extension \code{.json}; the path has to be enclosed in double quotes (\code{\quo...\quo}) if it contains spaces.
 
 Before loading, the work space is cleared from all data.
-So, changes that were not saved explicitly (using the command \texttt{save}) are lost.
+So, changes that were not saved explicitly (using the command \code{save}) are lost.
 The name of the loaded file is shown next to the input line on the bottom of the user interface.
 
 
 \subsubsection{Append file: \texttt{append}}
 
-The command \texttt{append} appends the contents of the given file (specify the file as described for \texttt{load}) to the work space.
+The command \code{append} appends the contents of the given file (specify the file as described for \code{load}) to the work space.
 
 
 \subsubsection{Save file: \texttt{save}}
 
-The command \texttt{save} saves the work space to a GraphAnno file in the \texttt{data} directory.
-The file name has to be entered in the same way as with the command \texttt{load}.
+The command \code{save} saves the work space to a GraphAnno file in the \texttt{data} directory.
+The file name has to be entered in the same way as with the command \code{load}.
 If there is a filename indicated next to the input line, the work space can be saved to this file without specifying the file name.
 Attention: no warning is issued when an existing file will be overwritten.
 
 
 \subsubsection{Clear work space: \texttt{clear}}
 
-The command \texttt{clear} clears the work space from all data.
+The command \code{clear} clears the work space from all data.
 Changes that were not saved are lost.
 Next to the input line no file will be indicated anymore.
 
 
 \subsubsection{Create new sentence: \texttt{ns}}\label{befehl-ns}
 
-With the command \texttt{ns} – followed by one or more sentence names separated by spaces – you can create a new sentence.
-The command creates sentence nodes with the corresponding \texttt{name} attribute; afterwards you are directed to the first newly created sentence.
+With the command \code{ns} – followed by one or more sentence names separated by spaces – you can create a new sentence.
+The command creates sentence nodes with the corresponding \code{name} attribute; afterwards you are directed to the first newly created sentence.
 
 
 \subsubsection{Delete sentence: \texttt{del}}
 
-The command \texttt{del} deletes the current sentence including the sentence node.
+The command \code{del} deletes the current sentence including the sentence node.
 If you enter one or more sentence names as arguments, it is not the current sentence that will be deleted but the sentences that bear one of the given names.
 A further possibility is to enter a regular expression (in slashes); in that case, all sentences whose names match the given regular expression will be deleted.
 
 
 \subsubsection{Set sentence: \texttt{s}}
 
-In order to navigate from sentence to sentence, you may use (alternatively to keyboard shortcuts or the dropdown field) the command \texttt{s}, followed by the name of the sentence you want to change to.
+In order to navigate from sentence to sentence, you may use (alternatively to keyboard shortcuts or the dropdown field) the command \code{s}, followed by the name of the sentence you want to change to.
 You are then directed to the first sentence with the given name.
 
 
 \subsubsection{Export graphics: \texttt{image}}
 
-With the command \texttt{image}, you can export the graphic that GraphAnno is displaying for the current sentence.
+With the command \code{image}, you can export the graphic that GraphAnno is displaying for the current sentence.
 The first argument is the desired format.
 All formats supported by Graphviz are available, e.g. \texttt{dot}, \texttt{eps}, \texttt{pdf}, \texttt{png} or \texttt{svg}.
 See under \url{http://www.graphviz.org/content/output-formats} for the complete list.
@@ -310,15 +326,15 @@ The image will be saved in GraphAnno’s \texttt{images} directory.
 
 \subsubsection{Export corpus: \texttt{export}}\label{befehl-export}
 
-Using the command \texttt{export}, you can export the contents of the work space as a corpus in another format.
-The first argument is the format (at present the only fully functional format is \texttt{sql} for the import in GraphInspect; the format \texttt{paula} is theoretically available, but it is heavily restricted with respect to layers), the second argument is the name of the corpus to be saved.
-For \texttt{paula} you can optionally specify the name of the corpus document to be created as third argument.
+Using the command \code{export}, you can export the contents of the work space as a corpus in another format.
+The first argument is the format (at present the only fully functional format is \code{sql} for the import in GraphInspect; the format \code{paula} is theoretically available, but it is heavily restricted with respect to layers), the second argument is the name of the corpus to be saved.
+For \code{paula} you can optionally specify the name of the corpus document to be created as third argument.
 The exported corpus will be saved in GraphAnno’s \texttt{exports} directory.
 
 
 \subsubsection{Import text: \texttt{import text}}
 
-You can import texts with the command \texttt{import text}. After issuing the command, a window opens where you can enter the text and set the preferences for its processing.
+You can import texts with the command \code{import text}. After issuing the command, a window opens where you can enter the text and set the preferences for its processing.
 The work space will be cleared before the text is imported (but not as soon as the window opens).
 Changes that hadn’t been saved are lost and no file is indicated next to the input line anymore.
 
@@ -331,44 +347,44 @@ In order to process abbreviation etc. correctly, you need to specify the languag
 
 The second processing method is “regular expressions”; this method is made for preformatted texts.
 First, you have to enter a string that will be used for segmenting the sentences.
-The preset is \texttt{{\textbackslash}n} \footnote{\texttt{{\textbackslash}n} stands for a line break, \texttt{{\textbackslash}t} for a tab.} for a file in which every sentence starts on a new line.
+The preset is \code{{\textbackslash}n} \footnote{\code{{\textbackslash}n} stands for a line break, \code{{\textbackslash}t} for a tab.} for a file in which every sentence starts on a new line.
 The second string you have to enter a a regular expression that matches the tokens.
-The preset here is \texttt{({\textbackslash}S+)}.
+The preset here is \code{({\textbackslash}S+)}.
 This stands for a sequence of non-spaces, so all words that are separated by spaces are matched as tokens.
-The purpose of the parentheses is to save the matched string in the variable \texttt{\$1}, so it can be used in the next field.
+The purpose of the parentheses is to save the matched string in the variable \code{\$1}, so it can be used in the next field.
 The next field is for an annotation command (see \ref{befehl-a}) for the tokens, that uses the string matched by the regular expression in the preceding field.
-The preset here is \texttt{token:\$1}.
+The preset here is \code{token:\$1}.
 That means that the string matched as token is used for the annotation of the token text.
 Another example would be a text tagged for parts of speech, where the part of speech is appended to every word with an underscore.
-In this case you would enter the regular expression \texttt{({\textbackslash}S+)\_({\textbackslash}S+)} and the annotation command \texttt{token:\$1 pos:\$2}.
-The regular expression in this case finds two strings of non-spaces that are joined by an underscore; the strings are saved to the variables \texttt{\$1} (the word) and \texttt{\$2} (the POS tag).
-In the annotation command these variables are used to annotate the token text and the \texttt{pos} attribute.
+In this case you would enter the regular expression \code{({\textbackslash}S+)\_({\textbackslash}S+)} and the annotation command \code{token:\$1 pos:\$2}.
+The regular expression in this case finds two strings of non-spaces that are joined by an underscore; the strings are saved to the variables \code{\$1} (the word) and \code{\$2} (the POS tag).
+In the annotation command these variables are used to annotate the token text and the \code{pos} attribute.
 
 
 \subsubsection{Import Toolbox data: \texttt{import toolbox}}
 
-Toolbox files can be imported using the command \texttt{import toolbox}.
+Toolbox files can be imported using the command \code{import toolbox}.
 This command opens a window in which you can choose the file to be imported and enter the format description.
 The format description has to be in JSON format and consists of a list of a list of markers.
 The lists are sorted according to their levels – the highest (\textit{record} level) first – and contain the markers that belong to the respective level (markers are entered without backslash).
-The first marker of the first level (\texttt{ref} in the example below) will be used as record ID.
+The first marker of the first level (\code{ref} in the example below) will be used as record ID.
 The marker whose line is to be used as token text is preceded by an asterisk.
 Elements that lie below the token level will be joined and integrated into their respective tokens.
 
 A format description for a toolbox file with three levels (record, word, morpheme) could look like this, e.g.:
 
-\begin{verbatim}
-  [["ref", "eng"], ["*gw"], ["mph", "ge", "ps"]]
-\end{verbatim}
+\begin{lstlisting}[gobble=4]
+	[["ref", "eng"], ["*gw"], ["mph", "ge", "ps"]]
+\end{lstlisting}
 
-Like with the command \texttt{load}, the work space will be cleared when importing.
+Like with the command \code{load}, the work space will be cleared when importing.
 Changes that haven’t been saved will be lost; next to the input line no file will be indicated anymore.
 
 
 \subsubsection{Export and import configuration: \texttt{export} and \texttt{import}}
 
-The command \texttt{export} serves also for exporting graph configurations, that can be imported in other graphs using the command \texttt{import}.
-As first argument you enter the type of the configuration to be exported or imported: \texttt{config} for layers and visualization configuration (see \ref{ebenenkonfiguration}), \texttt{tagset} for permitted annotations / tagset (see \ref{erlaubteannotationen}).
+The command \code{export} serves also for exporting graph configurations, that can be imported in other graphs using the command \code{import}.
+As first argument you enter the type of the configuration to be exported or imported: \code{config} for layers and visualization configuration (see \ref{ebenenkonfiguration}), \code{tagset} for permitted annotations / tagset (see \ref{erlaubteannotationen}).
 The second argument is the filename for the configuration file to be saved or to be imported (without file extension).
 The exported file will be saved in a subdirectory – named like the configuration type – of the \texttt{exports} directory.
 Attention: when importing, the existing configuration will be replaced completely.
@@ -377,7 +393,7 @@ Attention: when importing, the existing configuration will be replaced completel
 \subsubsection{Edit configurations: \texttt{config}, \texttt{tagset}, \texttt{makros}, \texttt{metadata}, \texttt{annotators} and \texttt{file}}
 
 These commands open the windows for the settings that were described in Section \ref{konfiguration}.
-\texttt{config} for layers and visualization, \texttt{tagset} for permitted annotations / tagset, \texttt{makros} for annotation makros, \texttt{metadata} for metadata, \texttt{annotators} for annotators and \texttt{file} for file settings.
+\code{config} for layers and visualization, \code{tagset} for permitted annotations / tagset, \code{makros} for annotation makros, \code{metadata} for metadata, \code{annotators} for annotators and \code{file} for file settings.
 
 
 
@@ -386,24 +402,23 @@ These commands open the windows for the settings that were described in Section 
 GraphAnno’s annotation commands are designed to be entered quickly, so their syntax is rather compact:
 they consist of a short command (often one letter only) and are followed by parameters seperated by spaces.
 
-The commands require to be in a sentence, i.e., you have to create a sentence first (using the command \texttt{ns}, see \ref{befehl-ns}) if the work space is empty.
+The commands require to be in a sentence, i.e., you have to create a sentence first (using the command \code{ns}, see \ref{befehl-ns}) if the work space is empty.
 
 
 \subsubsection{New node: \texttt{n}}\label{befehl-n}
 
-The command for creating a new node is \texttt{n}, followed by the attributes the new node is to bear as key-value pairs in the format \texttt{key:value}.
-Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation languages: \texttt{␣:\quo\#})\footnote{The symbol \texttt{␣} stands for the space.}) or as string in double quotes (\texttt{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \texttt{\textbackslash\quo}).
+The command for creating a new node is \code{n}, followed by the attributes the new node is to bear as key-value pairs in the format \code{key:value}.
+Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation language: \code{␣:\quo\#})\footnote{The symbol \code{\mbox{\,␣\,}} stands for the space.}) or as string in double quotes (\code{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \code{\quo...\textbackslash\quo...\quo}).
 
 You can also use the shortcut from your previously defined annotation makros (see Section \ref{annotationsmakros}).
 When you additionally enter attributes with keys present in the makro, these override the annotations defined in the makro.
 
 Additionally, you can specify the layer to which the new node is to belong (if you don’t, it will belong to the layer set in the layer dropdown field).
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
-The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations (like the command \texttt{l}, see \ref{befehl-l}).
+The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations (like the command \code{l}, see \ref{befehl-l}).
 
-\paragraph*{Command \texttt{n} in modified BNF:}
+\paragraph*{Command \code{n} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_n           =   "n " attributes
 attributes          =   attributes " " attributes
@@ -418,17 +433,15 @@ alnum               =   letter | digit | "_"
 annotation_shortcut =   alnum+
 layer_shortcut      =   alnum+
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{New edge: \texttt{e}}
 
-The command for creating a new edge is \texttt{e}, followed by start and end node of the edge to be created and the attributes, it is to bear.
-Like with \texttt{n}, the specification of a layer is possible.
+The command for creating a new edge is \code{e}, followed by start and end node of the edge to be created and the attributes, it is to bear.
+Like with \code{n}, the specification of a layer is possible.
 
-\paragraph*{Command \texttt{e} in modified BNF:}
+\paragraph*{Command \code{e} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_e       =   "e " start_end " " start_end " " attributes
 start_end       =   node_reference
@@ -436,22 +449,20 @@ start_end       =   node_reference
 node_reference  =   "n" number
 token_reference =   "t" number
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Annotate: \texttt{a}}\label{befehl-a}
 
-The command for annotation elements is \texttt{a}, followed by the elements to be annotated and the attributes with which they are to be annotated (all given elements will be annotated with all given attributes; also layer shortcuts can be used).
+The command for annotation elements is \code{a}, followed by the elements to be annotated and the attributes with which they are to be annotated (all given elements will be annotated with all given attributes; also layer shortcuts can be used).
 The order of the elements and attributes is free.
-You can also annotate sequences of elements of the same type (i.e., \texttt{n}, \texttt{e} or \texttt{t}) by entering the first and the last element joined by two dots.
-E.g., when you enter \texttt{t3..t7}, all tokens from \texttt{t3} to \texttt{t7} will be annotated (you may enter the sequence also in the inverse order, i.e., \texttt{t7..t3}).
+You can also annotate sequences of elements of the same type (i.e., \code{n}, \code{e} or \code{t}) by entering the first and the last element joined by two dots.
+E.g., when you enter \code{t3..t7}, all tokens from \code{t3} to \code{t7} will be annotated (you may enter the sequence also in the inverse order, i.e., \code{t7..t3}).
 
-At the same time you can use the command \texttt{a} for deleting attributes.
+At the same time you can use the command \code{a} for deleting attributes.
 In order to do so, enter the key to be deleted with colon, but without value.
 
-\paragraph*{Command \texttt{a} in modified BNF:}
+\paragraph*{Command \code{a} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_a           =   "a " a_parameters
 a_parameters        =   a_parameters " " a_parameters
@@ -472,37 +483,33 @@ node_sequence       =   node_reference ".." node_reference
 token_sequence      =   token_reference ".." token_reference
 edge_sequence       =   edge_reference ".." edge_reference
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Delete elements: \texttt{d}}
 
-Elements are deleted with the command \texttt{d}, followed by the elements to be deleted.
+Elements are deleted with the command \code{d}, followed by the elements to be deleted.
 If you delete nodes, the outgoing and ingoing edges are deleted as well.
 If you delete a token node from the middle of a sentence, the adjacent tokens are joined automatically.
 
-\paragraph*{Command \texttt{d} in modified BNF:}
+\paragraph*{Command \code{d} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_d       =   "d " d_parameters
 d_parameters    =   d_parameters " " d_parameters
                     element_reference
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Group nodes under new parent node: \texttt{g} oder \texttt{p}}
 
-The grouping command \texttt{g} or \texttt{p} creates a new parent node for the given nodes.
+The grouping command \code{g} or \code{p} creates a new parent node for the given nodes.
 I.e., the command creates a new node and edges that connect the new nodes to the nodes to be grouped.
 The parameters of this command are the nodes to be grouped and the attributes the newly created node is to bear.
 The order of nodes and attributes is irrelevant.
-Like with the command \texttt{n}, a layer can be specified.
+Like with the command \code{n}, a layer can be specified.
 
-\paragraph*{Command \texttt{g}/\texttt{p} in modified BNF:}
+\paragraph*{Command \code{g}/\code{p} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_g           =   ("g " | "p ") g_parameters
 g_parameters        =   g_parameters " " g_parameters
@@ -513,16 +520,14 @@ g_parameters        =   g_parameters " " g_parameters
                         attribute
                         layer_shortcut
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Append child node: \texttt{h} or \texttt{c}}
 
-The command \texttt{h}/\texttt{c} works analogously to the command \texttt{g}/\texttt{p}, but instead of a parent node a new common child node is created.
+The command \code{h}/\code{c} works analogously to the command \code{g}/\code{p}, but instead of a parent node a new common child node is created.
 
-\paragraph*{Command \texttt{h}/\texttt{c} in modified BNF:}
+\paragraph*{Command \code{h}/\code{c} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_h           =   ("h " | "c ") h_parameters
 h_parameters        =   h_parameters " " h_parameters
@@ -533,20 +538,18 @@ h_parameters        =   h_parameters " " h_parameters
                         attribute
                         layer_shortcut
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Insert node into edge: \texttt{ni}}
 
-The command \texttt{ni} (\texttt{node insert}) allows you to insert a new node into an existing edge.
+The command \code{ni} (\textit{node insert}) allows you to insert a new node into an existing edge.
 As parameters you specify the edge and the attributes for the new node.
 A new node will be created, and the given edge will be replaced by two edges with the same annotations, that connect the start node of the original edge with the new node and the new node with the end node of the original edge.
 
 If you specify more than one edge, a new node will be inserted into each of them
 
-\paragraph*{Command \texttt{ni} in modified BNF:}
+\paragraph*{Command \code{ni} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_ni          =   "ni " ni_parameters
 ni_parameters       =   ni_parameters " " ni_parameters
@@ -554,38 +557,34 @@ ni_parameters       =   ni_parameters " " ni_parameters
                         attributes
                         layer_shortcut
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Delete node but preserve connections: \texttt{di} und \texttt{do}}
 
-If you want to delete a node but preserve the connections between parent node(s) and child node(s) of the deleted node, you can use the commands \texttt{di} or \texttt{do}.
+If you want to delete a node but preserve the connections between parent node(s) and child node(s) of the deleted node, you can use the commands \code{di} or \code{do}.
 These commands delete the specified node and connect each child node to each mother node (this makes sense particularly in a tree-like structure where there is one parent node and many child nodes).
-\texttt{di} (\textit{delete ingoing}) deletes the ingoing edge(s), \texttt{do} (\textit{delete outgoing}) deletes the outgoing edge(s).
+\code{di} (\textit{delete ingoing}) deletes the ingoing edge(s), \code{do} (\textit{delete outgoing}) deletes the outgoing edge(s).
 
-\paragraph*{Commands \texttt{di} and \texttt{do} in modified BNF:}
+\paragraph*{Commands \code{di} and \code{do} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_di_do       =   "di " node_reference+
                         "do " node_reference+
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Tokenize: \texttt{t}, \texttt{tb}, \texttt{ta}}
 
-For creating tokens there are the commands \texttt{t}, \texttt{tb} and \texttt{ta}.
+For creating tokens there are the commands \code{t}, \code{tb} and \code{ta}.
 The arguments for these commands are a list of words, separated by spaces.
 These words are inserted as tokens into the current sentence.
-If the sentence already contains tokens, the command \texttt{t} appends the new ones.
-\texttt{tb} (\texttt{tokenize before}) and \texttt{ta} (\texttt{tokenize after}) take a token as their first argument and insert the new tokens before or after, respectively.
+If the sentence already contains tokens, the command \code{t} appends the new ones.
+\code{tb} (\textit{tokenize before}) and \code{ta} (\textit{tokenize after}) take a token as their first argument and insert the new tokens before or after, respectively.
 
-The words can be given as bare strings, or, if they contain control characters (\texttt{␣:\quo\#}), as string in double quotes (\texttt{\quo...\quo}; double quotes inside the string have to be escape with a backslash: \texttt{\textbackslash\quo}).
+The words can be given as bare strings, or, if they contain control characters (\code{␣:\quo\#}), as string in double quotes (\code{\quo...\quo}; double quotes inside the string have to be escape with a backslash: \code{\textbackslash\quo}).
 
-\paragraph*{Commands \texttt{t}, \texttt{tb}, \texttt{ta} in modified BNF:}
+\paragraph*{Commands \code{t}, \code{tb}, \code{ta} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 befehl_t        =   "t " words
 words           =   words " " words
@@ -596,14 +595,13 @@ word            =   non-control-character+
 command_tb      =   "tb " token_reference " " words
 command_ta      =   "ta " token_reference " " words
 \end{lstlisting}
-\end{framed}
 
 
 \subsubsection{Undo/Redo: \texttt{undo} and \texttt{redo} (or \texttt{z} and \texttt{y})}\label{befehl-undo}
 
-You can undo previously issued annotation commands using the command \texttt{undo} (or the synonymous command \texttt{z}).
-These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \texttt{append} or \texttt{clear}.
-A command you have undone can be redone with the command \texttt{redo} (or the synonymous command \texttt{y}).
+You can undo previously issued annotation commands using the command \code{undo} (or the synonymous command \code{z}).
+These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \code{append} or \code{clear}.
+A command you have undone can be redone with the command \code{redo} (or the synonymous command \code{y}).
 Undoing and redoing can be used multiple times; but if you issue an annotation command after having undone other commands, the undone commands cannot be redone (linear change history).
 
 You can look at the change history in a window that is toggled with the F8 key.
@@ -612,24 +610,22 @@ In this window you can also directly jump to points in the history with a click.
 
 \subsubsection{Set layer: \texttt{l}}\label{befehl-l}
 
-As an alternative to the select field, you can set the layer used for the subsequently created elements with the command \texttt{l}.
+As an alternative to the select field, you can set the layer used for the subsequently created elements with the command \code{l}.
 For the layers you use the shortcuts defined in the layer configuration (cf. \ref{ebenenkonfiguration}).
 
-\paragraph*{Command \texttt{l} in modified BNF:}
+\paragraph*{Command \code{l} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 command_l   =   "l " layer_shortcut
 \end{lstlisting}
-\end{framed}
 
 
 
 \subsubsection{Log in annotator: \texttt{annotator} (or \texttt{user})}
 
-If you use GraphAnno’s multi-annotator feature, you log in as a specific annotator with the command \texttt{annotator} (or the synonymous command \texttt{user}), followed by the annotator’s unique name (as defined in the corresponding window, see \ref{annotatoren}).
+If you use GraphAnno’s multi-annotator feature, you log in as a specific annotator with the command \code{annotator} (or the synonymous command \code{user}), followed by the annotator’s unique name (as defined in the corresponding window, see \ref{annotatoren}).
 The logged-in annotator will be shown in the field next to the input line and only the annotator’s annotations will be displayed and searched.
-If you want to log out the current annotator and work on the public annotations again, use the \texttt{annotator} command without argument.
+If you want to log out the current annotator and work on the public annotations again, use the \code{annotator} command without argument.
 
 
 
@@ -642,8 +638,8 @@ If you want to log out the current annotator and work on the public annotations 
 
 Searching graphs in GraphAnno works by formulating a query that describes a graph fragment and is composed of a set of clauses.
 The search then finds all subgraphs of the corpus graph that match this description.
-The clauses that can be used in the description are the \texttt{node}, \texttt{nodes}, \texttt{edge}, \texttt{link}, \texttt{text}, \texttt{meta}, \texttt{cond} and \texttt{def} clauses.
-Of these, a query must at least contain one \texttt{node} clause or \texttt{text} clause, or an unconnected \texttt{edge} clause.
+The clauses that can be used in the description are the \code{node}, \code{nodes}, \code{edge}, \code{link}, \code{text}, \code{meta}, \code{cond} and \code{def} clauses.
+Of these, a query must at least contain one \code{node} clause or \code{text} clause, or an unconnected \code{edge} clause.
 The various types of clauses will be explained in the following sections.
 
 In a query the clauses are each given on one line in an arbitrary order; indentations and blank lines have no impact on the semantics.
@@ -652,48 +648,47 @@ Comments may be added as whole lines or after a line; they are preceded by a has
 
 \subsubsection{\texttt{node}}\label{node}
 
-The \texttt{node} clause describes a node that should occur once in the graph fragment.
-The clause is composed of the keyword \texttt{node}, an optional ID and an attribute description.
+The \code{node} clause describes a node that should occur once in the graph fragment.
+The clause is composed of the keyword \code{node}, an optional ID and an attribute description.
 
-The ID consists of a \texttt{@} followed by a string that consists of alphanumeric characters, including the underscore, with the additional restriction that the first character must not be a digit.
+The ID consists of a \code{@} followed by a string that consists of alphanumeric characters, including the underscore, with the additional restriction that the first character must not be a digit.
 Using this ID, the node can be referenced in other parts of the query.
 
-The attribute description is composed of key-value pairs of the form \texttt{key:""value}, that are joined by the logical operators \texttt{!} for “not”, \texttt{\&} for “and” and \texttt{|} for “or” (precedence: \texttt{!} > \texttt{\&} > \texttt{|}) as well as (round) parentheses.
-As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \texttt{key:value1|value2|...|valuen}.
+The attribute description is composed of key-value pairs of the form \code{key:""value}, that are joined by the logical operators \code{!} for “not”, \code{\&} for “and” and \code{|} for “or” (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
+As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
 
-The key of a key-value pair can be given as a simple string if it does not contain any of the control characters of the query language (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}), else it has to be given in double quotes (\texttt{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \texttt{\textbackslash\quo}).
+The key of a key-value pair can be given as a simple string if it does not contain any of the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}), else it has to be given in double quotes (\code{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}).
 
 \phantomsection\label{zeichenketten}The values of the key-value pairs are strings, that can be given in three different formats.
-The first format is a simple, unmarked string that may contain all characters except the control characters of the query language (\texttt{␣():!\&\quo/?+*\{\}@\#\^{}}).
+The first format is a simple, unmarked string that may contain all characters except the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}).
 These strings will be matched case-insensitively.
-The second format is a string in double quotes (\texttt{{\quo}xyz\quo}).
-These strings may contain any character (double quotes have to be escaped with a backslash: \texttt{\textbackslash\quo}) and will be matched exactly.
+The second format is a string in double quotes (\code{{\quo}xyz\quo}).
+These strings may contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}) and will be matched exactly.
 The third format is a regular expression.
-A regular expression has to be written in slashes (\texttt{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \texttt{http://www.ruby-doc.org/""core/""Regexp.html}).
-The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \texttt{\^} or \texttt{\$}, respectively.
-You can find an arbitrary string using an empty reular expression (i.e. \texttt{//}).
+A regular expression has to be written in slashes (\code{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \texttt{http://www.ruby-doc.org/""core/""Regexp.html}).
+The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
+You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
 
-In the place of a key-value pair you may also use the keyword \texttt{token}, which matches token nodes.
+In the place of a key-value pair you may also use the keyword \code{token}, which matches token nodes.
 
 \phantomsection\label{quantifiers}In addition to key-value pairs, the attribute description may contain criteria for ingoing and outgoing edges.
-These criteria are composed of the keyword \texttt{in} or \texttt{out}, an optional attribute description in parentheses and an optional quantifier.
-The operator \texttt{in} or \texttt{out} find all ingoing or outgoing edges, respectively, that bear the given attributes.
+These criteria are composed of the keyword \code{in} or \code{out}, an optional attribute description in parentheses and an optional quantifier.
+The operator \code{in} or \code{out} find all ingoing or outgoing edges, respectively, that bear the given attributes.
 The quantifier specifies how many edges matching the given description have to be present; its syntax is familiar from regular expressions:
-\texttt{\{m,n\}} means at least m edges, at most n edges; if you omit the first number, it has the meaning “zero”, omitting the second number means “infinite”.
-\texttt{\{n\}} means exactly n edges.
-Additionally there are the shortcuts \texttt{?} for \texttt{\{0,1\}}, \texttt{*} for \texttt{\{0,\}} and \texttt{+} for \texttt{\{1,\}}.
-What differs from quantifiers in usual regular expressions (and from quantifiers in other contexts of the GraphAnno query language), is that a missing quantifier will be interpreted as \texttt{\{1,\}}.
+\code{\{m,n\}} means at least m edges, at most n edges; if you omit the first number, it has the meaning “zero”, omitting the second number means “infinite”.
+\code{\{n\}} means exactly n edges.
+Additionally there are the shortcuts \code{?} for \code{\{0,1\}}, \code{*} for \code{\{0,\}} and \code{+} for \code{\{1,\}}.
+What differs from quantifiers in usual regular expressions (and from quantifiers in other contexts of the GraphAnno query language), is that a missing quantifier will be interpreted as \code{\{1,\}}.
 
-For the description of the edges (that are given in parentheses) you may specify – additionally to the attribute descriptions – properties of the start or end node using the keyword \texttt{start} or \texttt{end}, respectively, followed by the node description in parentheses.
+For the description of the edges (that are given in parentheses) you may specify – additionally to the attribute descriptions – properties of the start or end node using the keyword \code{start} or \code{end}, respectively, followed by the node description in parentheses.
 
-The operator \texttt{link} works in a similar fashion to \texttt{in} and \texttt{out}, but it does not find ingoing and outgoing edges but (potentially) more complex connections to other nodes.
+The operator \code{link} works in a similar fashion to \code{in} and \code{out}, but it does not find ingoing and outgoing edges but (potentially) more complex connections to other nodes.
 In \ref{link} you can read how these connections may be specified.
-The rules for quantifiers explained above are the same as for \texttt{in} and \texttt{out}.
+The rules for quantifiers explained above are the same as for \code{in} and \code{out}.
 
 
-\paragraph*{The \texttt{node} clause in modified BNF:}
+\paragraph*{The \code{node} clause in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 node_klausel    =   "node" id? " " node_attributes
 id              =   "@" (letter | "_") alphanumeric_char*
@@ -723,19 +718,26 @@ edge_attributes =   edge_attributes" & " edge_attributes
 knotenkriterium =   "start" ("(" knotenattribute ")")
                     "end" ("(" knotenattribute ")")
 \end{lstlisting}
-\end{framed}
 
 
 \paragraph*{Examples:}
 \begin{itemize}
-	\item Search for all nodes that bear the category S or VP and that are no tokens:\\
-	{\tt node cat:S|VP \& !token}
-	\item Search for all nodes of category VP or tokens bearing the pos value verb:\\
-	{\tt node cat:VP | token \& pos:verb}
-	\item Search for all nodes of category S that have at least two outgoing AUX edges:\\
-	{\tt node cat:S \& out(cat:AUX)\{2,\}}
-	\item Search for all nodes of category S that directly dominate at least one node bearing the pos value pro:\\
-	{\tt node cat:S \& out(end(pos:pro))}
+	\item Search for all nodes that bear the category S or VP and that are no tokens:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node cat:S|VP \& !token
+	\end{lstlisting}
+	\item Search for all nodes of category VP or tokens bearing the pos value verb:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node cat:VP | token \& pos:verb
+	\end{lstlisting}
+	\item Search for all nodes of category S that have at least two outgoing AUX edges:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node cat:S \& out(cat:AUX)\{2,\}
+	\end{lstlisting}
+	\item Search for all nodes of category S that directly dominate at least one node bearing the pos value pro:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node cat:S \& out(end(pos:pro))
+	\end{lstlisting}
 \end{itemize}
 
 
@@ -743,18 +745,16 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 
 \subsubsection{\texttt{nodes}}
 
-The \texttt{nodes} clause describes a set of nodes that should be present in the graph fragment.
-The set may end up being empty if it is only the target of a \texttt{link} clause or \texttt{edge} clause.
-The \texttt{nodes} clause has the same syntax as the \texttt{node} clause (except for the keyword, of course).
+The \code{nodes} clause describes a set of nodes that should be present in the graph fragment.
+The set may end up being empty if it is only the target of a \code{link} clause or \code{edge} clause.
+The \code{nodes} clause has the same syntax as the \code{node} clause (except for the keyword, of course).
 
 
-\paragraph*{The \texttt{nodes} clause in modified BNF:}
+\paragraph*{The \code{nodes} clause in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 nodes_clause    =   "nodes" id? " " node_attributes
 \end{lstlisting}
-\end{framed}
 
 
 
@@ -762,52 +762,52 @@ nodes_clause    =   "nodes" id? " " node_attributes
 
 \subsubsection{\texttt{edge}}\label{edge}
 
-The \texttt{edge} clause may be used in two different ways.
+The \code{edge} clause may be used in two different ways.
 First, you can use it for searching for single edges.
-Then the clause consists of the keyword \texttt{edge}, an optional ID (under which the edge can be references in the exporting function) and an attribute description for edges as explained above in \ref{node}.
-Second, you can use the \texttt{edge} clause for stating the there should be an edge with the specified properties between two nodes or sets of nodes (specified via \texttt{node} or \texttt{nodes}, respectively) of the graph fragment.
+Then the clause consists of the keyword \code{edge}, an optional ID (under which the edge can be references in the exporting function) and an attribute description for edges as explained above in \ref{node}.
+Second, you can use the \code{edge} clause for stating the there should be an edge with the specified properties between two nodes or sets of nodes (specified via \code{node} or \code{nodes}, respectively) of the graph fragment.
 When used in this way, you have to provide the IDs of start and end of the edge after the (optional) ID of the edge itself.
 
-Conditioned by the optional ID and the various usages, the keyword \texttt{edge} my be followed by zero up to three IDs.
+Conditioned by the optional ID and the various usages, the keyword \code{edge} my be followed by zero up to three IDs.
 The interpretation of these IDs follows from ther number and their order.
 One ID: ID of the edge itself; two IDs: start and end of the edge; three IDs: ID of the edge, IDs of start and end.
 
 
-\paragraph*{The \texttt{edge} clause in modified BNF:}
+\paragraph*{The \code{edge} clause in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 edge_clause     =   "edge" id? (id id)? " " edge_attributes
 \end{lstlisting}
-\end{framed}
 
 
 \paragraph*{Examples:}
 \begin{itemize}
-	\item Search for all edges that indicate the syntactic function subject:\\
-	{\tt edge synfunc:subj}
-	\item Search for all nodes of cateory S, each with the set of nodes of category NP that are linked via an edge of category S, A or P:\\
-	{\tt
-	node  @s    cat:S\\[-.4ex]
-	nodes @np   cat:NP\\[-.4ex]
-	edge  @s@np cat:S|A|P
-	}
+	\item Search for all edges that indicate the syntactic function subject:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		edge synfunc:subj
+	\end{lstlisting}
+	\item Search for all nodes of cateory S, each with the set of nodes of category NP that are linked via an edge of category S, A or P:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node  @s    cat:S
+		nodes @np   cat:NP
+		edge  @s@np cat:S|A|P
+	\end{lstlisting}
 \end{itemize}
 
 
 
 \subsubsection{\texttt{link}}\label{link}
 
-A \texttt{link} clause specifies how two nodes or node sets of the graph fragment should be connected.
+A \code{link} clause specifies how two nodes or node sets of the graph fragment should be connected.
 The connection can be specified flexibly as a chain of nodes and edges using quantifiers and disjunctions similar to a regular expression.
-The \texttt{link} clause consists of the keyword \texttt{link}, the specification of the start and end nodes (via IDs as described for the \texttt{edge} clause above) and the description of the connection.
+The \code{link} clause consists of the keyword \code{link}, the specification of the start and end nodes (via IDs as described for the \code{edge} clause above) and the description of the connection.
 
-The description of the connection consists of a sequence of \texttt{edge} and \texttt{node} terms.
-These terms are composed of the keyword \texttt{edge} or \texttt{node} and an optional description of the element in parentheses.
-This description is an attribute description as explained for the \texttt{node} clause above.
+The description of the connection consists of a sequence of \code{edge} and \code{node} terms.
+These terms are composed of the keyword \code{edge} or \code{node} and an optional description of the element in parentheses.
+This description is an attribute description as explained for the \code{node} clause above.
 The element description may be followed by an ID, under which the found elements can be references in the exporting function (but not in the search query!).
 
-For alternatives you may use the “or” operator \texttt{|}; its precedence is lower than that of the sequence.
+For alternatives you may use the “or” operator \code{|}; its precedence is lower than that of the sequence.
 You may use parentheses for adjusting the precedence.
 You may also use quantifiers (as described under \ref{nodes} on page \pageref{quantifiers}) after elements or elements grouped in parentheses.
 These quantifiers are interpreted neither as greedy nor as non-greedy – all matching connections will be found and counted as separate matches.
@@ -815,15 +815,14 @@ These quantifiers are interpreted neither as greedy nor as non-greedy – all ma
 Corresponding to the nature of a graph, a connection always consists of an alternating sequence of nodes and edges (starting and ending with an edge).
 When specifying a connection, however, it is not obligatory to provide an alternating sequence; only the first edge must not be omitted.
 If you provide two elements of the same type (i.e. edges or nodes) in succession, the search engine will accept any element of the other type in between.
-E.g., the connection description \texttt{edge(a:b) edge(c:d)} will match an edge bearing the attribute \texttt{a:b}, en unspecified node an then another edge, bearing the attribute \texttt{c:d}.
+E.g., the connection description \code{edge(a:b) edge(c:d)} will match an edge bearing the attribute \code{a:b}, en unspecified node an then another edge, bearing the attribute \code{c:d}.
 
-When you use \texttt{link} in a node attribute (e.g. in a \texttt{node} clause), do not provide start and end node.
+When you use \code{link} in a node attribute (e.g. in a \code{node} clause), do not provide start and end node.
 The start node then is the node that is searched for; the end node is the last node that is described in the connection description or, if the connection description ends with an edge, an unspecified node.
 
 
-\paragraph*{The \texttt{link} clause in modified BNF:}
+\paragraph*{The \code{link} clause in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 link_clause     =   "link" id id " " connection
 connection      =   connection " " connection
@@ -833,53 +832,51 @@ connection      =   connection " " connection
                     "edge" ("(" edge_attributes ")")? id?
                     "node" ("(" node_attributes ")")? id?
 \end{lstlisting}
-\end{framed}
 
 
 \paragraph*{Examples:}
 \begin{itemize}
-	\item Search for all graph fragments that are composed of a node of category P and a node of cateogry S, where the former dominates the latter via an edge of category EX:\\
-	{\tt
-	node @p cat:P\\[-.4ex]
-	node @s cat:S\\[-.4ex]
-	link @p@s edge(cat:EX)
-	}
-	\item Search for a node of catogory S, all nodes of category NP that are dominated by the S node and all tokens that are dominated by these NP nodes:\\
-	{\tt
-	node @s cat:S\\[-.4ex]
-	nodes @np cat:NP\\[-.4ex]
-	nodes @tok token\\[-.4ex]
-	link @s@np edge+\\[-.4ex]
-	link @np@tok edge+
-	}
-	\item Search for a node of catogory S and all tokens that are dominated by the S node via an NP node (this yields the same graph fragments as the last example):\\
-	{\tt
-	node @s cat:S\\[-.4ex]
-	nodes @tok token\\[-.4ex]
-	link @s@tok edge+ node(cat:NP) edge+
-	}
+	\item Search for all graph fragments that are composed of a node of category P and a node of cateogry S, where the former dominates the latter via an edge of category EX:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node @p cat:P
+		node @s cat:S
+		link @p@s edge(cat:EX)
+	\end{lstlisting}
+	\item Search for a node of catogory S, all nodes of category NP that are dominated by the S node and all tokens that are dominated by these NP nodes:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node @s cat:S
+		nodes @np cat:NP
+		nodes @tok token
+		link @s@np edge+
+		link @np@tok edge+
+	\end{lstlisting}
+	\item Search for a node of catogory S and all tokens that are dominated by the S node via an NP node (this yields the same graph fragments as the last example):
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node @s cat:S
+		nodes @tok token
+		link @s@tok edge+ node(cat:NP) edge+
+	\end{lstlisting}
 \end{itemize}
 
 
 
 \subsubsection{\texttt{text}}
 
-With the \texttt{text} clause you can find a series of token nodes by specifying their text.
+With the \code{text} clause you can find a series of token nodes by specifying their text.
 Additionally you may specify other attributes the token nodes should bear.
-The \texttt{text} clause is composed of the keyword \texttt{text}, an optional ID and the description of a text fragment.
+The \code{text} clause is composed of the keyword \code{text}, an optional ID and the description of a text fragment.
 
 The description of the text fragment consists of a sequence of word descriptions that describe the token text and an optional attribute description in parentheses for each token.
 For specifying the token text there are three posiibilities as is described in \ref{node} for the values of key-value pairs: bare strings, quoted strings and regular expressions; the attribute descriptions follow the same rules as in \ref{node}, too.
 
-For the description of the text fragment you may use the operator \texttt{|} for “or” (precedence lower than sequence) as well as parentheses and quantifiers (these are non-greedy in the text search).
+For the description of the text fragment you may use the operator \code{|} for “or” (precedence lower than sequence) as well as parentheses and quantifiers (these are non-greedy in the text search).
 Additionally you can append an ID to a subgroup of your text fragment that enables referencing these nodes in other clauses.
 Quantifiers and IDs have a higher precence than sequence and disjunction; the order of quantifier and ID after the same subgroup does not matter.
-The optional ID after the keyword \texttt{text} captures all nodes that are found in by the clause.
-The fragment may be anchored to the start or end of a sentence by \texttt{\^{}s}; it is not possible to search for text accross sentences.
+The optional ID after the keyword \code{text} captures all nodes that are found in by the clause.
+The fragment may be anchored to the start or end of a sentence by \code{\textasciicircum s}; it is not possible to search for text accross sentences.
 
-\paragraph*{The \texttt{text}-clause in modified BNF:}
+\paragraph*{The \code{text} clause in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
 text_clause     =   "text" id? " " "^s"? text_fragment "^s"?
 text_fragment   =   text_fragment " " text_fragment
@@ -890,102 +887,99 @@ text_fragment   =   text_fragment " " text_fragment
                     word
 word            =   attribute_value ("(" node_attributes")")?
 \end{lstlisting}
-\end{framed}
 
 \paragraph*{Examples:}
 \begin{itemize}
-	\item Search for all sentences that contain the verb “permit” in third position:\\
-	{\tt
-	text \^{}s //\{2,2\} permit(pos:v)
-	}
-	\item Search for two occurrences of “he” that are separated by an arbitrary number of words, where the first “he” and all following words before the second “he” are dominated by an S node:\\
-	{\tt
-	node @s cat:S\\
-	text (he //*)@t he\\
-	link @s@t edge+
-	}
+	\item Search for all sentences that contain the verb “permit” in third position:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		text \^{}s //\{2,2\} permit(pos:v)
+	\end{lstlisting}
+	\item Search for two occurrences of “he” that are separated by an arbitrary number of words, where the first “he” and all following words before the second “he” are dominated by an S node:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node @s cat:S
+		text (he //*)@t he
+		link @s@t edge+
+	\end{lstlisting}
 \end{itemize}
 
-
-\vskip4em
-\center{\Large tbc.}
-\kommentar{
 
 
 \subsubsection{\texttt{meta}}
 
-Die \texttt{meta}-Klausel schränkt die Menge der zu durchsuchenden Sätze ein. Über diese Klausel können Eigenschaften angegeben werden, die der Satznoten eines Satzes haben muß. Die Klausel besteht aus dem Schlüsselwort \texttt{meta} und einer Attributbeschreibung wie oben unter \texttt{node} beschrieben.
+The \code{meta} clause restricts the set of sentences to be searched.
+In this clause you can declare properties the sentence node should have.
+The clause is coposed of the keyword \code{meta} and an attribute description as described in \ref{node} for \code{node}.
 
-\paragraph*{Die \texttt{meta}-Klausel in modified BNF:}
+\paragraph*{The \code{meta} clause in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
-text-klausel    =   "meta " attribute
+text-clause     =   "meta " attributes
 \end{lstlisting}
-\end{framed}
-
 
 
 \subsubsection{\texttt{cond}}\label{cond}
 
-Die \texttt{cond}-Klausel gibt Bedingung an, die das Graphfragment erfüllen muß und wirkt wie ein Filter. Die Klausel besteht aus dem Schlüsselwort \texttt{cond} und der Bedingung in Ruby-Kode. Die Knoten und Knotenmengen werden dabei durch die vergebenen IDs referenziert. Bei der Referenzierung ist zu beachten, daß es sich bei den mit \texttt{node} und \texttt{edge} gefundenen Knoten und Kanten um einzelne Elemente, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten und Kanten hingegen um Arrays von Elementen handelt.
+With the \code{cond} clause you can specify conditions the graph fragment has to fulfil.
+It works as a filter on the set of graph fragments found based on the rest of the query.
+The clause is composed of the keyword \code{cond} and the condition in Ruby code.
+The nodes and node sets are referenced with the IDs used in the other clauses of the query.
+When using IDs, note that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
-Auf die Attribute der Knoten wird in der Form \texttt{['schlüssel']} zugegriffen; für die Attribute \texttt{token} und \texttt{cat} stehen Abkürzungen der Form \texttt{.token} und \texttt{.cat} zur Verfügung. Über die Methode \texttt{.sentence} kann auf den Satznoten des Satzes, zu dem das Element gehört, zugegriffen werden. Bei der Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen behandelt werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
+In the condition, you may access the attributes of elements using square brackets like this: \code{['key']}; for the attributes \code{token} and \code{cat} you can use as a shortcut the accessor methods \code{.token} and \code{.cat}.
+Via the method \code{.sentence} you can access the sentence node the element belongs to.
+When using attribute values, bear in mind that these are always string; you may cast them to numbers with \code{.to\_i} or \code{.to\_f} for integers or floating point numbers, respectively.
 
 
-\paragraph*{Beispiele:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche zwei S-Knoten, die über eine ad-Kante verbunden sind und den gleichen Wert für tns haben:\\
-	{\tt
-	node @s1 cat:S\\[-.4ex]
-	node @s2 cat:S\\[-.4ex]
-	link @s1@s2 cat:ad\\[-.4ex]
-	cond @s1['tns'] == @s2['tns']
-	}
-	\item Suche alle S-Knoten, die mindestens drei Token dominieren:\\
-	{\tt
-	node @s cat:S\\[-.4ex]
-	nodes @tok token\\[-.4ex]
-	link @s@tok edge+\\[-.4ex]
-	cond @tok.length >= 3
-	}
+	\item Search for two S nodes that are linked via an ad edge and bear the same value for tns:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node @s1 cat:S
+		node @s2 cat:S
+		link @s1@s2 cat:ad
+		cond @s1['tns'] == @s2['tns']
+	\end{lstlisting}
+	\item Search for all S nodes that dominate at least three tokens:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node @s cat:S
+		nodes @tok token
+		link @s@tok edge+
+		cond @tok.length >= 3
+	\end{lstlisting}
 \end{itemize}
 
 
 \subsubsection{\texttt{def}}\label{def}
 
-Mit \texttt{def} besteht die Möglichkeit, für die Suche Makros zu definieren. Dabei wird ein Name angegeben, unter dem das Makro in den Suchklauseln angesprochen werden kann, und eine Attribut- oder Verbindungsbeschreibung, die durch den Namen vertreten wird. Die Attribut-/Verbindungsbeschreibung ist aufgebaut wie für \texttt{node} und \texttt{link} in \ref{node} bzw. \ref{link} beschrieben.
+With \code{def} you can define makros for use in your query.
+After the keyword \code{def} you specify a name for the makro and an attribute description or connection description that will be filled in for your makro.
+The attribute or connection description is formulated as described for \code{node} and \code{link} in \ref{node} and \ref{link}, respectively.
 
-Es ist zu beachten, daß ein Makro quasi automatisch geklammert wird, also stets zuerst ausgewertet wird. Nehmen wir beispielsweise an, man definiert ein Makro als \texttt{cat:S | cat:VP} wie unten im Beispiel und kombiniert es durch den Operator \texttt{\&} mit einer weiteren Bedingung – \texttt{tns:prs} wie beim zweiten Knoten im Beispiel. Dann wird dies nicht als \texttt{cat:S | cat:VP \& tns:prs} ausgewertet, in welchem Falle das \texttt{\&} Präzedenz über das \texttt{|} nähme, sondern als \texttt{(cat:S | cat:VP) \& tns:prs}.
+Bear in mind that a makro will be interpreted as it was in parentheses, i.e. it will be evaluated first.
+E.g., if you define a makro \code{cat:S | cat:VP} and combine it with the condition \code{tns:prs} using the operator \code{\&}, this will not be evaluated as \code{cat:S | cat:VP \& tns:prs} with the \code{\&} preceding the \code{|} but as \code{(cat:S | cat:VP) \& tns:prs}.
 
-\paragraph*{Die Makrodefinition \texttt{def} in modified BNF:}
+\paragraph*{The makro definition \code{def} in modified BNF:}
 ~
-\begin{framed}
 \begin{lstlisting}
-makrodefinition =   "def " name " " makro
-makro           =   kantenattribute
-                    knotenattribute
-                    verbindung
-name            =   alnum+
+makro_definition =   "def " name " " makro
+makro            =   edge_attributes
+                     node_attributes
+                     connection
+name             =   alnum+
 \end{lstlisting}
-%\begin{lstlisting}
-%makrodefinition =   "def " name " " (kantenattribute | knotenattribute)
-%name            =   alnum+
-%\end{lstlisting}
-\end{framed}
 
 
-\paragraph*{Beispiel:}
+\paragraph*{Examples:}
 \begin{itemize}
-	\item Suche zwei Knoten mit \texttt{cat:S} oder \texttt{cat:VP}, die über eine Kante verbunden sind, und von denen der zweite im Präsens steht:\\
-	{\tt
-	def svp cat:S | cat:VP\\[-.4ex]
-	node @s1 svp\\[-.4ex]
-	node @s2 svp \& tns:prs\\[-.4ex]
-	edge @s1@s2\\[-.4ex]
-	}
+	\item Search for two nodes with \code{cat:S} or \code{cat:VP} that are linked via one edge and where the second one is in present tense:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		def svp cat:S | cat:VP
+		node @s1 svp
+		node @s2 svp \& tns:prs
+		edge @s1@s2
+	\end{lstlisting}
 %\begin{itemize}
-%	\item Suche zwei Knoten mit \texttt{lemma:cum} und \texttt{pos:G-}, die über eine Kante verbunden sind, und von denen einer ein Token ist:\\
+%	\item Suche zwei Knoten mit \code{lemma:cum} und \code{pos:G-}, die über eine Kante verbunden sind, und von denen einer ein Token ist:\\
 %	{\tt
 %	def cum lemma:cum \& pos:G-\\[-.4ex]
 %	node @s1 cum\\[-.4ex]
@@ -998,58 +992,67 @@ name            =   alnum+
 
 \subsection{Annotation}
 
-Nach dem Durchführen einer Suche können unter Zuhilfenahme der in der Suche vergebenen IDs automatisch Annotationen durchgeführt werden. Dazu stehen die in Abschnitt \ref{annotationsbefehle} vorgestellten Annotationsbefehle (außer \texttt{t}) zur Verfügung.
+After performing a search you can automatically annotate elements of the found graph fragments using the IDs used in your search query.
+For this purpose you can use the annotation commands described in \ref{annotationsbefehle} (except for \code{t}).
 
-Aufgrund des anderen Verwendungskontextes sind ein paar Änderungen zu beachten:
+Because of the other using context you have take account of some changes:
 \begin{itemize}
-	\item Anstelle der Knoten- und Kantenreferenzen der Form \texttt{n7}, \texttt{t8} oder \texttt{e13} werden die in der Suche definierten IDs (in der Form \texttt{@s1} o.ä.) verwendet.
-	\item Es ist keine Ebene voreingestellt. Es sollte also ggf. bereits im ersten Annotationsbefehl der Befehlsfolge ein Ebenenschalter eingesetzt werden.
-	\item Beim Befehl \texttt{n} ist ein Knoten anzugeben, der den Satz festlegt, in dem der neue Knoten erstellt werden soll.
-	\item Da die IDs sowohl für einzelne Elemente als auch für Mengen von Elementen stehen können, ergeben sich ein paar Besonderheiten: Beim Befehl \texttt{e} sind genau zwei IDs anzugeben; handelt es sich um einzel-IDs, so wird eine einzelne Kante erstellt, handelt es sich jedoch um eine einzel- und eine Mengen-ID oder zwei Mengen-IDs, so wird für jede Knotenkombination aus den beiden IDs eine Kante gezogen. Bei den Tokenisierungsbefehlen \texttt{tb}/\texttt{ta} wird das erste bzw. letzte Token gewählt, falls mehrere angegeben wurden. Bei allen anderen Befehlen können beliebig viele Mengen- und/oder einzel-IDs angegeben werden, die dann als \textit{eine} Menge von Elemente behandelt werden.
-	\item Bei der Angabe von Attributen kann für den Wert auf die in der Suche gefundenen Elemente zurückgegriffen werden. Dazu wird die Zeichenkette für den Wert in doppelten Anführungszeichen angegeben und darin kann, wie in Ruby gebräuchlich, in geschweiften Klammern mit vorangestelltem Rautenzeichen Ruby-Kode verwendet werden, in dem die gefundenen Elemente mit ihren IDs referenziert werden. Eine Such-/Annotationskombination, die alle Satzknoten mit dem von ihnen dominierten Text versieht (mit Punkt abgeschlossen) könnte z.B. folgendermaßen aussehen:
-	\begin{verbatim}
+	\item Instead of the node and edge references in the form of \code{n7}, \code{t8} or \code{e13} you use the IDs defined in your search query (in the form of \code{@s1} or the like).
+	\item There is no annotation layer set. You should use a layer switch in your first annotation command (if needed).
+	\item When using the command \code{n}, you have to specify a node that determines the sentence the new node will belong to.
+	\item As the IDs can stand for single elements as well as for sets of elements, you have to note some particularities: For the command \code{e} you have to give exactly two IDs; if these are single element IDs, a single edge will be created; if they are one single element IDs and one set ID or two set IDs, an edge will be created for each of the node combinations from the two IDs. For the tokenizing commands \code{tb} and \code{ta} the first or last token of the set, respectively, will be used if you give a set IDs. In all other commands you can give an arbitrary number of set IDs or single element IDs. All given elements then will be treated as \textit{one} set of elements.
+	\item When specifying attributes, you can use the elements found in your search. For this purpose, write the value string in double quotes and interpolate a part of the string in Ruby code (in which you can use your IDs) wrapped in braces with a prepended hash sign (as you also do in plain Ruby). As an example, a search/annotation combination that annotates all nodes of category S with their dominated text (terminated with a full stop) could look like this:
+	\begin{lstlisting}[gobble=8]
 		node @s cat:S
 		a @s text:"#{@s.text}."
-	\end{verbatim}
+	\end{lstlisting}
 \end{itemize}
 
 
 
-\subsection{Datenexport}
+\subsection{Data export}
 
-Die GraphAnno-Abfragesprache biete auch Funktionalität zum Exportieren von Suchergebnissen als CSV-Dateien an.
-Mit den nachfolgen beschriebenen Klauseln kann angegeben werden, wie Infomationen der in einer zuvor durchgeführten Suche gefundenen Teilgraphen ausgegeben werden sollen.
-Die Daten jedes gefundenen Teilgraphen werden in eine Zeile der CSV-Datei geschrieben, mit \texttt{sort} können die Ergebnisse sortiert werden, mit \texttt{col} wird angegeben, welche Spalten mit welchen Werten angelegt werden sollen. Als erste Spalte wird stets eine fortlaufende Numerierung der Ergebnisse mit ausgegeben.
-
-\subsubsection{\texttt{sort}}
-
-Die \texttt{sort}-Klausel dient dazu, die Ausgabe der gefundenen Teilgraphen zu sortieren. Es können mehrere \texttt{sort}-Klauseln angegeben werden, wobei weiter unten angegeben Klauseln nur ausgewertet werden, wenn  weiter oben angegebenen Klauseln keine Reihenfolge zwischen zwei Teilgraphen ergeben.
-Eine \texttt{sort}-Klausel wird in Ruby-Kode formuliert und muß einen Wert ergeben, der für die Sortierung verglichen werden soll. Wie bei \texttt{cond} werden die gefundenen Knoten und Kanten über die in der Suche vergebenen IDs referenziert. Bei Verwendung von Attributwerten ist zu beachten, daß es sich bei diesen stets um Zeichenketten handelt; sollen sie als Zahlen verglichen werden, müssen sie mit \texttt{.to\_i} bzw. \texttt{.to\_f} umgewandelt werden.
-
-\paragraph*{Beispiele:}
-\begin{itemize}
-	\item Sortiere die Ergebnisse nach Satznamen, bzw. nach Tokennummer (die Methode \texttt{.tokenid} gibt die Stelle des Tokens im Satz, beginnend mit 0, aus), wenn sie dem gleichen Satz angehören (durch die Suchanfrage sei gegeben: ein Token mit der ID \texttt{@t1}):\\
-	{\tt
-	sort @t1.sentence.name\\[-.4ex]
-	sort @t1.tokenid\\[-.4ex]
-	}
-\end{itemize}
-
+The GraphAnno query language also gives you the possiblity to export search results as CSV files.
+With the clauses \code{col} and \code{sort}, described in the following, you can specify which information about the graph fragments found in your search should be exported and in which form.
+The data of each found graph fragment will be written in one line of the CSV file; with \code{sort} you can sort the matches and with \code{col} you specify which columns with which values are to be created.
+There will always be a first column with a consecutive numbering of the matches.
 
 
 \subsubsection{\texttt{col}}
 
-Jede \texttt{col}-Klausel steht für eine zu exportierende Spalte. Sie hat als ersten Parameter den Spaltentitel (der keine Leerzeichen enthalten darf), gefolgt von Ruby-Kode, der den auszugebenden Wert ergibt. Knoten und Kanten werden wie gehabt über ihre in der Suche vergebene ID referenziert, dabei ist zu beachten, daß es sich bei den mit \texttt{node} gefundenen Knoten um einzelne Knoten, bei den mit \texttt{nodes}, \texttt{text} und \texttt{link} gefundenen Knoten hingegen um Arrays von Knoten handelt.
+Each \code{col} clause stands for a column in the CSV data to be exported.
+Its first parameter is the column title (which must not contain spaces); it is followed by Ruby code that yields the value to emit.
+Nodes and edges are referenced using the IDs defined in your search query.
+Again, bear in mind that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
-Zugriff auf Attribute erfolgt wie unter \ref{cond} für \texttt{cond} beschrieben. Es gibt jedoch noch weitere für die Ausgabe nützliche Methoden: \texttt{.tokens} gibt die über syntaktische Kanten dominierten Token als Liste aus, \texttt{.text} deren Text als Zeichenkette (die einzelnen Tokentexte mit Leerzeichen getrennt). \texttt{.sentence\_tokens} gibt alle Token des Satzes, dem das Element angehört als Liste aus, \texttt{.sentence\_text} wiederum deren Text. \texttt{.position} gibt die Position eines Knotens als Durchschnitt der Positionen seiner dominierten Token aus.
+You can access the attributes as described in \ref{cond} for \code{cond}.
+There are also other useful methods for exporting data:
+E.g., \code{.tokens} returns a list of the dominated tokens (you may also give a more specific link description string as argument of the method); \code{.text} works in the same way but returns the token text as a string.
+\code{.sentence\_tokens} returns a list of all token nodes of the sentence the element belongs to, \code{.sentence\_text}, again, their text. 
 
-Bei der Arbeit mit der Mehrannotatorenfunktion (vgl. \ref{annotatoren}) gibt der direkte Zugriff auf die Attribute (mittels eckiger Klammern) die Annotationen des aktuell eingestellten Annotators aus.
-Für die Ausgabe der Annotationen anderer Annotatoren dient die Methode \texttt{.private\_attr}, die als Argument den Namen des Annotators nimmt\\(z.B. \texttt{@s.private\_attr('thomas')['cat']}).
-Für die allgemeinen Annotationen steht die Methode \texttt{.public\_attr} zur Verfügung (z.B. \texttt{@s.public\_attr['cat']}).
+When working with the multi-annotator feature (cf. \ref{annotatoren}), the direct access to the attributes (using square brackets) will return the annotations of the current annotator.
+If you want to access the annotations of other annotators, use the method \mbox{\code{.private\_attr}}, which takes as argument the name of the annotator,\\e.g., \code{@s.private\_attr('thomas')['cat']}).
+For the public annotations, use the method \code{.public\_attr} (e.g., \code{@s.public\_attr['cat']}).
 
 
+\subsubsection{\texttt{sort}}
 
-}
+The \code{sort} clause can be used for sorting the matches.
+When you use multiple \code{sort} clauses, clauses specified later will only be evaluated when the clauses specified further up do not yield an order.
+
+The \code{sort} clause uses Ruby code which yields the value that will be compared for sorting the matches.
+Like with \code{col}, the nodes and edges are references via the IDs defined in your search query.
+Again, bear in mind that attribute values are always strings and have to be casted to numbers (\code{.to\_i} or \code{.to\_f}) when you expect them to be compared as numbers.
+
+\paragraph*{Examples:}
+\begin{itemize}
+	\item Sort the matches by sentence name or, if they belong to the same sentence, token ID (the method \code{.tokenid} returns the position of the token in its sentence, starting with 0). Given by the search query: the ID \code{@t1} referring to a token:
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		sort @t1.sentence.name
+		sort @t1.tokenid
+	\end{lstlisting}
+\end{itemize}
+
 
 
 \end{document}

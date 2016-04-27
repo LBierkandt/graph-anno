@@ -84,10 +84,11 @@ class Node < NodeOrEdge
 		@start= h[:start]
 		@end  = h[:end]
 		@custom = h[:custom]
+		@graph.node_index[@type][@id] = self
 	end
 
 	def inspect
-		'Node' + @id
+		"Node#{@id}"
 	end
 
 	# @return [Hash] the node transformed into a hash
@@ -112,6 +113,7 @@ class Node < NodeOrEdge
 		end
 		Array.new(@out).each(&:delete)
 		Array.new(@in).each(&:delete)
+		@graph.node_index[@type].delete(@id)
 		@graph.nodes.delete(@id)
 	end
 
@@ -173,8 +175,8 @@ class Node < NodeOrEdge
 		if @type == 'p'
 			nodes = [self]
 			loop do
-				children = nodes.map{|n| n.child_nodes{|e| e.type == 'p'}}.flatten
-				return nodes if children.empty?
+				children = nodes.map{|n| n.child_sections}.flatten
+				return @graph.sentence_nodes & nodes if children.empty? # use "&"" to preserve sentence order
 				nodes = children
 			end
 		elsif @type == 's'
@@ -190,9 +192,9 @@ class Node < NodeOrEdge
 		if @type == 't'
 			ordered_sister_nodes{|t| t.sentence === s}
 		elsif @type == 's'
-			if first_token = child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}[0]
+			if first_token = child_nodes{|e| e.type == 's'}.of_type('t')[0]
 				if first_token.speaker
-					child_nodes{|e| e.type == 's'}.select{|n| n.type == 't'}.sort{|a, b| a.start <=> b.start}
+					child_nodes{|e| e.type == 's'}.of_type('t').sort{|a, b| a.start <=> b.start}
 				else
 					first_token.ordered_sister_nodes{|t| t.sentence === s}
 				end
@@ -387,6 +389,31 @@ class Node < NodeOrEdge
 			return []
 		end
 	end
+
+	# @return [Array] an ordered list of the sections that are on the same level as self
+	def same_level_sections
+		@graph.section_structure_nodes[sectioning_level]
+	end
+
+	# return true if the sentences self contains are before and after the sentences the other section contains;
+	# in this case, the other section has to be dominated by self
+	# @param other [Node] the other section
+	# @return [Boolean] whether the other section's sentences are comprised
+	def comprise_section?(other)
+		all_sentence_nodes = @graph.sentence_nodes
+		return all_sentence_nodes.index(sentence_nodes.first) < all_sentence_nodes.index(other.sentence_nodes.first) &&
+			all_sentence_nodes.index(sentence_nodes.last) > all_sentence_nodes.index(other.sentence_nodes.last)
+	end
+
+	# @return [Node] the parent section if present, else nil
+	def parent_section
+		parent_nodes{|e| e.type == 'p'}[0]
+	end
+
+	# @return [Array] the child sections
+	def child_sections
+		child_nodes{|e| e.type == 'p'}
+	end
 end
 
 class Edge < NodeOrEdge
@@ -443,7 +470,7 @@ class Edge < NodeOrEdge
 	end
 
 	def inspect
-		'Edge' + @id
+		"Edge#{@id}"
 	end
 
 	# sets the start node of self
@@ -479,7 +506,7 @@ end
 class AnnoGraph
 	include SearchableGraph
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :annotators, :current_annotator, :file_settings
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -613,7 +640,7 @@ class AnnoGraph
 			end
 			if version < 2
 				# SectNode für jeden Satz
-				sect_nodes = @nodes.values.select{|k| k.type == 's'}
+				sect_nodes = @node_index['s'].values
 				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
 					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
 						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
@@ -622,7 +649,7 @@ class AnnoGraph
 			end
 			if version < 7
 				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @nodes.values.select{|n| n.type == 's'}.sort_by{|n| n.attr.public['sentence']}
+				sect_nodes = @node_index['s'].values.sort_by{|n| n.attr.public['sentence']}
 				sect_nodes.each_with_index do |s, i|
 					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
 					s.name = s.attr.public.delete('sentence')
@@ -861,8 +888,8 @@ class AnnoGraph
 	# @param mode [Symbol] :in or :out - whether to delete the ingoing or outgoing edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def delete_and_join(node, mode, log_step = nil)
-		node.in.select{|e| e.type == 'a'}.each do |in_edge|
-			node.out.select{|e| e.type == 'a'}.each do |out_edge|
+		node.in.of_type('a').each do |in_edge|
+			node.out.of_type('a').each do |out_edge|
 				devisor = mode == :in ? out_edge : in_edge
 				add_anno_edge(
 					{
@@ -878,18 +905,19 @@ class AnnoGraph
 	end
 
 	# create a section node as parent of the given section nodes
-	# @param name [String] the name of the new node
 	# @param list [Array] the section nodes that are to be grouped under the new node
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	# @return [Node] the new section node
-	def build_section(name, list, log_step = nil)
+	def build_section(list, log_step = nil)
 		# create node only when all given nodes are on the same level and none is already grouped under another section
 		if list.group_by{|n| n.sectioning_level}.keys.length > 1
-			raise 'all given sections have to be on the same level'
-		elsif list.map{|n| n.parent_nodes{|e| e.type == 'p'}}.flatten != []
-			raise 'given sections already belong to another section'
+			raise 'All given sections have to be on the same level!'
+		elsif list.map{|n| n.parent_section}.compact != []
+			raise 'Given sections already belong to another section!'
+		elsif !sections_contiguous?(list)
+			raise 'Sections have to be contiguous!'
 		else
-			section_node = add_part_node(:name => name, :log => log_step)
+			section_node = add_part_node(:log => log_step)
 			list.each do |child_node|
 				add_part_edge(
 					:start => section_node,
@@ -897,8 +925,96 @@ class AnnoGraph
 					:log => log_step
 				)
 			end
+			if parent = section_nodes.select{|n| n.comprise_section?(section_node)}[0]
+				add_part_edge(
+					:start => parent,
+					:end => section_node,
+					:log => log_step
+				)
+			end
 			return section_node
 		end
+	end
+
+	# deletes the given sections if allowed
+	# @param list [Array] the sections to be removed
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def remove_sections(list, log_step = nil)
+		if list.any?{|s| s.type == 's'}
+			raise 'You cannot remove sentences'
+		elsif list.any?{|s| s.parent_section && s.parent_section.child_sections - list == []}
+			raise 'You cannot remove all sections from their containing section'
+		elsif list.any?{|s| s.parent_section && s.parent_section.comprise_section?(s)}
+			raise 'You cannot remove sections from the middle of their containing section'
+		end
+		list.each{|s| s.delete(log_step)}
+	end
+
+	# adds the given sections to parent section
+	# @param parent [Node] the section to which the sections should be added
+	# @param list [Array] the sections to be added
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def add_sections(parent, list, log_step = nil)
+		if list.any?{|s| s.sectioning_level != parent.sectioning_level - 1}
+			raise 'Sections to be added have to be one level below their new parent'
+		elsif list.map{|n| n.parent_section}.compact != []
+			raise 'Given sections already belong to another section!'
+		elsif !sections_contiguous?(list + parent.child_sections)
+			raise 'Sections have to be contiguous!'
+		end
+		list.each do |section|
+			add_part_edge(:start => parent, :end => section, :log => log_step)
+		end
+	end
+
+	# detaches the given sections from their parent section
+	# @param list [Array] the sections to be detached
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def detach_sections(list, log_step = nil)
+		if list.any?{|s| s.parent_section && s.parent_section.child_sections - list == []}
+			raise 'You cannot detach all sections from their containing section'
+		elsif list.any?{|s| s.parent_section && !sections_contiguous?(s.parent_section.child_sections - list)}
+			raise 'You cannot detach sections from the middle of their containing section'
+		end
+		list.each do |section|
+			section.in.of_type('p').each{|e| e.delete(log_step)}
+		end
+	end
+
+	# deletes the given sections including their child sections and their content
+	# @param list [Array] the sections to be deleted
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def delete_sections(list, log_step = nil)
+		if list.any?{|s| s.parent_section && s.parent_section.child_sections - list == []}
+			raise 'You cannot delete all sections from their containing section'
+		end
+		list.each do |section|
+				# join remaining sentences
+				add_order_edge(
+					:start => section.sentence_nodes.first.node_before,
+					:end => section.sentence_nodes.last.node_after,
+					:log => log_step
+				)
+			# delete dependent nodes
+			if section.type == 's'
+				section.nodes.each{|n| n.delete(log_step)}
+			else
+				section.descendant_sections.each do |n|
+					n.nodes.each{|n| n.delete(log_step)}
+					n.delete(log_step)
+				end
+			end
+			# delete the section node itself
+			section.delete(log_step)
+		end
+	end
+
+	# true it the given sections are contiguous
+	# @param sections [Array] the sections to be tested
+	# @return [Boolean]
+	def sections_contiguous?(sections)
+		sections.map{|sect| sect.same_level_sections.index(sect)}
+			.sort.each_cons(2).all?{|a, b| b == a + 1}
 	end
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
@@ -935,7 +1051,7 @@ class AnnoGraph
 				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
 			end
 		end
-		first_new_sentence_node = @nodes.values.select{|n| n.type == 's' and !s_nodes.include?(n)}[0].ordered_sister_nodes.first
+		first_new_sentence_node = @node_index['s'].values.select{|n| !s_nodes.include?(n)}[0].ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
@@ -978,7 +1094,7 @@ class AnnoGraph
 		g.clone_graph_info(self)
 		last_sentence_node = nil
 		# copy speaker nodes
-		@nodes.values.select{|n| n.type == 'sp'}.each do |speaker|
+		@node_index['sp'].values.each do |speaker|
 			g.add_cloned_node(speaker)
 		end
 		# copy sentence nodes and their associated nodes
@@ -1002,7 +1118,7 @@ class AnnoGraph
 
 	# @return [Array] an ordered list of self's sentence nodes
 	def sentence_nodes
-		if first_sentence_node = @nodes.values.select{|n| n.type == 's'}[0]
+		if first_sentence_node = @node_index['s'].values[0]
 			first_sentence_node.ordered_sister_nodes
 		else
 			[]
@@ -1011,17 +1127,16 @@ class AnnoGraph
 
 	# @return [Array] all section nodes (i.e. type s and p)
 	def section_nodes
-		sections.flatten.map{|seg| seg[:node]}
+		section_structure_nodes.flatten
 	end
 
-	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level
-	def sections
+	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level, enriched with additional information
+	def section_structure
 		level = 0
 		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i, :text => n.text}}]
 		loop do
 			next_level_sections = result[level].map do |s|
-				parent = s[:node].parent_nodes{|e| e.type == 'p'}[0]
-				s.merge(:node => parent)
+				s.merge(:node => s[:node].parent_section)
 			end
 			next_level = {}
 			next_level_sections.each do |s|
@@ -1042,8 +1157,43 @@ class AnnoGraph
 		return result
 	end
 
+	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level
+	def section_structure_nodes
+		section_structure.map{|level| level.map{|sect| sect[:node]}}
+	end
+
+	# @param sections [Array] a list of section nodes of the same level
+	# @return [Array] the ancestor and descendant sections of the given sections, grouped by level, starting with sentence level
+	def sections_hierarchy(sections)
+		return nil unless sections.map{|n| n.sectioning_level}.uniq.length == 1
+		hierarchy = [sections]
+		# get ancestors
+		current = sections
+		loop do
+			parents = current.map{|n| n.parent_section}.compact.uniq
+			if parents.empty?
+				break
+			else
+				hierarchy << parents
+				current = parents
+			end
+		end
+		# get descendants
+		current = sections
+		loop do
+			children = current.map{|n| n.child_sections}.flatten.uniq
+			if children.empty?
+				break
+			else
+				hierarchy.unshift(children)
+				current = children
+			end
+		end
+		return hierarchy
+	end
+
 	def speaker_nodes
-		@nodes.values.select{|n| n.type == 'sp'}
+		@node_index['sp'].values
 	end
 
 	# builds token nodes from a list of words, concatenates them and appends them if a sentence is given and the given sentence contains tokens; if next_token is given, the new tokens are inserted before next_token; if last_token is given, the new tokens are inserted after last_token
@@ -1084,6 +1234,7 @@ class AnnoGraph
 		@edges = {}
 		@highest_node_id = 0
 		@highest_edge_id = 0
+		@node_index = Hash.new{|h, k| h[k] = {}}
 		@conf = AnnoGraphConf.new
 		@info = {}
 		@tagset = Tagset.new
@@ -1348,67 +1499,6 @@ class AnnoGraphConf
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)
-	end
-end
-
-class Tagset < Array
-	def initialize(a = [])
-		a.to_a.each do |rule|
-			self << TagsetRule.new(rule['key'], rule['values']) if rule['key'].strip != ''
-		end
-	end
-
-	def allowed_attributes(attr)
-		return attr.clone if self.empty?
-		attr.select do |key, value|
-			self.any?{|rule| rule.key == key and rule.allowes?(value)}
-		end
-	end
-
-	def to_a
-		self.map(&:to_h)
-	end
-
-	def to_json(*a)
-		self.to_a.to_json(*a)
-	end
-end
-
-class TagsetRule
-	attr_accessor :key, :values
-
-	def initialize(key, values)
-		@key = key.strip
-		@values = values.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
-	end
-
-	def to_h
-		{:key => @key, :values => values_string}
-	end
-
-	def values_string
-		@values.map do |tok|
-			case tok[:cl]
-			when :bstring
-				tok[:str]
-			when :qstring
-				'"' + tok[:str] + '"'
-			when :regex
-				'/' + tok[:str] + '/'
-			end
-		end * ' '
-	end
-
-	def allowes?(value)
-		return true if value.nil? || @values == []
-		@values.any? do |rule|
-			case rule[:cl]
-			when :bstring, :qstring
-				value == rule[:str]
-			when :regex
-				value.match('^' + rule[:str] + '$')
-			end
-		end
 	end
 end
 

@@ -90,12 +90,9 @@ table
     float: right
 
 #sectioning
-  position: fixed
-  top: 10px
-  right: 10px
+  display: block
   width: 20%
   height: 40%
-  padding: 5px
   .content
     ul
       position: absolute
@@ -126,13 +123,8 @@ table
           width: 80px
 
 #log
-  display: none
-  position: fixed
-  top: 10px
-  right: 10px
   width: 50%
   height: 30%
-  padding: 5px
   table
     width: 100%
   .content
@@ -155,31 +147,34 @@ table
     width: 20%
 
 #filter
-  display: none
-  position: fixed
-  top: 10px
-  right: 10px
   width: 30%
   height: 30%
-  padding: 5px
   input
     width: 8em
     margin-right: 3px
   table
     border-spacing: 0
+  .textarea-container
+    bottom: 90px
+  .below-textarea
+    height: 80px
 
 .selected_filter_mode
   font-weight: bold
   border-color: #000
 
 #search
-  display: none
-  position: fixed
-  top: 10px
-  right: 10px
   width: 40%
   height: 50%
-  padding: 5px
+  .textarea-container
+    bottom: 100px
+  .below-textarea
+    min-height: 90px
+#searchresult
+  margin-top: 5px
+  width: 100%
+#query
+  margin-bottom: 5px
 
 .textarea-container
   position: absolute
@@ -187,24 +182,9 @@ table
   right: 5px
   top: 30px
 
-#query
-  margin-bottom: 5px
-
 .below-textarea
   position: absolute
   bottom: 5px
-
-#search
-  .textarea-container
-    bottom: 100px
-  .below-textarea
-    min-height: 90px
-
-#filter
-  .textarea-container
-    bottom: 90px
-  .below-textarea
-    height: 80px
 
 .handle
   position: relative
@@ -233,11 +213,12 @@ table
   &:after
     transform: rotate(-45deg)
 
-#searchresult
-  margin-top: 5px
-  width: 100%
-
 .box
+  display: none
+  position: fixed
+  top: 10px
+  right: 10px
+  padding: 5px
   background-color: $background-color
   border: solid 1px $theme-color
   textarea
@@ -245,13 +226,8 @@ table
     height: 100%
 
 #help
-  display: none
-  position: fixed
-  top: 10px
-  right: 10px
   width: 30%
   height: 90%
-  padding: 5px
 
 .content
   position: absolute

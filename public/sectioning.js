@@ -121,7 +121,7 @@ var Sectioning = (function () {
 					.css('top', section.first * 18)
 					.css('height', (section.last - section.first) * 18 + 16)
 					.attr('section-id', section.id)
-					.html('<span class="sentence-name">' + section.name + '</span>');
+					.html('<span class="sentence-name">' + (section.name || '') + '</span>');
 					if (level == 0) li.append(': <span class="sentence-start">' + section.text + '</span>')
 					if (section.found) li.addClass('found_sentence')
 				}

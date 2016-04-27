@@ -462,7 +462,7 @@ class GraphController
 		label = ''
 		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map(&:attr)).include?(k)}
 		if e.is_a?(Node)
-			if e.type == 's'
+			if e.type == 's' || e.type == 'p'
 				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
 			elsif e.type == 't'
 				display_attr.each do |key, value|
@@ -520,7 +520,8 @@ class GraphController
 	def element_by_identifier(identifier)
 		i = identifier.scan(/\d/).join.to_i
 		{
-			'm' => @current_sections.length == 1 ? @current_sections.first : nil,
+			'm' => @current_sections,
+			's' => @graph.sections_hierarchy(@current_sections)[i],
 			'n' => @nodes[i],
 			'e' => @edges[i],
 			't' => @tokens[i],
@@ -538,12 +539,21 @@ class GraphController
 	end
 
 	def extract_elements(identifiers)
-		identifiers.map{|id| element_by_identifier(id)}.compact
+		identifiers.map{|id| element_by_identifier(id)}.flatten.compact
 	end
 
-	def chosen_sections(words, current_as_default = true)
-		if words != []
-			nodes_by_name(@graph.section_nodes, words)
+	def chosen_sections(words, sequences, current_as_default = true)
+		if !words.empty? || !sequences.empty?
+			nodes_by_name(@graph.section_nodes, words) +
+				sequences.map{|sequence|
+					first, last = nodes_by_name(@graph.section_nodes, sequence)
+					if first and last
+						level_sections = first.same_level_sections
+						level_sections[level_sections.index(first)..level_sections.index(last)]
+					else
+						[]
+					end
+				}.flatten
 		elsif sentence_set? && current_as_default
 			@command_line << ' ' + @current_sections.map(&:name).join(' ')
 			@current_sections
@@ -566,7 +576,7 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
-			@graph.add_anno_node(:attr => properties, :sentence => @current_sections.first, :log => log_step)
+			@graph.add_anno_node(:attr => properties, :sentence => @current_sections.first.sentence_nodes.first, :log => log_step)
 
 		when 'e' # new edge
 			sentence_set?
@@ -691,47 +701,59 @@ class GraphController
 			reset_current_sections
 
 		when 's' # change sentence
-			@current_sections = chosen_sections(parameters[:words], false)
+			@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
 
-		when 'sect'
-			raise 'Please specify a name!' if parameters[:words] == []
-			section_nodes = chosen_sections(parameters[:words][1..-1])
+		when 's-new' # create new section as parent of other sections
+			section_nodes = chosen_sections(parameters[:words], parameters[:name_sequences])
+			raise 'Please specify the sections to be grouped!' if section_nodes.empty?
 			log_step = @log.add_step(:command => @command_line)
-			new_section = @graph.build_section(parameters[:words].first, section_nodes, log_step)
+			new_section = @graph.build_section(section_nodes, log_step)
+			new_section.annotate(parameters[:attributes], log_step)
 
-		when 'rem' # remove section nodes without deleting descendant nodes
-			sections = chosen_sections(parameters[:words])
-			raise 'You cannot remove sentences' if sections.any?{|s| s.type == 's'}
+		when 's-rem' # remove section nodes without deleting descendant nodes
+			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
+			log_step = @log.add_step(:command => @command_line)
+			old_current_sections = @current_sections
 			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
-			log_step = @log.add_step(:command => @command_line)
-			sections.each{|s| s.delete(log_step)}
+			begin
+				@graph.remove_sections(sections, log_step)
+			rescue StandardError => e
+				@current_sections = old_current_sections
+				raise e
+			end
 
-		when 'del' # delete section(s)
-			sections = chosen_sections(parameters[:words])
+		when 's-add' # add section(s) to existing section
+			parent = chosen_sections(parameters[:words][0..0], [])[0]
+			sections = chosen_sections(parameters[:words][1..-1], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
-			sections.each do |section|
-				if section.type == 's'
-					# change to next sentence
-					@current_sections = [section.node_after || section.node_before || nil].compact if @current_sections.include?(section)
-					# join remaining sentences
-					@graph.add_order_edge(:start => section.node_before, :end => section.node_after, :log => log_step)
-				else
-					# change to next sentence
-					@current_sections = [section.sentence_nodes.last.node_after || section.sentence_nodes.first.node_before]
-					# join remaining sentences
-					@graph.add_order_edge(
-						:start => section.sentence_nodes.first.node_before,
-						:end => section.sentence_nodes.last.node_after,
-						:log => log_step
-					)
-				end
-				# delete nodes
-				section.nodes.each{|n| n.delete(log_step)}
-				section.descendant_sections.each{|n| n.delete(log_step)}
-				section.delete(log_step)
+			@graph.add_sections(parent, sections, log_step)
+
+		when 's-det' # detach section(s) from existing section
+			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
+			log_step = @log.add_step(:command => @command_line)
+			@graph.detach_sections(sections)
+
+		when 's-del', 'del' # delete section(s)
+			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
+			log_step = @log.add_step(:command => @command_line)
+			# change to next section
+			old_current_sections = @current_sections
+			if (@current_sections = @current_sections - sections).empty?
+				current_level_sections_to_be_deleted = old_current_sections.first.same_level_sections & sections
+				@current_sections = [
+					current_level_sections_to_be_deleted.last.sentence_nodes.last.node_after ||
+						current_level_sections_to_be_deleted.first.sentence_nodes.first.node_before
+				].compact
+			end
+			# delete
+			begin
+				@graph.delete_sections(sections, log_step)
+			rescue StandardError => e
+				@current_sections = old_current_sections
+				raise e
 			end
 
 		when 'load' # clear workspace and load corpus file
@@ -839,8 +861,8 @@ class GraphController
 		all_nodes   = @current_sections ? @current_sections.map(&:nodes).flatten(1) : []
 		@nodes      = all_nodes.reject{|n| n.type == 't'}
 		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
-		@edges      = all_edges.select{|e| e.type == 'a'}
-		order_edges = all_edges.select{|e| e.type == 'o'}
+		@edges      = all_edges.of_type('a')
+		order_edges = all_edges.of_type('o')
 
 		if @filter[:mode] == 'filter'
 			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
@@ -1045,7 +1067,7 @@ class GraphController
 	end
 
 	def set_sections(h = {})
-		@sections = @graph.sections.map do |level|
+		@sections = @graph.section_structure.map do |level|
 			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false).except(:node)}
 		end
 		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
