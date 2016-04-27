@@ -9,6 +9,7 @@
 \usepackage{xcolor}
 \usepackage{soul}
 \usepackage[pdfpagemode=UseNone, colorlinks=true, allcolors=darkblue]{hyperref}
+\usepackage{tikz}
 
 %\KOMAoptions{BCOR=16mm}
 \KOMAoptions{DIV=10}
@@ -78,8 +79,8 @@
 \glossglue = 5pt plus 2pt minus 2pt
 
 
-\newenvironment{figurel}{\begin{figure}[htb]\vskip 2ex}{\end{figure}}
-\newenvironment{tablel}{\begin{table}[htb]\vskip 2ex}{\end{table}}
+\newenvironment{figurel}{\begin{figure}[htb]}{\end{figure}}
+\newenvironment{tablel}{\begin{table}[htb]}{\end{table}}
 
 \newenvironment{anmerkung}{\par{\ }\par\sf\color{black!60}\noindent\textbf{Remark:}\par}{\newline\par}
 
@@ -103,34 +104,226 @@
 \tableofcontents
 
 
-\section{The annotation graph}
+\section{GraphAnno’s data model}
 
-A graph in GraphAnno consists of a set of nodes and directed edges.
-Nodes and edges bear attributes in the form of key-value pairs, that are used for the linguistic annotation as well as the structuring and visualization of the graph.
-There are some attributes – like the attribute \code{type}, that differentiates the types of nodes and edges (annotation nodes, tokens, sentence nodes; annotation edges, ordering edges, section edges) – that serve the internal representation of the graph and are not edited directly.
-Under the key \code{attr}, however, there is a group of key-value pairs which serve the linguistic annotations and the representation of layers and which are edited by the user directly.
-They will be called \textit{annotation attributes} in the following.
+All data in GraphAnno is represented as a graph, i.e., a set of nodes and a set of directed edges that connect the nodes.
+Nodes and edges bear attributes in the form of key-value pairs, that serve mainly the linguistic annotation.
+Furthermore, there are multiple types of nodes and edges that fulfil different functions.
 
-The graph in GraphAnno is segmented in sentences – units that that are used for structuring and displaying the corpus, but that do not necessarily correspond to real sentences (how ever these may be defined).
-There is a sentence node (bearing the attribute \code{type:s}) for every sentence, that bears information concerning the whole sentence.
-This includes, e.g., source, medium, speaker or the like.
-The annotations of this node is displayed in the light grey area below the sentence graph and under the text of the sentence (blue font) in black font.
-The information to which sentence a node of the graph belongs is represented by an (invisible) edge with \code{type:s} that links the node in question to the sentence node.
-Edges are not linked to a sentence node; their affiliation follows from the affiliation of their start and end nodes.
+The structure of the GraphAnno data model is explained in Section \ref{graph-model}, Section \ref{serialization-format} describes the details of the serialization format that is used to store GraphAnno data.
+The former section is probably helpful for every user in order to grasp the concept of GraphAnno data representation and get to know some terminology, whereas the latter one is intended for users who want to work with the serialized data, e.g., create or process GraphAnno data with their own scripts.
 
-Token nodes are characterized by the attribute \code{type:t} and they carry the annotation attribute \code{token} with the token text as value.
-The order of the tokens of a sentence (as well as the sentence nodes themselves) is defined by ordering edges (with \code{type:o}) that link each node to its successor.
-These edges are needed for the correct visualization and for traversal; the are, however, not displayed and cannot be manipulated directly.
 
-Among the annotation attributes, nodes and edges may bear the \code{cat} attribute, that has no special meaning for the graph, but which is desplayed prominently on top of the other annotations and without the key.
-Nodes and edges show numbers like \code{t23} for tokens, \code{n23} for other nodes and \code{e23} for edges, that are used for referencing the elements in annotation commands.
-These numbers are not stored in the graph model but generated dynamically each time the displayed graph is rendered.
+\subsection{Graph model}\label{graph-model}
 
-GraphAnno also provides the possibility to assign nodes and edges to different layers.
-The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation (among the annotation attributes) with the key corresponding to the layer and the value \code{t} (for \textit{true}).
+As already said, GraphAnno represents all data in a graph, consisting of differend types of nodes and edges.
+The most important types – those that are also displayed as a graph to the user – are \textit{token nodes}, \textit{annotation nodes} and \textit{annotation edges}.
+These elements are directly created by the user and represent the linguistic data and annotation.
+They may be annoted with \textit{attributes} (see below).
+
+The data in GraphAnno is partitioned into \textit{sentences} (without any theoretical implication, i.e., just user-defined chunks of language data), which may be, in turn, recursively grouped into sections.
+Sentences are represented by \textit{sentence nodes}.
+These are connected to their token nodes and annotation nodes via \textit{sentence edges}.
+Sections are represented by \textit{section nodes} and connected to the sections or sentences they contain via \textit{section edges}.
+As sentences and sections are subject to certain constraints – e.g., they must be arranged hierarchically –  they are created via special commands, that also take care of creating the required edges.
+Sentence and section nodes may also be annotated with attributes.
+
+Finally, we have to mention the \textit{order edges}, that are used program-internally for representing the linear order of sentence nodes and token nodes.
+The structure of a full GraphAnno graph with all types of elements is shown by means of a mini example corpus in Figure \ref{fig-data-model}.
+
+\begin{figurel}
+	\centering
+	\begin{tikzpicture}[xscale=2.2, yscale=1.2]
+		% token nodes
+		\begin{scope}[blue!80!black]
+			\node (Amareh) at (0,0)     [draw] {\small Amareh};
+			\node (wurde)  at (1,0)     [draw] {\small became};
+			\node (sein)   at (2,0)     [draw] {\small his};
+			\node (Weib)   at (3,0)     [draw] {\small wife};
+			\node (dann)   at (4,0)     [draw] {\small then};
+			\node (er)     at (5,0)     [draw] {\small he};
+			\node (starb)  at (6,0)     [draw] {\small died};
+		\end{scope}
+		% anno nodes and edges
+		\begin{scope}[green!80!black]
+			\node (NP)     at (2.5,1)   [draw] {\small NP};
+			\node (S1)     at (1.25,2)  [draw] {\small S};
+			\node (S2)     at (5,1)     [draw] {\small S};
+			\draw (NP)[->]--(sein);
+			\draw (NP)[->]--(Weib);
+			\draw (S1)[->]--(Amareh);
+			\draw (S1)[->]--(wurde);
+			\draw (S1)[->]--(NP);
+			\draw (S2)[->]--(dann);
+			\draw (S2)[->]--(er);
+			\draw (S2)[->]--(starb);
+			\draw (sein)[->]..controls++(1,.6)and++(-1,.8)..(er);
+		\end{scope}
+		% sentence nodes and edges
+		\begin{scope}[blue!60!red]
+			\node (Satz1)  at (1.5,-1.5)[draw] {\small sentence1};
+			\node (Satz2)  at (5,-1.5)  [draw] {\small sentence2};
+			\draw (Satz1)[->]--(Amareh);
+			\draw (Satz1)[->]--(wurde);
+			\draw (Satz1)[->]--(sein);
+			\draw (Satz1)[->]--(Weib);
+			\draw (Satz1)[->]..controls++(0,2)and++(.2,-1)..(S1);
+			\draw (Satz1)[->]..controls++(.7,1.2)and++(0,-1.2)..(NP);
+			\draw (Satz2)[->]--(dann);
+			\draw (Satz2)[->]--(er);
+			\draw (Satz2)[->]--(starb);
+			\draw (Satz2)[->]..controls++(.4,1.2)and++(.5,-1)..(S2);
+		\end{scope}
+		% section nodes and edges
+		\begin{scope}[red!70!black]
+			\node (Absatz) at (3.25,-3) [draw] {\small section1};
+			\draw (Absatz)[->]--(Satz1);
+			\draw (Absatz)[->]--(Satz2);
+		\end{scope}
+		% OrderEdges
+		\begin{scope}[yellow!50!black]
+			\draw (Amareh)[->]--(wurde);
+			\draw (wurde)[->]--(sein);
+			\draw (sein)[->]--(Weib);
+			\draw (dann)[->]--(er);
+			\draw (er)[->]--(starb);
+			\draw (Satz1)[->]--(Satz2);
+		\end{scope}
+	\end{tikzpicture}\vspace{2ex}
+	\begin{tikzpicture}[xscale=.45, yscale=.5]
+		% Legende
+		\draw[green!80!black] (0,0)--++(1,0) node[right,align=left]{\small annotation nodes\\[-.5ex]\small and edges};
+		\draw[blue!80!black]  (9,0)--++(1,0) node[right,align=left]{\small token\\[-.5ex]\small nodes};
+		\draw[blue!60!red]    (14,0)--++(1,0) node[right,align=left]{\small sentence nodes\\[-.5ex]\small and edges};
+		\draw[red!70!black]   (22,0)--++(1,0) node[right,align=left]{\small section nodes\\[-.5ex]\small and edges};
+		\draw[yellow!50!black](29,0)--++(1,0) node[right,align=left]{\small order\\[-.5ex]\small edges};
+	\end{tikzpicture}
+	\caption{The GraphAnno data model – an example}
+	\label{fig-data-model}
+\end{figurel}
+
+As mentioned above, token nodes, annotation nodes and edges as well as sentence and section nodes may be annotated with \textit{attributes} (I will also call them \textit{annotations}).
+Attributes are key-value pairs, i.e., each element may bear a set of keys each of which has an associated value.
+The keys forming a set implies that each key may only appear once on an element.
+Both keys and values are always strings.
+There are some privileged keys that bear a special meaning in GraphAnno:
+The text of token nodes is stored as value of the key \code{token}; the key \code{cat} on annotation nodes and edges is privileged insofar as its value is displayed on top of the element’s annotations without the key; on sentence and section nodes the value of the key \code{name} is used as label for the elements in the navigation window and for referencing.
+
+GraphAnno also provides the possibility to assign annotation nodes and edges to different layers.
+The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation with the key corresponding to the layer and the value \code{t} (for \textit{true}).
 This representation allows for elements to belong to more than one layer, with the consequence that layers my overlap in an arbitrary manner.
-Nodes and edges of different layers may be displayed in different colors and aligned in different ways (hierachically or horizontally).
-Tokens do not belong to any layer; they are displayed in black by default.
+Nodes and edges of different layers may be displayed in different colors and aligned in different ways (see \ref{ebenenkonfiguration} for how to configure the layers and their diplay).
+
+
+\subsection{Serialization format}\label{serialization-format}
+
+For persisting, the GraphAnno data is serialized as a JSON\footnote{See \url{http://json.org/} for a description.} object.
+This object has three obligatory keys: \code{nodes} and \code{edges} with an array of nodes and an array of edges, respectively, and \code{version} with the format version number (integer).
+This is shown in Figure \ref{json-basic}.
+Furthermore, the JSON object has a number of optional attributes for configuration.
+
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "nodes": <array>,
+		  "edges": <array>,
+		  "version": <integer>
+		}
+	\end{lstlisting}
+	\caption{A basic GraphAnno graph JSON object}
+	\label{json-basic}
+\end{figurel}
+
+Each node has the attributes \code{id} with a unique identifier (integer) and \code{type} for representing the type of the node (string).
+For the strings representing the different node and edge types see Table \ref{types-strings}.
+Optionally, a node bears the attribute \code{attr} with its annotations (object).
+The \code{attr} object contains arbitrary keys with string values.
+
+Edges have the same attributes as nodes plus the additional attributes \code{start} and \code{end} with the IDs of the edges’s start and end node, respectively.
+Only annotation edges, however, bear \code{attr}.
+
+The structure of nodes and edges in JSON format can be seen in Figure \ref{json-node} and \ref{json-edge}, respectively.
+
+\begin{tablel}
+	\begin{center}
+		\begin{tabular*}{12em}{@{\extracolsep{\fill}} ll}
+			\toprule
+			Type & String\\
+			\midrule
+			token node & \code{t}\\
+			annotation node & \code{a}\\
+			sentence node & \code{s}\\
+			section node & \code{p}\\
+			\midrule
+			annotation edge & \code{a}\\
+			sentence edge & \code{s}\\
+			section edge & \code{p}\\
+			order edge & \code{o}\\
+			\bottomrule
+		\end{tabular*}
+	\end{center}
+	\caption{Node and edge type strings used in JSON format}
+	\label{types-strings}
+\end{tablel}
+
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "id": <integer>,
+		  "type": "t" | "a" | "s" | "p",
+		  "attr": <object>
+		}
+	\end{lstlisting}
+	\caption{A GraphAnno node JSON object}
+	\label{json-node}
+\end{figurel}
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "id":<integer>,
+		  "start":<integer>,
+		  "end":<integer>,
+		  "type": "a" | "s" | "p" | "o",
+		  "attr":<object>
+		}
+	\end{lstlisting}
+	\caption{A GraphAnno edge JSON object}
+	\label{json-edge}
+\end{figurel}
+
+This structure could describe arbitrary directed graphs, but in order to work with GraphAnno, the graph has to meet a number well-formedness conditions. These include the permitted start and end node types for the different edge types listed in Table \ref{edge-types} and the following conditions:
+
+\begin{itemize}
+	\item All sentence nodes must be linearily ordered via order edges.
+	\item Each token node must be directly dominated by exactly one sentence node via a sentence edge.
+	\item The token nodes of a sentence must be linearily ordered via order edges.
+	\item A sentence node or section node may be dominated by at most one section node.
+	\item The sentence nodes directly dominated by a section node must be contiguous.
+	\item The section nodes directly dominated by another section node must be contiguous in the sense that no other section node intervene in terms of the order defined by the dominated sentence nodes.
+\end{itemize}
+
+\begin{table}[tb]
+	\begin{center}
+		\begin{minipage}{20em}
+			\begin{tabular*}{20em}{@{\extracolsep{\fill}} lll }
+				\toprule
+				Edge type & start/end & permitted node types\\
+				\midrule
+				annotation & start & annotation, token\\
+				& end & annotation, token\\
+				sentence & start & sentence\\
+				& end & token, annotation\\
+				section & start & section\\
+				& end & section, sentence\\
+				order\footnote{An order edge may only connect nodes of the same type.} & start & token, sentence\\
+				& end & token, sentence\\
+				\bottomrule
+			\end{tabular*}
+		\end{minipage}
+	\end{center}
+	\caption{Permitted node types for start and end nodes of different edge types}
+	\label{edge-types}
+\end{table}
 
 
 
@@ -266,8 +459,8 @@ The following is a table of the available shortcuts:
 \subsubsection{Load file: \texttt{load}}
 
 With the command \code{load} you load a graph file into the work space.
-By default, the file will be loaded from the from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
-If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory, if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
+By default, the file will be loaded from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
+If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory; if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
 Provide the file name with or without the extension \code{.json}; the path has to be enclosed in double quotes (\code{\quo...\quo}) if it contains spaces.
 
 Before loading, the work space is cleared from all data.
@@ -665,7 +858,7 @@ These strings will be matched case-insensitively.
 The second format is a string in double quotes (\code{{\quo}xyz\quo}).
 These strings may contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}) and will be matched exactly.
 The third format is a regular expression.
-A regular expression has to be written in slashes (\code{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \texttt{http://www.ruby-doc.org/""core/""Regexp.html}).
+A regular expression has to be written in slashes (\code{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \url{http://www.ruby-doc.org/core/Regexp.html}).
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
 
