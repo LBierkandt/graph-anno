@@ -241,14 +241,44 @@ function updateView(antworthash) {
 function tieToBottom($svg, $div) {
 	$svg.css('top', Math.max(($div.height()-20) - $svg.height(), 0));
 }
-function sendCmd(txtcmd) {
-	if (txtcmd == undefined) txtcmd = document.cmd.txtcmd.value;
+function sendCmd() {
+	var txtcmd = document.cmd.txtcmd.value.trim();
+	if (txtcmd.indexOf('image ') == 0) {
+		saveImage(txtcmd.replace(/\s+/g, ' ').split(' ')[1]);
+		return;
+	}
 	var layer = document.cmd.layer.value;
 	var sentence = document.cmd.sentence.value;
 	var anfrage = new XMLHttpRequest();
 	var params = 'txtcmd='+encodeURIComponent(txtcmd)+'&layer='+encodeURIComponent(layer)+'&sentence='+encodeURIComponent(sentence);
 	anfrage.open('POST', '/handle_commandline');
 	makeAnfrage(anfrage, params);
+}
+function saveImage(format) {
+	var width = parseInt($('#graph svg').attr('width'));
+	var height = parseInt($('#graph svg').attr('height'));
+	var url = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent($('#graph').html())));
+	if (format == 'svg') {
+		downloadFile(url, format);
+	} else if (format == 'png') {
+		var image = new Image();
+		image.src = url;
+		image.onload = function() {
+			var canvas = document.createElement('canvas');
+			canvas.width = width;
+			canvas.height = height;
+			canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+			downloadFile(canvas.toDataURL('image/png'), format);
+		}
+		return;
+	}
+}
+function downloadFile(url, format) {
+	var link = $('<a></a>').appendTo($('body'));
+	link.attr('href', url).attr('download', 'image.' + format)
+		.css('display', 'none')
+		.get(0).click();
+	link.remove();
 }
 function sendFilter(mode) {
 	var filterfield = document.filter.filterfield.value;
