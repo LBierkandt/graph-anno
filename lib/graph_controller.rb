@@ -796,13 +796,6 @@ class GraphController
 		when 'clear' # clear workspace
 			clear_workspace
 
-		when 'image' # export sentence as graphics file
-			sentence_set?
-			format = parameters[:words][0]
-			name = parameters[:words][1]
-			Dir.mkdir('images') unless File.exist?('images')
-			generate_graph(format.to_sym, 'images/'+name+'.'+format)
-
 		when 'export' # export corpus in other format or export graph configurations
 			Dir.mkdir('exports') unless File.exist?('exports')
 			format = parameters[:words][0]
