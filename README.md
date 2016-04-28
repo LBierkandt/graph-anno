@@ -2,24 +2,24 @@
 
 GraphAnno is a browser-based and command line-operated tool for creating, editing and querying graph-based linguistic annotations.
 
-GraphAnno needs: Ruby (optional on Windows), Graphviz, and a Browser (Firefox).
+GraphAnno needs: Ruby (optional on Windows) and a Browser.
 
 ## Installation
 
 In order to run GraphAnno you need:
 
-1. An installation of Graphviz (http://www.graphviz.org/)
-
-2. Ruby (you can do without on Windows)
+1. Ruby (you can do without on Windows)
   * (http://www.ruby-lang.org/; GraphAnno has been developed with version 2.0; but 1.9 should work, too)
-    
+
     install needed Rubygems with bundler (if necessary, run `gem install bundler` before):
     1. navigate to the GraphAnno main directory
     2. run `bundle install`
-  
+
   * For Windows there is a compiled version of the program for which you don't need Ruby.
 
-3. A browser (GraphAnno has been developed with Firefox, it has not been checked whether it works just as well on other browsers)
+2. A browser (GraphAnno has been developed with Firefox, but Chrome should work, too)
+
+(A note: you don’t need Graphviz anymore – it is now included in GraphAnno as a Javascript version.)
 
 
 ## Getting started
