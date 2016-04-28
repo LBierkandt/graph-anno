@@ -568,7 +568,7 @@ class GraphController
 		@command_line = command_line
 		command, foo, string = @command_line.strip.partition(' ')
 		parameters = string.parse_parameters
-		properties = @graph.conf.layer_attributes[layer]
+		properties = @graph.conf.layer_attributes[layer] || {}
 
 		case command
 		when 'n' # new node
