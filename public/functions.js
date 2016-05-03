@@ -264,7 +264,7 @@ function saveImage(format) {
 		var image = new Image();
 		image.src = url;
 		image.onload = function() {
-			var canvas = document.createElement('canvas');
+			if (window.canvas == undefined) canvas = document.createElement('canvas');
 			canvas.width = width;
 			canvas.height = height;
 			canvas.getContext('2d').drawImage(image, 0, 0, width, height);
