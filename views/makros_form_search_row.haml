@@ -4,5 +4,5 @@
   %td
     %input{:name => "search[queries][#{i}]", :type => 'text', :value => defined?(query) ? query : ''}
   %td
-    .button{:onclick => 'removeRow(this);'}
+    .button{:onclick => 'removeElement("tr", this);'}
       delete

@@ -4,5 +4,5 @@
   %td
     %input{:name => "anno[values][#{i}]", :type => 'text', :value => defined?(value) ? value : ''}
   %td
-    .button{:onclick => 'removeRow(this);'}
+    .button{:onclick => 'removeElement("tr", this);'}
       delete

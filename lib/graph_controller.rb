@@ -161,7 +161,8 @@ class GraphController
 		@sinatra.haml(
 			@sinatra.params[:partial].to_sym,
 			:locals => {
-				:i => i
+				:i => i,
+				:graph => @graph,
 			}
 		)
 	end
@@ -266,7 +267,8 @@ class GraphController
 	end
 
 	def save_tagset
-		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
+		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
+		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
 		return true.to_json
 	end

@@ -33,7 +33,7 @@
       %input{ :name => "combinations[#{i}[weight]]", :type => 'number', :value => combination.weight }
   %tr
     %td{:colspan => 2}
-      %button{:onclick => 'removeCombination(this); return false;'}
+      %button{:onclick => 'removeElement("tbody", this); return false;'}
         remove
   %tr
     %td{:colspan => 2}

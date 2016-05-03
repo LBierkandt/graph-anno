@@ -9,23 +9,14 @@
           %th Key
           %th Value
         - if graph.tagset.empty?
-          %tr{:no => '0'}
-            %td
-              %input{:name => "keys[0]", :type => 'text', :value => ''}
-            %td
-              %textarea{:name => "values[0]"}
+          = haml :tagset_form_row, :locals => {:i => 0}
         - else
           - graph.tagset.each_with_index do |rule, i|
-            %tr{:no => i}
-              %td
-                %input{:name => "keys[#{i}]", :type => 'text', :value => rule.key}
-              %td
-                %textarea{:name => "values[#{i}]"}
-                  = rule.values_string
+            = haml :tagset_form_row, :locals => {:i => i, :key => rule.key, :value => rule.values_string}
       %tbody
         %tr
           %td{:colspan => 2}
-            %button{:onclick => 'newTagsetRule(); return false;'}
+            %button{:onclick => 'newFormSegment("tagset_form_row", ".tagset"); return false;'}
               Add new key-values pair
 
   #modal-submit.bottom-block

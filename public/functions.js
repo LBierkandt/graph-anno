@@ -322,9 +322,6 @@ function removeLayer(element) {
 	$(element).closest('tbody').remove();
 	removeLayerAttributes();
 }
-function removeCombination(element) {
-	$(element).closest('tbody').remove();
-}
 function openModal(type) {
 	if ($('#modal-background').css('display') != 'block') {
 		$('#modal-content').load('/' + type + '_form', function(){
@@ -333,31 +330,6 @@ function openModal(type) {
 		});
 	}
 }
-function newMetadata() {
-	var i = parseInt($('.metadata tbody:first-child tr:last-child').attr('no')) + 1;
-	$('.metadata tbody:first-child tr:last-child').after(
-		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
-	);
-}
-function newSpeaker() {
-	var i = parseInt($('.speakers tbody:first-child tr:last-child').attr('no')) + 1;
-	$('.speakers tbody:first-child tr:last-child').after(
-		'<tr no="'+i+'"><td><input type="hidden" name="ids['+i+']"></input></td><td><textarea name="attributes['+i+']"></textarea></td></tr>'
-	);
-}
-function newAnnotator() {
-	var i = parseInt($('.annotators tbody:first-child tr:last-child').attr('no')) + 1;
-	$.get('/new_annotator/' + i)
-	.done(function(data) {
-		$('.annotators tbody:first-child tr:last-child').after(data);
-	});
-}
-function newTagsetRule() {
-	var i = parseInt($('.tagset tbody:first-child tr:last-child').attr('no')) + 1;
-	$('.tagset tbody:first-child tr:last-child').after(
-		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
-	);
-}
 function newFormSegment(partial, selector) {
 	var i = parseInt($(selector + ' tbody:first-child tr:last-child').attr('no')) + 1;
 	$.get('/new_form_segment/' + i, {partial: partial})
@@ -365,8 +337,8 @@ function newFormSegment(partial, selector) {
 		$(selector + ' tbody:first-child tr:last-child').after(data);
 	});
 }
-function removeRow(element) {
-	$(element).closest('tr').remove();
+function removeElement(selector, element) {
+	$(element).closest(selector).remove();
 }
 function sendConfig() {
 	$.ajax({
