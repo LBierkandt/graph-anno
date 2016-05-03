@@ -157,6 +157,15 @@ class GraphController
 		end
 	end
 
+	def new_form_segment(i)
+		@sinatra.haml(
+			@sinatra.params[:partial].to_sym,
+			:locals => {
+				:i => i
+			}
+		)
+	end
+
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
@@ -184,8 +193,6 @@ class GraphController
 					end
 				)
 			end
-			@graph.makros_plain = @sinatra.params['makros'].split("\n").map(&:strip)
-			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
 		end
 		return result.to_json
 	end
@@ -237,9 +244,23 @@ class GraphController
 	end
 
 	def save_makros
-		@graph.anno_makros = {}
-		@sinatra.params['keys'].each do |i, key|
-			@graph.anno_makros[key.strip] = @sinatra.params['values'][i].parse_parameters[:attributes]
+		params = {
+			'anno' => {'keys' => [], 'values' => []},
+			'search' => {'names' => [], 'queries' => []},
+		}.merge(@sinatra.params)
+		begin
+			@graph.anno_makros = Hash[
+				params['anno']['keys'].map{|i, key|
+					[key.strip, params['anno']['values'][i].parse_parameters[:attributes]] unless key.empty?
+				}.compact
+			]
+			@graph.create_layer_makros
+			@graph.makros_plain = params['search']['names'].map{|i, name|
+				"def #{name} #{params['search']['queries'][i]}" unless name.empty?
+			}.compact
+			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
+		rescue StandardError => e
+			return {:errors => e.message}.to_json
 		end
 		return true.to_json
 	end
@@ -1144,11 +1165,6 @@ class GraphController
 					end
 				end
 			end
-		end
-		begin
-			@graph.parse_query(data['makros'])
-		rescue StandardError => e
-			result['makros'] = e.message
 		end
 		return result.empty? ? true : result
 	end

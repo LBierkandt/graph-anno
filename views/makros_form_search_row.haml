@@ -1,0 +1,8 @@
+%tr{:no => i}
+  %td
+    %input{:name => "search[names][#{i}]", :type => 'text', :value => defined?(name) ? name : ''}
+  %td
+    %input{:name => "search[queries][#{i}]", :type => 'text', :value => defined?(query) ? query : ''}
+  %td
+    .button{:onclick => 'removeRow(this);'}
+      delete

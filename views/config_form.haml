@@ -56,18 +56,6 @@
             %button#new-combination{:onclick => 'newCombination(this); return false;'}
               New combination
 
-  %div.modal-form-element
-    %table
-      %tr
-        %th{:colspan => 2} Search makros
-      %tr
-        %td
-          %label{:for => "makros"}
-      %tr
-        %td{:colspan => 2}
-          %textarea{:name => "makros"}
-            = graph.makros_plain * "\r"
-
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }
     %input{ :type => 'submit', :value => 'Save' }

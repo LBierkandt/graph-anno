@@ -352,20 +352,21 @@ function newAnnotator() {
 		$('.annotators tbody:first-child tr:last-child').after(data);
 	});
 }
-function removeAnnotator(element) {
-	$(element).closest('tr').remove();
-}
-function newMakro() {
-	var i = parseInt($('.makros tbody:first-child tr:last-child').attr('no')) + 1;
-	$('.makros tbody:first-child tr:last-child').after(
-		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><input name="values['+i+']" type="text"></td></tr>'
-	);
-}
 function newTagsetRule() {
 	var i = parseInt($('.tagset tbody:first-child tr:last-child').attr('no')) + 1;
 	$('.tagset tbody:first-child tr:last-child').after(
 		'<tr no="'+i+'"><td><input name="keys['+i+']" type="text"></td><td><textarea name="values['+i+']"></textarea></td></tr>'
 	);
+}
+function newFormSegment(partial, selector) {
+	var i = parseInt($(selector + ' tbody:first-child tr:last-child').attr('no')) + 1;
+	$.get('/new_form_segment/' + i, {partial: partial})
+	.done(function(data) {
+		$(selector + ' tbody:first-child tr:last-child').after(data);
+	});
+}
+function removeRow(element) {
+	$(element).closest('tr').remove();
 }
 function sendConfig() {
 	$.ajax({
@@ -382,9 +383,6 @@ function sendConfig() {
 		} else {
 			$('#modal-warning').show();
 			$('#modal-form label').removeClass('error_message');
-			if (data['makros'] != 'undefined') {
-				$('label[for="makros"]').html(data['makros']);
-			}
 			for (var i in data) {
 				$('label[for="' + i + '"]').addClass('error_message');
 			}
@@ -400,7 +398,7 @@ function sendModal(type) {
 	})
 	.done(function(data) {
 		if (data == true) closeModal();
-		else $('#modal-warning').show();
+		else $('#modal-warning').html(data['errors']).show();
 	});
 }
 function closeModal() {
