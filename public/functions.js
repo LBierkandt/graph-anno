@@ -257,7 +257,14 @@ function sendCmd() {
 function saveImage(format) {
 	var width = parseInt($('#graph svg').attr('width'));
 	var height = parseInt($('#graph svg').attr('height'));
-	var url = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent($('#graph').html())));
+	var url = 'data:image/svg+xml;base64,' +
+		window.btoa(unescape(encodeURIComponent(
+			[
+				'<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+				'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
+				$('#graph').html(),
+			].join("\n")
+		)));
 	if (format == 'svg') {
 		downloadFile(url, format);
 	} else if (format == 'png') {
