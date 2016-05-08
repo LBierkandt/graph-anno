@@ -104,6 +104,7 @@
 \tableofcontents
 
 
+
 \section{GraphAnno’s data model}
 
 All data in GraphAnno is represented as a graph, i.e., a set of nodes and a set of directed edges that connect the nodes.
@@ -327,6 +328,127 @@ This structure could describe arbitrary directed graphs, but in order to work wi
 
 
 
+\section{User interface}
+
+The main elements of GraphAnno’s user interface are the area where the annotation graph is displayed and, below, the command line, that is used for most operations (esp. for annotation; see Section \ref{commandline}).
+Further elements on the bottom of the screen are a dropdown for annotation layer choice and the display of, i.a., the loaded file.
+For some operations like, e.g., searching your annotations there are dedicated windows; these are discussed in detail in Section \ref{windows}.
+Finally, you can use keyboard shortcuts for some operations like, e.g., toggling windows, navigating or zooming.
+These shortcuts are listed in Section \ref{shortcuts}.
+
+
+\subsection{Command line}\label{commandline}
+
+The annotation work in GraphAnno (as well as workspace-related operations like loading and saving files) is operated from the command line.
+Most commands are executed immediately; some (like, e.g., the \hyperref[konfiguration]{configuration commands}) open a dialogue window.
+For issuing a command, you just type it, followed by its arguments, into the command line field and press the enter key.
+For a complete list of the available commands see Section \ref{commandline-commands}.
+
+
+\subsection{Windows}\label{windows}
+
+For some purposes GraphAnno has dedicated static windows.
+These windows can be toggled, dragged around and resized.
+Their position, size and display status (shown or hidden) is saved in the browser (in a cookie) or, optionally, in the corpus file (see \ref{filesettings}) so you have the windows positioned as needed when you open your corpus.
+The different windows are described in the following.
+
+\subsubsection{Navigation}\label{window-navigation}
+
+The navigation window shows the sentences and sections of your corpus and is toggled with the F9 key.
+The sentences are listed from top to bottom and labelled with their \code{name} attribute and their text.
+To the left of the sentences you can see the sections (again, labelled with their \code{name} attribute) as boxes whose height indicates which sentences/sections they span.
+The active sentence(s) or section(s) are highlighted.
+
+In order to navigate to a sentence or section, you can doubleclick the corresponding element.
+When you want to choose multiple sentences or sections, you can select the elements with single clicks and confirm your selection with the enter key (or cancel with esc).
+For selecting you can also use the ctrl and shift keys and the up/down arrow keys.
+Note that you may only choose elements of the same level (i.e., the same column in the window).
+
+For a quicker navigation from sentence to sentence, you may want to use the keyboard shortcuts listed in \ref{shortcuts}; moreover, you can use the command \code{s} from the command line (see \ref{befehl-s}).
+
+\subsubsection{Filter}
+
+GraphAnno’s filter function allows you to hide or filter a set of nodes and edges of the current sentence in order to obtain a better overview of what is relevant to your current annotation task.
+You may, e.g., decide to display only those elements that belong to a certain annotation layer.
+
+In the filter window, toggled with the F6 key, you choose a set of elements via an attribute description of GraphAnno’s query language as described in Section \ref{node}.
+By clicking one of the respective buttons, you may then choose to either hide/filter the described set or hide/filter the rest.
+\textit{Hide} here means that hidden elements are displayed in a non-prominent color (you may customize this color in the respective settings, see \ref{ebenenkonfiguration}); \textit{filter} means that the filtered elements are not displayed at all.
+In order to show all elements in the usual way again, click the \textit{display all} button.
+
+\subsubsection{Search}\label{window-search}
+
+GraphAnno’s search feature is controlled from the corresponding window, that is toggled with the F7 key.
+The search window has a single input area for search, annotation and export queries.
+Query parts relating to all of these three functions can be mixed in the input area.
+The queries are formulated in GraphAnno’s query language, which is explained in Section \ref{querylanguage}.
+As soon as you have entered your query, you can start the desired action (search, annotation or export) by clicking the corresponding button.
+
+When you want to search for a graph fragment, enter your search query in the input area and click the \textit{search} button.
+The search will then be executed and, as soon as it is finished, the number of matches will be displayed on the bottom of the search window.
+The matching fragments are highlighted in the graph view (default is red, but the color can be customized, see \ref{ebenenkonfiguration}), and in the navigation window all sentences that contain matches are highlighted as well.
+If your query is not correct or if another error occurs during the search, an error message is displayed on the bottom of the search window.
+If you don’t want the matches to be highlighted anymore, just click the \textit{clear search} button (this will also internally clear the search results, so you have to search again before annotation – see the next paragraph).
+
+When you want to annotate using an annotation query, you enter a search query and an annotation query.
+The search query finds a set of matches and saves the relevant elements of the match in variables (or \textit{IDs}).
+In your annotation query you write commands that refer to these variables.
+In order to perform the annotation, you must first execute the search and afterwards the annotation.
+If you make changes in your search query and want them to take effect for your annotation, you must, again, first execute the modified search.
+
+For exporting a data table, you proceed analogously to the annotation procedure described in the preceding paragraph:
+Enter a search query and export commands that refer to the IDs from the search query; then execute the search first and the export afterwards.
+
+\subsubsection{Log}\label{window-log}
+
+GraphAnno records the change history of an annotation session (or of the whole corpus; you can configure this in the file settings, see \ref{filesettings}).
+The commands recorded include those commands that create or delete nodes or edges, as well as creating and deleting of sentences and sections, but not work space-related commands such as \code{append} or \code{clear} and not annotation by query (cf. Section \ref{window-search} and \ref{query-annotation}).
+
+You can see this change history in the log window (toggled with F8), where the command executed, the time it was issued and, if you use the multi-annotator feature (see \ref{annotatoren}), the annotator are displayed.
+You can jump to points in history by clicking the corresponding line in the log window.
+But beware! the change history is linear, i.e., if you issue an annotation command while being in a point in history, the commands following this point will be lost.
+
+You can also navigate the history using the \code{undo} and \code{redo} commands – see Section \ref{befehl-undo}.
+
+
+\subsection{Keyboard shortcuts}\label{shortcuts}
+
+Most of the functions related to navigation and display can be controlled by keybord shortcuts.
+The following is a table of the available shortcuts:
+
+\begin{center}
+	\begin{tabular*}{\textwidth}{ll}
+		\toprule
+		Shortcut & Function \\
+		\midrule
+		Navigation & \\
+		\midrule
+			Alt + ←/→ & previous/next sentence or section\\
+			Alt + Home/End & first/last sentence or section \\
+		\midrule
+		Graph & \\
+		\midrule
+			Ctrl + Shift + −/+ & scale down/up graph\\
+			Ctrl + Shift + 0 & zoom to original size (fitting height) \\
+			Ctrl + Shift + arrows & move graph\\
+			Ctrl + Shift + Home/End & go to left/right edge of graph\\
+			Ctrl + Shift + Page up/Page down& go to upper/lower edge of graph\\
+			F4 & toggle element references\\
+		\midrule
+		Window & \\
+		\midrule
+			F1 & show/hide help window \\
+			F2 & show/hide text and sentence annotations\\
+			F6 & show/hide filter window\\
+			F7 & show/hide search window\\
+			F8 & show/hide change log window\\
+			F9 & show/hide navigation window\\
+		\bottomrule
+	\end{tabular*}
+\end{center}
+
+
+
 \section{Configuration}\label{konfiguration}
 
 \subsection{Layers and visualization}\label{ebenenkonfiguration}
@@ -355,6 +477,7 @@ Under \textit{search makros} you can enter predefined graph-specific search makr
 These makros are then available for search queries in the graph.
 In the search makros text area, the definitions (\code{def ...}) have to be enterd each on its own line.
 
+
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
 In the window open by the command \code{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
@@ -371,6 +494,7 @@ Simple values are entered without further markup; if a value contains special ch
 Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\code{/.../}).
 In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
 
+
 \subsection{Annotation makros}\label{annotationsmakros}
 
 For a graph you save annotation makros, that facilitate the annotation with frquently needed attribute combinations.
@@ -378,10 +502,12 @@ With the command \code{makros} you open a window where you can define these makr
 In the fields on the left you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}); in the corresponding field on the right you enter the desired annotations for your makro.
 For these annotations you must use the same syntax as in the annotation commands, i.e. a set of attributes in the form \code{key:value}, separated by spaces (see Section \ref{befehl-n} for details).
 
+
 \subsection{Metadata}
 
 Additionally to the configuration of layers, visualization, makros and permitted annotations, you may save metadata for a graph as key-value pairs.
 The command \code{metadata} opens the window, where you can enter an arbitrary number of keys with a text as corresponding value.
+
 
 \subsection{Annotators}\label{annotatoren}
 
@@ -398,7 +524,8 @@ The current annotator’s name will now be displayed in the corresponding field 
 Also for searching only your own annotations will be evaluated.
 If you want to log out the current annotator and work on the public annotations again, use the \code{annotator} command without argument.
 
-\subsection{File settings}
+
+\subsection{File settings}\label{filesettings}
 
 The command \code{file} opens a window, in which you can specify the settings for the file in which the work space will be saved:
 
@@ -414,45 +541,7 @@ The command \code{file} opens a window, in which you can specify the settings fo
 
 
 
-\section{Keyboard shortcuts}
-
-In GraphAnno most of the functions related to navigation and display are controlled by keybord shortcuts.
-The following is a table of the available shortcuts:
-
-\begin{center}
-	\begin{tabular*}{\textwidth}{ll}
-		\toprule
-		Shortcut & Function \\
-		\midrule
-		Navigation & \\
-		\midrule
-			Alt + ←/→ & previous/next sentence\\
-			Alt + Home/End & first/last sentence \\
-		\midrule
-		Graph & \\
-		\midrule
-			Ctrl + Shift + −/+ & scale down/up graph\\
-			Ctrl + Shift + 0 & zoom to fit (wrt. height) \\
-			Ctrl + Shift + arrows & move graph\\
-			Ctrl + Shift + Home/End & go to left/right edge of graph\\
-			Ctrl + Shift + Page up/Page down& go to upper/lower edge of graph\\
-			F4 & toggle element references\\
-		\midrule
-		Window & \\
-		\midrule
-			F1 & show/hide help window \\
-			F2 & show/hide text and sentence annotations\\
-			F6 & show/hide filter window\\
-			F7 & show/hide search window\\
-			F8 & show/hide change log window\\
-		\bottomrule
-	\end{tabular*}
-\end{center}
-
-
-
-
-\section{Command line commands}
+\section{Command line commands}\label{commandline-commands}
 
 \subsection{Data and navigation}
 
@@ -501,10 +590,9 @@ If you enter one or more sentence names as arguments, it is not the current sent
 A further possibility is to enter a regular expression (in slashes); in that case, all sentences whose names match the given regular expression will be deleted.
 
 
-\subsubsection{Set sentence: \texttt{s}}
+\subsubsection{Go to sentence/section: \texttt{s}}\label{befehl-s}
 
-In order to navigate from sentence to sentence, you may use (alternatively to keyboard shortcuts or the dropdown field) the command \code{s}, followed by the name of the sentence you want to change to.
-You are then directed to the first sentence with the given name.
+In order to navigate to a sentence or section (or multiple of them), you may use (alternatively to \hyperref[shortcuts]{keyboard shortcuts} or the \hyperref[window-navigation]{navigation window}) the command \code{s}, followed by the name(s) of the sentence(s) or section(s) you want to change to.
 
 
 \subsubsection{Export graphics: \texttt{image}}
@@ -525,7 +613,7 @@ For \code{paula} you can optionally specify the name of the corpus document to b
 The exported corpus will be saved in GraphAnno’s \texttt{exports} directory.
 
 
-\subsubsection{Import text: \texttt{import text}}
+\subsubsection{Import text: \texttt{import text}}\label{befehl-import}
 
 You can import texts with the command \code{import text}. After issuing the command, a window opens where you can enter the text and set the preferences for its processing.
 The work space will be cleared before the text is imported (but not as soon as the window opens).
@@ -587,7 +675,6 @@ Attention: when importing, the existing configuration will be replaced completel
 
 These commands open the windows for the settings that were described in Section \ref{konfiguration}.
 \code{config} for layers and visualization, \code{tagset} for permitted annotations / tagset, \code{makros} for annotation makros, \code{metadata} for metadata, \code{annotators} for annotators and \code{file} for file settings.
-
 
 
 \subsection{Annotation commands}\label{annotationsbefehle}
@@ -793,11 +880,11 @@ command_ta      =   "ta " token_reference " " words
 \subsubsection{Undo/Redo: \texttt{undo} and \texttt{redo} (or \texttt{z} and \texttt{y})}\label{befehl-undo}
 
 You can undo previously issued annotation commands using the command \code{undo} (or the synonymous command \code{z}).
-These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \code{append} or \code{clear}.
+These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \code{append} or \code{clear} and not annotation by query (cf. \ref{query-annotation}).
 A command you have undone can be redone with the command \code{redo} (or the synonymous command \code{y}).
 Undoing and redoing can be used multiple times; but if you issue an annotation command after having undone other commands, the undone commands cannot be redone (linear change history).
 
-You can look at the change history in a window that is toggled with the F8 key.
+You can look at the change history in the log window that is toggled with the F8 key (cf. Section \ref{window-log}).
 In this window you can also directly jump to points in the history with a click.
 
 
@@ -822,10 +909,7 @@ If you want to log out the current annotator and work on the public annotations 
 
 
 
-
-
-
-\section{Query language}
+\section{Query language}\label{querylanguage}
 
 \subsection{Search}
 
@@ -886,7 +970,7 @@ The rules for quantifiers explained above are the same as for \code{in} and \cod
 node_klausel    =   "node" id? " " node_attributes
 id              =   "@" (letter | "_") alphanumeric_char*
 node_attributes =   node_attributes " & " node_attributes
-                    node_attributes" | " node_attributes
+                    node_attributes " | " node_attributes
                     "!" node_attributes
                     "(" node_attributes ")"
                     attribute
@@ -902,13 +986,13 @@ edge_criterion  =   "in" ("(" edge_attributes ")")? quantifier?
                     "out" ("(" edge_attributes ")")? quantifier?
                     "link" ("(" connection ")") quantifier?
 quantifier      =   "?" | "*" | "+" | "{" number? ("," number?) "}"
-edge_attributes =   edge_attributes" & " edge_attributes
-                    edge_attributes" | " edge_attributes
+edge_attributes =   edge_attributes " & " edge_attributes
+                    edge_attributes " | " edge_attributes
                     "!" edge_attributes
                     "(" edge_attributes ")"
                     attribute
                     node_criterion
-knotenkriterium =   "start" ("(" knotenattribute ")")
+node_criterion  =   "start" ("(" knotenattribute ")")
                     "end" ("(" knotenattribute ")")
 \end{lstlisting}
 
@@ -1182,8 +1266,7 @@ name             =   alnum+
 \end{itemize}
 
 
-
-\subsection{Annotation}
+\subsection{Annotation}\label{query-annotation}
 
 After performing a search you can automatically annotate elements of the found graph fragments using the IDs used in your search query.
 For this purpose you can use the annotation commands described in \ref{annotationsbefehle} (except for \code{t}).
@@ -1200,7 +1283,6 @@ Because of the other using context you have take account of some changes:
 		a @s text:"#{@s.text}."
 	\end{lstlisting}
 \end{itemize}
-
 
 
 \subsection{Data export}
@@ -1221,7 +1303,7 @@ Again, bear in mind that the nodes and edges found by \code{node} and \code{edge
 You can access the attributes as described in \ref{cond} for \code{cond}.
 There are also other useful methods for exporting data:
 E.g., \code{.tokens} returns a list of the dominated tokens (you may also give a more specific link description string as argument of the method); \code{.text} works in the same way but returns the token text as a string.
-\code{.sentence\_tokens} returns a list of all token nodes of the sentence the element belongs to, \code{.sentence\_text}, again, their text. 
+\code{.sentence\_tokens} returns a list of all token nodes of the sentence the element belongs to, \code{.sentence\_text}, again, their text.
 
 When working with the multi-annotator feature (cf. \ref{annotatoren}), the direct access to the attributes (using square brackets) will return the annotations of the current annotator.
 If you want to access the annotations of other annotators, use the method \mbox{\code{.private\_attr}}, which takes as argument the name of the annotator,\\e.g., \code{@s.private\_attr('thomas')['cat']}).
