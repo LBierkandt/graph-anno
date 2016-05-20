@@ -6,14 +6,17 @@ GraphAnno needs: Ruby (optional on Windows) and a Browser.
 
 ## Installation
 
-In order to run GraphAnno you need:
+Download the ZIP file and extract it to a directory of your choice (or clone the GraphAnno repository).
+
+Then, in order to run GraphAnno you need:
 
 1. Ruby (you can do without on Windows)
   * (http://www.ruby-lang.org/; GraphAnno has been developed with version 2.0; but 1.9 should work, too)
 
-    install needed Rubygems with bundler (if necessary, run `gem install bundler` before):
+    install needed Rubygems with bundler
     1. navigate to the GraphAnno main directory
-    2. run `bundle install`
+    2. run `gem install bundler` if you haven't installed bundler already
+    3. run `bundle install`
 
   * For Windows there is a compiled version of the program for which you don't need Ruby.
 
@@ -26,7 +29,7 @@ In order to run GraphAnno you need:
 
 ### Starting the program
 
-1. start `main.rb` in GraphAnno main directory (`bundle exec ruby main.rb`), or `main.exe` on Windows
+1. start `main.rb` in the GraphAnno main directory (`bundle exec ruby main.rb`); or on Windows (if you prefer) `main.exe`
 
 2. navigate to the following address in your browser: `http://localhost:4567/`
 
