@@ -22,21 +22,27 @@ In order to run GraphAnno you need:
 (A note: you don’t need Graphviz anymore – it is now included in GraphAnno as a Javascript version.)
 
 
-## Getting started
-
-### Starting the program
+### Running the program
 
 1. start `main.rb` in GraphAnno main directory (`bundle exec ruby main.rb`), or `main.exe` on Windows
 
 2. navigate to the following address in your browser: `http://localhost:4567/`
 
-You now see the GraphAnno user interface: the (at first empty) graph panel, and the commandline with dropdowns for layer and sentence on the bottom.
+To stop the program, press ctrl + C in the console where it is running.
 
-(To stop the program, press ctrl + C in the console where it is running)
+
+## Documentation
+
+Read the [documentation](doc/GraphAnno-Documentation_en.pdf) for a full overview of GraphAnno's functionality. For a quick introduction see the following section.
+
+
+## Getting started
 
 ### Entering and annotating data
 
-You start with an empty working space, so the first thing to do is to create a sentence. Type the "new sentence" command `ns` with the name of your first sentence, e.g.
+When you have started GraphAnno and opened it in your browser, you see the (at first empty) graph panel and the command line with dropdowns for layer and sentence on the bottom.
+
+You start with an empty work space, so the first thing to do is to create a sentence. Type the "new sentence" command `ns` with the name of your first sentence, e.g.
 ```
 ns example_1
 ```
@@ -88,9 +94,3 @@ GraphAnno is not confined to trees, so you could add a child node (command `c`) 
 ```
 c n1 n0
 ```
-
-
-
-### Further reading
-
-For more information, please see the documentation located in the `doc` directory.
