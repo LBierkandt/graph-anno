@@ -2,7 +2,7 @@
 
 GraphAnno is a browser-based and command line-operated tool for creating, editing and querying graph-based linguistic annotations.
 
-GraphAnno needs: Ruby (optional on Windows), Graphviz, and a Browser (Firefox).
+GraphAnno needs: Ruby (optional on Windows) and a Browser.
 
 ## Installation
 
@@ -10,9 +10,7 @@ Download the ZIP file and extract it to a directory of your choice (or clone the
 
 Then, in order to run GraphAnno you need:
 
-1. An installation of Graphviz (http://www.graphviz.org/)
-
-2. Ruby (you can do without on Windows)
+1. Ruby (you can do without on Windows)
   * (http://www.ruby-lang.org/; GraphAnno has been developed with version 2.0; but 1.9 should work, too)
 
     install needed Rubygems with bundler
@@ -22,24 +20,32 @@ Then, in order to run GraphAnno you need:
 
   * For Windows there is a compiled version of the program for which you don't need Ruby.
 
-3. A browser (GraphAnno has been developed with Firefox, it has not been checked whether it works just as well on other browsers)
+2. A browser (GraphAnno has been developed with Firefox, but Chrome should work, too)
+
+(A note: you don’t need Graphviz anymore – it is now included in GraphAnno as a Javascript version.)
 
 
-## Getting started
-
-### Starting the program
+### Running the program
 
 1. start `main.rb` in the GraphAnno main directory (`bundle exec ruby main.rb`); or on Windows (if you prefer) `main.exe`
 
 2. navigate to the following address in your browser: `http://localhost:4567/`
 
-You now see the GraphAnno user interface: the (at first empty) graph panel, and the commandline with dropdowns for layer and sentence on the bottom.
+To stop the program, press ctrl + C in the console where it is running.
 
-(To stop the program, press ctrl + C in the console where it is running)
+
+## Documentation
+
+Read the [documentation](doc/GraphAnno-Documentation_en.pdf) for a full overview of GraphAnno's functionality. For a quick introduction see the following section.
+
+
+## Getting started
 
 ### Entering and annotating data
 
-You start with an empty working space, so the first thing to do is to create a sentence. Type the "new sentence" command `ns` with the name of your first sentence, e.g.
+When you have started GraphAnno and opened it in your browser, you see the (at first empty) graph panel and the command line with dropdowns for layer and sentence on the bottom.
+
+You start with an empty work space, so the first thing to do is to create a sentence. Type the "new sentence" command `ns` with the name of your first sentence, e.g.
 ```
 ns example_1
 ```
@@ -91,9 +97,3 @@ GraphAnno is not confined to trees, so you could add a child node (command `c`) 
 ```
 c n1 n0
 ```
-
-
-
-### Further reading
-
-For more information, please see the documentation located in the `doc` directory.

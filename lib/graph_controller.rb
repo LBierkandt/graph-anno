@@ -18,10 +18,9 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'yaml.rb'
-require 'graphviz.rb'
-	require 'open3.rb'
 require 'htmlentities.rb'
 require_relative 'log.rb'
+require_relative 'dot_graph.rb'
 
 class GraphController
 	attr_writer :sinatra
@@ -456,7 +455,7 @@ class GraphController
 		generate_graph.merge(
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections => set_sections,
-			:sections_changed => (@current_sections && @sinatra.params[:sentence] && @sinatra.params[:sentence] == current_section_ids) ? false : true
+			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
 		)
 	end
 
@@ -820,13 +819,6 @@ class GraphController
 		when 'clear' # clear workspace
 			clear_workspace
 
-		when 'image' # export sentence as graphics file
-			sentence_set?
-			format = parameters[:words][0]
-			name = parameters[:words][1]
-			Dir.mkdir('images') unless File.exist?('images')
-			generate_graph(format.to_sym, 'images/'+name+'.'+format)
-
 		when 'export' # export corpus in other format or export graph configurations
 			Dir.mkdir('exports') unless File.exist?('exports')
 			format = parameters[:words][0]
@@ -899,7 +891,7 @@ class GraphController
 			''
 		end
 
-		viz_graph = GraphViz.new(
+		viz_graph = DotGraph.new(
 			:G,
 			:type => :digraph,
 			:rankdir => :TB,
@@ -951,10 +943,10 @@ class GraphController
 				satzinfo[:textline] += token.token + ' '
 			end
 			unless token.speaker
-				token_graph.add_nodes(token.id.to_s, options)
+				token_graph.add_nodes(token, options)
 			else
 				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token.id.to_s, options)
+				gv_token = speaker_graphs[token.speaker].add_nodes(token, options)
 				gv_time  = timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
 				# add ordering edge from speaker to speaker's first token
 				viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
@@ -1000,8 +992,8 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_nodes(node.id.to_s, options)
-			actual_layer_graph.add_nodes(node.id.to_s) if actual_layer_graph
+			viz_graph.add_nodes(node, options)
+			actual_layer_graph.add_nodes(node) if actual_layer_graph
 		end
 
 		@edges.each_with_index do |edge, i|
@@ -1043,16 +1035,14 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, options)
+			viz_graph.add_edges(edge.start, edge.end, options)
 		end
 
 		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, :style => :invis, :weight => 100)
+			viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 
-		viz_graph.output(format => '"'+path+'"')
-
-		return satzinfo
+		return satzinfo.merge(:dot => viz_graph.to_s)
 	end
 
 	def sentence_set?

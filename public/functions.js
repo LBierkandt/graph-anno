@@ -53,15 +53,16 @@ function loadGraph() {
 	}).done(updateView);
 }
 function graphdivEinpassen() {
-	$('#graphdiv').height(window.innerHeight - $('#bottom').height());
+	$('#graph').height(window.innerHeight - $('#bottom').height());
 }
 function graphEinpassen() {
-	var bild = document.getElementById('graph');
-	var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
-	var newHeight = Math.min(outerHeight, bild.svgHeight);
-	bild.height = Math.round(newHeight);
-	bild.width = Math.round(bild.svgWidth / bild.svgHeight * newHeight);
-	bild.style.top = outerHeight - bild.height;
+	var $div = $('#graph');
+	var $svg = $div.find('svg');
+	var outerHeight = $div.height() - 20;
+	var newHeight = Math.min(outerHeight, $svg.height());
+	$svg.width($svg.width() / $svg.height() * newHeight);
+	$svg.height(newHeight);
+	$svg.css('top', outerHeight - $svg.height());
 }
 function taste(e) {
 	var ctrlShift = e.ctrlKey && e.shiftKey;
@@ -154,21 +155,21 @@ function taste(e) {
 	}
 }
 function aendereBildgroesze(richtung) {
-	var bild = document.getElementById('graph');
-	var div = document.getElementById('graphdiv');
-	var xmitte = div.scrollLeft + div.offsetWidth / 2
-	var ymitte = div.scrollTop + div.offsetHeight / 2
+	var $div = $('#graph');
+	var $svg = $div.find('svg');
+	var xmitte = $div.scrollLeft() + $div.width() / 2;
+	var ymitte = $div.scrollTop() + $div.height() / 2;
 	var faktor = 1;
 	if (richtung == '+') {faktor = 1.25}
 	else if (richtung == '-') {faktor = 0.8}
-	bild.width  *= faktor;
-	bild.height *= faktor;
-	div.scrollLeft = xmitte * faktor - div.offsetWidth / 2;
-	div.scrollTop  = ymitte * faktor - div.offsetHeight / 2;
-	bild.style.top = Math.max((div.offsetHeight-20) - bild.height, 0);
+	$svg.width($svg.width() * faktor);
+	$svg.height($svg.height() * faktor);
+	$div.scrollLeft(xmitte * faktor - $div.width() / 2);
+	$div.scrollTop(ymitte * faktor - $div.height() / 2);
+	tieToBottom($svg, $div);
 }
 function verschiebeBild(richtung) {
-	var div = document.getElementById('graphdiv');
+	var div = document.getElementById('graph');
 	switch (richtung) {
 		case 'oo': div.scrollTop = 0; break;
 		case 'uu': div.scrollTop = 999999; break;
@@ -187,38 +188,82 @@ function updateView(data) {
 	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
 	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
 	graphdivEinpassen();
-	var bild = document.getElementById('graph');
-	var scrollLeft = bild.parentNode.scrollLeft;
-	var scrollTop  = bild.parentNode.scrollTop;
-	bild.onload = function(){
-		var svgElement = this.contentDocument.documentElement;
-		var newSvgWidth  = svgElement.getAttribute('width').match(/\d+/);
-		var newSvgHeight = svgElement.getAttribute('height').match(/\d+/);
-		var widthRatio = newSvgWidth  / this.svgWidth;
-		var heightRatio  = newSvgHeight / this.svgHeight;
-		this.svgWidth  = newSvgWidth;
-		this.svgHeight = newSvgHeight;
-		if (data['sections_changed']) {
-			graphEinpassen();
-		} else {
-			this.width  = this.width  * widthRatio;
-			this.height = this.height * heightRatio;
-			this.parentNode.scrollLeft = scrollLeft * widthRatio;
-			this.parentNode.scrollTop  = scrollTop  * heightRatio;
-			// Graphik ggf. "am Boden" halten:
-			if (scrollTop == 0) {
-				var outerHeight = document.getElementById('graphdiv').offsetHeight - 20;
-				this.style.top = Math.max(outerHeight - this.height, 0);
-			}
-		}
+	// get old dimensions
+	var $div = $('#graph');
+	var oldImageSize = {
+		width: $div.find('svg').width() || 1,
+		height: $div.find('svg').height() || 1,
+	};
+	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
+	// create svg
+	var svgElement = new DOMParser().parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
+	// get new dimensions
+	var newSvgSize = {
+		width: parseInt(svgElement.documentElement.getAttribute('width')),
+		height: parseInt(svgElement.documentElement.getAttribute('height')),
+	};
+	// insert svg
+	$div.empty().append(svgElement.documentElement);
+	var $svg = $div.find('svg');
+	// scale svg
+	if (data['sections_changed']) {
+		$svg.width(newSvgSize.width);
+		$svg.height(newSvgSize.height);
+		graphEinpassen();
+	} else {
+		$svg.width(newSvgSize.width * oldImageSize.width / originalSvgSize.width);
+		$svg.height(newSvgSize.height * oldImageSize.height / originalSvgSize.height);
+		if ($div.scrollTop() == 0) tieToBottom($svg, $div);
 	}
-	bild.data = '/graph.svg?v=' + new Date().getTime();
+	originalSvgSize = newSvgSize;
+}
+function tieToBottom($svg, $div) {
+	$svg.css('top', Math.max(($div.height()-20) - $svg.height(), 0));
 }
 function sendCmd() {
+	var txtcmd = document.cmd.txtcmd.value.trim();
+	if (txtcmd.indexOf('image ') == 0) {
+		saveImage(txtcmd.replace(/\s+/g, ' ').split(' ')[1]);
+		return;
+	}
 	postRequest('/handle_commandline', {
-		txtcmd: document.cmd.txtcmd.value,
+		txtcmd: txtcmd,
 		layer: document.cmd.layer.value,
+		sections: Sectioning.getCurrent(),
 	});
+}
+function saveImage(format) {
+	var width = parseInt($('#graph svg').attr('width'));
+	var height = parseInt($('#graph svg').attr('height'));
+	var url = 'data:image/svg+xml;base64,' +
+		window.btoa(unescape(encodeURIComponent(
+			[
+				'<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+				'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
+				$('#graph').html(),
+			].join("\n")
+		)));
+	if (format == 'svg') {
+		downloadFile(url, format);
+	} else if (format == 'png') {
+		var image = new Image();
+		image.src = url;
+		image.onload = function() {
+			if (window.canvas == undefined) canvas = document.createElement('canvas');
+			canvas.width = width;
+			canvas.height = height;
+			canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+			downloadFile(canvas.toDataURL('image/png'), format);
+		}
+		return;
+	}
+}
+function downloadFile(url, format) {
+	var link = $('<a></a>').appendTo($('body'));
+	link.attr('href', url).attr('download', 'image.' + format)
+		.css('display', 'none')
+		.get(0).click();
+	link.remove();
 }
 function sendFilter(mode) {
 	postRequest('/filter', {filter: document.filter.filterfield.value, mode: mode});

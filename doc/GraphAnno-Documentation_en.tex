@@ -314,14 +314,11 @@ In order to navigate from sentence to sentence, you may use (alternatively to ke
 You are then directed to the first sentence with the given name.
 
 
-\subsubsection{Export graphics: \texttt{image}}
+\subsubsection{Save image: \texttt{image}}
 
-With the command \code{image}, you can export the graphic that GraphAnno is displaying for the current sentence.
-The first argument is the desired format.
-All formats supported by Graphviz are available, e.g. \texttt{dot}, \texttt{eps}, \texttt{pdf}, \texttt{png} or \texttt{svg}.
-See under \url{http://www.graphviz.org/content/output-formats} for the complete list.
-The second argument is the name of the new image file (without extension; put the name in double quotes if it contains spaces).
-The image will be saved in GraphAnno’s \texttt{images} directory.
+With the command \texttt{image}, you can export the graphic that GraphAnno is currently displaying.
+As argument you must specify the desired format (\texttt{svg} or \texttt{png}).
+The file will then be downloaded.
 
 
 \subsubsection{Export corpus: \texttt{export}}\label{befehl-export}
