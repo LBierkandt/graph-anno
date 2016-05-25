@@ -649,7 +649,7 @@ The clause is composed of the keyword \code{node}, an optional ID and an attribu
 The ID consists of a \code{@} followed by a string that consists of alphanumeric characters, including the underscore, with the additional restriction that the first character must not be a digit.
 Using this ID, the node can be referenced in other parts of the query.
 
-The attribute description is composed of key-value pairs of the form \code{key:""value}, that are joined by the logical operators \code{!} for “not”, \code{\&} for “and” and \code{|} for “or” (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
+The attribute description is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for “not”, \code{\&} for “and” and \code{|} for “or” (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
 As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
 
 The key of a key-value pair can be given as a simple string if it does not contain any of the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}), else it has to be given in double quotes (\code{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}).
@@ -719,19 +719,19 @@ knotenkriterium =   "start" ("(" knotenattribute ")")
 \begin{itemize}
 	\item Search for all nodes that bear the category S or VP and that are no tokens:
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
-		node cat:S|VP \& !token
+		node cat:S|VP & !token
 	\end{lstlisting}
 	\item Search for all nodes of category VP or tokens bearing the pos value verb:
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
-		node cat:VP | token \& pos:verb
+		node cat:VP | token & pos:verb
 	\end{lstlisting}
 	\item Search for all nodes of category S that have at least two outgoing AUX edges:
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
-		node cat:S \& out(cat:AUX)\{2,\}
+		node cat:S & out(cat:AUX){2,}
 	\end{lstlisting}
 	\item Search for all nodes of category S that directly dominate at least one node bearing the pos value pro:
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
-		node cat:S \& out(end(pos:pro))
+		node cat:S & out(end(pos:pro))
 	\end{lstlisting}
 \end{itemize}
 
@@ -887,7 +887,7 @@ word            =   attribute_value ("(" node_attributes")")?
 \begin{itemize}
 	\item Search for all sentences that contain the verb “permit” in third position:
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
-		text \^{}s //\{2,2\} permit(pos:v)
+		text ^s //{2,2} permit(pos:v)
 	\end{lstlisting}
 	\item Search for two occurrences of “he” that are separated by an arbitrary number of words, where the first “he” and all following words before the second “he” are dominated by an S node:
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
@@ -970,7 +970,7 @@ name             =   alnum+
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
 		def svp cat:S | cat:VP
 		node @s1 svp
-		node @s2 svp \& tns:prs
+		node @s2 svp & tns:prs
 		edge @s1@s2
 	\end{lstlisting}
 %\begin{itemize}
