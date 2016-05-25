@@ -1,14 +1,14 @@
 %tr{:no => i}
   %td
-    = annotator.id if annotator.id > 0
-    %input{:name => "ids[#{i}]", :type => "hidden", :value => annotator.id}
+    = annotator.id if defined?(annotator) && annotator.id > 0
+    %input{:name => "ids[#{i}]", :type => "hidden", :value => defined?(annotator) ? annotator.id : 0}
   %td
-    %input{:name => "names[#{i}]", :value => annotator.name}
+    %input{:name => "names[#{i}]", :value => defined?(annotator) ? annotator.name : ''}
   %td.expand
     %textarea{:name => "infos[#{i}]"}
-      = annotator.info
+      = defined?(annotator) ? annotator.info : ''
   %td
-    .button{:onclick => 'removeAnnotator(this);'}
+    .button{:onclick => 'removeElement("tr", this);'}
       delete
       %br
       (incl.&nbsp;annotations)

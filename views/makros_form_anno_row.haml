@@ -1,0 +1,8 @@
+%tr{:no => i}
+  %td
+    %input{:name => "anno[keys][#{i}]", :type => 'text', :value => defined?(key) ? key : ''}
+  %td
+    %input{:name => "anno[values][#{i}]", :type => 'text', :value => defined?(value) ? value : ''}
+  %td
+    .button{:onclick => 'removeElement("tr", this);'}
+      delete

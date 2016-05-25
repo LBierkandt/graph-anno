@@ -462,7 +462,7 @@ The setting for \textit{edge weight} affects the layout of the displayed graph a
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
 \textit{Attribute} is the attribute that will be set to \code{t} for elements that belong to the layer in question.
-The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. \ref{befehl-n} or \ref{befehl-l}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n} or \code{e} followed by a number, or  \code{m}; cf. \ref{befehl-a}).
+The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and as a search makro in searches (cf. Section \ref{def}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n} or \code{e} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
 \textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
 The heigher this value (integer values), the shorter the rendering algorithm will try to make the edges.
 When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
@@ -473,14 +473,10 @@ The section \textit{layer combinations} contains the settings for elements that 
 Via the checkboxes under \textit{attributes} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
 The other settings work like those described for the \textit{layers}, and for those elements that belong to the layer combination, they override the values given for the single layers.
 
-Under \textit{search makros} you can enter predefined graph-specific search makros as described in Section \ref{def}.
-These makros are then available for search queries in the graph.
-In the search makros text area, the definitions (\code{def ...}) have to be enterd each on its own line.
-
 
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
-In the window open by the command \code{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
+In the window opened by the command \code{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
 Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
 Already existing annotations are not affected by changes of the permitted keys and values.
 
@@ -495,12 +491,16 @@ Additionally – just like in the query language (p.\,\pageref{zeichenketten}) �
 In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
 
 
-\subsection{Annotation makros}\label{annotationsmakros}
+\subsection{Annotation and search makros}\label{annotationsmakros}
 
-For a graph you save annotation makros, that facilitate the annotation with frquently needed attribute combinations.
-With the command \code{makros} you open a window where you can define these makros.
-In the fields on the left you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}); in the corresponding field on the right you enter the desired annotations for your makro.
+With the command \code{makros} you open a window where you may define makros.
+You can define annotation makros, that facilitate the annotation with frequently needed attribute combinations, as well as search makros that you can use in graph searches for frequently used attribute combinations or connection descriptions (cf. Section \ref{def}).
+
+For the annotation makros, you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}) in the fields on the left; in the corresponding field on the right you enter the desired annotations for your makro.
 For these annotations you must use the same syntax as in the annotation commands, i.e. a set of attributes in the form \code{key:value}, separated by spaces (see Section \ref{befehl-n} for details).
+
+For the seach makros, you enter the name (again, a string of alphanumeric characters including the underscore) in the left field and a predefined graph-specific search makros as described in Section \ref{def} in the right field.
+These makros are then available for search queries in the graph.
 
 
 \subsection{Metadata}
@@ -595,14 +595,11 @@ A further possibility is to enter a regular expression (in slashes); in that cas
 In order to navigate to a sentence or section (or multiple of them), you may use (alternatively to \hyperref[shortcuts]{keyboard shortcuts} or the \hyperref[window-navigation]{navigation window}) the command \code{s}, followed by the name(s) of the sentence(s) or section(s) you want to change to.
 
 
-\subsubsection{Export graphics: \texttt{image}}
+\subsubsection{Save image: \texttt{image}}
 
-With the command \code{image}, you can export the graphic that GraphAnno is displaying for the current sentence.
-The first argument is the desired format.
-All formats supported by Graphviz are available, e.g. \texttt{dot}, \texttt{eps}, \texttt{pdf}, \texttt{png} or \texttt{svg}.
-See under \url{http://www.graphviz.org/content/output-formats} for the complete list.
-The second argument is the name of the new image file (without extension; put the name in double quotes if it contains spaces).
-The image will be saved in GraphAnno’s \texttt{images} directory.
+With the command \texttt{image}, you can export the graphic that GraphAnno is currently displaying.
+As argument you must specify the desired format (\texttt{svg} or \texttt{png}).
+The file will then be downloaded.
 
 
 \subsubsection{Export corpus: \texttt{export}}\label{befehl-export}

@@ -1,0 +1,9 @@
+%tr{:no => i}
+  %td
+    = defined?(speaker) ? "ID: #{speaker.id}" : ''
+    %input{:name => "ids[#{i}]", :type => "hidden", :value => defined?(speaker) ? speaker.id : ''}
+  %td
+    %textarea{:name => "attributes[#{i}]"}
+      - if defined?(speaker)
+        - speaker.attr.output.each do |k, v|
+          = "#{k}:#{v}&#10;"

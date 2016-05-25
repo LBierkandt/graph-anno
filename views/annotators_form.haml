@@ -1,4 +1,4 @@
-%form#modal-form.annotators{ :name => 'config', :onsubmit => 'sendModal("annotators"); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.annotators{ :onsubmit => 'sendModal("annotators"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message Every annotator needs a unique name – check your input!
   %div.modal-form-element
     %table
@@ -10,20 +10,14 @@
           %th Name
           %th Infos
         - if graph.annotators == []
-          %tr{:no => '0'}
-            %td
-              %input{:name => "ids[0]", :type => "hidden", :value => 0}
-            %td
-              %input{:name => "names[0]"}
-            %td.expand
-              %textarea{:name => "infos[0]"}
+          = haml :annotators_form_segment, :locals => {:i => 0}
         - else
           - graph.annotators.each_with_index do |annotator, i|
-            = haml :annotators_form_segment, :locals => {:annotator => annotator, :i => i}
+            = haml :annotators_form_segment, :locals => {:i => i, :annotator => annotator}
       %tbody
         %tr
           %td{:colspan => 2}
-            %button{:onclick => 'newAnnotator(); return false;'}
+            %button{:onclick => 'newFormSegment("annotators_form_segment", ".annotators"); return false;'}
               Add annotator
 
   #modal-submit.bottom-block
