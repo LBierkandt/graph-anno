@@ -61,8 +61,8 @@ module SearchableGraph
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
 		if metabedingung = operation_erzeugen(:op => 'and', :arg => operations['meta'].map{|op| op[:cond]})
 			metaknoten = sentence_nodes.select{|s| s.fulfil?(metabedingung)}
-			suchgraph.nodes.values.select!{|n| metaknoten.include?(n.sentence)}
-			suchgraph.edges.values.select!{|e| metaknoten.include?(e.start.sentence) || metaknoten.include?(e.end.sentence)}
+			suchgraph.nodes.select!{|id, n| metaknoten.include?(n.sentence)}
+			suchgraph.edges.select!{|id, e| metaknoten.include?(e.start.sentence) || metaknoten.include?(e.end.sentence)}
 		end
 
 		# edge
