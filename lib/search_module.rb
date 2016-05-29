@@ -668,11 +668,10 @@ module SearchableNode
 						end
 					else # wenn zuende gesucht, aber Edge aktuelles Element: Zielknoten prüfen!
 						if zielknotenbedingung
-							z[:tg].edges << z[:el]
-							if z[:forward]
-								neue_zustaende += automat.schrittliste_graph(z.update({:el => z[:el].end}).clone)
-							else
-								neue_zustaende += automat.schrittliste_graph(z.update({:el => z[:el].start}).clone)
+							neuer_tg = z[:tg].clone
+							neuer_tg.edges << z[:el]
+							if z[:forward] # nur Forwärtskanten sollen implizit gefunden werden
+								neue_zustaende += automat.schrittliste_graph(z.merge(:el => z[:el].end, :tg => neuer_tg))
 							end
 						else # wenn keine zielknotenbedingung dann war der letzte gefundene Knoten schon das Ziel
 							letzer_knoten = z[:forward] ? z[:el].start : z[:el].end
@@ -680,7 +679,7 @@ module SearchableNode
 						end
 					end
 				else # wenn z[:zustand] != nil
-					neue_zustaende += automat.schrittliste_graph(z.update({:tg => z[:tg].clone}).clone)
+					neue_zustaende += automat.schrittliste_graph(z.merge(:tg => z[:tg].clone))
 				end
 			end
 			if neue_zustaende == []
@@ -854,7 +853,7 @@ class Automat
 		when :node
 			if nk.kind_of?(Node)
 				schritt_in_liste(h.clone, liste) if nk.fulfil?(z.uebergang)
-			elsif forward # wenn das aktuelle Element eine Kante ist
+			elsif forward # wenn das aktuelle Element eine Kante ist;  nur Forwärtskanten sollen implizit gefunden werden
 				schritt_in_liste(h.clone, liste, false)
 			end
 		when :edge
