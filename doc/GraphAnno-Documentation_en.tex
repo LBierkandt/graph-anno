@@ -845,11 +845,17 @@ connection      =   connection " " connection
 		link @s@np edge+
 		link @np@tok edge+
 	\end{lstlisting}
-	\item Search for a node of catogory S and all tokens that are dominated by the S node via an NP node (this yields the same graph fragments as the last example):
+	\item Search for a node of catogory S and all tokens that are dominated by the S node via an NP node (this yields the same graph fragments as the last example, but without assigning an ID to the NP nodes):
 	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
 		node @s cat:S
 		nodes @tok token
 		link @s@tok edge+ node(cat:NP) edge+
+	\end{lstlisting}
+	\item Search for a node of catogory NP and the next dominating node of category S (i.e., without intervening S nodes):
+	\begin{lstlisting}[gobble=8,aboveskip=.6em,belowskip=.2em]
+		node @np cat:NP
+		node @s cat:S
+		link @s@np edge node(!cat:S)*
 	\end{lstlisting}
 \end{itemize}
 
