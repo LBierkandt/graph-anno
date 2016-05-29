@@ -1385,8 +1385,6 @@ class AnnoGraph
 		@annotators -= annotators
 	end
 
-	private
-
 	def create_layer_makros
 		@makros = []
 		@makros_plain = []

@@ -6,13 +6,13 @@
     %link{ :rel => "stylesheet", :type => "text/css", :href => "/style.css" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/jquery-2.1.1.min.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/jquery-ui.min.js' }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz0.0.3.js' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/sectioning.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/log.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
 
   %body
-    #graphdiv
-      %object{ :id => "graph", :type => "image/svg+xml" }
+    #graph
 
     #bottom
       #textline.bottom-block
@@ -27,9 +27,7 @@
           #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
           #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
         #documentation
-          Documentation
-          %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} en
-          %a{ :href => "/documentation/GraphAnno-Dokumentation_de.pdf"} de
+          %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
 
     #sectioning.box
       .handle

@@ -18,10 +18,9 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'yaml.rb'
-require 'graphviz.rb'
-	require 'open3.rb'
 require 'htmlentities.rb'
 require_relative 'log.rb'
+require_relative 'dot_graph.rb'
 
 class GraphController
 	attr_writer :sinatra
@@ -157,6 +156,16 @@ class GraphController
 		end
 	end
 
+	def new_form_segment(i)
+		@sinatra.haml(
+			@sinatra.params[:partial].to_sym,
+			:locals => {
+				:i => i,
+				:graph => @graph,
+			}
+		)
+	end
+
 	def save_config
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
@@ -184,8 +193,6 @@ class GraphController
 					end
 				)
 			end
-			@graph.makros_plain = @sinatra.params['makros'].split("\n").map(&:strip)
-			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
 		end
 		return result.to_json
 	end
@@ -237,15 +244,30 @@ class GraphController
 	end
 
 	def save_makros
-		@graph.anno_makros = {}
-		@sinatra.params['keys'].each do |i, key|
-			@graph.anno_makros[key.strip] = @sinatra.params['values'][i].parse_parameters[:attributes]
+		params = {
+			'anno' => {'keys' => [], 'values' => []},
+			'search' => {'names' => [], 'queries' => []},
+		}.merge(@sinatra.params)
+		begin
+			@graph.anno_makros = Hash[
+				params['anno']['keys'].map{|i, key|
+					[key.strip, params['anno']['values'][i].parse_parameters[:attributes]] unless key.empty?
+				}.compact
+			]
+			@graph.create_layer_makros
+			@graph.makros_plain = params['search']['names'].map{|i, name|
+				"def #{name} #{params['search']['queries'][i]}" unless name.empty?
+			}.compact
+			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
+		rescue StandardError => e
+			return {:errors => e.message}.to_json
 		end
 		return true.to_json
 	end
 
 	def save_tagset
-		tagset_hash = @sinatra.params['keys'].values.zip(@sinatra.params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
+		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
+		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
 		return true.to_json
 	end
@@ -433,7 +455,7 @@ class GraphController
 		generate_graph.merge(
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections => set_sections,
-			:sections_changed => (@current_sections && @sinatra.params[:sentence] && @sinatra.params[:sentence] == current_section_ids) ? false : true
+			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
 		)
 	end
 
@@ -569,7 +591,7 @@ class GraphController
 		@command_line = command_line
 		command, foo, string = @command_line.strip.partition(' ')
 		parameters = string.parse_parameters
-		properties = @graph.conf.layer_attributes[layer]
+		properties = @graph.conf.layer_attributes[layer] || {}
 
 		case command
 		when 'n' # new node
@@ -797,13 +819,6 @@ class GraphController
 		when 'clear' # clear workspace
 			clear_workspace
 
-		when 'image' # export sentence as graphics file
-			sentence_set?
-			format = parameters[:words][0]
-			name = parameters[:words][1]
-			Dir.mkdir('images') unless File.exist?('images')
-			generate_graph(format.to_sym, 'images/'+name+'.'+format)
-
 		when 'export' # export corpus in other format or export graph configurations
 			Dir.mkdir('exports') unless File.exist?('exports')
 			format = parameters[:words][0]
@@ -878,7 +893,7 @@ class GraphController
 			''
 		end
 
-		viz_graph = GraphViz.new(
+		viz_graph = DotGraph.new(
 			:G,
 			:type => :digraph,
 			:rankdir => :TB,
@@ -930,10 +945,10 @@ class GraphController
 				satzinfo[:textline] += token.token + ' '
 			end
 			unless token.speaker
-				token_graph.add_nodes(token.id.to_s, options)
+				token_graph.add_nodes(token, options)
 			else
 				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token.id.to_s, options)
+				gv_token = speaker_graphs[token.speaker].add_nodes(token, options)
 				gv_time  = timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
 				# add ordering edge from speaker to speaker's first token
 				viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
@@ -979,8 +994,8 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_nodes(node.id.to_s, options)
-			actual_layer_graph.add_nodes(node.id.to_s) if actual_layer_graph
+			viz_graph.add_nodes(node, options)
+			actual_layer_graph.add_nodes(node) if actual_layer_graph
 		end
 
 		@edges.each_with_index do |edge, i|
@@ -1022,16 +1037,14 @@ class GraphController
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
-			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, options)
+			viz_graph.add_edges(edge.start, edge.end, options)
 		end
 
 		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start.id.to_s, edge.end.id.to_s, :style => :invis, :weight => 100)
+			viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 
-		viz_graph.output(format => '"'+path+'"')
-
-		return satzinfo
+		return satzinfo.merge(:dot => viz_graph.to_s)
 	end
 
 	def sentence_set?
@@ -1146,11 +1159,6 @@ class GraphController
 					end
 				end
 			end
-		end
-		begin
-			@graph.parse_query(data['makros'])
-		rescue StandardError => e
-			result['makros'] = e.message
 		end
 		return result.empty? ? true : result
 	end
