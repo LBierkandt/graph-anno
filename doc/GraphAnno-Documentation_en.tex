@@ -921,16 +921,14 @@ The various types of clauses will be explained in the following sections.
 In a query the clauses are each given on one line in an arbitrary order; indentations and blank lines have no impact on the semantics.
 Comments may be added as whole lines or after a line; they are preceded by a hash symbol.
 
+Of the following sections, the first one explains how a to-be-matched element is described, which is needed for most of the clause types, the subsequent sections present the available clase types in detail.
 
-\subsubsection{\texttt{node}}\label{node}
+\subsubsection{Element description}
 
-The \code{node} clause describes a node that should occur once in the graph fragment.
-The clause is composed of the keyword \code{node}, an optional ID and an attribute description.
+An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
+Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).
 
-The ID consists of a \code{@} followed by a string that consists of alphanumeric characters, including the underscore, with the additional restriction that the first character must not be a digit.
-Using this ID, the node can be referenced in other parts of the query.
-
-The attribute description is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for “not”, \code{\&} for “and” and \code{|} for “or” (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
+The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for “not”, \code{\&} for “and” and \code{|} for “or” (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
 As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
 
 The key of a key-value pair can be given as a simple string if it does not contain any of the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}), else it has to be given in double quotes (\code{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}).
@@ -945,56 +943,67 @@ A regular expression has to be written in slashes (\code{/x.z/}) and has to conf
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
 
-In the place of a key-value pair you may also use the keyword \code{token}, which matches token nodes.
+Additionally to key-value pairs you may also use the keyword \code{token}, which matches token nodes.\\
 
-\phantomsection\label{quantifiers}In addition to key-value pairs, the attribute description may contain criteria for ingoing and outgoing edges.
-These criteria are composed of the keyword \code{in} or \code{out}, an optional attribute description in parentheses and an optional quantifier.
-The operator \code{in} or \code{out} find all ingoing or outgoing edges, respectively, that bear the given attributes.
+\phantomsection\label{quantifiers}For nodes, the element description may, in addition to key-value pairs, contain criteria for ingoing and outgoing edges.
+These criteria are composed of the keyword \code{in} or \code{out}, an optional element description in parentheses and an optional quantifier.
+The operators \code{in} or \code{out} find all ingoing or outgoing edges, respectively, that match the given element description.
 The quantifier specifies how many edges matching the given description have to be present; its syntax is familiar from regular expressions:
 \code{\{m,n\}} means at least m edges, at most n edges; if you omit the first number, it has the meaning “zero”, omitting the second number means “infinite”.
 \code{\{n\}} means exactly n edges.
 Additionally there are the shortcuts \code{?} for \code{\{0,1\}}, \code{*} for \code{\{0,\}} and \code{+} for \code{\{1,\}}.
 What differs from quantifiers in usual regular expressions (and from quantifiers in other contexts of the GraphAnno query language), is that a missing quantifier will be interpreted as \code{\{1,\}}.
 
-For the description of the edges (that are given in parentheses) you may specify – additionally to the attribute descriptions – properties of the start or end node using the keyword \code{start} or \code{end}, respectively, followed by the node description in parentheses.
-
 The operator \code{link} works in a similar fashion to \code{in} and \code{out}, but it does not find ingoing and outgoing edges but (potentially) more complex connections to other nodes.
-In \ref{link} you can read how these connections may be specified.
-The rules for quantifiers explained above are the same as for \code{in} and \code{out}.
+In Section \ref{link} you may read how these connections may be specified.
+The rules for quantifiers used together with the \code{link} operator are the same as for \code{in} and \code{out}.
 
+The operators \code{in}, \code{out} and \code{link} are meaningless if used on the description of an edge; they always match with a count of 1 when used on edges.\\
+
+For edges, the element description may contain, additionally to the key-value pairs, properties of the start or end node, specified with the keyword \code{start} or \code{end}, respectively, followed by the node description in parentheses.
+
+The operators \code{start} and \code{end} are meaningless in node descriptions; they always match when used on nodes.
+
+\paragraph*{The element description in modified BNF:}
+~
+\begin{lstlisting}
+element_description = element_description" & " element_description
+                      element_description" | " element_description
+                      "!" element_description
+                      "(" element_description ")"
+                      attribute
+                      edge_criterion
+                      node_criterion
+                      "token"
+attribute           = string ":" attribute_value ("|" attribute_value)*
+attribute_value     = char_except_control_char+
+                      """ character* """
+                      "/" regular_expression "/"
+string              = char_except_control_char+
+                      """ character* """
+edge_criterion      = "in" ("(" element_description")")? quantifier?
+                      "out" ("(" element_description")")? quantifier?
+                      "link" ("(" connection ")") quantifier?
+quantifier          = "?" | "*" | "+" | "{" number? ("," number?) "}"
+node_criterion      = "start" ("(" element_description ")")
+                      "end" ("(" element_description ")")
+\end{lstlisting}
+
+
+\subsubsection{\texttt{node}}\label{node}
+
+The \code{node} clause describes a node that should occur once in the graph fragment.
+The clause is composed of the keyword \code{node}, an optional ID and an element description.
+
+The ID consists of a \code{@} followed by a string that consists of alphanumeric characters, including the underscore, with the additional restriction that the first character must not be a digit.
+Using this ID, the node can be referenced in other parts of the query.
 
 \paragraph*{The \code{node} clause in modified BNF:}
 ~
 \begin{lstlisting}
-node_klausel    =   "node" id? " " node_attributes
+node_clause     =   "node" id? " " element_description
 id              =   "@" (letter | "_") alphanumeric_char*
-node_attributes =   node_attributes " & " node_attributes
-                    node_attributes " | " node_attributes
-                    "!" node_attributes
-                    "(" node_attributes ")"
-                    attribute
-                    edge_criterion
-                    "token"
-attribute       =   string ":" attribute_value ("|" attribute_value)*
-string          =   char_except_control_char+
-                    """ character* """
-attribute_value =   char_except_control_char+
-                    """ character* """
-                    "/" regular_expression "/"
-edge_criterion  =   "in" ("(" edge_attributes ")")? quantifier?
-                    "out" ("(" edge_attributes ")")? quantifier?
-                    "link" ("(" connection ")") quantifier?
-quantifier      =   "?" | "*" | "+" | "{" number? ("," number?) "}"
-edge_attributes =   edge_attributes " & " edge_attributes
-                    edge_attributes " | " edge_attributes
-                    "!" edge_attributes
-                    "(" edge_attributes ")"
-                    attribute
-                    node_criterion
-node_criterion  =   "start" ("(" knotenattribute ")")
-                    "end" ("(" knotenattribute ")")
 \end{lstlisting}
-
 
 \paragraph*{Examples:}
 \begin{itemize}
@@ -1017,23 +1026,17 @@ node_criterion  =   "start" ("(" knotenattribute ")")
 \end{itemize}
 
 
-
-
 \subsubsection{\texttt{nodes}}
 
 The \code{nodes} clause describes a set of nodes that should be present in the graph fragment.
 The set may end up being empty if it is only the target of a \code{link} clause or \code{edge} clause.
 The \code{nodes} clause has the same syntax as the \code{node} clause (except for the keyword, of course).
 
-
 \paragraph*{The \code{nodes} clause in modified BNF:}
 ~
 \begin{lstlisting}
-nodes_clause    =   "nodes" id? " " node_attributes
+nodes_clause    =   "nodes" id? " " element_description
 \end{lstlisting}
-
-
-
 
 
 \subsubsection{\texttt{edge}}\label{edge}
@@ -1048,13 +1051,11 @@ Conditioned by the optional ID and the various usages, the keyword \code{edge} m
 The interpretation of these IDs follows from ther number and their order.
 One ID: ID of the edge itself; two IDs: start and end of the edge; three IDs: ID of the edge, IDs of start and end.
 
-
 \paragraph*{The \code{edge} clause in modified BNF:}
 ~
 \begin{lstlisting}
-edge_clause     =   "edge" id? (id id)? " " edge_attributes
+edge_clause     =   "edge" id? (id id)? " " element_description
 \end{lstlisting}
-
 
 \paragraph*{Examples:}
 \begin{itemize}
@@ -1069,7 +1070,6 @@ edge_clause     =   "edge" id? (id id)? " " edge_attributes
 		edge  @s@np cat:S|A|P
 	\end{lstlisting}
 \end{itemize}
-
 
 
 \subsubsection{\texttt{link}}\label{link}
@@ -1096,7 +1096,6 @@ E.g., the connection description \code{edge(a:b) edge(c:d)} will match an edge b
 When you use \code{link} in a node attribute (e.g. in a \code{node} clause), do not provide start and end node.
 The start node then is the node that is searched for; the end node is the last node that is described in the connection description or, if the connection description ends with an edge, an unspecified node.
 
-
 \paragraph*{The \code{link} clause in modified BNF:}
 ~
 \begin{lstlisting}
@@ -1105,10 +1104,9 @@ connection      =   connection " " connection
                     connection "|" connection
                     "(" connection ")"
                     connection quantifier
-                    "edge" ("(" edge_attributes ")")? id?
-                    "node" ("(" node_attributes ")")? id?
+                    "edge" ("(" element_description ")")? id?
+                    "node" ("(" element_description ")")? id?
 \end{lstlisting}
-
 
 \paragraph*{Examples:}
 \begin{itemize}
@@ -1141,7 +1139,6 @@ connection      =   connection " " connection
 \end{itemize}
 
 
-
 \subsubsection{\texttt{text}}
 
 With the \code{text} clause you can find a series of token nodes by specifying their text.
@@ -1164,10 +1161,10 @@ text_clause     =   "text" id? " " "^s"? text_fragment "^s"?
 text_fragment   =   text_fragment " " text_fragment
                     text_fragment "|" text_fragment
                     "(" text_fragment ")"
-                    text_fragmentquantor
+                    text_fragment quantor
                     text_fragment id
                     word
-word            =   attribute_value ("(" node_attributes")")?
+word            =   attribute_value ("(" element_description")")?
 \end{lstlisting}
 
 \paragraph*{Examples:}
@@ -1195,7 +1192,12 @@ The clause is coposed of the keyword \code{meta} and an attribute description as
 \paragraph*{The \code{meta} clause in modified BNF:}
 ~
 \begin{lstlisting}
-text-clause     =   "meta " attributes
+meta_clause     =   "meta " attributes
+attributes      =   attributes" & " attributes
+                    attributes" | " attributes
+                    "!" attributes
+                    "(" attributes ")"
+                    attribute
 \end{lstlisting}
 
 
@@ -1244,8 +1246,7 @@ E.g., if you define a makro \code{cat:S | cat:VP} and combine it with the condit
 ~
 \begin{lstlisting}
 makro_definition =   "def " name " " makro
-makro            =   edge_attributes
-                     node_attributes
+makro            =   element_description
                      connection
 name             =   alnum+
 \end{lstlisting}
@@ -1269,6 +1270,7 @@ name             =   alnum+
 %	edge @s1@s2\\[-.4ex]
 %	}
 \end{itemize}
+
 
 
 \subsection{Annotation}\label{query-annotation}
