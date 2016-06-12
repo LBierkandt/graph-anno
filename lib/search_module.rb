@@ -60,7 +60,7 @@ module SearchableGraph
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
 		if metabedingung = operation_erzeugen(:op => 'and', :arg => operations['meta'].map{|op| op[:cond]})
-			metaknoten = sentence_nodes.select{|s| s.fulfil?(metabedingung)}
+			metaknoten = sentence_nodes.select{|s| s.fulfil?(metabedingung, true)}
 			suchgraph.nodes.select!{|id, n| metaknoten.include?(n.sentence)}
 			suchgraph.edges.select!{|id, e| metaknoten.include?(e.start.sentence) || metaknoten.include?(e.end.sentence)}
 		end
@@ -561,13 +561,13 @@ module SearchableGraph
 end
 
 module SearchableNodeOrEdge
-	def fulfil?(bedingung)
+	def fulfil?(bedingung, inherited = false)
 		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.class == String
 		return true unless bedingung
 		satzzeichen = '.,;:?!"'
 		case bedingung[:operator]
 		when 'attr'
-			knotenwert = @attr[bedingung[:key]]
+			knotenwert = inherited ? inherited_attributes[bedingung[:key]] : @attr[bedingung[:key]]
 			return false unless knotenwert
 			wert = bedingung[:value]
 			return true unless wert

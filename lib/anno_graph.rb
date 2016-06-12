@@ -374,7 +374,7 @@ class Node < NodeOrEdge
 		if @type == 's'
 			0
 		elsif @type == 'p'
-			child_nodes{|e| e.type == 'p'}.map(&:sectioning_level).max + 1
+			child_sections.map(&:sectioning_level).max + 1
 		else
 			nil
 		end
@@ -383,11 +383,32 @@ class Node < NodeOrEdge
 	# @return [Array] the descendant sections of self
 	def descendant_sections
 		if sectioning_level > 0
-			children = child_nodes{|e| e.type == 'p'}
-			return children + children.map(&:descendant_sections).flatten
+			child_sections + child_sections.map(&:descendant_sections).flatten
 		else
-			return []
+			[]
 		end
+	end
+
+	# @return [Array] the ancestor sections nodes of self, from bottom to top
+	def ancestor_sections
+		ancestors = []
+		current_node = self
+		loop do
+			if p = current_node.parent_section
+				ancestors << current_node = p
+			else
+				return ancestors
+			end
+		end
+	end
+
+	# @return [Array] self's annotations including annotations inherited from its ancestor nodes
+	def inherited_attributes
+		current_attr = Attributes.new(:host => self)
+		ancestor_sections.reverse.each do |ancestor|
+			current_attr = current_attr.full_merge(ancestor.attr)
+		end
+		current_attr.full_merge(attr)
 	end
 
 	# @return [Array] an ordered list of the sections that are on the same level as self

@@ -1202,8 +1202,10 @@ word            =   attribute_value ("(" element_description")")?
 \subsubsection{\texttt{meta}}
 
 The \code{meta} clause restricts the set of sentences to be searched.
-In this clause you can declare properties the sentence node should have.
-The clause is coposed of the keyword \code{meta} and an attribute description as described in \ref{node} for \code{node}.
+In this clause you can declare properties the sentence or its containing sections should have.
+Where there are conflicting annotations in the section hierarchy, the respective attribute of the lower section node is considered.
+
+The clause is coposed of the keyword \code{meta} and an attribute description (like an element description, but only referring to annotations, not to ingoing or outgoing edges).
 
 \paragraph*{The \code{meta} clause in modified BNF:}
 ~
