@@ -48,7 +48,6 @@ window.onresize = graphdivEinpassen;
 function loadGraph() {
 	$.ajax({
 		url: '/draw_graph',
-		async: false,
 		dataType: 'json'
 	}).done(updateView);
 }
