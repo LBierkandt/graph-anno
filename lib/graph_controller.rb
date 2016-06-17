@@ -599,7 +599,16 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
-			@graph.add_anno_node(:attr => properties, :sentence => @current_sections.first.sentence_nodes.first, :log => log_step)
+			sentence = if ref_node_reference = parameters[:all_nodes][0]
+				element_by_identifier(ref_node_reference).sentence
+			else
+				@current_sections.first.sentence_nodes.first
+			end
+			@graph.add_anno_node(
+				:attr => properties,
+				:sentence => sentence,
+				:log => log_step
+			)
 
 		when 'e' # new edge
 			sentence_set?

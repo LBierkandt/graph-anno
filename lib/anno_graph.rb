@@ -837,10 +837,9 @@ class AnnoGraph
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def add_parent_node(nodes, node_attrs, edge_attrs, log_step = nil)
-		sentence = nodes.map(&:sentence).most_frequent
 		parent_node = add_anno_node(
 			:attr => node_attrs,
-			:sentence => sentence,
+			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
 		nodes.each do |n|
@@ -859,10 +858,9 @@ class AnnoGraph
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def add_child_node(nodes, node_attrs, edge_attrs, log_step = nil)
-		sentence = nodes.map(&:sentence).most_frequent
 		child_node = add_anno_node(
 			:attr => node_attrs,
-			:sentence => sentence,
+			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
 		nodes.each do |n|

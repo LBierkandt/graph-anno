@@ -712,37 +712,46 @@ Additionally, you can specify the layer to which the new node is to belong (if y
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
 The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations (like the command \code{l}, see \ref{befehl-l}).
 
+Per default, the new node will belong to the first of the current sentences.
+You may, however, provide in your command a node to whose sentence the new node should belong instead.
+
 \paragraph*{Command \code{n} in modified BNF:}
 ~
 \begin{lstlisting}
-command_n           =   "n " attributes
-attributes          =   attributes " " attributes
-                        attribute
-                        annotation_shortcut
-                        layer_shortcut
-attribute           =   key string
-key                 =   string ":"
-string              =   character_not_special+
-                        """ character* """
-alnum               =   letter | digit | "_"
-annotation_shortcut =   alnum+
-layer_shortcut      =   alnum+
+command_n            =   "n " n_parameters
+n_parameters         =   n_parameters " " n_parameters
+                         attributes
+                         node_reference
+attributes           =   attributes " " attributes
+                         attribute
+                         annotation_shortcut
+                         layer_shortcut
+attribute            =   key string
+key                  =   string ":"
+string               =   character_not_special+
+                         """ character* """
+alnum                =   letter | digit | "_"
+annotation_shortcut  =   alnum+
+layer_shortcut       =   alnum+
+node_reference       =   anno_node_reference
+                         token_node_reference
+anno_node_reference  =   "n" number
+token_node_reference =   "t" number
 \end{lstlisting}
 
 
 \subsubsection{New edge: \texttt{e}}
 
-The command for creating a new edge is \code{e}, followed by start and end node of the edge to be created and the attributes, it is to bear.
+The command for creating a new edge is \code{e}, followed by start and end node of the edge to be created and the attributes it is to bear (you may give nodes and attributes in arbitrary order; if you accidently provide more than two nodes, the first two nodes will be considered).
 Like with \code{n}, the specification of a layer is possible.
 
 \paragraph*{Command \code{e} in modified BNF:}
 ~
 \begin{lstlisting}
-command_e       =   "e " start_end " " start_end " " attributes
-start_end       =   node_reference
-                    token_reference
-node_reference  =   "n" number
-token_reference =   "t" number
+command_e       =   "e " e_parameters
+e_parameters    =   e_parameters " " e_parameters
+                    node_reference
+                    attributes
 \end{lstlisting}
 
 
@@ -766,16 +775,16 @@ a_parameters        =   a_parameters " " a_parameters
                         key
 element_reference   =   node_reference
                         edge_reference
-                        token_reference
                         meta_node_reference
                         element_sequence
 edge_reference      =   "e" number
 meta_node_reference =   "m"
 element_sequence    =   node_sequence
-                        token_sequence
                         edge_sequence
-node_sequence       =   node_reference ".." node_reference
-token_sequence      =   token_reference ".." token_reference
+node_sequence       =   anno_node_sequence
+                        token_node_sequence
+anno_node_sequence  =   anno_node_reference ".." anno_node_reference
+token_node_sequence =   token_node_reference ".." token_node_reference
 edge_sequence       =   edge_reference ".." edge_reference
 \end{lstlisting}
 
@@ -795,12 +804,12 @@ d_parameters    =   d_parameters " " d_parameters
 \end{lstlisting}
 
 
-\subsubsection{Group nodes under new parent node: \texttt{g} oder \texttt{p}}
+\subsubsection{Group nodes under new parent node: \texttt{g} or \texttt{p}}
 
 The grouping command \code{g} or \code{p} creates a new parent node for the given nodes.
 I.e., the command creates a new node and edges that connect the new nodes to the nodes to be grouped.
 The parameters of this command are the nodes to be grouped and the attributes the newly created node is to bear.
-The order of nodes and attributes is irrelevant.
+The newly created node will belong to the sentence of the node given first in your command; apart from that, the order of nodes and attributes is irrelevant.
 Like with the command \code{n}, a layer can be specified.
 
 \paragraph*{Command \code{g}/\code{p} in modified BNF:}
@@ -809,9 +818,7 @@ Like with the command \code{n}, a layer can be specified.
 command_g           =   ("g " | "p ") g_parameters
 g_parameters        =   g_parameters " " g_parameters
                         node_reference
-                        token_reference
                         node_sequence
-                        token_sequence
                         attribute
                         layer_shortcut
 \end{lstlisting}
@@ -827,9 +834,7 @@ The command \code{h}/\code{c} works analogously to the command \code{g}/\code{p}
 command_h           =   ("h " | "c ") h_parameters
 h_parameters        =   h_parameters " " h_parameters
                         node_reference
-                        token_reference
                         node_sequence
-                        token_sequence
                         attribute
                         layer_shortcut
 \end{lstlisting}
@@ -1300,7 +1305,7 @@ Because of the other using context you have take account of some changes:
 \begin{itemize}
 	\item Instead of the node and edge references in the form of \code{n7}, \code{t8} or \code{e13} you use the IDs defined in your search query (in the form of \code{@s1} or the like).
 	\item There is no annotation layer set. You should use a layer switch in your first annotation command (if needed).
-	\item When using the command \code{n}, you have to specify a node that determines the sentence the new node will belong to.
+	\item When using the command \code{n}, it is obligatory to specify a node that determines the sentence the new node will belong to.
 	\item As the IDs can stand for single elements as well as for sets of elements, you have to note some particularities: For the command \code{e} you have to give exactly two IDs; if these are single element IDs, a single edge will be created; if they are one single element IDs and one set ID or two set IDs, an edge will be created for each of the node combinations from the two IDs. For the tokenizing commands \code{tb} and \code{ta} the first or last token of the set, respectively, will be used if you give a set IDs. In all other commands you can give an arbitrary number of set IDs or single element IDs. All given elements then will be treated as \textit{one} set of elements.
 	\item When specifying attributes, you can use the elements found in your search. For this purpose, write the value string in double quotes and interpolate a part of the string in Ruby code (in which you can use your IDs) wrapped in braces with a prepended hash sign (as you also do in plain Ruby). As an example, a search/annotation combination that annotates all nodes of category S with their dominated text (terminated with a full stop) could look like this:
 	\begin{lstlisting}[gobble=8]

@@ -18,10 +18,6 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Array
-	def most_frequent
-		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
-	end
-
 	def text
 		self.map(&:text) * ' '
 	end

@@ -466,11 +466,10 @@ module SearchableGraph
 						el.annotate(attrs)
 					end
 				when 'n'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
-					unless nodes.empty?
+					if ref_node = command[:ids].map{|id| tg.ids[id]}.flatten.select{|e| e.is_a?(Node)}.first
 						add_anno_node(
 							:attr => attrs,
-							:sentence => nodes.map{|n| n.sentence}.most_frequent
+							:sentence => ref_node.sentence
 						)
 					end
 				when 'e'
