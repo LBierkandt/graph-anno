@@ -655,24 +655,24 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			@graph.add_parent_node(
-				extract_elements(parameters[:nodes] + parameters[:tokens]),
+				extract_elements(parameters[:all_nodes]),
 				properties.merge(extract_attributes(parameters)),
 				properties.clone,
 				log_step
 			)
-			undefined_references?(parameters[:nodes] + parameters[:tokens])
+			undefined_references?(parameters[:all_nodes])
 
 		when 'c', 'h' # attach new child node
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			@graph.add_child_node(
-				extract_elements(parameters[:nodes] + parameters[:tokens]),
+				extract_elements(parameters[:all_nodes]),
 				properties.merge(extract_attributes(parameters)),
 				properties.clone,
 				log_step
 			)
-			undefined_references?(parameters[:nodes] + parameters[:tokens])
+			undefined_references?(parameters[:all_nodes])
 
 		when 'ni' # build node and "insert in edge"
 			sentence_set?
