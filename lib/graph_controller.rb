@@ -696,13 +696,8 @@ class GraphController
 		when 'ns' # create and append new sentence(s)
 			raise 'Please specify a name!' if parameters[:words] == []
 			log_step = @log.add_step(:command => @command_line)
-			old_sentence_nodes = @graph.sentence_nodes
-			new_nodes = []
-			parameters[:words].each do |s|
-				new_nodes << @graph.add_sect_node(:name => s, :log => log_step)
-				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last, :log => log_step)
-			end
-			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first, :log => log_step)
+			current_sentence = @current_sections ? @current_sections.last.sentence_nodes.last : nil
+			new_nodes = @graph.insert_sentences(current_sentence, parameters[:words], log_step)
 			@current_sections = [new_nodes.first]
 
 		when 't' # build tokens and append them
