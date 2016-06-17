@@ -765,27 +765,30 @@ E.g., when you enter \code{t3..t7}, all tokens from \code{t3} to \code{t7} will 
 At the same time you can use the command \code{a} for deleting attributes.
 In order to do so, enter the key to be deleted with colon, but without value.
 
+The command \code{a} also serves for annotating sentences and sections.
+The sentence and section nodes are referenced like \code{s0}, \code{s1} etc., where \code{s0} stands for the current sentence(s), \code{s1} for the parent section(s) of the current sentence(s), \code{s2} for the parent(s) of the parent section(s) and so on.
+
 \paragraph*{Command \code{a} in modified BNF:}
 ~
 \begin{lstlisting}
-command_a           =   "a " a_parameters
-a_parameters        =   a_parameters " " a_parameters
-                        element_reference
-                        attributes
-                        key
-element_reference   =   node_reference
-                        edge_reference
-                        meta_node_reference
-                        element_sequence
-edge_reference      =   "e" number
-meta_node_reference =   "m"
-element_sequence    =   node_sequence
-                        edge_sequence
-node_sequence       =   anno_node_sequence
-                        token_node_sequence
-anno_node_sequence  =   anno_node_reference ".." anno_node_reference
-token_node_sequence =   token_node_reference ".." token_node_reference
-edge_sequence       =   edge_reference ".." edge_reference
+command_a              =   "a " a_parameters
+a_parameters           =   a_parameters " " a_parameters
+                           element_reference
+                           section_node_reference
+                           attributes
+                           key
+element_reference      =   node_reference
+                           edge_reference
+                           element_sequence
+edge_reference         =   "e" number
+section_node_reference =   "s" number
+element_sequence       =   node_sequence
+                           edge_sequence
+node_sequence          =   anno_node_sequence
+                           token_node_sequence
+anno_node_sequence     =   anno_node_reference ".." anno_node_reference
+token_node_sequence    =   token_node_reference ".." token_node_reference
+edge_sequence          =   edge_reference ".." edge_reference
 \end{lstlisting}
 
 
