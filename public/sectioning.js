@@ -139,6 +139,21 @@ var Sectioning = (function () {
 			}
 			scroll('.active');
 		},
+		selection: function (direction, shiftPressed) {
+			$(window).off('keydown', keyBinding).on('keydown', keyBinding);
+			var sections = $('ul[level="'+currentLevel+'"] .section');
+			clickedLevel = currentLevel;
+			if (direction == 'up') {
+				clickedElement = $(sections[currentIndizes[0]]);
+			} else if (direction == 'down') {
+				clickedElement = $(sections[currentIndizes[currentIndizes.length - 1]]);
+			}
+			$('.section').removeClass('chosen');
+			for (var i in currentIndizes) {
+				var chosen = $(sections[currentIndizes[i]]).addClass('chosen');
+			}
+			scroll('.chosen');
+		},
 		setCurrentIndizes: function (level, indizes) {
 			currentLevel = level;
 			currentIndizes = indizes;
