@@ -1,7 +1,7 @@
 window.onload = function() {
 	loadGraph();
 
-	for (var id in {search: 0, filter: 0, log: 0, sectioning: 0}) restoreState(id);
+	for (var id in {help: 0, search: 0, filter: 0, log: 0, sectioning: 0}) restoreState(id);
 
 	window.onkeydown = taste;
 
@@ -22,6 +22,7 @@ window.onload = function() {
 		}
 	});
 	// resizables
+	$('#help').resizable({handles: 'all', minHeight: 45, minWidth: 120, stop: saveState});
 	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310, stop: saveState});
 	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220, stop: saveState});
 	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400, stop: saveState});
