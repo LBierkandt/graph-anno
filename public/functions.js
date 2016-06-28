@@ -1,7 +1,7 @@
 window.onload = function() {
 	loadGraph();
 
-	for (var id in {search: 0, filter: 0, log: 0, sectioning: 0, independent: 0}) restoreState(id);
+	for (var id in {help: 0, search: 0, filter: 0, log: 0, sectioning: 0, independent: 0}) restoreState(id);
 
 	window.onkeydown = taste;
 
@@ -22,6 +22,7 @@ window.onload = function() {
 		}
 	});
 	// resizables
+	$('#help').resizable({handles: 'all', minHeight: 45, minWidth: 120, stop: saveState});
 	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310, stop: saveState});
 	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220, stop: saveState});
 	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400, stop: saveState});
@@ -49,7 +50,6 @@ window.onresize = graphdivEinpassen;
 function loadGraph() {
 	$.ajax({
 		url: '/draw_graph',
-		async: false,
 		dataType: 'json'
 	}).done(updateView);
 }
@@ -93,15 +93,23 @@ function taste(e) {
 			36: 'first',
 			35: 'last',
 		};
+		var mapping2 = {
+			38: 'up',
+			40: 'down'
+		};
 		if (e.which in mapping) {
 			e.preventDefault();
 			Sectioning.navigateSentences(mapping[e.which]);
+		} else if (e.which in mapping2) {
+			e.preventDefault();
+			toggleAndSave('#sectioning', true)
+			Sectioning.selection(mapping2[e.which]);
 		}
 	}
 	else {
 		var mapping = {
 			112: function(){
-				$('#help').toggle();
+				toggleAndSave('#help')
 			},
 			113: function(){
 				var textline = document.getElementById('textline');
@@ -123,8 +131,7 @@ function taste(e) {
 				$.getJSON('/toggle_refs').done(updateView);
 			},
 			117: function(){
-				$('#filter').toggle();
-				saveState();
+				toggleAndSave('#filter');
 				if ($('#filter').css('display') == 'none') {
 					$('#txtcmd').focus().select();
 				} else {
@@ -132,8 +139,7 @@ function taste(e) {
 				}
 			},
 			118: function(){
-				$('#search').toggle();
-				saveState();
+				toggleAndSave('#search');
 				if ($('#search').css('display') == 'none') {
 					$('#txtcmd').focus().select();
 				} else {
@@ -141,12 +147,10 @@ function taste(e) {
 				}
 			},
 			119: function(){
-				$('#log').toggle();
-				saveState();
+				toggleAndSave('#log');
 			},
 			120: function(){
-				$('#sectioning').toggle();
-				saveState();
+				toggleAndSave('#sectioning');
 			},
 			121: function(){
 				$('#independent').toggle();
@@ -514,6 +518,10 @@ function disable_import_form_fields(type) {
 function display_search_message(message) {
 	$('#searchresult').html(message);
 	query.focus();
+}
+function toggleAndSave(selector, state) {
+	$(selector).toggle(state);
+	saveState();
 }
 function saveState() {
 	var data = {};

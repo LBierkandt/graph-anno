@@ -6,7 +6,7 @@
     %link{ :rel => "stylesheet", :type => "text/css", :href => "/style.css" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/jquery-2.1.1.min.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/jquery-ui.min.js' }
-    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz0.0.3.js' }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz0.0.3.js', :async => '' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/sectioning.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/log.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
@@ -92,12 +92,14 @@
           %li show/hide element IDs: F4
           %li show/hide filter window: F6
           %li show/hide search window: F7
+          %li show/hide log window: F8
+          %li show/hide navigation window: F9
         %h3 Command line commands
         %h4 Data and navigation
         %ul
-          %li load file: <i>load file_name_without_extension</i>
-          %li append file: <i>append file_name_without_extension</i>
-          %li save workspace to file: <i>save (file_name_without_extension)</i>
+          %li load file: <i>load file_name_or_path</i>
+          %li append file: <i>append file_name_or_path</i>
+          %li save workspace to file: <i>save (file_name_or_path)</i>
           %li clear workspace: <i>clear</i>
           %li create new sentence: <i>ns sentence_name</i>
           %li go to sentence: <i>s sentence</i>
@@ -108,6 +110,9 @@
           %li edit tagset: <i>tagset</i>
           %li edit makros: <i>makros</i>
           %li edit metadata: <i>metadata</i>
+          %li edit annotators: <i>annotators</i>
+          %li edit file settings: <i>file</i>
+          %li switch annotators: <i>annotator (annotator_name)</i>
         %h4 Annotation
         %ul
           %li new node: <i>n key:value key:value ...</i>

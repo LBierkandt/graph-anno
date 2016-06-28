@@ -121,6 +121,10 @@ class Attributes
 		Attributes.new({:host => @host, :raw => true}.merge(self.to_h))
 	end
 
+	def full_merge(other)
+		Attributes.new({:host => @host, :raw => true}.merge(self.to_h.deep_merge(other.to_h)))
+	end
+
 	def to_h
 		h = {}
 		h.merge!(:attr => @attr.clone) unless @attr.empty?

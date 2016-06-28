@@ -374,7 +374,7 @@ class Node < NodeOrEdge
 		if @type == 's'
 			0
 		elsif @type == 'p'
-			child_nodes{|e| e.type == 'p'}.map(&:sectioning_level).max + 1
+			child_sections.map(&:sectioning_level).max + 1
 		else
 			nil
 		end
@@ -383,11 +383,32 @@ class Node < NodeOrEdge
 	# @return [Array] the descendant sections of self
 	def descendant_sections
 		if sectioning_level > 0
-			children = child_nodes{|e| e.type == 'p'}
-			return children + children.map(&:descendant_sections).flatten
+			child_sections + child_sections.map(&:descendant_sections).flatten
 		else
-			return []
+			[]
 		end
+	end
+
+	# @return [Array] the ancestor sections nodes of self, from bottom to top
+	def ancestor_sections
+		ancestors = []
+		current_node = self
+		loop do
+			if p = current_node.parent_section
+				ancestors << current_node = p
+			else
+				return ancestors
+			end
+		end
+	end
+
+	# @return [Array] self's annotations including annotations inherited from its ancestor nodes
+	def inherited_attributes
+		current_attr = Attributes.new(:host => self)
+		ancestor_sections.reverse.each do |ancestor|
+			current_attr = current_attr.full_merge(ancestor.attr)
+		end
+		current_attr.full_merge(attr)
 	end
 
 	# @return [Array] an ordered list of the sections that are on the same level as self
@@ -548,13 +569,10 @@ class AnnoGraph
 	# returns the edges that start at the given start node and end at the given end node; optionally, a block can be specified that the edges must fulfil
 	# @param start_node [Node] the start node
 	# @param end_node [Node] the end node
-	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are returned
 	# @return [Array] the edges found
-	def edges_between(start_node, end_node, &block)
-		edges = start_node.out && end_node.in
-		result = edges.select(&block)
-		result = edges if result.is_a?(Enumerator)
-		return result
+	def edges_between(start_node, end_node)
+		return [] unless start_node && end_node
+		start_node.out && end_node.in
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -816,10 +834,9 @@ class AnnoGraph
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def add_parent_node(nodes, node_attrs, edge_attrs, log_step = nil)
-		sentence = nodes.map(&:sentence).most_frequent
 		parent_node = add_anno_node(
 			:attr => node_attrs,
-			:sentence => sentence,
+			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
 		nodes.each do |n|
@@ -838,10 +855,9 @@ class AnnoGraph
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def add_child_node(nodes, node_attrs, edge_attrs, log_step = nil)
-		sentence = nodes.map(&:sentence).most_frequent
 		child_node = add_anno_node(
 			:attr => node_attrs,
-			:sentence => sentence,
+			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
 		nodes.each do |n|
@@ -902,6 +918,30 @@ class AnnoGraph
 			end
 		end
 		node.delete(log_step)
+	end
+
+	# builds sentence nodes from a list of names and inserts them after the given sentence node
+	# @param sentence_before [Node] the sentence after which the new sentences are inserted
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	# @return [Array] the new sentence nodes
+	def insert_sentences(sentence_before, names, log_step = nil)
+		new_nodes = []
+		names.each do |name|
+			new_nodes << add_sect_node(:name => name, :log => log_step)
+			add_order_edge(:start => new_nodes[-2], :end => new_nodes.last, :log => log_step)
+		end
+		if sentence_before
+			sentence_after = sentence_before.node_after
+			edges_between(sentence_before, sentence_after).of_type('o').each{|e| e.delete(log_step)}
+			add_order_edge(:start => sentence_before, :end => new_nodes.first, :log => log_step)
+			add_order_edge(:start => new_nodes.last, :end => sentence_after, :log => log_step)
+			if sentence_before.parent_section
+				new_nodes.each do |s|
+					add_part_edge(:start => sentence_before.parent_section, :end => s, :log => log_step)
+				end
+			end
+		end
+		return new_nodes
 	end
 
 	# create a section node as parent of the given section nodes
@@ -1224,7 +1264,7 @@ class AnnoGraph
 		# If there are already tokens, append the new ones
 		add_order_edge(:start => last_token, :end => token_collection[0], :log => h[:log]) if last_token
 		add_order_edge(:start => token_collection[-1], :end => next_token, :log => h[:log]) if next_token
-		self.edges_between(last_token, next_token){|e| e.type == 'o'}[0].delete(h[:log]) if last_token && next_token
+		self.edges_between(last_token, next_token).of_type('o')[0].delete(h[:log]) if last_token && next_token
 		return token_collection
 	end
 

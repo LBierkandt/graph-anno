@@ -599,7 +599,16 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			properties.merge!(extract_attributes(parameters))
-			@graph.add_anno_node(:attr => properties, :sentence => @current_sections.first.sentence_nodes.first, :log => log_step)
+			sentence = if ref_node_reference = parameters[:all_nodes][0]
+				element_by_identifier(ref_node_reference).sentence
+			else
+				@current_sections.first.sentence_nodes.first
+			end
+			@graph.add_anno_node(
+				:attr => properties,
+				:sentence => sentence,
+				:log => log_step
+			)
 
 		when 'e' # new edge
 			sentence_set?
@@ -646,24 +655,24 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			@graph.add_parent_node(
-				extract_elements(parameters[:nodes] + parameters[:tokens]),
+				extract_elements(parameters[:all_nodes]),
 				properties.merge(extract_attributes(parameters)),
 				properties.clone,
 				log_step
 			)
-			undefined_references?(parameters[:nodes] + parameters[:tokens])
+			undefined_references?(parameters[:all_nodes])
 
 		when 'c', 'h' # attach new child node
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
 			@graph.add_child_node(
-				extract_elements(parameters[:nodes] + parameters[:tokens]),
+				extract_elements(parameters[:all_nodes]),
 				properties.merge(extract_attributes(parameters)),
 				properties.clone,
 				log_step
 			)
-			undefined_references?(parameters[:nodes] + parameters[:tokens])
+			undefined_references?(parameters[:all_nodes])
 
 		when 'ni' # build node and "insert in edge"
 			sentence_set?
@@ -687,13 +696,8 @@ class GraphController
 		when 'ns' # create and append new sentence(s)
 			raise 'Please specify a name!' if parameters[:words] == []
 			log_step = @log.add_step(:command => @command_line)
-			old_sentence_nodes = @graph.sentence_nodes
-			new_nodes = []
-			parameters[:words].each do |s|
-				new_nodes << @graph.add_sect_node(:name => s, :log => log_step)
-				@graph.add_order_edge(:start => new_nodes[-2], :end => new_nodes.last, :log => log_step)
-			end
-			@graph.add_order_edge(:start => old_sentence_nodes.last, :end => new_nodes.first, :log => log_step)
+			current_sentence = @current_sections ? @current_sections.last.sentence_nodes.last : nil
+			new_nodes = @graph.insert_sentences(current_sentence, parameters[:words], log_step)
 			@current_sections = [new_nodes.first]
 
 		when 't' # build tokens and append them

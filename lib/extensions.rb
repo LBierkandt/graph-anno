@@ -18,10 +18,6 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Array
-	def most_frequent
-		group_by{|i| i}.values.max{|x, y| x.length <=> y.length}[0]
-	end
-
 	def text
 		self.map(&:text) * ' '
 	end
@@ -79,6 +75,21 @@ class Hash
 	# @return [Hash] the new Hash
 	def compact
 		self.select{|k, v| !v.nil? }
+	end
+
+	# returns a new hash with self and other_hash merged recursively
+	# @return [Hash] the new Hash
+	def deep_merge(other_hash)
+		new_hash = self.clone
+		other_hash.each do |k, v|
+			tv = new_hash[k]
+			if tv.is_a?(Hash) && v.is_a?(Hash)
+				new_hash[k] = tv.deep_merge(v)
+			else
+				new_hash[k] = v
+			end
+		end
+		return new_hash
 	end
 end
 
