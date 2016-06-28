@@ -688,13 +688,16 @@ These commands open the windows for the settings that were described in Section 
 
 The following commands create, delete or modify sentence and section nodes.
 All of these command may take names as parameters.
-These names may be given as bare strings or quoted strings (for details see Section \ref{befehl-n}).
+These names may be given as bare strings or quoted strings (for details see Section \ref{zeichenketten}).
 
-Where you are referencing existing sections/sentences, the names may match more than one sections/sentence as the names are not unique by design (it is strongly recommended to keep them unique, though).
-In such cases all sections/sentences with the given names are considered.
+Where you are referencing existing sections/sentences, the names may match more than one section/sentence as the names are not unique by design (it is strongly recommended to keep them unique, though).
+In such cases all sections/sentences with the given names are considered. Keep in mind that the referenced sections/sentences must always be one the same level.
 
-You may also reference sequences of sections/sentences; to this end give the names of the first and the last section/sentence (they must be all on one level), joined with to dots, e.g., \code{sent-01..sent-13} (this may not work as expected if your names are not unique).
-Single section/sentence references and sequences may be combined in one command.
+You may also reference multiple sections/sentences at once, either by using regular expressions or sequences.
+Regular expressions are given in slashes (\code{/.../}) and find all sections/sentences whose names match the expression (for further information regarding regular expressions see \ref{zeichenketten}).
+
+For referencing sequences of sections/sentences, provide the names of the first and the last section/sentence, joined with to dots, e.g., \code{sent-01..sent-13} (this may not work as expected if your names are not unique).
+The different methods of referencing section/sentence references may be combined in one command.
 
 \subsubsection{Create new sentence: \texttt{ns}}\label{befehl-ns}
 
@@ -987,7 +990,7 @@ Comments may be added as whole lines or after a line; they are preceded by a has
 
 Of the following sections, the first one explains how a to-be-matched element is described, which is needed for most of the clause types, the subsequent sections present the available clase types in detail.
 
-\subsubsection{Element description}
+\subsubsection{Element description}\label{elementbeschreibung}
 
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
 Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).
