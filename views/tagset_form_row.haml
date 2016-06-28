@@ -1,0 +1,9 @@
+%tr{:no => i}
+  %td
+    %input{:name => "keys[#{i}]", :type => 'text', :value => defined?(key) ? key : ''}
+  %td
+    %textarea{:name => "values[#{i}]"}
+      = defined?(value) ? value : ''
+  %td
+    .button{:onclick => 'removeElement("tr", this);'}
+      delete

@@ -114,7 +114,7 @@ class AnnoGraph
 		end
 
 		# andere Kanten
-		@edges.values.select{|k| k.type == 'a'}.each_with_index do |kante, index|
+		@edges.values.of_type('a').each_with_index do |kante, index|
 			if kante['s-layer'] == 't'
 				kantentyp = 'SDominanceRelation'
 			else

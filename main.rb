@@ -22,8 +22,10 @@ require 'haml.rb'
 require 'fileutils.rb'
 require 'rexml/document.rb'
 
+require './lib/extensions.rb'
 require './lib/anno_graph.rb'
 require './lib/attributes.rb'
+require './lib/tagset.rb'
 require './lib/toolbox_module.rb'
 require './lib/paula_exporter.rb'
 require './lib/salt_exporter.rb'
@@ -36,6 +38,8 @@ set :static_cache_control, [:'no-cache']
 
 before do
 	controller.sinatra = self
+	params[:sentence] = params[:sentence].split(',') if params[:sentence].is_a?(String)
+	request.cookies['traw_sentence'] = request.cookies['traw_sentence'].split('&') if request.cookies['traw_sentence']
 end
 
 get '/' do

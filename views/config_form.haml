@@ -1,4 +1,4 @@
-%form#modal-form.config{ :action => '/save_config', :method => 'post', :name => 'config', :onsubmit => 'sendConfig(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.config{ :onsubmit => 'sendConfig(); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message Invalid values – check your input!
   %div.modal-form-element
     %table
@@ -55,18 +55,6 @@
           %td{:colspan => 2}
             %button#new-combination{:onclick => 'newCombination(this); return false;'}
               New combination
-
-  %div.modal-form-element
-    %table
-      %tr
-        %th{:colspan => 2} Search makros
-      %tr
-        %td
-          %label{:for => "makros"}
-      %tr
-        %td{:colspan => 2}
-          %textarea{:name => "makros"}
-            = graph.makros_plain * "\r"
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

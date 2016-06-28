@@ -1,4 +1,4 @@
-%form#modal-form.metadata{ :name => 'config', :onsubmit => 'sendModal("metadata"); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.metadata{ :onsubmit => 'sendModal("metadata"); return false;', :onreset => 'closeModal(); return false;' }
   #modal-warning.error_message
   %div.modal-form-element
     %table
@@ -9,23 +9,14 @@
           %th Key
           %th Value
         - if graph.info.length == 0
-          %tr{:no => '0'}
-            %td
-              %input{:name => "keys[0]", :type => 'text', :value => ''}
-            %td
-              %textarea{:name => "values[0]"}
+          = haml :metadata_form_row, :locals => {:i => 0}
         - else
           - graph.info.keys.each_with_index do |key, i|
-            %tr{:no => i}
-              %td
-                %input{:name => "keys[#{i}]", :type => 'text', :value => key}
-              %td
-                %textarea{:name => "values[#{i}]"}
-                  = graph.info[key]
+            = haml :metadata_form_row, :locals => {:i => i, :key => key, :graph => graph}
       %tbody
         %tr
           %td{:colspan => 2}
-            %button{:onclick => 'newMetadata(); return false;'}
+            %button{:onclick => 'newFormSegment("metadata_form_row", ".metadata"); return false;'}
               Add metadata annotation
 
   #modal-submit.bottom-block

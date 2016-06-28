@@ -9,6 +9,7 @@
 \usepackage{xcolor}
 \usepackage{soul}
 \usepackage[pdfpagemode=UseNone, colorlinks=true, allcolors=darkblue]{hyperref}
+\usepackage{tikz}
 
 %\KOMAoptions{BCOR=16mm}
 \KOMAoptions{DIV=10}
@@ -78,8 +79,8 @@
 \glossglue = 5pt plus 2pt minus 2pt
 
 
-\newenvironment{figurel}{\begin{figure}[htb]\vskip 2ex}{\end{figure}}
-\newenvironment{tablel}{\begin{table}[htb]\vskip 2ex}{\end{table}}
+\newenvironment{figurel}{\begin{figure}[htb]}{\end{figure}}
+\newenvironment{tablel}{\begin{table}[htb]}{\end{table}}
 
 \newenvironment{anmerkung}{\par{\ }\par\sf\color{black!60}\noindent\textbf{Remark:}\par}{\newline\par}
 
@@ -103,38 +104,375 @@
 \tableofcontents
 
 
-\section{The annotation graph}
 
-A graph in GraphAnno consists of a set of nodes and directed edges.
-Nodes and edges bear attributes in the form of key-value pairs, that are used for the linguistic annotation as well as the structuring and visualization of the graph.
-There are some attributes – like the attribute \code{type}, that differentiates the types of nodes and edges (annotation nodes, tokens, sentence nodes; annotation edges, ordering edges, section edges) – that serve the internal representation of the graph and are not edited directly.
-Under the key \code{attr}, however, there is a group of key-value pairs which serve the linguistic annotations and the representation of layers and which are edited by the user directly.
-They will be called \textit{annotation attributes} in the following.
+\section{Introduction}
 
-The graph in GraphAnno is segmented in sentences – units that that are used for structuring and displaying the corpus, but that do not necessarily correspond to real sentences (how ever these may be defined).
-There is a sentence node (bearing the attribute \code{type:s}) for every sentence, that bears information concerning the whole sentence.
-This includes, e.g., source, medium, speaker or the like.
-The annotations of this node is displayed in the light grey area below the sentence graph and under the text of the sentence (blue font) in black font.
-The information to which sentence a node of the graph belongs is represented by an (invisible) edge with \code{type:s} that links the node in question to the sentence node.
-Edges are not linked to a sentence node; their affiliation follows from the affiliation of their start and end nodes.
+GraphAnno started off as an elementary internal tool of the Linktype project\footnote{\textit{Towards a corpus-based typology of clause linkage} (\url{http://linktype.iaa.uni-jena.de}), funded by the \textit{Deutsche Forschungsgemeinschaft} (\url{http://dfg.de})}, but over time, it grew, got more and more features and became more user-friendly.
 
-Token nodes are characterized by the attribute \code{type:t} and they carry the annotation attribute \code{token} with the token text as value.
-The order of the tokens of a sentence (as well as the sentence nodes themselves) is defined by ordering edges (with \code{type:o}) that link each node to its successor.
-These edges are needed for the correct visualization and for traversal; the are, however, not displayed and cannot be manipulated directly.
+It was developed out of the need for an annotation tool that allows for structural annotations not restricted to a specific framework, linguistic theory or tagset.
+First of all, we needed the possibility to build unrestricted graph structures – not only trees – and to have multiple and arbitrarily overlapping layers.
 
-Among the annotation attributes, nodes and edges may bear the \code{cat} attribute, that has no special meaning for the graph, but which is desplayed prominently on top of the other annotations and without the key.
-Nodes and edges show numbers like \code{t23} for tokens, \code{n23} for other nodes and \code{e23} for edges, that are used for referencing the elements in annotation commands.
-These numbers are not stored in the graph model but generated dynamically each time the displayed graph is rendered.
+As interface for the tool’s main task, the manual annotation, we chose the command line, which enables a fast annotation flow once you have become acquainted with the commands (an effort that quickly pays off).
 
-GraphAnno also provides the possibility to assign nodes and edges to different layers.
-The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation (among the annotation attributes) with the key corresponding to the layer and the value \code{t} (for \textit{true}).
+When it comes to working with the data, GraphAnno offers a powerful query language for finding graph fragments and exporting data to CSV files.
+The latter still requires a small amount of programming skills but relieves you of writing export scripts from scratch.\\
+
+We hope that you will find GraphAnno as useful as we do and enjoy working with it.
+
+
+
+\section{GraphAnno’s data model}
+
+All data in GraphAnno is represented as a graph, i.e., a set of nodes and a set of directed edges that connect the nodes.
+Nodes and edges bear attributes in the form of key-value pairs, that serve mainly the linguistic annotation.
+Furthermore, there are multiple types of nodes and edges that fulfil different functions.
+
+The structure of the GraphAnno data model is explained in Section \ref{graph-model}, Section \ref{serialization-format} describes the details of the serialization format that is used to store GraphAnno data.
+The former section is probably helpful for every user in order to grasp the concept of GraphAnno data representation and get to know some terminology, whereas the latter one is intended for users who want to work with the serialized data, e.g., create or process GraphAnno data with their own scripts.
+
+
+\subsection{Graph model}\label{graph-model}
+
+As already said, GraphAnno represents all data in a graph, consisting of differend types of nodes and edges.
+The most important types – those that are also displayed as a graph to the user – are \textit{token nodes}, \textit{annotation nodes} and \textit{annotation edges}.
+These elements are directly created by the user and represent the linguistic data and annotation.
+They may be annoted with \textit{attributes} (see below).
+
+The data in GraphAnno is partitioned into \textit{sentences} (without any theoretical implication, i.e., just user-defined chunks of language data), which may be, in turn, recursively grouped into sections.
+Sentences are represented by \textit{sentence nodes}.
+These are connected to their token nodes and annotation nodes via \textit{sentence edges}.
+Sections are represented by \textit{section nodes} and connected to the sections or sentences they contain via \textit{section edges}.
+As sentences and sections are subject to certain constraints – e.g., they must be arranged hierarchically –  they are created via special commands, that also take care of creating the required edges.
+Sentence and section nodes may also be annotated with attributes.
+
+Finally, we have to mention the \textit{order edges}, that are used program-internally for representing the linear order of sentence nodes and token nodes.
+The structure of a full GraphAnno graph with all types of elements is shown by means of a mini example corpus in Figure \ref{fig-data-model}.
+
+\begin{figurel}
+	\centering
+	\begin{tikzpicture}[xscale=2.2, yscale=1.2]
+		% token nodes
+		\begin{scope}[blue!80!black]
+			\node (Amareh) at (0,0)     [draw] {\small Amareh};
+			\node (wurde)  at (1,0)     [draw] {\small became};
+			\node (sein)   at (2,0)     [draw] {\small his};
+			\node (Weib)   at (3,0)     [draw] {\small wife};
+			\node (dann)   at (4,0)     [draw] {\small then};
+			\node (er)     at (5,0)     [draw] {\small he};
+			\node (starb)  at (6,0)     [draw] {\small died};
+		\end{scope}
+		% anno nodes and edges
+		\begin{scope}[green!80!black]
+			\node (NP)     at (2.5,1)   [draw] {\small NP};
+			\node (S1)     at (1.25,2)  [draw] {\small S};
+			\node (S2)     at (5,1)     [draw] {\small S};
+			\draw (NP)[->]--(sein);
+			\draw (NP)[->]--(Weib);
+			\draw (S1)[->]--(Amareh);
+			\draw (S1)[->]--(wurde);
+			\draw (S1)[->]--(NP);
+			\draw (S2)[->]--(dann);
+			\draw (S2)[->]--(er);
+			\draw (S2)[->]--(starb);
+			\draw (sein)[->]..controls++(1,.6)and++(-1,.8)..(er);
+		\end{scope}
+		% sentence nodes and edges
+		\begin{scope}[blue!60!red]
+			\node (Satz1)  at (1.5,-1.5)[draw] {\small sentence1};
+			\node (Satz2)  at (5,-1.5)  [draw] {\small sentence2};
+			\draw (Satz1)[->]--(Amareh);
+			\draw (Satz1)[->]--(wurde);
+			\draw (Satz1)[->]--(sein);
+			\draw (Satz1)[->]--(Weib);
+			\draw (Satz1)[->]..controls++(0,2)and++(.2,-1)..(S1);
+			\draw (Satz1)[->]..controls++(.7,1.2)and++(0,-1.2)..(NP);
+			\draw (Satz2)[->]--(dann);
+			\draw (Satz2)[->]--(er);
+			\draw (Satz2)[->]--(starb);
+			\draw (Satz2)[->]..controls++(.4,1.2)and++(.5,-1)..(S2);
+		\end{scope}
+		% section nodes and edges
+		\begin{scope}[red!70!black]
+			\node (Absatz) at (3.25,-3) [draw] {\small section1};
+			\draw (Absatz)[->]--(Satz1);
+			\draw (Absatz)[->]--(Satz2);
+		\end{scope}
+		% OrderEdges
+		\begin{scope}[yellow!50!black]
+			\draw (Amareh)[->]--(wurde);
+			\draw (wurde)[->]--(sein);
+			\draw (sein)[->]--(Weib);
+			\draw (dann)[->]--(er);
+			\draw (er)[->]--(starb);
+			\draw (Satz1)[->]--(Satz2);
+		\end{scope}
+	\end{tikzpicture}\vspace{2ex}
+	\begin{tikzpicture}[xscale=.45, yscale=.5]
+		% Legende
+		\draw[green!80!black] (0,0)--++(1,0) node[right,align=left]{\small annotation nodes\\[-.5ex]\small and edges};
+		\draw[blue!80!black]  (9,0)--++(1,0) node[right,align=left]{\small token\\[-.5ex]\small nodes};
+		\draw[blue!60!red]    (14,0)--++(1,0) node[right,align=left]{\small sentence nodes\\[-.5ex]\small and edges};
+		\draw[red!70!black]   (22,0)--++(1,0) node[right,align=left]{\small section nodes\\[-.5ex]\small and edges};
+		\draw[yellow!50!black](29,0)--++(1,0) node[right,align=left]{\small order\\[-.5ex]\small edges};
+	\end{tikzpicture}
+	\caption{The GraphAnno data model – an example}
+	\label{fig-data-model}
+\end{figurel}
+
+As mentioned above, token nodes, annotation nodes and edges as well as sentence and section nodes may be annotated with \textit{attributes} (I will also call them \textit{annotations}).
+Attributes are key-value pairs, i.e., each element may bear a set of keys each of which has an associated value.
+The keys forming a set implies that each key may only appear once on an element.
+Both keys and values are always strings.
+There are some privileged keys that bear a special meaning in GraphAnno:
+The text of token nodes is stored as value of the key \code{token}; the key \code{cat} on annotation nodes and edges is privileged insofar as its value is displayed on top of the element’s annotations without the key; on sentence and section nodes the value of the key \code{name} is used as label for the elements in the navigation window and for referencing.
+
+GraphAnno also provides the possibility to assign annotation nodes and edges to different layers.
+The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation with the key corresponding to the layer and the value \code{t} (for \textit{true}).
 This representation allows for elements to belong to more than one layer, with the consequence that layers my overlap in an arbitrary manner.
-Nodes and edges of different layers may be displayed in different colors and aligned in different ways (hierachically or horizontally).
-Tokens do not belong to any layer; they are displayed in black by default.
+Nodes and edges of different layers may be displayed in different colors and aligned in different ways (see \ref{ebenenkonfiguration} for how to configure the layers and their diplay).
+
+
+\subsection{Serialization format}\label{serialization-format}
+
+For persisting, the GraphAnno data is serialized as a JSON\footnote{See \url{http://json.org/} for a description.} object.
+This object has three obligatory keys: \code{nodes} and \code{edges} with an array of nodes and an array of edges, respectively, and \code{version} with the format version number (integer).
+This is shown in Figure \ref{json-basic}.
+Furthermore, the JSON object has a number of optional attributes for configuration.
+
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "nodes": <array>,
+		  "edges": <array>,
+		  "version": <integer>
+		}
+	\end{lstlisting}
+	\caption{A basic GraphAnno graph JSON object}
+	\label{json-basic}
+\end{figurel}
+
+Each node has the attributes \code{id} with a unique identifier (integer) and \code{type} for representing the type of the node (string).
+For the strings representing the different node and edge types see Table \ref{types-strings}.
+Optionally, a node bears the attribute \code{attr} with its annotations (object).
+The \code{attr} object contains arbitrary keys with string values.
+
+Edges have the same attributes as nodes plus the additional attributes \code{start} and \code{end} with the IDs of the edges’s start and end node, respectively.
+Only annotation edges, however, bear \code{attr}.
+
+The structure of nodes and edges in JSON format can be seen in Figure \ref{json-node} and \ref{json-edge}, respectively.
+
+\begin{tablel}
+	\begin{center}
+		\begin{tabular*}{12em}{@{\extracolsep{\fill}} ll}
+			\toprule
+			Type & String\\
+			\midrule
+			token node & \code{t}\\
+			annotation node & \code{a}\\
+			sentence node & \code{s}\\
+			section node & \code{p}\\
+			\midrule
+			annotation edge & \code{a}\\
+			sentence edge & \code{s}\\
+			section edge & \code{p}\\
+			order edge & \code{o}\\
+			\bottomrule
+		\end{tabular*}
+	\end{center}
+	\caption{Node and edge type strings used in JSON format}
+	\label{types-strings}
+\end{tablel}
+
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "id": <integer>,
+		  "type": "t" | "a" | "s" | "p",
+		  "attr": <object>
+		}
+	\end{lstlisting}
+	\caption{A GraphAnno node JSON object}
+	\label{json-node}
+\end{figurel}
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "id":<integer>,
+		  "start":<integer>,
+		  "end":<integer>,
+		  "type": "a" | "s" | "p" | "o",
+		  "attr":<object>
+		}
+	\end{lstlisting}
+	\caption{A GraphAnno edge JSON object}
+	\label{json-edge}
+\end{figurel}
+
+This structure could describe arbitrary directed graphs, but in order to work with GraphAnno, the graph has to meet a number well-formedness conditions. These include the permitted start and end node types for the different edge types listed in Table \ref{edge-types} and the following conditions:
+
+\begin{itemize}
+	\item All sentence nodes must be linearily ordered via order edges.
+	\item Every token node must be directly dominated by exactly one sentence node via a sentence edge.
+	\item The token nodes of a sentence must be linearily ordered via order edges.
+	\item A sentence node or section node may be dominated by at most one section node.
+	\item The sentence nodes directly dominated by a section node must be contiguous.
+	\item The section nodes directly dominated by another section node must be contiguous in the sense that no other section node intervene in terms of the order defined by the dominated sentence nodes.
+\end{itemize}
+
+\begin{table}[tb]
+	\begin{center}
+		\begin{minipage}{20em}
+			\begin{tabular*}{20em}{@{\extracolsep{\fill}} lll }
+				\toprule
+				Edge type & start/end & permitted node types\\
+				\midrule
+				annotation & start & annotation, token\\
+				& end & annotation, token\\
+				sentence & start & sentence\\
+				& end & token, annotation\\
+				section & start & section\\
+				& end & section, sentence\\
+				order\footnote{An order edge may only connect nodes of the same type.} & start & token, sentence\\
+				& end & token, sentence\\
+				\bottomrule
+			\end{tabular*}
+		\end{minipage}
+	\end{center}
+	\caption{Permitted node types for start and end nodes of different edge types}
+	\label{edge-types}
+\end{table}
+
+
+
+\section{User interface}
+
+The main elements of GraphAnno’s user interface are the area where the annotation graph is displayed and, below, the command line, that is used for most operations (esp. for annotation; see Section \ref{commandline}).
+Further elements on the bottom of the screen are a dropdown for annotation layer choice and the display of, i.a., the loaded file.
+For some operations like, e.g., searching your annotations there are dedicated windows; these are discussed in detail in Section \ref{windows}.
+Finally, you can use keyboard shortcuts for some operations like, e.g., toggling windows, navigating or zooming.
+These shortcuts are listed in Section \ref{shortcuts}.
+
+
+\subsection{Command line}\label{commandline}
+
+The annotation work in GraphAnno (as well as workspace-related operations like loading and saving files) is operated from the command line.
+Most commands are executed immediately; some (like, e.g., the \hyperref[konfiguration]{configuration commands}) open a dialogue window.
+For issuing a command, you just type it, followed by its arguments, into the command line field and press the enter key.
+For a complete list of the available commands see Section \ref{commandline-commands}.
+
+
+\subsection{Windows}\label{windows}
+
+For some purposes GraphAnno has dedicated static windows.
+These windows can be toggled, dragged around and resized.
+Their position, size and display status (shown or hidden) is saved in the browser (in a cookie) or, optionally, in the corpus file (see \ref{filesettings}) so you have the windows positioned as needed when you open your corpus.
+The different windows are described in the following.
+
+\subsubsection{Navigation}\label{window-navigation}
+
+The navigation window shows the sentences and sections of your corpus and is toggled with the F9 key.
+The sentences are listed from top to bottom and labelled with their \code{name} attribute and their text.
+To the left of the sentences you can see the sections (again, labelled with their \code{name} attribute) as boxes whose height indicates which sentences/sections they span.
+The active sentence(s) or section(s) are highlighted.
+
+In order to navigate to a sentence or section, you can doubleclick the corresponding element.
+For choosing multiple sentences or sections, you can use the ctrl and shift keys and select the elements with single clicks.
+With the enter key you confirm your selection (or cancel with esc).
+You may also use the up/down arrow keys for navigating (and selecting) inside the navigation window.
+Note that you may only choose elements of the same level (i.e., the same column in the window).
+
+Instead of clicking into the navigation window, you can jump into it using alt + the up/down arrow keys (the window will be shown if it has been hidden before).
+The currently chosen sentences/sections will be selected and you may proceed as described in the previous paragraph.
+
+For a quicker navigation from sentence to sentence (without explicitly using the navigation window), you may want to use the keyboard shortcuts alt + [left, right, pos1, end] as listed in \ref{shortcuts}; moreover, you can use the command \code{s} from the command line (see \ref{befehl-s}).
+
+\subsubsection{Filter}
+
+GraphAnno’s filter function allows you to hide or filter a set of nodes and edges of the current sentence in order to obtain a better overview of what is relevant to your current annotation task.
+You may, e.g., decide to display only those elements that belong to a certain annotation layer.
+
+In the filter window, toggled with the F6 key, you choose a set of elements via an attribute description of GraphAnno’s query language as described in Section \ref{node}.
+By clicking one of the respective buttons, you may then choose to either hide/filter the described set or hide/filter the rest.
+\textit{Hide} here means that hidden elements are displayed in a non-prominent color (you may customize this color in the respective settings, see \ref{ebenenkonfiguration}); \textit{filter} means that the filtered elements are not displayed at all.
+In order to show all elements in the usual way again, click the \textit{display all} button.
+
+\subsubsection{Search}\label{window-search}
+
+GraphAnno’s search feature is controlled from the corresponding window, that is toggled with the F7 key.
+The search window has a single input area for search, annotation and export queries.
+Query parts relating to all of these three functions can be mixed in the input area.
+The queries are formulated in GraphAnno’s query language, which is explained in Section \ref{querylanguage}.
+As soon as you have entered your query, you can start the desired action (search, annotation or export) by clicking the corresponding button.
+
+When you want to search for a graph fragment, enter your search query in the input area and click the \textit{search} button.
+The search will then be executed and, as soon as it is finished, the number of matches will be displayed on the bottom of the search window.
+The matching fragments are highlighted in the graph view (default is red, but the color can be customized, see \ref{ebenenkonfiguration}), and in the navigation window all sentences that contain matches are highlighted as well.
+If your query is not correct or if another error occurs during the search, an error message is displayed on the bottom of the search window.
+If you don’t want the matches to be highlighted anymore, just click the \textit{clear search} button (this will also internally clear the search results, so you have to search again before annotation – see the next paragraph).
+
+When you want to annotate using an annotation query, you enter a search query and an annotation query.
+The search query finds a set of matches and saves the relevant elements of the match in variables (or \textit{IDs}).
+In your annotation query you write commands that refer to these variables.
+In order to perform the annotation, you must first execute the search and afterwards the annotation.
+If you make changes in your search query and want them to take effect for your annotation, you must, again, first execute the modified search.
+
+For exporting a data table, you proceed analogously to the annotation procedure described in the preceding paragraph:
+Enter a search query and export commands that refer to the IDs from the search query; then execute the search first and the export afterwards.
+
+\subsubsection{Log}\label{window-log}
+
+GraphAnno records the change history of an annotation session (or of the whole corpus; you can configure this in the file settings, see \ref{filesettings}).
+The commands recorded include those commands that create or delete nodes or edges, as well as creating and deleting of sentences and sections, but not work space-related commands such as \code{append} or \code{clear} and not annotation by query (cf. Section \ref{window-search} and \ref{query-annotation}).
+
+You can see this change history in the log window (toggled with F8), where the command executed, the time it was issued and, if you use the multi-annotator feature (see \ref{annotatoren}), the annotator are displayed.
+You can jump to points in history by clicking the corresponding line in the log window.
+But beware! the change history is linear, i.e., if you issue an annotation command while being in a point in history, the commands following this point will be lost.
+
+You can also navigate the history using the \code{undo} and \code{redo} commands – see Section \ref{befehl-undo}.
+
+
+\subsection{Keyboard shortcuts}\label{shortcuts}
+
+Most of the functions related to navigation and display can be controlled by keybord shortcuts.
+The following is a table of the available shortcuts:
+
+\begin{center}
+	\begin{tabular*}{\textwidth}{ll}
+		\toprule
+		Shortcut & Function \\
+		\midrule
+		Navigation & \\
+		\midrule
+			Alt + ←/→ & previous/next sentence or section\\
+			Alt + Home/End & first/last sentence or section \\
+			Alt + ↑/↓ & jump into navigation window\\
+		\midrule
+		Graph & \\
+		\midrule
+			Ctrl + Shift + −/+ & scale down/up graph\\
+			Ctrl + Shift + 0 & zoom to original size (fitting height) \\
+			Ctrl + Shift + arrows & move graph\\
+			Ctrl + Shift + Home/End & go to left/right edge of graph\\
+			Ctrl + Shift + Page up/Page down& go to upper/lower edge of graph\\
+			F4 & toggle element references\\
+		\midrule
+		Window & \\
+		\midrule
+			F1 & show/hide help window \\
+			F2 & show/hide text and sentence annotations\\
+			F6 & show/hide filter window\\
+			F7 & show/hide search window\\
+			F8 & show/hide change log window\\
+			F9 & show/hide navigation window\\
+		\bottomrule
+	\end{tabular*}
+\end{center}
 
 
 
 \section{Configuration}\label{konfiguration}
+
+There are several aspects of your corpus you may configure. The configuration is done in windows you open with a command from the command line. The available configurations are presented in the following sections.
 
 \subsection{Layers and visualization}\label{ebenenkonfiguration}
 
@@ -147,7 +485,7 @@ The setting for \textit{edge weight} affects the layout of the displayed graph a
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
 \textit{Attribute} is the attribute that will be set to \code{t} for elements that belong to the layer in question.
-The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. \ref{befehl-n} or \ref{befehl-l}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n} or \code{e} followed by a number, or  \code{m}; cf. \ref{befehl-a}).
+The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and as a search makro in searches (cf. Section \ref{def}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n} or \code{e} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
 \textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
 The heigher this value (integer values), the shorter the rendering algorithm will try to make the edges.
 When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
@@ -158,13 +496,10 @@ The section \textit{layer combinations} contains the settings for elements that 
 Via the checkboxes under \textit{attributes} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
 The other settings work like those described for the \textit{layers}, and for those elements that belong to the layer combination, they override the values given for the single layers.
 
-Under \textit{search makros} you can enter predefined graph-specific search makros as described in Section \ref{def}.
-These makros are then available for search queries in the graph.
-In the search makros text area, the definitions (\code{def ...}) have to be enterd each on its own line.
 
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
-In the window open by the command \code{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
+In the window opened by the command \code{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
 Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
 Already existing annotations are not affected by changes of the permitted keys and values.
 
@@ -178,17 +513,24 @@ Simple values are entered without further markup; if a value contains special ch
 Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\code{/.../}).
 In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
 
-\subsection{Annotation makros}\label{annotationsmakros}
 
-For a graph you save annotation makros, that facilitate the annotation with frquently needed attribute combinations.
-With the command \code{makros} you open a window where you can define these makros.
-In the fields on the left you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}); in the corresponding field on the right you enter the desired annotations for your makro.
+\subsection{Annotation and search makros}\label{annotationsmakros}
+
+With the command \code{makros} you open a window where you may define makros.
+You can define annotation makros, that facilitate the annotation with frequently needed attribute combinations, as well as search makros that you can use in graph searches for frequently used attribute combinations or connection descriptions (cf. Section \ref{def}).
+
+For the annotation makros, you enter the shortcut for your makro (it has to consist of alphanumeric characters including the underscore, and it should not have the form of an element reference or be identical to a layer shortcut, cf. Section \ref{ebenenkonfiguration}) in the fields on the left; in the corresponding field on the right you enter the desired annotations for your makro.
 For these annotations you must use the same syntax as in the annotation commands, i.e. a set of attributes in the form \code{key:value}, separated by spaces (see Section \ref{befehl-n} for details).
+
+For the seach makros, you enter the name (again, a string of alphanumeric characters including the underscore) in the left field and a predefined graph-specific search makros as described in Section \ref{def} in the right field.
+These makros are then available for search queries in the graph.
+
 
 \subsection{Metadata}
 
 Additionally to the configuration of layers, visualization, makros and permitted annotations, you may save metadata for a graph as key-value pairs.
 The command \code{metadata} opens the window, where you can enter an arbitrary number of keys with a text as corresponding value.
+
 
 \subsection{Annotators}\label{annotatoren}
 
@@ -205,7 +547,8 @@ The current annotator’s name will now be displayed in the corresponding field 
 Also for searching only your own annotations will be evaluated.
 If you want to log out the current annotator and work on the public annotations again, use the \code{annotator} command without argument.
 
-\subsection{File settings}
+
+\subsection{File settings}\label{filesettings}
 
 The command \code{file} opens a window, in which you can specify the settings for the file in which the work space will be saved:
 
@@ -221,53 +564,15 @@ The command \code{file} opens a window, in which you can specify the settings fo
 
 
 
-\section{Keyboard shortcuts}
-
-In GraphAnno most of the functions related to navigation and display are controlled by keybord shortcuts.
-The following is a table of the available shortcuts:
-
-\begin{center}
-	\begin{tabular*}{\textwidth}{ll}
-		\toprule
-		Shortcut & Function \\
-		\midrule
-		Navigation & \\
-		\midrule
-			Alt + ←/→ & previous/next sentence\\
-			Alt + Home/End & first/last sentence \\
-		\midrule
-		Graph & \\
-		\midrule
-			Ctrl + Shift + −/+ & scale down/up graph\\
-			Ctrl + Shift + 0 & zoom to fit (wrt. height) \\
-			Ctrl + Shift + arrows & move graph\\
-			Ctrl + Shift + Home/End & go to left/right edge of graph\\
-			Ctrl + Shift + Page up/Page down& go to upper/lower edge of graph\\
-			F4 & toggle element references\\
-		\midrule
-		Window & \\
-		\midrule
-			F1 & show/hide help window \\
-			F2 & show/hide text and sentence annotations\\
-			F6 & show/hide filter window\\
-			F7 & show/hide search window\\
-			F8 & show/hide change log window\\
-		\bottomrule
-	\end{tabular*}
-\end{center}
-
-
-
-
-\section{Command line commands}
+\section{Command line commands}\label{commandline-commands}
 
 \subsection{Data and navigation}
 
 \subsubsection{Load file: \texttt{load}}
 
 With the command \code{load} you load a graph file into the work space.
-By default, the file will be loaded from the from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
-If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory, if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
+By default, the file will be loaded from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
+If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory; if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
 Provide the file name with or without the extension \code{.json}; the path has to be enclosed in double quotes (\code{\quo...\quo}) if it contains spaces.
 
 Before loading, the work space is cleared from all data.
@@ -295,30 +600,17 @@ Changes that were not saved are lost.
 Next to the input line no file will be indicated anymore.
 
 
-\subsubsection{Create new sentence: \texttt{ns}}\label{befehl-ns}
+\subsubsection{Go to sentence/section: \texttt{s}}\label{befehl-s}
 
-With the command \code{ns} – followed by one or more sentence names separated by spaces – you can create a new sentence.
-The command creates sentence nodes with the corresponding \code{name} attribute; afterwards you are directed to the first newly created sentence.
-
-
-\subsubsection{Delete sentence: \texttt{del}}
-
-The command \code{del} deletes the current sentence including the sentence node.
-If you enter one or more sentence names as arguments, it is not the current sentence that will be deleted but the sentences that bear one of the given names.
-A further possibility is to enter a regular expression (in slashes); in that case, all sentences whose names match the given regular expression will be deleted.
-
-
-\subsubsection{Set sentence: \texttt{s}}
-
-In order to navigate from sentence to sentence, you may use (alternatively to keyboard shortcuts or the dropdown field) the command \code{s}, followed by the name of the sentence you want to change to.
-You are then directed to the first sentence with the given name.
+In order to navigate to a sentence or section (or multiple of them), you may use (alternatively to \hyperref[shortcuts]{keyboard shortcuts} or the \hyperref[window-navigation]{navigation window}) the command \code{s}, followed by the name(s) of the sentence(s) or section(s) you want to change to.
 
 
 \subsubsection{Save image: \texttt{image}}
 
-With the command \code{image}, you can export the graphic that GraphAnno is displaying for the current sentence.
-As argument you must specify the desired format (\code{svg} or \code{png}).
+With the command \texttt{image}, you can export the graphic that GraphAnno is currently displaying.
+As argument you must specify the desired format (\texttt{svg} or \texttt{png}).
 The file will then be downloaded.
+
 
 \subsubsection{Export corpus: \texttt{export}}\label{befehl-export}
 
@@ -328,7 +620,7 @@ For \code{paula} you can optionally specify the name of the corpus document to b
 The exported corpus will be saved in GraphAnno’s \texttt{exports} directory.
 
 
-\subsubsection{Import text: \texttt{import text}}
+\subsubsection{Import text: \texttt{import text}}\label{befehl-import}
 
 You can import texts with the command \code{import text}. After issuing the command, a window opens where you can enter the text and set the preferences for its processing.
 The work space will be cleared before the text is imported (but not as soon as the window opens).
@@ -392,7 +684,58 @@ These commands open the windows for the settings that were described in Section 
 \code{config} for layers and visualization, \code{tagset} for permitted annotations / tagset, \code{makros} for annotation makros, \code{metadata} for metadata, \code{annotators} for annotators and \code{file} for file settings.
 
 
-\subsection{Annotation commands}\label{annotationsbefehle}
+\subsection{Sections and sentences}
+
+The following commands create, delete or modify sentence and section nodes.
+All of these command may take names as parameters.
+These names may be given as bare strings or quoted strings (for details see Section \ref{zeichenketten}).
+
+Where you are referencing existing sections/sentences, the names may match more than one section/sentence as the names are not unique by design (it is strongly recommended to keep them unique, though).
+In such cases all sections/sentences with the given names are considered. Keep in mind that the referenced sections/sentences must always be one the same level.
+
+You may also reference multiple sections/sentences at once, either by using regular expressions or sequences.
+Regular expressions are given in slashes (\code{/.../}) and find all sections/sentences whose names match the expression (for further information regarding regular expressions see \ref{zeichenketten}).
+
+For referencing sequences of sections/sentences, provide the names of the first and the last section/sentence, joined with to dots, e.g., \code{sent-01..sent-13} (this may not work as expected if your names are not unique).
+The different methods of referencing section/sentence references may be combined in one command.
+
+\subsubsection{Create new sentence: \texttt{ns}}\label{befehl-ns}
+
+With the command \code{ns} – followed by one or more sentence names – you can create one or more new sentences.
+The command creates sentence nodes with the corresponding \code{name} attribute and inserts them after the current sentence (or the last of the current sentences), of which also the possible affiliation to a section is inherited.
+Afterwards you are directed to the first one of the new sentences.
+
+\subsubsection{Create section: \texttt{s-new}}
+
+The command \code{s-new} creates a new section.
+When you don’t provide any section or sentence names with the command, the new section will comprise the current sentences or sections.
+When you provide section or sentence names (the sentences/sections must be contiguous and on the same level), these will be grouped instead of the current ones.
+You may alyso provide annotations for the new section (see \ref{befehl-n} for how these have to look like); it is advisable to specify at least the \code{name} attribute.
+
+\subsubsection{Remove section: \texttt{s-rem}}
+
+The command \code{s-rem} is the reverse of \code{s-new}: it removes sections (without touching their descendants).
+You cannot remove all sections from their parent section, and you cannot remove sections from the middle of their parent section.
+Provide the names of the sections to be removed together with the command.
+
+\subsubsection{Add to section: \texttt{s-add}}
+
+With the command \code{s-add} you can add sections/sentences to an existing section.
+Provide the name of the parent section first and then the names of the sections/sentences to be added to the parent section.
+The sections/sentences to be added must be contiguous and one level below the parent section.
+
+\subsubsection{Detach section: \texttt{s-det}}
+
+The command \code{s-det} is the reverse of \code{s-add}: it detaches sections/sentences from their parent section.
+Restrictions and parameters of the command are the same as for \code{s-rem}.
+
+\subsubsection{Delete section: \texttt{s-del}}
+
+The command \code{s-del} deletes the current sentences or sections including their descendants and all text and annotation contained.
+If you provide section or sentence names as arguments, these sections/sentences will be deleted instead of the current ones.
+
+
+\subsection{Annotation}\label{annotationsbefehle}
 
 GraphAnno’s annotation commands are designed to be entered quickly, so their syntax is rather compact:
 they consist of a short command (often one letter only) and are followed by parameters seperated by spaces.
@@ -412,37 +755,46 @@ Additionally, you can specify the layer to which the new node is to belong (if y
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
 The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations (like the command \code{l}, see \ref{befehl-l}).
 
+Per default, the new node will belong to the first of the current sentences.
+You may, however, provide in your command a node to whose sentence the new node should belong instead.
+
 \paragraph*{Command \code{n} in modified BNF:}
 ~
 \begin{lstlisting}
-command_n           =   "n " attributes
-attributes          =   attributes " " attributes
-                        attribute
-                        annotation_shortcut
-                        layer_shortcut
-attribute           =   key string
-key                 =   string ":"
-string              =   character_not_special+
-                        """ character* """
-alnum               =   letter | digit | "_"
-annotation_shortcut =   alnum+
-layer_shortcut      =   alnum+
+command_n            =   "n " n_parameters
+n_parameters         =   n_parameters " " n_parameters
+                         attributes
+                         node_reference
+attributes           =   attributes " " attributes
+                         attribute
+                         annotation_shortcut
+                         layer_shortcut
+attribute            =   key string
+key                  =   string ":"
+string               =   character_not_special+
+                         """ character* """
+alnum                =   letter | digit | "_"
+annotation_shortcut  =   alnum+
+layer_shortcut       =   alnum+
+node_reference       =   anno_node_reference
+                         token_node_reference
+anno_node_reference  =   "n" number
+token_node_reference =   "t" number
 \end{lstlisting}
 
 
 \subsubsection{New edge: \texttt{e}}
 
-The command for creating a new edge is \code{e}, followed by start and end node of the edge to be created and the attributes, it is to bear.
+The command for creating a new edge is \code{e}, followed by start and end node of the edge to be created and the attributes it is to bear (you may give nodes and attributes in arbitrary order; if you accidently provide more than two nodes, the first two nodes will be considered).
 Like with \code{n}, the specification of a layer is possible.
 
 \paragraph*{Command \code{e} in modified BNF:}
 ~
 \begin{lstlisting}
-command_e       =   "e " start_end " " start_end " " attributes
-start_end       =   node_reference
-                    token_reference
-node_reference  =   "n" number
-token_reference =   "t" number
+command_e       =   "e " e_parameters
+e_parameters    =   e_parameters " " e_parameters
+                    node_reference
+                    attributes
 \end{lstlisting}
 
 
@@ -456,27 +808,30 @@ E.g., when you enter \code{t3..t7}, all tokens from \code{t3} to \code{t7} will 
 At the same time you can use the command \code{a} for deleting attributes.
 In order to do so, enter the key to be deleted with colon, but without value.
 
+The command \code{a} also serves for annotating sentences and sections.
+The sentence and section nodes are referenced like \code{s0}, \code{s1} etc., where \code{s0} stands for the current sentence(s), \code{s1} for the parent section(s) of the current sentence(s), \code{s2} for the parent(s) of the parent section(s) and so on.
+
 \paragraph*{Command \code{a} in modified BNF:}
 ~
 \begin{lstlisting}
-command_a           =   "a " a_parameters
-a_parameters        =   a_parameters " " a_parameters
-                        element_reference
-                        attributes
-                        key
-element_reference   =   node_reference
-                        edge_reference
-                        token_reference
-                        meta_node_reference
-                        element_sequence
-edge_reference      =   "e" number
-meta_node_reference =   "m"
-element_sequence    =   node_sequence
-                        token_sequence
-                        edge_sequence
-node_sequence       =   node_reference ".." node_reference
-token_sequence      =   token_reference ".." token_reference
-edge_sequence       =   edge_reference ".." edge_reference
+command_a              =   "a " a_parameters
+a_parameters           =   a_parameters " " a_parameters
+                           element_reference
+                           section_node_reference
+                           attributes
+                           key
+element_reference      =   node_reference
+                           edge_reference
+                           element_sequence
+edge_reference         =   "e" number
+section_node_reference =   "s" number
+element_sequence       =   node_sequence
+                           edge_sequence
+node_sequence          =   anno_node_sequence
+                           token_node_sequence
+anno_node_sequence     =   anno_node_reference ".." anno_node_reference
+token_node_sequence    =   token_node_reference ".." token_node_reference
+edge_sequence          =   edge_reference ".." edge_reference
 \end{lstlisting}
 
 
@@ -495,12 +850,12 @@ d_parameters    =   d_parameters " " d_parameters
 \end{lstlisting}
 
 
-\subsubsection{Group nodes under new parent node: \texttt{g} oder \texttt{p}}
+\subsubsection{Group nodes under new parent node: \texttt{g} or \texttt{p}}
 
 The grouping command \code{g} or \code{p} creates a new parent node for the given nodes.
 I.e., the command creates a new node and edges that connect the new nodes to the nodes to be grouped.
 The parameters of this command are the nodes to be grouped and the attributes the newly created node is to bear.
-The order of nodes and attributes is irrelevant.
+The newly created node will belong to the sentence of the node given first in your command; apart from that, the order of nodes and attributes is irrelevant.
 Like with the command \code{n}, a layer can be specified.
 
 \paragraph*{Command \code{g}/\code{p} in modified BNF:}
@@ -509,9 +864,7 @@ Like with the command \code{n}, a layer can be specified.
 command_g           =   ("g " | "p ") g_parameters
 g_parameters        =   g_parameters " " g_parameters
                         node_reference
-                        token_reference
                         node_sequence
-                        token_sequence
                         attribute
                         layer_shortcut
 \end{lstlisting}
@@ -527,9 +880,7 @@ The command \code{h}/\code{c} works analogously to the command \code{g}/\code{p}
 command_h           =   ("h " | "c ") h_parameters
 h_parameters        =   h_parameters " " h_parameters
                         node_reference
-                        token_reference
                         node_sequence
-                        token_sequence
                         attribute
                         layer_shortcut
 \end{lstlisting}
@@ -563,8 +914,8 @@ These commands delete the specified node and connect each child node to each mot
 \paragraph*{Commands \code{di} and \code{do} in modified BNF:}
 ~
 \begin{lstlisting}
-command_di_do       =   "di " node_reference+
-                        "do " node_reference+
+command_di_do       =   "di " anno_node_reference+
+                        "do " anno_node_reference+
 \end{lstlisting}
 
 
@@ -595,11 +946,11 @@ command_ta      =   "ta " token_reference " " words
 \subsubsection{Undo/Redo: \texttt{undo} and \texttt{redo} (or \texttt{z} and \texttt{y})}\label{befehl-undo}
 
 You can undo previously issued annotation commands using the command \code{undo} (or the synonymous command \code{z}).
-These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \code{append} or \code{clear}.
+These annotation commands include those commands that create or delete nodes or edges, as well as creating and deleting of sentences, but not work space-related commands such as \code{append} or \code{clear} and not annotation by query (cf. \ref{query-annotation}).
 A command you have undone can be redone with the command \code{redo} (or the synonymous command \code{y}).
 Undoing and redoing can be used multiple times; but if you issue an annotation command after having undone other commands, the undone commands cannot be redone (linear change history).
 
-You can look at the change history in a window that is toggled with the F8 key.
+You can look at the change history in the log window that is toggled with the F8 key (cf. Section \ref{window-log}).
 In this window you can also directly jump to points in the history with a click.
 
 
@@ -624,10 +975,7 @@ If you want to log out the current annotator and work on the public annotations 
 
 
 
-
-
-
-\section{Query language}
+\section{Query language}\label{querylanguage}
 
 \subsection{Search}
 
@@ -642,7 +990,7 @@ Comments may be added as whole lines or after a line; they are preceded by a has
 
 Of the following sections, the first one explains how a to-be-matched element is described, which is needed for most of the clause types, the subsequent sections present the available clase types in detail.
 
-\subsubsection{Element description}
+\subsubsection{Element description}\label{elementbeschreibung}
 
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
 Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).
@@ -658,7 +1006,7 @@ These strings will be matched case-insensitively.
 The second format is a string in double quotes (\code{{\quo}xyz\quo}).
 These strings may contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}) and will be matched exactly.
 The third format is a regular expression.
-A regular expression has to be written in slashes (\code{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \texttt{http://www.ruby-doc.org/""core/""Regexp.html}).
+A regular expression has to be written in slashes (\code{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \url{http://www.ruby-doc.org/core/Regexp.html}).
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
 
@@ -905,8 +1253,10 @@ word            =   attribute_value ("(" element_description")")?
 \subsubsection{\texttt{meta}}
 
 The \code{meta} clause restricts the set of sentences to be searched.
-In this clause you can declare properties the sentence node should have.
-The clause is coposed of the keyword \code{meta} and an attribute description as described in \ref{node} for \code{node}.
+In this clause you can declare properties the sentence or its containing sections should have.
+Where there are conflicting annotations in the section hierarchy, the respective attribute of the lower section node is considered.
+
+The clause is coposed of the keyword \code{meta} and an attribute description (like an element description, but only referring to annotations, not to ingoing or outgoing edges).
 
 \paragraph*{The \code{meta} clause in modified BNF:}
 ~
@@ -1001,7 +1351,7 @@ Because of the other using context you have take account of some changes:
 \begin{itemize}
 	\item Instead of the node and edge references in the form of \code{n7}, \code{t8} or \code{e13} you use the IDs defined in your search query (in the form of \code{@s1} or the like).
 	\item There is no annotation layer set. You should use a layer switch in your first annotation command (if needed).
-	\item When using the command \code{n}, you have to specify a node that determines the sentence the new node will belong to.
+	\item When using the command \code{n}, it is obligatory to specify a node that determines the sentence the new node will belong to.
 	\item As the IDs can stand for single elements as well as for sets of elements, you have to note some particularities: For the command \code{e} you have to give exactly two IDs; if these are single element IDs, a single edge will be created; if they are one single element IDs and one set ID or two set IDs, an edge will be created for each of the node combinations from the two IDs. For the tokenizing commands \code{tb} and \code{ta} the first or last token of the set, respectively, will be used if you give a set IDs. In all other commands you can give an arbitrary number of set IDs or single element IDs. All given elements then will be treated as \textit{one} set of elements.
 	\item When specifying attributes, you can use the elements found in your search. For this purpose, write the value string in double quotes and interpolate a part of the string in Ruby code (in which you can use your IDs) wrapped in braces with a prepended hash sign (as you also do in plain Ruby). As an example, a search/annotation combination that annotates all nodes of category S with their dominated text (terminated with a full stop) could look like this:
 	\begin{lstlisting}[gobble=8]
@@ -1009,7 +1359,6 @@ Because of the other using context you have take account of some changes:
 		a @s text:"#{@s.text}."
 	\end{lstlisting}
 \end{itemize}
-
 
 
 \subsection{Data export}
