@@ -629,11 +629,11 @@ Changes that hadn’t been saved are lost and no file is indicated next to the i
 In the import window you can choose between two methods of entering your text:
 You can upload a text file or you can paste it in the text area.
 For the processing of the text there are two methods available, too.
-For unedited text you may use the method “punkt segmenter”.
+For unedited text you may use the method \textit{punkt segmenter}.
 This method uses an automatic segmenter to split the text into sentences and tokens.
 In order to process abbreviation etc. correctly, you need to specify the language of the text.
 
-The second processing method is “regular expressions”; this method is made for preformatted texts.
+The second processing method is \textit{regular expressions}; this method is made for preformatted texts.
 First, you have to enter a string that will be used for segmenting the sentences.
 The preset is \code{{\textbackslash}n} \footnote{\code{{\textbackslash}n} stands for a line break, \code{{\textbackslash}t} for a tab.} for a file in which every sentence starts on a new line.
 The second string you have to enter a a regular expression that matches the tokens.
@@ -988,14 +988,14 @@ The various types of clauses will be explained in the following sections.
 In a query the clauses are each given on one line in an arbitrary order; indentations and blank lines have no impact on the semantics.
 Comments may be added as whole lines or after a line; they are preceded by a hash symbol.
 
-Of the following sections, the first one explains how a to-be-matched element is described, which is needed for most of the clause types, the subsequent sections present the available clase types in detail.
+Of the following sections, the first one explains how a to-be-matched element is described, which is needed for most of the clause types, the subsequent sections present the available clause types in detail.
 
 \subsubsection{Element description}\label{elementbeschreibung}
 
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
 Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).
 
-The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for “not”, \code{\&} for “and” and \code{|} for “or” (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
+The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for \textit{not}, \code{\&} for \textit{and} and \code{|} for \textit{or} (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
 As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
 
 The key of a key-value pair can be given as a simple string if it does not contain any of the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}), else it has to be given in double quotes (\code{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}).
@@ -1016,7 +1016,7 @@ Additionally to key-value pairs you may also use the keyword \code{token}, which
 These criteria are composed of the keyword \code{in} or \code{out}, an optional element description in parentheses and an optional quantifier.
 The operators \code{in} or \code{out} find all ingoing or outgoing edges, respectively, that match the given element description.
 The quantifier specifies how many edges matching the given description have to be present; its syntax is familiar from regular expressions:
-\code{\{m,n\}} means at least m edges, at most n edges; if you omit the first number, it has the meaning “zero”, omitting the second number means “infinite”.
+\code{\{m,n\}} means at least m edges, at most n edges; if you omit the first number, it has the meaning \textit{zero}, omitting the second number means \textit{infinite}.
 \code{\{n\}} means exactly n edges.
 Additionally there are the shortcuts \code{?} for \code{\{0,1\}}, \code{*} for \code{\{0,\}} and \code{+} for \code{\{1,\}}.
 What differs from quantifiers in usual regular expressions (and from quantifiers in other contexts of the GraphAnno query language), is that a missing quantifier will be interpreted as \code{\{1,\}}.
@@ -1150,7 +1150,7 @@ These terms are composed of the keyword \code{edge} or \code{node} and an option
 This description is an attribute description as explained for the \code{node} clause above.
 The element description may be followed by an ID, under which the found elements can be references in the exporting function (but not in the search query!).
 
-For alternatives you may use the “or” operator \code{|}; its precedence is lower than that of the sequence.
+For alternatives you may use the \textit{or} operator \code{|}; its precedence is lower than that of the sequence.
 You may use parentheses for adjusting the precedence.
 You may also use quantifiers (as described under \ref{nodes} on page \pageref{quantifiers}) after elements or elements grouped in parentheses.
 These quantifiers are interpreted neither as greedy nor as non-greedy – all matching connections will be found and counted as separate matches.
@@ -1215,7 +1215,7 @@ The \code{text} clause is composed of the keyword \code{text}, an optional ID an
 The description of the text fragment consists of a sequence of word descriptions that describe the token text and an optional attribute description in parentheses for each token.
 For specifying the token text there are three posiibilities as is described in \ref{node} for the values of key-value pairs: bare strings, quoted strings and regular expressions; the attribute descriptions follow the same rules as in \ref{node}, too.
 
-For the description of the text fragment you may use the operator \code{|} for “or” (precedence lower than sequence) as well as parentheses and quantifiers (these are non-greedy in the text search).
+For the description of the text fragment you may use the operator \code{|} for \textit{or} (precedence lower than sequence) as well as parentheses and quantifiers (these are non-greedy in the text search).
 Additionally you can append an ID to a subgroup of your text fragment that enables referencing these nodes in other clauses.
 Quantifiers and IDs have a higher precence than sequence and disjunction; the order of quantifier and ID after the same subgroup does not matter.
 The optional ID after the keyword \code{text} captures all nodes that are found in by the clause.
