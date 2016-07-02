@@ -402,7 +402,7 @@ module SearchableGraph
 		end
 
 		# Ausgabe
-		if datei.class == String or datei == :string
+		if datei.is_a?(String) or datei == :string
 			rueck = CSV.generate(:col_sep => "\t") do |csv|
 				csv << ['match_no'] + operations['col'].map{|o| o[:title]}
 				found[:tg].each_with_index do |tg, i|
@@ -420,7 +420,7 @@ module SearchableGraph
 					end
 				end
 			end
-			if datei.class == String
+			if datei.is_a?(String)
 				puts 'Writing output to file "' + datei + '.csv".'
 				open(datei + '.csv', 'wb') do |file|
 					file.write(rueck)
@@ -561,7 +561,7 @@ end
 
 module SearchableNodeOrEdge
 	def fulfil?(bedingung, inherited = false)
-		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.class == String
+		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.is_a?(String)
 		return true unless bedingung
 		satzzeichen = '.,;:?!"'
 		case bedingung[:operator]
@@ -640,10 +640,10 @@ end
 
 module SearchableNode
 	def links(pfad_oder_automat, zielknotenbedingung = nil)
-		if pfad_oder_automat.class == String
+		if pfad_oder_automat.is_a?(String)
 			automat = Automat.create(@graph.parse_link(pfad_oder_automat)[:op])
 			automat.bereinigen
-		elsif pfad_oder_automat.class == Automat
+		elsif pfad_oder_automat.is_a?(Automat)
 			automat = pfad_oder_automat
 		else
 			automat = Automat.create(pfad_oder_automat)
@@ -781,7 +781,7 @@ class Automat
 				@zustaende.each_with_index do |zz,i|
 					if zz.folgezustand == z
 						@zustaende[i].folgezustand = z.folgezustand
-					elsif zz.folgezustand.class == Array
+					elsif zz.folgezustand.is_a?(Array)
 						zz.folgezustand.each_with_index do |fz,ii|
 							@zustaende[i].folgezustand[ii] = z.folgezustand if fz == z
 						end

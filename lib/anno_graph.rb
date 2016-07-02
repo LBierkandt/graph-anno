@@ -1311,7 +1311,7 @@ class AnnoGraph
 				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
 					annotation.each do |k, v|
-						t[k] = (v.class == Fixnum) ? words[i][v] : v
+						t[k] = (v.is_a?(Fixnum)) ? words[i][v] : v
 					end
 				end
 			when 'punkt'
