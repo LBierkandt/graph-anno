@@ -36,10 +36,12 @@ class NodeOrEdge
 		@attr[key] = value
 	end
 
+	# @return [String] self's cat attribute
 	def cat
 		@attr['cat']
 	end
 
+	# @param arg [String] self's new cat attribute
 	def cat=(arg)
 		@attr['cat'] = arg
 	end
@@ -55,11 +57,18 @@ class NodeOrEdge
 		@attr.private[annotator] || {}
 	end
 
+	# annotate self with the given attributes
+	# @param attributes [Hash] the attributes to be added to self's annotations
+	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def annotate(attributes, log_step = nil)
 		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
 		@attr.annotate_with(attributes).remove_empty!
 	end
 
+	# whether self fulfils a given condition; returns numeral values for some condition types
+	# @param bedingung [Hash] a condition hash
+	# @param inherited [Hash] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false
+	# @return [Boolean, Integer] true if self matches the given condition; number of connections for condition types 'in', 'out' and 'link'
 	def fulfil?(bedingung, inherited = false)
 		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.is_a?(String)
 		return true unless bedingung

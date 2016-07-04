@@ -602,6 +602,7 @@ class AnnoGraph
 	end
 
 	# makes self a clone of another graph
+	# @param other_graph [Graph] the graph to be cloned
 	def clone_graph(other_graph)
 		@nodes = other_graph.nodes.clone
 		@edges = other_graph.edges.clone
@@ -612,6 +613,7 @@ class AnnoGraph
 	end
 
 	# sets own settings to those of another graph
+	# @param other_graph [Graph] the graph whose settings are to be cloned
 	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
@@ -729,6 +731,7 @@ class AnnoGraph
 		return hierarchy
 	end
 
+	# @return [Array] self's speaker nodes
 	def speaker_nodes
 		@node_index['sp'].values
 	end
@@ -903,10 +906,17 @@ class AnnoGraph
 		@tagset.allowed_attributes(attr)
 	end
 
+
+	# set the current annotator by id or name
+	# @param attr [Hash] a hash with the key :id or :name
+	# @return [Annotator] the current annotator
 	def set_annotator(h)
 		@current_annotator = get_annotator(h)
 	end
 
+	# get annotator by id or name
+	# @param attr [Hash] a hash with the key :id or :name
+	# @return [Annotator] the annotator with the given id or name
 	def get_annotator(h)
 		@annotators.select{|a| h.all?{|k, v| a.send(k).to_s == v.to_s}}[0]
 	end
@@ -922,6 +932,7 @@ class AnnoGraph
 		@annotators -= annotators
 	end
 
+	# create search makros from the layer shortcuts defined in the graph configuration
 	def create_layer_makros
 		@makros = []
 		@makros_plain = []

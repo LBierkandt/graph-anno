@@ -249,16 +249,26 @@ class Node < NodeOrEdge
 		return r
 	end
 
+	# returns the node preceding self if self is ordered via order edges, else nil
+	# @param block [Lambda] a block to filter the considered nodes
+	# @return [Node] the preceding node
 	def node_before(&block)
 		block ||= lambda{|n| true}
 		parent_nodes{|e| e.type == 'o'}.select(&block)[0]
 	end
 
+	# returns the node following self if self is ordered via order edges, else nil
+	# @param block [Lambda] a block to filter the considered nodes
+	# @return [Node] the following node
 	def node_after(&block)
 		block ||= lambda{|n| true}
 		child_nodes{|e| e.type == 'o'}.select(&block)[0]
 	end
 
+	# returns a list of the nodes that are connected to self via links that match a given structure
+	# @param pfad_oder_automat [String, Automat] a query language string or automat the link has to match
+	# @param zielknotenbedingung [String, Hash] optional; a condition the target node has to match (query language string or condition hash)
+	# @return [Array] a list of arrays that contain the found target node and a Teilgraph comprising the connection
 	def links(pfad_oder_automat, zielknotenbedingung = nil)
 		if pfad_oder_automat.is_a?(String)
 			automat = Automat.create(@graph.parse_link(pfad_oder_automat)[:op])
