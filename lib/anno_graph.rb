@@ -22,8 +22,6 @@ require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
 class NodeOrEdge
-	include SearchableNodeOrEdge
-
 	attr_reader :graph
 	attr_accessor :attr, :type
 
@@ -65,11 +63,86 @@ class NodeOrEdge
 		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
 		@attr.annotate_with(attributes).remove_empty!
 	end
+
+	def fulfil?(bedingung, inherited = false)
+		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.is_a?(String)
+		return true unless bedingung
+		satzzeichen = '.,;:?!"'
+		case bedingung[:operator]
+		when 'attr'
+			knotenwert = inherited ? inherited_attributes[bedingung[:key]] : @attr[bedingung[:key]]
+			return false unless knotenwert
+			wert = bedingung[:value]
+			return true unless wert
+			case bedingung[:method]
+			when 'plain'
+				return true if knotenwert == wert
+			when 'insens'
+				if bedingung[:key] == 'token'
+					return true if UnicodeUtils.downcase(knotenwert.xstrip(satzzeichen)) == UnicodeUtils.downcase(wert)
+				else
+					return true if UnicodeUtils.downcase(knotenwert) == UnicodeUtils.downcase(wert)
+				end
+			when 'regex'
+				return true if knotenwert.match(wert)
+			end
+			return false
+		when 'not'
+			return (not self.fulfil?(bedingung[:arg]))
+		when 'and'
+			return self.fulfil?(bedingung[:arg][0]) && self.fulfil?(bedingung[:arg][1])
+		when 'or'
+			return self.fulfil?(bedingung[:arg][0]) || self.fulfil?(bedingung[:arg][1])
+		when 'quant' # nur von Belang für 'in', 'out' und 'link'
+			anzahl = self.fulfil?(bedingung[:arg])
+			if anzahl >= bedingung[:min] && (anzahl <= bedingung[:max] || bedingung[:max] < 0)
+				return true
+			else
+				return false
+			end
+		when 'in'
+			if self.is_a?(Node)
+				return @in.select{|k| k.fulfil?(bedingung[:cond])}.length
+			else
+				return 1
+			end
+		when 'out'
+			if self.is_a?(Node)
+				return @out.select{|k| k.fulfil?(bedingung[:cond])}.length
+			else
+				return 1
+			end
+		when 'link'
+			if self.is_a?(Node)
+				return self.links(bedingung[:arg]).length
+			else
+				return 1
+			end
+		when 'token'
+			if self.is_a?(Node)
+				return @type == 't'
+			else
+				return false
+			end
+		when 'start'
+			if self.is_a?(Edge) && !@start.fulfil?(bedingung[:cond])
+				return false
+			else
+				return true
+			end
+		when 'end'
+			if self.is_a?(Edge) && !@end.fulfil?(bedingung[:cond])
+				return false
+			else
+				return true
+			end
+		else
+			return true
+		end
+	end
 end
 
 class Node < NodeOrEdge
-	include SearchableNode
-
 	attr_accessor :id, :in, :out, :start, :end
 
 	# initializes node
@@ -311,12 +384,60 @@ class Node < NodeOrEdge
 		child_nodes{|e| e.type == 'o'}.select(&block)[0]
 	end
 
+	def links(pfad_oder_automat, zielknotenbedingung = nil)
+		if pfad_oder_automat.is_a?(String)
+			automat = Automat.create(@graph.parse_link(pfad_oder_automat)[:op])
+			automat.bereinigen
+		elsif pfad_oder_automat.is_a?(Automat)
+			automat = pfad_oder_automat
+		else
+			automat = Automat.create(pfad_oder_automat)
+			automat.bereinigen
+		end
+
+		neue_zustaende = [{:zustand => automat.startzustand, :tg => Teilgraph.new, :el => self, :forward => true}]
+		rueck = []
+
+		loop do   # Kanten und Knoten durchlaufen
+			alte_zustaende = neue_zustaende.clone
+			neue_zustaende = []
+
+			alte_zustaende.each do |z|
+				# Ziel gefunden?
+				if z[:zustand] == nil
+					if z[:el].kind_of?(Node)
+						if z[:el].fulfil?(zielknotenbedingung)
+							rueck << [z[:el], z[:tg]]
+						# wenn z[:zustand] == nil und keinen Zielknoten gefunden, dann war's eine Sackgasse
+						end
+					else # wenn zuende gesucht, aber Edge aktuelles Element: Zielknoten prüfen!
+						if zielknotenbedingung
+							neuer_tg = z[:tg].clone
+							neuer_tg.edges << z[:el]
+							if z[:forward] # nur Forwärtskanten sollen implizit gefunden werden
+								neue_zustaende += automat.schrittliste_graph(z.merge(:el => z[:el].end, :tg => neuer_tg))
+							end
+						else # wenn keine zielknotenbedingung dann war der letzte gefundene Knoten schon das Ziel
+							letzer_knoten = z[:forward] ? z[:el].start : z[:el].end
+							rueck << [letzer_knoten, z[:tg]]
+						end
+					end
+				else # wenn z[:zustand] != nil
+					neue_zustaende += automat.schrittliste_graph(z.merge(:tg => z[:tg].clone))
+				end
+			end
+			if neue_zustaende == []
+				return rueck.uniq
+			end
+		end
+	end
+
 	# @param link [String] a link in query language
 	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
 	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
 	def nodes(link = nil, end_node_condition = '')
 		if link
-			super
+			links(link, @graph.parse_attributes(end_node_condition)[:op]).map{|node_and_link| node_and_link[0]}.uniq
 		else
 			if @type == 'p' || @type == 's'
 				sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
