@@ -75,7 +75,7 @@ class NodeOrEdge
 		satzzeichen = '.,;:?!"'
 		case bedingung[:operator]
 		when 'attr'
-			knotenwert = inherited ? inherited_attributes[bedingung[:key]] : @attr[bedingung[:key]]
+			knotenwert = inherited && is_a?(Node) ? inherited_attributes[bedingung[:key]] : @attr[bedingung[:key]]
 			return false unless knotenwert
 			wert = bedingung[:value]
 			return true unless wert
