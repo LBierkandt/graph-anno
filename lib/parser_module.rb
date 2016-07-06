@@ -142,7 +142,7 @@ module Parser
 	end
 
 	def parse_line(obj, makros)
-		if obj.class == String
+		if obj.is_a?(String)
 			p = obj.strip.split(/\s/)
 			if ['cond', 'sort'].include?(p[0])
 				return {:operator => p[0]}.merge(extract_ids((p[1..-1] * ' ')))
@@ -239,7 +239,7 @@ module Parser
 	end
 
 	def parse_attributes(obj)
-		if obj.class == String
+		if obj.is_a?(String)
 			return parse_attributes(obj.lex_ql)
 		else
 			op = {}
@@ -280,7 +280,7 @@ module Parser
 			end
 			# 'in', 'out' und 'link' ggf. in Quantor {1,1} einbetten
 			terms.each_with_index do |t, i|
-				if t.class == Hash && (['in', 'out', 'link'].include?(t[:operator]))
+				if t.is_a?(Hash) && (['in', 'out', 'link'].include?(t[:operator]))
 					terms[i] = {:operator => 'quant', :arg => t, :min => 1, :max => -1}
 				end
 			end
@@ -289,7 +289,7 @@ module Parser
 	end
 
 	def parse_attribute(obj)
-		if obj.class == String
+		if obj.is_a?(String)
 			return parse_attribute(obj.lex_ql)
 		else
 			key = obj[0][:str]
@@ -384,7 +384,7 @@ module Parser
 	end
 
 	def parse_link(obj)
-		if obj.class == String
+		if obj.is_a?(String)
 			return parse_link(obj.lex_ql)
 		else
 			op = {}
@@ -394,7 +394,7 @@ module Parser
 			while tok = obj[i]
 				case tok[:cl]
 				when :bstring, :qstring
-					terms << 'seq' if terms[-1].class == Hash
+					terms << 'seq' if terms[-1].is_a?(Hash)
 					p = parse_element(obj[i..-1])
 					if ['node', 'edge', 'redge'].include?(p[:op][:operator])
 						terms << p[:op]
@@ -411,7 +411,7 @@ module Parser
 					if tok[:str] == '|'
 						terms << 'or'
 					elsif tok[:str] == '('
-						terms << 'seq' if terms[-1].class == Hash
+						terms << 'seq' if terms[-1].is_a?(Hash)
 						p = parse_link(obj[i+1..-1])
 						terms << p[:op]
 						i += p[:length]
@@ -428,7 +428,7 @@ module Parser
 	end
 
 	def parse_text_search(obj)
-		if obj.class == String
+		if obj.is_a?(String)
 			return parse_text_search(obj.lex_ql)
 		else
 			op = {}
@@ -438,7 +438,7 @@ module Parser
 			while tok = obj[i]
 				case tok[:cl]
 				when :bstring, :qstring, :regex
-					terms << 'seq' if terms[-1].class == Hash
+					terms << 'seq' if terms[-1].is_a?(Hash)
 					p = parse_word(obj[i..-1])
 					terms << p[:op]
 					i += p[:length] - 1
@@ -451,7 +451,7 @@ module Parser
 					if tok[:str] == '|'
 						terms << 'or'
 					elsif tok[:str] == '('
-						terms << 'seq' if terms[-1].class == Hash
+						terms << 'seq' if terms[-1].is_a?(Hash)
 						p = parse_text_search(obj[i+1..-1])
 						terms << p[:op]
 						ids += p[:ids]
@@ -461,7 +461,7 @@ module Parser
 						break
 					end
 				when :boundary
-					terms << 'seq' if terms[-1].class == Hash
+					terms << 'seq' if terms[-1].is_a?(Hash)
 					terms << {:operator => 'boundary', :level => tok[:str]}
 				end
 				i += 1

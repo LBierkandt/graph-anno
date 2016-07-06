@@ -21,509 +21,6 @@ require 'json.rb'
 require_relative 'search_module.rb'
 require_relative 'nlp_module.rb'
 
-class NodeOrEdge
-	include SearchableNodeOrEdge
-
-	attr_reader :graph
-	attr_accessor :attr, :type
-
-	# provides the to_json method needed by the JSON gem
-	def to_json(*a)
-		self.to_h.to_json(*a)
-	end
-
-	# alternative getter for @attr hash
-	def [](key)
-		@attr[key]
-	end
-
-	# alternative setter for @attr hash
-	def []=(key, value)
-		@attr[key] = value
-	end
-
-	def cat
-		@attr['cat']
-	end
-
-	def cat=(arg)
-		@attr['cat'] = arg
-	end
-
-	# accessor method for the public/neutral annotations of self
-	def public_attr
-		@attr.public
-	end
-
-	# accessor method for the private annotations of self
-	def private_attr(annotator_name)
-		annotator = @graph.get_annotator(:name => annotator_name)
-		@attr.private[annotator] || {}
-	end
-
-	def annotate(attributes, log_step = nil)
-		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
-		@attr.annotate_with(attributes).remove_empty!
-	end
-end
-
-class Node < NodeOrEdge
-	include SearchableNode
-
-	attr_accessor :id, :in, :out, :start, :end
-
-	# initializes node
-	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
-	def initialize(h)
-		@graph = h[:graph]
-		@id = h[:id]
-		@in = []
-		@out = []
-		@type = h[:type]
-		@attr = Attributes.new(h.merge(:host => self))
-		@start= h[:start]
-		@end  = h[:end]
-		@custom = h[:custom]
-		@graph.node_index[@type][@id] = self
-	end
-
-	def inspect
-		"Node#{@id}"
-	end
-
-	# @return [Hash] the node transformed into a hash
-	def to_h
-		h = {
-			:id     => @id,
-			:type   => @type,
-			:start  => @start,
-			:end    => @end,
-			:custom => @custom,
-		}.merge(@attr.to_h).compact
-	end
-
-	# deletes self and all in- and outgoing edges; optionally writes changes to log
-	# @param log_step [Step] optionally a log step to which the changes will be logged
-	# @return [Node] self
-	def delete(log_step = nil)
-		if log_step
-			@out.each{|e| log_step.add_change(:action => :delete, :element => e)}
-			@in.each{|e| log_step.add_change(:action => :delete, :element => e)}
-			log_step.add_change(:action => :delete, :element => self)
-		end
-		Array.new(@out).each(&:delete)
-		Array.new(@in).each(&:delete)
-		@graph.node_index[@type].delete(@id)
-		@graph.nodes.delete(@id)
-	end
-
-	# returns nodes connected to self by ingoing edges which fulfil the (optional) block
-	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
-	# @return [Array] list of found parent nodes
-	def parent_nodes(&block)
-		selected = @in.select(&block)
-		selected = @in if selected.is_a?(Enumerator)
-		return selected.map(&:start)
-	end
-
-	# returns nodes connected to self by outgoing edges which fulfil the (optional) block
-	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
-	# @return [Array] child nodes connected by edges with the defined attributes
-	def child_nodes(&block)
-		selected = @out.select(&block)
-		selected = @out if selected.is_a?(Enumerator)
-		return selected.map(&:end)
-	end
-
-	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
-	# @param link [String] a query language string describing the link from self to the tokens that will be returned
-	# @return [Array] all dominated tokens or all tokens connected via given link
-	def tokens(link = nil)
-		case @type
-		when 'a'
-	 		link = 'edge+' unless link
-			self.nodes(link, 'token').sort_by(&:tokenid)
-		when 't'
-			[self]
-		when 's'
-			sentence_tokens
-		when 'p'
-			sentence_nodes.map(&:tokens).flatten
-		end
-	end
-
-	# like tokens method, but returns text string represented by tokens
-	# @param link [String] a query language string describing the link from self to the tokens whose text will be returned
-	# @return [String] the text formed by all dominated tokens or all tokens connected via given link
-	def text(link = nil)
-		self.tokens(link).map(&:token) * ' '
-	end
-
-	# @return [Node] the sentence node self is associated with
-	def sentence
-		if @type == 's'
-			self
-		elsif @type == 'p'
-			nil
-		else
-			parent_nodes{|e| e.type == 's'}[0]
-		end
-	end
-
-	# @return [Array] the sentence nodes self dominates
-	def sentence_nodes
-		if @type == 'p'
-			nodes = [self]
-			loop do
-				children = nodes.map{|n| n.child_sections}.flatten
-				return @graph.sentence_nodes & nodes if children.empty? # use "&"" to preserve sentence order
-				nodes = children
-			end
-		elsif @type == 's'
-			[self]
-		else
-			[]
-		end
-	end
-
-	# @return [Array] the tokens of the sentence self belongs to
-	def sentence_tokens
-		s = sentence
-		if @type == 't'
-			ordered_sister_nodes{|t| t.sentence === s}
-		elsif @type == 's'
-			if first_token = child_nodes{|e| e.type == 's'}.of_type('t')[0]
-				if first_token.speaker
-					child_nodes{|e| e.type == 's'}.of_type('t').sort{|a, b| a.start <=> b.start}
-				else
-					first_token.ordered_sister_nodes{|t| t.sentence === s}
-				end
-			else
-				[]
-			end
-		elsif @type == 'p'
-			sentence_nodes.map(&:sentence_tokens).flatten
-		else
-			s.sentence_tokens
-		end
-	end
-
-	def speaker
-		if @type == 'sp'
-			self
-		else
-			parent_nodes{|e| e.type == 'sp'}[0]
-		end
-	end
-
-	# @param block [Lambda] a block to filter the considered sister nodes
-	# @return [Array] an ordered list of the sister nodes of self, optionally filtered by a block
-	def ordered_sister_nodes(&block)
-		block ||= lambda{|n| true}
-		nodes = [self]
-		node = self
-		while node = node.node_before(&block)
-			nodes.unshift(node)
-		end
-		node = self
-		while node = node.node_after(&block)
-			nodes.push(node)
-		end
-		return nodes
-	end
-
-	# @return [String] the text of the sentence self belongs to
-	def sentence_text
-		sentence_tokens.map(&:token) * ' '
-	end
-
-	# @return [Float] the position of self in terms of own tokenid or averaged tokenid of the dominated (via tokens method) tokens
-	# @param link [String] a query language string describing the link from self to the tokens that will be returned
-	def position(link = nil)
-		if @type == 't'
-			return self.tokenid.to_f
-		else
-			toks = self.tokens(link)
-			return toks.length > 0 ? toks.reduce(0){|sum, t| sum += t.position} / toks.length : 0
-		end
-	end
-
-	def position_wrt(other, stil = nil, detail = true)
-		st = self.tokens
-		ot = other.tokens
-		r = ''
-		if st == [] || ot == [] || self.sentence != other.sentence
-			return 'nd'
-		end
-		if st & ot != []
-			if st == ot
-				return 'idem'
-			elsif ot - st == []
-				if stil == 'eq' then return 'super' elsif stil == 'dom' then else r = 'super_' end
-				st = st - ot
-			elsif st - ot == []
-				if stil == 'eq' then return 'sub' elsif stil == 'dom' then else r = 'sub_' end
-				ot = ot - st
-			else
-				return 'intersect'
-			end
-		end
-		st_first = st.first.tokenid
-		st_last  = st.last.tokenid
-		ot_first = ot.first.tokenid
-		ot_last  = ot.last.tokenid
-		if st_last < ot_first
-			r += 'pre'
-			r += '_separated' if detail and st_last < ot_first - 1
-		elsif st_first > ot_last
-			r +='post'
-			r += '_separated' if detail and st_first > ot_last + 1
-		elsif st_first > ot_first && st_last < ot_last &&
-			ot.any?{|t| t.tokenid < st_first || t.tokenid > st_last}
-			r += 'in'
-		elsif st_first < ot_first && st_last > ot_last &&
-			st.any?{|t| t.tokenid < ot_first || t.tokenid > ot_last}
-			r += 'circum'
-		else
-			r += 'interlaced'
-			if detail
-				if    st_first < ot_first && st_last < ot_last
-					r += '_pre'
-				elsif st_first > ot_first && st_last > ot_last
-					r += '_post'
-				elsif st_first > ot_first && st_last < ot_last
-					r += '_in'
-				elsif st_first < ot_first && st_last > ot_last
-					r += '_circum'
-				end
-			end
-		end
-		return r
-	end
-
-	def node_before(&block)
-		block ||= lambda{|n| true}
-		parent_nodes{|e| e.type == 'o'}.select(&block)[0]
-	end
-
-	def node_after(&block)
-		block ||= lambda{|n| true}
-		child_nodes{|e| e.type == 'o'}.select(&block)[0]
-	end
-
-	# @param link [String] a link in query language
-	# @param end_node_condition [String] an attribute description in query language to filter the returned nodes
-	# @return [Array] when no link is given: the nodes associated with the sentence node self; when link is given: the nodes connected to self via given link
-	def nodes(link = nil, end_node_condition = '')
-		if link
-			super
-		else
-			if @type == 'p' || @type == 's'
-				sentence_nodes.map{|s| s.child_nodes{|e| e.type == 's'}}.flatten
-			else
-				sentence.nodes
-			end
-		end
-	end
-
-	# methods specific for token nodes:
-
-	# @return [String] self's text
-	def token
-		@attr['token']
-	end
-
-	# @param arg [String] new self's text
-	def token=(arg)
-		@attr['token'] = arg
-	end
-
-	# @return [Integer] position of self in ordered list of own sentence's tokens
-	def tokenid
-		self.sentence_tokens.index(self)
-	end
-
-	# deletes self and joins adjacent tokens if possible
-	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def remove_token(log_step = nil)
-		if self.token
-			s = self.sentence
-			if self.node_before && self.node_after
-				e = @graph.add_order_edge(:start => self.node_before, :end => self.node_after)
-				log_step.add_change(:action => :create, :element => e) if log_step
-			end
-			self.delete(log_step)
-		end
-	end
-
-	# methods specific for section nodes:
-
-	# @return [String] self's name attribute
-	def name
-		@attr['name']
-	end
-
-	# @param name [String] self's new name attribute
-	def name=(name)
-		@attr['name'] = name
-	end
-
-	# the level of a section node: sentence nodes have level 0, parents of sentence nodes level 1 etc.
-	# @return [Integer] the level
-	def sectioning_level
-		if @type == 's'
-			0
-		elsif @type == 'p'
-			child_sections.map(&:sectioning_level).max + 1
-		else
-			nil
-		end
-	end
-
-	# @return [Array] the descendant sections of self
-	def descendant_sections
-		if sectioning_level > 0
-			child_sections + child_sections.map(&:descendant_sections).flatten
-		else
-			[]
-		end
-	end
-
-	# @return [Array] the ancestor sections nodes of self, from bottom to top
-	def ancestor_sections
-		ancestors = []
-		current_node = self
-		loop do
-			if p = current_node.parent_section
-				ancestors << current_node = p
-			else
-				return ancestors
-			end
-		end
-	end
-
-	# @return [Array] self's annotations including annotations inherited from its ancestor nodes
-	def inherited_attributes
-		current_attr = Attributes.new(:host => self)
-		ancestor_sections.reverse.each do |ancestor|
-			current_attr = current_attr.full_merge(ancestor.attr)
-		end
-		current_attr.full_merge(attr)
-	end
-
-	# @return [Array] an ordered list of the sections that are on the same level as self
-	def same_level_sections
-		@graph.section_structure_nodes[sectioning_level]
-	end
-
-	# return true if the sentences self contains are before and after the sentences the other section contains;
-	# in this case, the other section has to be dominated by self
-	# @param other [Node] the other section
-	# @return [Boolean] whether the other section's sentences are comprised
-	def comprise_section?(other)
-		all_sentence_nodes = @graph.sentence_nodes
-		return all_sentence_nodes.index(sentence_nodes.first) < all_sentence_nodes.index(other.sentence_nodes.first) &&
-			all_sentence_nodes.index(sentence_nodes.last) > all_sentence_nodes.index(other.sentence_nodes.last)
-	end
-
-	# @return [Node] the parent section if present, else nil
-	def parent_section
-		parent_nodes{|e| e.type == 'p'}[0]
-	end
-
-	# @return [Array] the child sections
-	def child_sections
-		child_nodes{|e| e.type == 'p'}
-	end
-end
-
-class Edge < NodeOrEdge
-	attr_accessor :id, :start, :end
-
-	# initializes edge, registering it with start and end node
-	# @param h [{:graph => Graph, :id => String, :start => Node or String, :end => Node or String, :attr => Hash}]
-	def initialize(h)
-		@graph = h[:graph]
-		@id = h[:id]
-		@type = h[:type]
-		@custom  = h[:custom]
-		if h[:start].is_a?(Node)
-			@start = h[:start]
-		else
-			@start = @graph.nodes[h[:start]]
-		end
-		if h[:end].is_a?(Node)
-			@end = h[:end]
-		else
-			@end = @graph.nodes[h[:end]]
-		end
-		@attr = Attributes.new(h.merge(:host => self))
-		if @start && @end
-			# register in start and end node as outgoing or ingoing edge, respectively
-			@start.out << self
-			@end.in << self
-		else
-			raise 'edge needs start and end node'
-		end
-	end
-
-	# deletes self from graph and from out and in lists of start and end node
-	# @param log_step [Step] optionally a log step to which the changes will be logged
-	# @return [Edge] self
-	def delete(log_step = nil)
-		if log_step
-			log_step.add_change(:action => :delete, :element => self)
-		end
-		@start.out.delete(self) if @start
-		@end.in.delete(self) if @end
-		@graph.edges.delete(@id)
-	end
-
-	# @return [Hash] the edge transformed into a hash
-	def to_h
-		h = {
-			:start  => @start.id,
-			:end    => @end.id,
-			:id     => @id,
-			:type   => @type,
-			:custom => @custom,
-		}.merge(@attr.to_h).compact
-	end
-
-	def inspect
-		"Edge#{@id}"
-	end
-
-	# sets the start node of self
-	# @param node [Node] the new start node
-	def start=(node)
-		if node
-			if @start
-				@start.out.delete(self)
-				node.out << self
-			end
-			@start = node
-		end
-	end
-
-	# sets the end node of self
-	# @param node [Node] the new end node
-	def end=(node)
-		if node
-			if @end
-				@end.in.delete(self)
-				node.in << self
-			end
-			@end = node
-		end
-	end
-
-	def fulfil?(condition)
-		return false unless @type == 'a'
-		super
-	end
-end
-
 class AnnoGraph
 	include SearchableGraph
 
@@ -1105,6 +602,7 @@ class AnnoGraph
 	end
 
 	# makes self a clone of another graph
+	# @param other_graph [Graph] the graph to be cloned
 	def clone_graph(other_graph)
 		@nodes = other_graph.nodes.clone
 		@edges = other_graph.edges.clone
@@ -1115,6 +613,7 @@ class AnnoGraph
 	end
 
 	# sets own settings to those of another graph
+	# @param other_graph [Graph] the graph whose settings are to be cloned
 	def clone_graph_info(other_graph)
 		@conf = other_graph.conf.clone
 		@info = other_graph.info.clone
@@ -1232,6 +731,7 @@ class AnnoGraph
 		return hierarchy
 	end
 
+	# @return [Array] self's speaker nodes
 	def speaker_nodes
 		@node_index['sp'].values
 	end
@@ -1311,7 +811,7 @@ class AnnoGraph
 				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
 					annotation.each do |k, v|
-						t[k] = (v.class == Fixnum) ? words[i][v] : v
+						t[k] = (v.is_a?(Fixnum)) ? words[i][v] : v
 					end
 				end
 			when 'punkt'
@@ -1406,10 +906,17 @@ class AnnoGraph
 		@tagset.allowed_attributes(attr)
 	end
 
+
+	# set the current annotator by id or name
+	# @param attr [Hash] a hash with the key :id or :name
+	# @return [Annotator] the current annotator
 	def set_annotator(h)
 		@current_annotator = get_annotator(h)
 	end
 
+	# get annotator by id or name
+	# @param attr [Hash] a hash with the key :id or :name
+	# @return [Annotator] the annotator with the given id or name
 	def get_annotator(h)
 		@annotators.select{|a| h.all?{|k, v| a.send(k).to_s == v.to_s}}[0]
 	end
@@ -1425,6 +932,7 @@ class AnnoGraph
 		@annotators -= annotators
 	end
 
+	# create search makros from the layer shortcuts defined in the graph configuration
 	def create_layer_makros
 		@makros = []
 		@makros_plain = []
@@ -1433,110 +941,6 @@ class AnnoGraph
 			"def #{layer.shortcut} #{attributes_string}"
 		end
 		@makros = parse_query(layer_makros_array * "\n")['def']
-	end
-end
-
-class AnnoLayer
-	attr_accessor :name, :attr, :shortcut, :color, :weight
-
-	def initialize(h = {})
-		@name = h['name'] || ''
-		@attr = h['attr'] || ''
-		@shortcut = h['shortcut'] || ''
-		@color = h['color'] || '#000000'
-		@weight = h['weight'] || '1'
-		@graph = h['graph'] || nil
-	end
-
-	def to_h
-		{
-			:name => @name,
-			:attr => @attr,
-			:shortcut => @shortcut,
-			:color => @color,
-			:weight => @weight
-		}
-	end
-end
-
-class AnnoGraphConf
-	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :layers, :combinations
-
-	def initialize(h = {})
-		h ||= {}
-		default = File::open('conf/display.yml'){|f| YAML::load(f)}
-		default.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
-
-		@font = h['font'] || default['font']
-		@default_color = h['default_color'] || default['default_color']
-		@token_color = h['token_color'] || default['token_color']
-		@found_color = h['found_color'] || default['found_color']
-		@filtered_color = h['filtered_color'] || default['filtered_color']
-		@edge_weight = h['edge_weight'] || default['edge_weight']
-		if h['layers']
-			@layers = h['layers'].map{|l| AnnoLayer.new(l)}
-		else
-			@layers = default['layers'].map{|l| AnnoLayer.new(l)}
-		end
-		if h['combinations']
-			@combinations = h['combinations'].map{|c| AnnoLayer.new(c)}
-		else
-			@combinations = default['combinations'].map{|c| AnnoLayer.new(c)}
-		end
-	end
-
-	def clone
-		new_conf = super
-		new_conf.layers = @layers.map(&:clone)
-		new_conf.combinations = @combinations.map(&:clone)
-		return new_conf
-	end
-
-	def merge!(other)
-		other.layers.each do |layer|
-			unless @layers.map(&:attr).include?(layer.attr)
-				@layers << layer
-			end
-		end
-		other.combinations.each do |combination|
-			unless @combinations.map(&:attr).include?(combination.attr)
-				@combinations << combination
-			end
-		end
-	end
-
-	def to_h
-		{
-			:font => @font,
-			:default_color => @default_color,
-			:token_color => @token_color,
-			:found_color => @found_color,
-			:filtered_color => @filtered_color,
-			:edge_weight => @edge_weight,
-			:layers => @layers.map(&:to_h),
-			:combinations => @combinations.map(&:to_h)
-		}
-	end
-
-	def layers_and_combinations
-		@layers + @combinations
-	end
-
-	def layer_shortcuts
-		layers_and_combinations.map{|l| {l.shortcut => l.name}}.reduce{|m, h| m.merge(h)}
-	end
-
-	def layer_attributes
-		h = {}
-		layers_and_combinations.map do |l|
-			h[l.name] = [*l.attr].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
-		end
-		return h
-	end
-
-	# provides the to_json method needed by the JSON gem
-	def to_json(*a)
-		self.to_h.to_json(*a)
 	end
 end
 
