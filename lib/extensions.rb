@@ -128,7 +128,7 @@ class String
 				break
 			elsif m = str.match(r[:ctrl])
 			elsif m = str.match(r[:sequence])
-				if mm = str.match(/^([ent])(\d+)\.\.\1(\d+)$/)
+				if mm = str.match(/^([ent])(\d+)\.\.\1(\d+)/)
 					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
 						h[:elements] << mm[1] + n.to_s
 						case str[0]
