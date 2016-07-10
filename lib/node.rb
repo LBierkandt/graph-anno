@@ -89,8 +89,7 @@ class Node < NodeOrEdge
 	def tokens(link = nil)
 		case @type
 		when 'a'
-	 		link = 'edge+' unless link
-			self.nodes(link, 'token').sort_by(&:tokenid)
+			self.nodes((link || 'edge+'), 'token').sort_by(&:tokenid)
 		when 't'
 			[self]
 		when 's'
