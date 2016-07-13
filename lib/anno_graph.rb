@@ -233,7 +233,7 @@ class AnnoGraph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_sect_node(h)
-		h.merge!(:attr => {}) unless h[:attr]
+		h[:attr] ||= {}
 		h[:attr].merge!('name' => h[:name]) if h[:name]
 		n = add_node(h.merge(:type => 's'))
 		h[:log].add_change(:action => :create, :element => n) if h[:log]
@@ -244,7 +244,7 @@ class AnnoGraph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_part_node(h)
-		h.merge!(:attr => {}) unless h[:attr]
+		h[:attr] ||= {}
 		h[:attr].merge!('name' => h[:name]) if h[:name]
 		n = add_node(h.merge(:type => 'p'))
 		h[:log].add_change(:action => :create, :element => n) if h[:log]
@@ -255,7 +255,7 @@ class AnnoGraph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_speaker_node(h)
-		h.merge!(:attr => {}) unless h[:attr]
+		h[:attr] ||= {}
 		add_node(h.merge(:type => 'sp'))
 	end
 
