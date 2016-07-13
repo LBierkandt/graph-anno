@@ -43,6 +43,9 @@ window.onload = function() {
 		else
 			$('.file #separate-log').attr('disabled', '');
 	});
+
+	// autocomplete
+	Autocomplete.init('#txtcmd');
 }
 window.onresize = graphdivEinpassen;
 
