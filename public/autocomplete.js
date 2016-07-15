@@ -1,6 +1,7 @@
 var Autocomplete = (function(){
 	var $element = null;
 	var $list = null;
+	var noInput = false;
 	var parseInput = function() {
 		var cursorPosition = $element[0].selectionDirection == 'backward' ? $element[0].selectionStart : $element[0].selectionEnd;
 		var string = $element.val();
@@ -15,11 +16,19 @@ var Autocomplete = (function(){
 			context: context
 		};
 	}
-	var setProposals = function(input) {
-		$list.text(input + 'blub');
+	var setSuggestions = function(input, context) {
+		var words = [input+'blub', input+'bla', input+'gr'];
+		setList(words);
+	}
+	var setList = function(words) {
+		$list.html('');
+		for (var i in words) {
+			$list.append('<div>' + words[i] + '</div>');
+		}
+		$list.children(':first-child').addClass('active');
 	}
 	var insert = function() {
-		var word = $list.text();
+		var word = $list.find('.active').text();
 		var segments = parseInput();
 		upToCursor = segments.before + word + ' ';
 		$element.val(upToCursor + segments.after);
@@ -29,17 +38,36 @@ var Autocomplete = (function(){
 		$list.hide();
 		$element.off('.autocomplete');
 	}
+	var changeActive = function(keycode) {
+		var active = $list.find('.active');
+		if (keycode == 38) {
+			var newActive = active.prev();
+			if (newActive.length == 0) newActive = $list.children(':last-child');
+		} else if (keycode == 40) {
+			var newActive = active.next();
+			if (newActive.length == 0) newActive = $list.children(':first-child');
+		}
+		$list.children().removeClass('active');
+		newActive.addClass('active');
+	}
 	var keyBinding = function(e) {
-		if (e.which == 9) {
+		var actions = {
+			9: function() {insert(); disable();},
+			27: disable,
+			38: changeActive,
+			40: changeActive,
+		};
+		if (e.which in actions) {
 			e.preventDefault();
-			insert();
-			disable();
+			noInput = true;
+			actions[e.which](e.which);
 		}
 	}
-	var inputHandler = function() {
+	var inputHandler = function(e) {
+		if (noInput) {noInput = false; return;}
 		var segments = parseInput();
-		if (segments.word.length > 0) {
-			setProposals(segments.word);
+		if (segments.word.length > 0 && segments.context) {
+			setSuggestions(segments.word, segments.context);
 			if ($list.css('display') == 'none') {
 				var coordinates = getCaretCoordinates(this, this.selectionEnd);
 				$list.css({left: coordinates.left}).show();

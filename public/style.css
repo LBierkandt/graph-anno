@@ -89,6 +89,9 @@ table {
   bottom: 40px;
   background-color: white;
   padding: 0 5px; }
+  #autocomplete .active {
+    color: white;
+    background-color: #003090; }
 
 #sectioning {
   display: block;
