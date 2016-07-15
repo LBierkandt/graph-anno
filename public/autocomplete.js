@@ -1,22 +1,28 @@
 var Autocomplete = (function(){
 	var $element = null;
 	var $list = null;
-	var splitInput = function() {
+	var parseInput = function() {
 		var cursorPosition = $element[0].selectionDirection == 'backward' ? $element[0].selectionStart : $element[0].selectionEnd;
 		var string = $element.val();
 		var before = string.slice(0, cursorPosition).match(/(.*?)(\S*)$/);
 		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
 		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[2] : '';
-		return [before[1], word, after[1]];
+		var context = before[1][before[1].length - 1];
+		return {
+			before: before[1],
+			word: word,
+			after: after[1],
+			context: context
+		};
 	}
 	var setProposals = function(input) {
 		$list.text(input + 'blub');
 	}
 	var insert = function() {
 		var word = $list.text();
-		var segments = splitInput();
-		upToCursor = segments[0] + word + ' ';
-		$element.val(upToCursor + segments[2]);
+		var segments = parseInput();
+		upToCursor = segments.before + word + ' ';
+		$element.val(upToCursor + segments.after);
 		$element[0].setSelectionRange(upToCursor.length, upToCursor.length);
 	}
 	var disable = function() {
@@ -31,9 +37,9 @@ var Autocomplete = (function(){
 		}
 	}
 	var inputHandler = function() {
-		var word = splitInput()[1];
-		if (word.length > 0) {
-			setProposals(word);
+		var segments = parseInput();
+		if (segments.word.length > 0) {
+			setProposals(segments.word);
 			if ($list.css('display') == 'none') {
 				var coordinates = getCaretCoordinates(this, this.selectionEnd);
 				$list.css({left: coordinates.left}).show();
