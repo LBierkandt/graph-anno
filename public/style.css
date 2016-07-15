@@ -86,12 +86,14 @@ table {
 #autocomplete {
   display: none;
   position: absolute;
-  bottom: 40px;
-  background-color: white;
-  padding: 0 5px; }
-  #autocomplete .active {
-    color: white;
-    background-color: #003090; }
+  bottom: 43px;
+  background-color: #eeeeee;
+  padding: 4px; }
+  #autocomplete div {
+    padding: 0 2px; }
+    #autocomplete div.active {
+      color: white;
+      background-color: #003090; }
 
 #sectioning {
   display: block;

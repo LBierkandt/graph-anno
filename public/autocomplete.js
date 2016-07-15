@@ -25,7 +25,8 @@ var Autocomplete = (function(){
 		for (var i in suggestionData) {
 			if (suggestionData[i].slice(0, input.length) == input) words.push(suggestionData[i]);
 		}
-		setList(words);
+		if (words.length > 0) {setList(words); return true;}
+		else return false;
 	}
 	var setList = function(words) {
 		$list.html('');
@@ -73,8 +74,7 @@ var Autocomplete = (function(){
 	var inputHandler = function(e) {
 		if (noInput) {noInput = false; return;}
 		var segments = parseInput();
-		if (segments.word.length > 0 && segments.context) {
-			setSuggestions(segments.word, segments.context);
+		if (segments.word.length > 0 && segments.context && setSuggestions(segments.word, segments.context)) {
 			if ($list.css('display') == 'none') {
 				var coordinates = getCaretCoordinates(this, this.selectionEnd);
 				$list.css({left: coordinates.left}).show();
