@@ -2,6 +2,10 @@ var Autocomplete = (function(){
 	var $element = null;
 	var $list = null;
 	var noInput = false;
+	var data = {
+		anno: ['cat:S', 'cat:R', 'cat:Z', 'tns:prs', 'tns:prt', 'tns:fut', 'mod:ind', 'mod:subj'],
+	};
+
 	var parseInput = function() {
 		var cursorPosition = $element[0].selectionDirection == 'backward' ? $element[0].selectionStart : $element[0].selectionEnd;
 		var string = $element.val();
@@ -17,7 +21,12 @@ var Autocomplete = (function(){
 		};
 	}
 	var setSuggestions = function(input, context) {
-		var words = [input+'blub', input+'bla', input+'gr'];
+		var suggestionSet = 'anno';
+		var words = [];
+		var suggestionData = data[suggestionSet];
+		for (var i in suggestionData) {
+			if (suggestionData[i].slice(0, input.length) == input) words.push(suggestionData[i]);
+		}
 		setList(words);
 	}
 	var setList = function(words) {
