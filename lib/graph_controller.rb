@@ -55,9 +55,7 @@ class GraphController
 	end
 
 	def draw_graph
-		generate_graph.merge(
-			:current_sections => @current_sections ? current_section_ids : nil,
-			:sections => set_sections,
+		section_settings_and_graph.merge(
 			:sections_changed => true
 		).to_json
 	end
@@ -269,7 +267,7 @@ class GraphController
 		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
 		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
-		return true.to_json
+		return {:tagset => @graph.tagset.for_autocomplete}.to_json
 	end
 
 	def save_file
@@ -453,6 +451,7 @@ class GraphController
 
 	def section_settings_and_graph
 		generate_graph.merge(
+			:tagset => @graph.tagset.for_autocomplete,
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections => set_sections,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true

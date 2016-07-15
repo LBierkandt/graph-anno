@@ -194,6 +194,7 @@ function updateView(data) {
 	if (data['meta'] != undefined) $('#meta').html(data['meta']);
 	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
 	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
+	Autocomplete.setData(data.tagset);
 	graphdivEinpassen();
 	// get old dimensions
 	var $div = $('#graph');
@@ -421,8 +422,11 @@ function sendModal(type) {
 		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
-		if (data == true) closeModal();
-		else $('#modal-warning').html(data['errors']).show();
+		if (!data || data.errors != undefined) $('#modal-warning').html(data.errors).show();
+		else {
+			Autocomplete.setData(data.tagset);
+			closeModal();
+		}
 	});
 }
 function closeModal() {

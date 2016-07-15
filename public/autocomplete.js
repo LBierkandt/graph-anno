@@ -2,9 +2,7 @@ var Autocomplete = (function(){
 	var $element = null;
 	var $list = null;
 	var noInput = false;
-	var data = {
-		anno: ['cat:S', 'cat:R', 'cat:Z', 'tns:prs', 'tns:prt', 'tns:fut', 'mod:ind', 'mod:subj'],
-	};
+	var data = {};
 
 	var parseInput = function() {
 		var cursorPosition = $element[0].selectionDirection == 'backward' ? $element[0].selectionStart : $element[0].selectionEnd;
@@ -92,6 +90,9 @@ var Autocomplete = (function(){
 			$element = $(selector);
 			$list = $('<div id="autocomplete"></div>').appendTo($element.parent());
 			$element.on('keyup', inputHandler);
-		}
+		},
+		setData: function(newData) {
+			if (newData) data = newData;
+		},
 	}
 })();
