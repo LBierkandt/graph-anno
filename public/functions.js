@@ -200,7 +200,12 @@ function updateView(data) {
 	};
 	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
 	// create svg
-	var svgElement = new DOMParser().parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
+	try {
+		var svgElement = new DOMParser().parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
+	} catch(e) {
+		alert('An error occurred while generating the graph. Try the xlabel setting for avoiding this (see file settings window)');
+		return;
+	}
 	// get new dimensions
 	var newSvgSize = {
 		width: parseInt(svgElement.documentElement.getAttribute('width')),

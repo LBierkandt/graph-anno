@@ -274,7 +274,7 @@ class GraphController
 
 	def save_file
 		@graph.file_settings.clear
-		[:compact, :save_log, :separate_log, :save_windows].each do |property|
+		[:compact, :save_log, :separate_log, :save_windows, :xlabel].each do |property|
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		return true.to_json
@@ -906,6 +906,7 @@ class GraphController
 			:type => :digraph,
 			:rankdir => :TB,
 			:use => :dot,
+			:forcelabels => true,
 			:ranksep => 0.3
 		)
 		token_graph = viz_graph.subgraph(:rank => :same)
@@ -1007,13 +1008,15 @@ class GraphController
 		end
 
 		@edges.each_with_index do |edge, i|
+			label = HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal)
 			options = {
 				:fontname => @graph.conf.font,
-				:label => HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal),
 				:color => @graph.conf.default_color,
 				:weight => @graph.conf.edge_weight,
 				:constraint => true
-			}
+			}.merge(
+				@graph.file_settings[:xlabel] ? {:xlabel => label} : {:label => label}
+			)
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				options[:color] = @graph.conf.filtered_color
 			else
