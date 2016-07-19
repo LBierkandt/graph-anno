@@ -274,7 +274,7 @@ class GraphController
 
 	def save_file
 		@graph.file_settings.clear
-		[:compact, :save_log, :separate_log, :save_windows, :xlabel].each do |property|
+		[:compact, :save_log, :separate_log, :save_windows].each do |property|
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		return true.to_json
@@ -1015,7 +1015,7 @@ class GraphController
 				:weight => @graph.conf.edge_weight,
 				:constraint => true
 			}.merge(
-				@graph.file_settings[:xlabel] ? {:xlabel => label} : {:label => label}
+				@graph.conf.xlabel ? {:xlabel => label} : {:label => label}
 			)
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				options[:color] = @graph.conf.filtered_color

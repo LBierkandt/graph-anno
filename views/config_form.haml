@@ -29,6 +29,16 @@
           %label{:for => "general[edge_weight]"} Edge weight
         %td
           %input{ :name => 'general[edge_weight]', :type => 'number', :value => graph.conf.edge_weight }
+      %tr
+        %td
+          %label{:for =>'general[xlabel]'}
+            use xlabel
+            %br
+            for drawing
+            %br
+            edge labels
+        %td
+          %input{ :name => 'general[xlabel]', :type => 'checkbox', :value => true, :checked => graph.conf.xlabel}
 
   %div.modal-form-element
     %table.layers
