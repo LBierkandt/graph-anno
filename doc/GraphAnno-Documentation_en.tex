@@ -481,6 +481,8 @@ The window for configuration of the layers of the currently loaded graph and its
 In the section \textit{general settings}, you can configure the settings for nodes and edges that do not belong to any layer.\footnote{Depending on the browser you use, the color fields are displayed as color picker or as simple text field. In the latter case, you have to provide the color as hexadecimal RGB value: A hash (\code{\#}) followed by three two-digit hexadecimal numbers for red, green and blue, respectively. \code{\#000000}, e.g., stands for black, \code{\#ffffff} for white, \code{\#ff0000} for light red etc.}
 \textit{Default color} applies to all nodes and edges that are not tokens and that do not belong to any layer, \textit{token color} applies to tokens, \textit{found color} is used for the highlighting of nodes and edges found in a search, and \textit{filtered color} for elements that are filtered out by the filter function.
 The setting for \textit{edge weight} affects the layout of the displayed graph and shows its effect only when edges with different weight are present (details will follow in the next paragraph).
+Finally, the setting \textit{edge label compatibility mode} enables a different way of edge label placing.
+This leads to a poorer graph layout (more collisions) but avoids graph rendering errors that may occur due to a bug in the graph rendering library (this kind of errors mostly shows up with dependency annotations as these tend to result in densely packed bundles of edges; you’ll see a notice popping up if such an error occurs).
 
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
