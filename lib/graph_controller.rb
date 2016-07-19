@@ -901,14 +901,13 @@ class GraphController
 			''
 		end
 
-		viz_graph = DotGraph.new(
-			:G,
+		graph_options = {
 			:type => :digraph,
 			:rankdir => :TB,
 			:use => :dot,
-			:forcelabels => true,
 			:ranksep => 0.3
-		)
+		}.merge(@graph.conf.xlabel ? {:forcelabels => true, :ranksep => 0.85} : {})
+		viz_graph = DotGraph.new(:G, graph_options)
 		token_graph = viz_graph.subgraph(:rank => :same)
 		layer_graphs = {}
 		@graph.conf.combinations.each do |c|
