@@ -11,33 +11,20 @@ var Autocomplete = (function(){
 		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
 		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[2] : '';
 		var context = before[1].replace(/^\s+/, '')[before[1].length - 1];
-		var command = context ? string.match(/^\s*(\S+)/)[1] : null
-		var commands = {
-			a: 'anno',
-			n: 'anno',
-			e: 'anno',
-			p: 'anno',
-			g: 'anno',
-			c: 'anno',
-			h: 'anno',
-			ni: 'anno',
-			di: 'anno',
-			do: 'anno',
-		};
+		var command = context ? string.match(/^\s*(\S+)/)[1] : null;
 		return {
 			before: before[1],
 			word: word,
 			after: after[1],
-			suggestionSet: context ? commands[command] : null
+			suggestionData: command ? data[data.commands[command]] : Object.keys(data.commands),
 		};
 	}
-	var setSuggestions = function(input, suggestionSet) {
+	var setSuggestions = function(input, suggestionData) {
 		var words = [];
-		var suggestionData = data[suggestionSet];
 		for (var i in suggestionData) {
 			if (suggestionData[i].slice(0, input.length) == input) words.push(suggestionData[i]);
 		}
-		if (words.length > 0) {setList(words); return true;}
+		if (words.length > 0) {setList(words.sort()); return true;}
 		else return false;
 	}
 	var setList = function(words) {
@@ -86,7 +73,7 @@ var Autocomplete = (function(){
 	var inputHandler = function(e) {
 		if (noInput) {noInput = false; return;}
 		var segments = parseInput();
-		if (segments.word.length > 0 && segments.suggestionSet && setSuggestions(segments.word, segments.suggestionSet)) {
+		if (segments.word.length > 0 && segments.suggestionData && setSuggestions(segments.word, segments.suggestionData)) {
 			if ($list.css('display') == 'none') {
 				var coordinates = getCaretCoordinates(this, this.selectionEnd);
 				$list.css({left: coordinates.left}).show();

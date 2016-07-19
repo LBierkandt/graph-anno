@@ -45,7 +45,7 @@ class Tagset < Array
 	private
 
 	def to_autocomplete
-		{:anno => self.map{|rule| rule.to_autocomplete}.flatten}
+		self.map{|rule| rule.to_autocomplete}.flatten
 	end
 end
 

@@ -267,7 +267,7 @@ class GraphController
 		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
 		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
-		return {:tagset => @graph.tagset.for_autocomplete}.to_json
+		return {:autocomplete => autocomplete_data}.to_json
 	end
 
 	def save_file
@@ -451,7 +451,7 @@ class GraphController
 
 	def section_settings_and_graph
 		generate_graph.merge(
-			:tagset => @graph.tagset.for_autocomplete,
+			:autocomplete => autocomplete_data,
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections => set_sections,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
@@ -1109,6 +1109,56 @@ class GraphController
 
 	def file_path(input)
 		(input[0] == '/' ? '' : 'data/') + input + (input.match(/\.json$/) ? '' : '.json')
+	end
+
+	def autocomplete_data
+		commands = {
+			:a => :anno,
+			:n => :anno,
+			:e => :anno,
+			:p => :anno,
+			:g => :anno,
+			:c => :anno,
+			:h => :anno,
+			:ni => :anno,
+			:di => :anno,
+			:do => :anno,
+			:d => nil,
+			:t => nil,
+			:tb => nil,
+			:ta => nil,
+			:undo => nil,
+			:z => nil,
+			:redo => nil,
+			:y => nil,
+			:l => nil,
+			:annotator => nil,
+			:user => nil,
+			:ns => nil,
+			:'s-new' => nil,
+			:'s-rem' => nil,
+			:'s-add' => nil,
+			:'s-det' => nil,
+			:'s-del' => nil,
+			:load => nil,
+			:append => nil,
+			:save => nil,
+			:clear => nil,
+			:s => nil,
+			:image => nil,
+			:export => nil,
+			:import => nil,
+			:config => nil,
+			:tagset => nil,
+			:makros => nil,
+			:metadata => nil,
+			:annotators => nil,
+			:file => nil,
+		}
+		{
+			:anno => @graph.tagset.for_autocomplete,
+			:commands => commands,
+		}
 	end
 
 	def validate_config(data)
