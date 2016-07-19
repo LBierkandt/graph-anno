@@ -18,7 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class AnnoGraphConf
-	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :layers, :combinations
+	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :xlabel, :layers, :combinations
 
 	def initialize(h = {})
 		h ||= {}
@@ -31,6 +31,7 @@ class AnnoGraphConf
 		@found_color = h['found_color'] || default['found_color']
 		@filtered_color = h['filtered_color'] || default['filtered_color']
 		@edge_weight = h['edge_weight'] || default['edge_weight']
+		@xlabel = h['xlabel'] || default['xlabel']
 		if h['layers']
 			@layers = h['layers'].map{|l| AnnoLayer.new(l)}
 		else
@@ -71,6 +72,7 @@ class AnnoGraphConf
 			:found_color => @found_color,
 			:filtered_color => @filtered_color,
 			:edge_weight => @edge_weight,
+			:xlabel => @xlabel,
 			:layers => @layers.map(&:to_h),
 			:combinations => @combinations.map(&:to_h)
 		}
