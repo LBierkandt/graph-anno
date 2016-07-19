@@ -901,13 +901,13 @@ class GraphController
 			''
 		end
 
-		viz_graph = DotGraph.new(
-			:G,
+		graph_options = {
 			:type => :digraph,
 			:rankdir => :TB,
 			:use => :dot,
 			:ranksep => 0.3
-		)
+		}.merge(@graph.conf.xlabel ? {:forcelabels => true, :ranksep => 0.85} : {})
+		viz_graph = DotGraph.new(:G, graph_options)
 		token_graph = viz_graph.subgraph(:rank => :same)
 		layer_graphs = {}
 		@graph.conf.combinations.each do |c|
@@ -1007,13 +1007,15 @@ class GraphController
 		end
 
 		@edges.each_with_index do |edge, i|
+			label = HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal)
 			options = {
 				:fontname => @graph.conf.font,
-				:label => HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal),
 				:color => @graph.conf.default_color,
 				:weight => @graph.conf.edge_weight,
 				:constraint => true
-			}
+			}.merge(
+				@graph.conf.xlabel ? {:xlabel => label} : {:label => label}
+			)
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				options[:color] = @graph.conf.filtered_color
 			else
