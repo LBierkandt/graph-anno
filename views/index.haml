@@ -21,7 +21,7 @@
       #meta.bottom-block
       #cmddiv.bottom-block
         %form{ :action => "/handle_commandline", :method => "post",  :name => "cmd" }
-          %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
+          %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}", :autocomplete => "off" }
           %select{ :name => "layer", :id => "layer" }
             = haml :layer_options, :locals => {:controller => controller}
           %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
