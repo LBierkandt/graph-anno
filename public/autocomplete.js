@@ -16,7 +16,7 @@ var Autocomplete = (function(){
 			before: before[1],
 			word: word,
 			after: after[1],
-			command: command,
+			suggestionSet: data.commands[command],
 		};
 	}
 	var setList = function(words) {
@@ -28,10 +28,11 @@ var Autocomplete = (function(){
 	}
 	var insert = function() {
 		var word = $list.find('.active').text();
-		var segments = parseInput();
-		upToCursor = segments.before + word + ' ';
-		$element.val(upToCursor + segments.after);
+		var input = parseInput();
+		var upToCursor = input.before + word + (input.suggestionSet == 'file' ? '' : ' ');
+		$element.val(upToCursor + input.after);
 		$element[0].setSelectionRange(upToCursor.length, upToCursor.length);
+		if (input.suggestionSet == 'file' && word.match(/\/$/)) inputHandler();
 	}
 	var disable = function() {
 		$list.hide();
@@ -66,12 +67,12 @@ var Autocomplete = (function(){
 		if (noInput) {noInput = false; return;}
 		var input = parseInput();
 		if (input.word.length > 0) {
-			if (data.commands[input.command] == 'file') {
+			if (input.suggestionSet == 'file') {
 				$.getJSON('/get_file_list/', {input: input.word}).done(function(suggestions){
 					showSuggestions(input, suggestions);
 				});
 			} else {
-				var suggestionData = input.command ? data[data.commands[input.command]] : Object.keys(data.commands);
+				var suggestionData = input.suggestionSet ? data[input.suggestionSet] : Object.keys(data.commands);
 				var suggestions = [];
 				for (var i in suggestionData) {
 					if (suggestionData[i].slice(0, input.word.length) == input.word) suggestions.push(suggestionData[i]);

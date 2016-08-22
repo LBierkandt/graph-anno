@@ -435,9 +435,14 @@ class GraphController
 		input = @sinatra.params[:input]
 		absolute = input[0] == '/'
 		file_string = (absolute ? '' : 'data/') + input + '*'
-		file_list = Dir.glob(file_string)
-		file_list.map!{|file| file.sub(/^data\//, '')} unless absolute
-		return file_list.to_json
+		Dir.glob(file_string).map{|file|
+			file.sub!(/^data\//, '') unless absolute
+			if File.directory?(file)
+				file + '/'
+			else
+				file.match(/\.json$/) ? file : nil
+			end
+		}.compact.to_json
 	end
 
 	def documentation(filename)
