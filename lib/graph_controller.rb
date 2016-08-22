@@ -431,6 +431,15 @@ class GraphController
 		true
 	end
 
+	def get_file_list
+		input = @sinatra.params[:input]
+		absolute = input[0] == '/'
+		file_string = (absolute ? '' : 'data/') + input + '*'
+		file_list = Dir.glob(file_string)
+		file_list.map!{|file| file.sub(/^data\//, '')} unless absolute
+		return file_list.to_json
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
@@ -1140,8 +1149,8 @@ class GraphController
 			:'s-add' => nil,
 			:'s-det' => nil,
 			:'s-del' => nil,
-			:load => nil,
-			:append => nil,
+			:load => :file,
+			:append => :file,
 			:save => nil,
 			:clear => nil,
 			:s => nil,

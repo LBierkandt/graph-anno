@@ -16,16 +16,8 @@ var Autocomplete = (function(){
 			before: before[1],
 			word: word,
 			after: after[1],
-			suggestionData: command ? data[data.commands[command]] : Object.keys(data.commands),
+			command: command,
 		};
-	}
-	var setSuggestions = function(input, suggestionData) {
-		var words = [];
-		for (var i in suggestionData) {
-			if (suggestionData[i].slice(0, input.length) == input) words.push(suggestionData[i]);
-		}
-		if (words.length > 0) {setList(words.sort()); return true;}
-		else return false;
 	}
 	var setList = function(words) {
 		$list.html('');
@@ -72,10 +64,29 @@ var Autocomplete = (function(){
 	}
 	var inputHandler = function(e) {
 		if (noInput) {noInput = false; return;}
-		var segments = parseInput();
-		if (segments.word.length > 0 && segments.suggestionData && setSuggestions(segments.word, segments.suggestionData)) {
+		var input = parseInput();
+		if (input.word.length > 0) {
+			if (data.commands[input.command] == 'file') {
+				$.getJSON('/get_file_list/', {input: input.word}).done(function(suggestions){
+					showSuggestions(input, suggestions);
+				});
+			} else {
+				var suggestionData = input.command ? data[data.commands[input.command]] : Object.keys(data.commands);
+				var suggestions = [];
+				for (var i in suggestionData) {
+					if (suggestionData[i].slice(0, input.word.length) == input.word) suggestions.push(suggestionData[i]);
+				}
+				showSuggestions(input, suggestions);
+			}
+		} else {
+			disable();
+		}
+	}
+	var showSuggestions = function(input, suggestions) {
+		if (suggestions.length > 0) {
+			setList(suggestions.sort());
 			if ($list.css('display') == 'none') {
-				var coordinates = getCaretCoordinates(this, this.selectionEnd);
+				var coordinates = getCaretCoordinates($element[0], $element[0].selectionEnd);
 				$list.css({left: coordinates.left}).show();
 				$element.on('keydown.autocomplete', keyBinding);
 			}
