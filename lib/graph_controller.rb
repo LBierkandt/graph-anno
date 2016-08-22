@@ -433,10 +433,9 @@ class GraphController
 
 	def get_file_list
 		input = @sinatra.params[:input]
-		absolute = input[0] == '/'
-		file_string = (absolute ? '' : 'data/') + input + '*'
-		Dir.glob(file_string).map{|file|
-			file.sub!(/^data\//, '') unless absolute
+		relative = input[0] != '/'
+		Dir.glob("#{'data/' if relative}#{input}*").map{|file|
+			file.sub!(/^data\//, '') if relative
 			if File.directory?(file)
 				file + '/'
 			else
