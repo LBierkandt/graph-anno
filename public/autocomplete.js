@@ -21,9 +21,9 @@ var Autocomplete = (function(){
 	}
 	var setList = function(words) {
 		$list.html('');
-		for (var i in words) {
-			$list.append('<div>' + words[i] + '</div>');
-		}
+		words.forEach(function(word){
+			$list.append('<div>' + word + '</div>');
+		});
 		$list.children(':first-child').addClass('active');
 	}
 	var insert = function() {
@@ -73,10 +73,9 @@ var Autocomplete = (function(){
 				});
 			} else {
 				var suggestionData = input.suggestionSet ? data[input.suggestionSet] : Object.keys(data.commands);
-				var suggestions = [];
-				for (var i in suggestionData) {
-					if (suggestionData[i].slice(0, input.word.length) == input.word) suggestions.push(suggestionData[i]);
-				}
+				var suggestions = suggestionData.filter(function(suggestion){
+					return (suggestion.slice(0, input.word.length) == input.word);
+				});
 				showSuggestions(input, suggestions);
 			}
 		} else {
