@@ -1,6 +1,7 @@
 var Autocomplete = (function(){
 	var $element = null;
 	var $list = null;
+	var value = '';
 	var noInput = false;
 	var data = {};
 
@@ -32,7 +33,7 @@ var Autocomplete = (function(){
 		var upToCursor = input.before + word + (input.suggestionSet == 'file' ? '' : ' ');
 		$element.val(upToCursor + input.after);
 		$element[0].setSelectionRange(upToCursor.length, upToCursor.length);
-		if (input.suggestionSet == 'file' && word.match(/\/$/)) inputHandler();
+		if (input.suggestionSet == 'file' && word.match(/\/$/)) handleInput();
 	}
 	var disable = function() {
 		$list.hide();
@@ -63,7 +64,14 @@ var Autocomplete = (function(){
 			actions[e.which](e.which);
 		}
 	}
-	var inputHandler = function(e) {
+	var saveValue = function() {
+		value = $element.val();
+	}
+	var valueUnchanged = function() {
+		return $element.val() == value;
+	}
+	var handleInput = function(e) {
+		if (valueUnchanged()) return;
 		if (noInput) {noInput = false; return;}
 		var input = parseInput();
 		if (input.word.length > 0) {
@@ -99,7 +107,8 @@ var Autocomplete = (function(){
 		init: function(selector) {
 			$element = $(selector);
 			$list = $('<div id="autocomplete"></div>').appendTo($element.parent());
-			$element.on('keyup', inputHandler);
+			$element.on('keydown', saveValue);
+			$element.on('keyup', handleInput);
 		},
 		setData: function(newData) {
 			if (newData) data = newData;
