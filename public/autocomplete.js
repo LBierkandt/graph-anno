@@ -11,13 +11,17 @@ var Autocomplete = (function(){
 		var before = string.slice(0, cursorPosition).match(/^(.*?)(\S*)$/);
 		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
 		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[2] : '';
-		var context = before[1].replace(/^\s+/, '')[before[1].length - 1];
-		var command = context ? string.match(/^\s*(\S+)/)[1] : null;
+		var command = string.match(/^\s*\S+\s/) ? string.match(/^\s*(\S+)/)[1] : null;
+		var suggestionSet = data.commands[command];
+		var sep = suggestionSet == 'file' ? '/' : null;
+		var wordParts = word.match(sep) ? word.match('^(.*' + sep + ')([^'+ sep + ']*)$') : [null, '', word];
 		return {
 			before: before[1],
 			word: word,
+			retain: wordParts[1],
+			replace: wordParts[2],
 			after: after[1],
-			suggestionSet: data.commands[command],
+			suggestionSet: suggestionSet,
 		};
 	}
 	var setList = function(words) {
@@ -30,7 +34,7 @@ var Autocomplete = (function(){
 	var insert = function() {
 		var word = $list.find('.active').text();
 		var input = parseInput();
-		var upToCursor = input.before + word + (input.suggestionSet == 'file' ? '' : ' ');
+		var upToCursor = input.before + input.retain + word + (input.suggestionSet == 'file' ? '' : ' ');
 		$element.val(upToCursor + input.after);
 		$element[0].setSelectionRange(upToCursor.length, upToCursor.length);
 		if (input.suggestionSet == 'file' && word.match(/\/$/)) handleInput();

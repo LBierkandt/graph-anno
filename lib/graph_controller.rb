@@ -437,9 +437,11 @@ class GraphController
 		Dir.glob("#{'data/' if relative}#{input}*").map{|file|
 			file.sub!(/^data\//, '') if relative
 			if File.directory?(file)
-				file + '/'
+				# strip path and add trailing slash
+				file.sub(/^.*\/([^\/]+)$/, '\1/')
 			else
-				file.match(/\.json$/) ? file : nil
+				# exclude non-json and log files, strip path
+				(file.match(/\.json$/) && !file.match(/\.log\.json$/)) ? file.sub(/^(.+\/)?([^\/]+)$/, '\2') : nil
 			end
 		}.compact.to_json
 	end
