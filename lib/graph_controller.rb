@@ -1171,7 +1171,7 @@ class GraphController
 			:file => nil,
 		}
 		{
-			:anno => @graph.tagset.for_autocomplete,
+			:anno => @graph.tagset.for_autocomplete + @graph.layer_makros.merge(@graph.anno_makros).keys,
 			:commands => commands,
 		}
 	end

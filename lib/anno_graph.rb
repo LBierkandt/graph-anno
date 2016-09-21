@@ -936,11 +936,22 @@ class AnnoGraph
 	def create_layer_makros
 		@makros = []
 		@makros_plain = []
-		layer_makros_array = (@conf.layers_and_combinations).map do |layer|
-			attributes_string = [*layer.attr].map{|a| a + ':t'} * ' & '
-			"def #{layer.shortcut} #{attributes_string}"
-		end
-		@makros = parse_query(layer_makros_array * "\n")['def']
+		@makros = parse_query(
+			layer_makros.map{|shortcut, attributes|
+				"def #{shortcut} #{attributes.map{|k, v| "#{k}:#{v}"} * ' & '}"
+			} * "\n"
+		)['def']
+	end
+
+	def layer_makros
+		Hash[
+			(@conf.layers_and_combinations).map do |layer|
+				[
+					layer.shortcut,
+					Hash[[*layer.attr].map{|a| [a, 't']}]
+				]
+			end
+		]
 	end
 end
 
