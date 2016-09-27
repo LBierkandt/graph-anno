@@ -549,14 +549,21 @@ function saveState() {
 		for (var attr in {display: 0, left: 0, top: 0, width: 0, height: 0, 'z-index': 0}) {
 			data[key][attr] = $box.css(attr);
 		}
-		document.cookie = key + '=' + JSON.stringify(data[key]) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
 	});
+	document.cookie = 'traw_windows=' + JSON.stringify(data) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
 	$.post('/save_window_positions', {data: data});
 }
 function restoreState(id, data) {
 	var $element = $('#' + id);
-	if (data == undefined) var attributes = JSON.parse(getCookie(id));
-	else var attributes = data[id];
+	if (data == undefined) {
+		try {
+			var attributes = JSON.parse(getCookie('traw_windows'))[id];
+		} catch(e) {
+			var attributes = {};
+		}
+	} else {
+		var attributes = data[id];
+	}
 	for (var i in attributes) {
 		$element.css(i, attributes[i]);
 	}
