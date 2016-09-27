@@ -1,4 +1,4 @@
-%form#modal-form.pref{ :onsubmit => 'savePref(); return false;', :onreset => 'closeModal(); return false;' }
+%form#modal-form.pref{ :onsubmit => 'sendModal("pref"); return false;', :onreset => 'closeModal(); return false;' }
   %div.modal-form-element
     %table
       %tbody
@@ -10,31 +10,18 @@
           %th{:colspan => 3} Autocompletion
         %tr
           %td
-            %input#autocompletion{:name => 'autocompletion', :type => 'checkbox', :value => true}
+            %input#autocompletion{:name => 'autocompletion', :type => 'checkbox', :value => true, :checked => preferences[:autocompletion]}
           %td{:colspan => 2}
             %label{:for =>'autocompletion'}
               enable command line autocompletion
-        %tr
-          %td
-          %td
-            %input.autocompletion#command{:name => 'command', :type => 'checkbox', :value => true}
-          %td
-            %label{:for =>'command'}
-              commands
-        %tr
-          %td
-          %td
-            %input.autocompletion#file{:name => 'file', :type => 'checkbox', :value => true}
-          %td
-            %label{:for =>'file'}
-              file names
-        %tr
-          %td
-          %td
-            %input.autocompletion#anno{:name => 'anno', :type => 'checkbox', :value => true}
-          %td
-            %label{:for =>'anno'}
-              annotations
+        - {:command => 'commands', :file => 'file names', :anno => 'annotations'}.each do |key, text|
+          %tr
+            %td
+            %td
+              %input.autocompletion{:id => key, :name => key, :type => 'checkbox', :value => true, :checked => preferences[key], :disabled => !preferences[:autocompletion]}
+            %td
+              %label{:for => key}
+                = text
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

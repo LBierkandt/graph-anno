@@ -3,9 +3,6 @@ window.onload = function() {
 
 	for (var id in {help: 0, search: 0, filter: 0, log: 0, sectioning: 0}) restoreState(id);
 
-	// read in preferences
-	preferences = JSON.parse(getCookie('traw_pref'));
-
 	window.onkeydown = taste;
 
 	$('#txtcmd').focus().select();
@@ -199,6 +196,7 @@ function updateView(data) {
 	if (data['meta'] != undefined) $('#meta').html(data['meta']);
 	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
 	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
+	if (data['preferences'] != undefined) window.preferences = data['preferences'];
 	Autocomplete.setData(data.autocomplete);
 	graphdivEinpassen();
 	// get old dimensions
@@ -394,7 +392,6 @@ function removeLayer(element) {
 function openModal(type) {
 	if ($('#modal-background').css('display') != 'block') {
 		$('#modal-content').load('/' + type + '_form', function(){
-			if ($('#modal-form').hasClass('pref')) setPref();
 			$('#modal-background').show();
 			window.onkeydown = configKeys;
 		});
@@ -439,6 +436,7 @@ function sendModal(type) {
 		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
+		if (data['preferences'] != undefined) window.preferences = data['preferences'];
 		if (!data || data.errors != undefined) $('#modal-warning').html(data.errors).show();
 		else {
 			Autocomplete.setData(data.autocomplete);
@@ -450,20 +448,6 @@ function closeModal() {
 	$('#modal-background').hide();
 	$('#txtcmd').focus();
 	window.onkeydown = taste;
-}
-function setPref() {
-	for (var key in preferences) {
-		$('.pref input#' + key).prop('checked', preferences[key]);
-	}
-	disableInputs($('.pref input#autocompletion'), 'input.autocompletion');
-}
-function savePref() {
-	preferences = {};
-	$('.pref input').each(function(){
-		if (id = $(this).attr('id')) preferences[id] = $(this).is(':checked');
-	});
-	document.cookie = 'traw_pref=' + JSON.stringify(preferences) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
-	closeModal();
 }
 function updateLayerOptions() {
 	$('#layer').load('/layer_options', function(){

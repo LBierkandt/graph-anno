@@ -42,6 +42,7 @@ class GraphController
 		@found = nil
 		@filter = {:mode => 'unfilter'}
 		@windows = {}
+		@preferences = File::open('conf/preferences.yml'){|f| YAML::load(f)}
 	end
 
 	def root
@@ -148,6 +149,7 @@ class GraphController
 			@sinatra.haml(
 				:"#{form_name}_form",
 				:locals => {
+					:preferences => @preferences,
 					:graph => @graph
 				}
 			)
@@ -276,6 +278,14 @@ class GraphController
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		return true.to_json
+	end
+
+	def save_pref
+		[:autocompletion, :command, :file, :anno].each do |property|
+			@preferences[property] = !!@sinatra.params[property.to_s]
+		end
+		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
+		return {:preferences => @preferences}.to_json
 	end
 
 	def new_layer(i)
@@ -467,6 +477,7 @@ class GraphController
 	def section_settings_and_graph
 		generate_graph.merge(
 			:autocomplete => autocomplete_data,
+			:preferences => @preferences,
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections => set_sections,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
