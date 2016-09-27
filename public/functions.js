@@ -3,6 +3,9 @@ window.onload = function() {
 
 	for (var id in {help: 0, search: 0, filter: 0, log: 0, sectioning: 0}) restoreState(id);
 
+	// read in preferences
+	preferences = JSON.parse(getCookie('traw_pref'));
+
 	window.onkeydown = taste;
 
 	$('#txtcmd').focus().select();
@@ -37,11 +40,13 @@ window.onload = function() {
 	});
 
 	// behaviour of file settings modal
-	$(document).on('click', '.file #save-log', function(){
-		if ($('.file #save-log').is(':checked'))
-			$('.file #separate-log').removeAttr('disabled');
-		else
-			$('.file #separate-log').attr('disabled', '');
+	$(document).on('change', '.file #save-log', function(){
+		disableInputs($(this), '.file #separate-log');
+	});
+
+	// behaviour of preferences modal
+	$(document).on('change', '.pref #autocompletion', function(){
+		disableInputs($(this), 'input.autocompletion');
 	});
 
 	// autocomplete
@@ -319,6 +324,12 @@ function getCookie(name) {
 	}
 	return null;
 }
+function disableInputs($master, selector) {
+	if ($master.is(':checked'))
+		$(selector).removeAttr('disabled');
+	else
+		$(selector).attr('disabled', '');
+}
 function postRequest(path, params) {
 	$.post(path, params, null, 'json')
 	.done(function(data) {
@@ -383,6 +394,7 @@ function removeLayer(element) {
 function openModal(type) {
 	if ($('#modal-background').css('display') != 'block') {
 		$('#modal-content').load('/' + type + '_form', function(){
+			if ($('#modal-form').hasClass('pref')) setPref();
 			$('#modal-background').show();
 			window.onkeydown = configKeys;
 		});
@@ -438,6 +450,20 @@ function closeModal() {
 	$('#modal-background').hide();
 	$('#txtcmd').focus();
 	window.onkeydown = taste;
+}
+function setPref() {
+	for (var key in preferences) {
+		$('.pref input#' + key).prop('checked', preferences[key]);
+	}
+	disableInputs($('.pref input#autocompletion'), 'input.autocompletion');
+}
+function savePref() {
+	preferences = {};
+	$('.pref input').each(function(){
+		if (id = $(this).attr('id')) preferences[id] = $(this).is(':checked');
+	});
+	document.cookie = 'traw_pref=' + JSON.stringify(preferences) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
+	closeModal();
 }
 function updateLayerOptions() {
 	$('#layer').load('/layer_options', function(){

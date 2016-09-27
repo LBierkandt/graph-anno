@@ -143,7 +143,7 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file'].each do |form_name|
+	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file', 'pref'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
@@ -883,7 +883,7 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file', 'pref'
 			return {:modal => command}
 
 		when ''
@@ -1169,9 +1169,12 @@ class GraphController
 			:metadata => nil,
 			:annotators => nil,
 			:file => nil,
+			:pref => nil,
+			:'' => :command
 		}
 		{
 			:anno => @graph.tagset.for_autocomplete + @graph.layer_makros.merge(@graph.anno_makros).keys,
+			:command => commands.keys,
 			:commands => commands,
 		}
 	end

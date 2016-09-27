@@ -11,7 +11,7 @@ var Autocomplete = (function(){
 		var before = string.slice(0, cursorPosition).match(/^(.*?)(\S*)$/);
 		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
 		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[2] : '';
-		var command = string.match(/^\s*\S+\s/) ? string.match(/^\s*(\S+)/)[1] : null;
+		var command = string.match(/^\s*\S+\s/) ? string.match(/^\s*(\S+)/)[1] : '';
 		var suggestionSet = data.commands[command];
 		var sep = suggestionSet == 'file' ? '/' : null;
 		var wordParts = word.match(sep) ? word.match('^(.*' + sep + ')([^'+ sep + ']*)$') : [null, '', word];
@@ -75,16 +75,17 @@ var Autocomplete = (function(){
 		return $element.val() == value;
 	}
 	var handleInput = function(e) {
+		if (!window.preferences['autocompletion']) return;
 		if (valueUnchanged()) return;
 		if (noInput) {noInput = false; return;}
 		var input = parseInput();
-		if (input.word.length > 0) {
+		if (window.preferences[input.suggestionSet] && input.word.length > 0) {
 			if (input.suggestionSet == 'file') {
 				$.getJSON('/get_file_list/', {input: input.word}).done(function(suggestions){
 					showSuggestions(input, suggestions);
 				});
 			} else {
-				var suggestionData = input.suggestionSet ? data[input.suggestionSet] : Object.keys(data.commands);
+				var suggestionData = data[input.suggestionSet];
 				var suggestions = suggestionData.filter(function(suggestion){
 					return (suggestion.slice(0, input.word.length) == input.word);
 				});
