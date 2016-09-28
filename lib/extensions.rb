@@ -35,8 +35,8 @@ class Array
 		return false
 	end
 
-	def of_type(type)
-		select{|element| element.type == type}
+	def of_type(*types)
+		select{|element| types.include?(element.type)}
 	end
 end
 
