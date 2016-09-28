@@ -99,6 +99,7 @@ class GraphController
 	def change_sentence
 		set_section(@sinatra.params[:sentence])
 		return generate_graph.merge(
+			:autocomplete => autocomplete_data,
 			:sections_changed => true
 		).to_json
 	end
@@ -281,7 +282,7 @@ class GraphController
 	end
 
 	def save_pref
-		[:autocompletion, :command, :file, :anno, :makro].each do |property|
+		[:autocompletion, :command, :file, :anno, :makro, :ref].each do |property|
 			@preferences[property] = !!@sinatra.params[property.to_s]
 		end
 		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
@@ -1142,7 +1143,7 @@ class GraphController
 
 	def autocomplete_data
 		commands = {
-			:a => :anno,
+			:a => :aanno,
 			:n => :anno,
 			:e => :anno,
 			:p => :anno,
@@ -1186,10 +1187,17 @@ class GraphController
 			:pref => nil,
 			:'' => :command
 		}
+		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
+		makros = @preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []
+		layers = @preferences[:makro] ? @graph.layer_makros.keys : []
+		refs   = @preferences[:ref] ? @tokens.map.with_index{|t, i| "t#{i}"} + @nodes.map.with_index{|n, i| "n#{i}"} + @edges.map.with_index{|e, i| "e#{i}"} : []
+		arefs  = @preferences[:ref] ? refs + @graph.sections_hierarchy(@current_sections).map.with_index{|s, i| "s#{i}"} : []
+		cmnds  = @preferences[:command] ? commands.keys : []
 		{
-			:anno => (@preferences[:anno] ? @graph.tagset.for_autocomplete : []) + (@preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []),
-			:layer => @preferences[:makro] ? @graph.layer_makros.keys : [],
-			:command => @preferences[:command] ? commands.keys : [],
+			:anno => tagset + makros + refs,
+			:aanno => tagset + makros + arefs,
+			:layer => layers,
+			:command => cmnds,
 			:commands => commands,
 		}
 	end
