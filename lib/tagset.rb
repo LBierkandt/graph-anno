@@ -63,7 +63,11 @@ class TagsetRule
 
 	def to_autocomplete
 		@values.map do |tok|
-			"#{@key}:#{tok[:str]}" if tok[:cl] == :bstring || tok[:cl] == :qstring
+			if tok[:cl] == :bstring
+				"#{@key}:#{tok[:str]}"
+			elsif tok[:cl] == :qstring
+				"#{@key}:\"#{tok[:str]}\""
+			end
 		end.compact
 	end
 
