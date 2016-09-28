@@ -25,7 +25,7 @@ var Autocomplete = (function(){
 		};
 	}
 	var setList = function(words) {
-		$list.html('');
+		$list.html('').scrollTop(0);
 		words.forEach(function(word){
 			$list.append('<div>' + word + '</div>');
 		});
@@ -54,6 +54,22 @@ var Autocomplete = (function(){
 		}
 		$list.children().removeClass('active');
 		newActive.addClass('active');
+		scrollIntoView('.active');
+	}
+	var scrollIntoView = function () {
+		var $element = $('#autocomplete .active');
+		if ($element.length == 0) return;
+		var $container = $('#autocomplete');
+		var containerViewTop = $container.scrollTop();
+		var containerViewHeight = $container[0].clientHeight;
+		var containerViewBottom = containerViewTop + containerViewHeight;
+		var elementTop = Math.ceil($element.position().top + containerViewTop);
+		var elementBottom = Math.ceil(elementTop + $element.height());
+		if (elementTop < containerViewTop)
+			$container.scrollTop($element.position().top);
+		else if (elementBottom > containerViewBottom) {
+			$container.scrollTop(elementTop + $element.height() - containerViewHeight);
+		}
 	}
 	var keyBinding = function(e) {
 		var actions = {

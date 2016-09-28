@@ -88,7 +88,9 @@ table {
   position: absolute;
   bottom: 25px;
   background-color: #eeeeee;
-  padding: 4px; }
+  padding: 4px;
+  max-height: 204px;
+  overflow: hidden; }
   #autocomplete div {
     padding: 0 2px; }
     #autocomplete div.active {
