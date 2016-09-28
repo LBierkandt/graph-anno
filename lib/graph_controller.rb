@@ -653,8 +653,14 @@ class GraphController
 			end
 			undefined_references?(parameters[:elements])
 
-		when 'l' # set layer
+		when 'l' # set current layer and layer of elements
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
+			annotations = Hash[@graph.conf.layers.map{|l| [l.attr, nil]}].merge(properties)
+			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |e|
+				e.annotate(annotations, log_step)
+			end
+			undefined_references?(parameters[:elements])
 
 		when 'p', 'g' # group under new parent node
 			sentence_set?
