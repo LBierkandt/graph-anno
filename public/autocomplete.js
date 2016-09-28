@@ -91,12 +91,12 @@ var Autocomplete = (function(){
 		return $element.val() == value;
 	}
 	var handleInput = function(e) {
-		if (!window.preferences['autocompletion']) return;
+		if (!window.preferences.autocompletion) return;
 		if (valueUnchanged()) return;
 		if (noInput) {noInput = false; return;}
 		var input = parseInput();
-		if (window.preferences[input.suggestionSet] && input.word.length > 0) {
-			if (input.suggestionSet == 'file') {
+		if (input.word.length > 0) {
+			if (input.suggestionSet == 'file' && window.preferences.file) {
 				$.getJSON('/get_file_list/', {input: input.word}).done(function(suggestions){
 					showSuggestions(input, suggestions);
 				});

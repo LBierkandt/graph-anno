@@ -281,11 +281,14 @@ class GraphController
 	end
 
 	def save_pref
-		[:autocompletion, :command, :file, :anno].each do |property|
+		[:autocompletion, :command, :file, :anno, :makro].each do |property|
 			@preferences[property] = !!@sinatra.params[property.to_s]
 		end
 		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
-		return {:preferences => @preferences}.to_json
+		return {
+			:preferences => @preferences,
+			:autocomplete => autocomplete_data,
+		}.to_json
 	end
 
 	def new_layer(i)
@@ -1157,7 +1160,7 @@ class GraphController
 			:z => nil,
 			:redo => nil,
 			:y => nil,
-			:l => nil,
+			:l => :layer,
 			:annotator => nil,
 			:user => nil,
 			:ns => nil,
@@ -1184,8 +1187,9 @@ class GraphController
 			:'' => :command
 		}
 		{
-			:anno => @graph.tagset.for_autocomplete + @graph.layer_makros.merge(@graph.anno_makros).keys,
-			:command => commands.keys,
+			:anno => (@preferences[:anno] ? @graph.tagset.for_autocomplete : []) + (@preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []),
+			:layer => @preferences[:makro] ? @graph.layer_makros.keys : [],
+			:command => @preferences[:command] ? commands.keys : [],
 			:commands => commands,
 		}
 	end
