@@ -755,7 +755,7 @@ When you additionally enter attributes with keys present in the makro, these ove
 
 Additionally, you can specify the layer to which the new node is to belong (if you don’t, it will belong to the layer set in the layer dropdown field).
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
-The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations (like the command \code{l}, see \ref{befehl-l}).
+The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations.
 
 Per default, the new node will belong to the first of the current sentences.
 You may, however, provide in your command a node to whose sentence the new node should belong instead.
@@ -837,6 +837,24 @@ edge_sequence          =   edge_reference ".." edge_reference
 \end{lstlisting}
 
 
+\subsubsection{Set layer: \texttt{l}}\label{befehl-l}
+
+The command \code{l} sets the layer of the given elements and switches to the specified layer for the following operations (as the other commands that may use layer shortcuts).
+As arguments, specify the elements to be affected and the layer shortcut as defined in the layer configuration (cf. \ref{ebenenkonfiguration}).
+The difference to the use of the \code{a} command with layer shortcuts is that \code{a} \textit{adds} the specified layer, whereas \code{l} \textit{changes} the layer (i.e., it removes the attributes of the element’s old layer).
+
+You may also use the command as a simple layer switch (as an alternative to the select field) by giving only the layer shortcut without any elements.
+
+\paragraph*{Command \code{l} in modified BNF:}
+~
+\begin{lstlisting}
+command_l     =   "l " l_parameters
+l_parameters  =   l_parameters " " l_parameters
+                  element_reference
+                  layer_shortcut
+\end{lstlisting}
+
+
 \subsubsection{Delete elements: \texttt{d}}
 
 Elements are deleted with the command \code{d}, followed by the elements to be deleted.
@@ -867,8 +885,7 @@ command_g           =   ("g " | "p ") g_parameters
 g_parameters        =   g_parameters " " g_parameters
                         node_reference
                         node_sequence
-                        attribute
-                        layer_shortcut
+                        attributes
 \end{lstlisting}
 
 
@@ -883,7 +900,7 @@ command_h           =   ("h " | "c ") h_parameters
 h_parameters        =   h_parameters " " h_parameters
                         node_reference
                         node_sequence
-                        attribute
+                        attributes
                         layer_shortcut
 \end{lstlisting}
 
@@ -903,7 +920,6 @@ command_ni          =   "ni " ni_parameters
 ni_parameters       =   ni_parameters " " ni_parameters
                         edge_reference
                         attributes
-                        layer_shortcut
 \end{lstlisting}
 
 
@@ -954,19 +970,6 @@ Undoing and redoing can be used multiple times; but if you issue an annotation c
 
 You can look at the change history in the log window that is toggled with the F8 key (cf. Section \ref{window-log}).
 In this window you can also directly jump to points in the history with a click.
-
-
-\subsubsection{Set layer: \texttt{l}}\label{befehl-l}
-
-As an alternative to the select field, you can set the layer used for the subsequently created elements with the command \code{l}.
-For the layers you use the shortcuts defined in the layer configuration (cf. \ref{ebenenkonfiguration}).
-
-\paragraph*{Command \code{l} in modified BNF:}
-~
-\begin{lstlisting}
-command_l   =   "l " layer_shortcut
-\end{lstlisting}
-
 
 
 \subsubsection{Log in annotator: \texttt{annotator} (or \texttt{user})}
