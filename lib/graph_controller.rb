@@ -632,11 +632,11 @@ class GraphController
 			layer = set_new_layer(parameters[:words], properties)
 			elements = extract_elements(parameters[:elements])
 			# sentence and section nodes may be annotated with arbitrary key-value pairs
-			elements.reject{|e| ['a', 't'].include?(e.type)}.each do |element|
+			elements.of_type('s', 'p').each do |element|
 				element.annotate(parameters[:attributes], log_step)
 			end
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
-			if !(anno_elements = elements.select{|e| ['a', 't'].include?(e.type)}).empty?
+			unless (anno_elements = elements.of_type('a', 't')).empty?
 				annotations = properties.merge(extract_attributes(parameters))
 				anno_elements.each{|e| e.annotate(annotations, log_step)}
 			end
@@ -653,8 +653,14 @@ class GraphController
 			end
 			undefined_references?(parameters[:elements])
 
-		when 'l' # set layer
+		when 'l' # set current layer and layer of elements
+			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words], properties)
+			annotations = Hash[@graph.conf.layers.map{|l| [l.attr, nil]}].merge(properties)
+			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |e|
+				e.annotate(annotations, log_step)
+			end
+			undefined_references?(parameters[:elements])
 
 		when 'p', 'g' # group under new parent node
 			sentence_set?
