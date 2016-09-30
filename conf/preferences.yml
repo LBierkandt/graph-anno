@@ -2,6 +2,7 @@
 :autocompletion: false
 :command: false
 :file: false
+:sect: false
 :anno: false
 :makro: false
 :ref: false

@@ -282,7 +282,7 @@ class GraphController
 	end
 
 	def save_pref
-		[:autocompletion, :command, :file, :anno, :makro, :ref].each do |property|
+		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref].each do |property|
 			@preferences[property] = !!@sinatra.params[property.to_s]
 		end
 		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
@@ -1171,16 +1171,16 @@ class GraphController
 			:annotator => nil,
 			:user => nil,
 			:ns => nil,
-			:'s-new' => nil,
-			:'s-rem' => nil,
-			:'s-add' => nil,
-			:'s-det' => nil,
-			:'s-del' => nil,
+			:'s-new' => :sect,
+			:'s-rem' => :sect,
+			:'s-add' => :sect,
+			:'s-det' => :sect,
+			:'s-del' => :sect,
 			:load => :file,
 			:append => :file,
 			:save => nil,
 			:clear => nil,
-			:s => nil,
+			:s => :sect,
 			:image => nil,
 			:export => nil,
 			:import => nil,
@@ -1198,11 +1198,13 @@ class GraphController
 		layers = @preferences[:makro] ? @graph.layer_makros.keys : []
 		refs   = @preferences[:ref] ? @tokens.map.with_index{|t, i| "t#{i}"} + @nodes.map.with_index{|n, i| "n#{i}"} + @edges.map.with_index{|e, i| "e#{i}"} : []
 		arefs  = @preferences[:ref] ? refs + @graph.sections_hierarchy(@current_sections).map.with_index{|s, i| "s#{i}"} : []
+		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
 		cmnds  = @preferences[:command] ? commands.keys : []
 		{
 			:anno => tagset + makros + refs,
 			:aanno => tagset + makros + arefs,
 			:layer => layers,
+			:sect => sects,
 			:command => cmnds,
 			:commands => commands,
 		}
