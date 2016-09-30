@@ -1159,7 +1159,7 @@ class GraphController
 			:ni => :anno,
 			:di => :anno,
 			:do => :anno,
-			:d => nil,
+			:d => :ref,
 			:t => nil,
 			:tb => nil,
 			:ta => nil,
@@ -1203,6 +1203,7 @@ class GraphController
 		{
 			:anno => tagset + makros + refs,
 			:aanno => tagset + makros + arefs,
+			:ref => refs,
 			:layer => layers,
 			:sect => sects,
 			:command => cmnds,
