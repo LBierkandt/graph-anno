@@ -360,6 +360,11 @@ Most commands are executed immediately; some (like, e.g., the \hyperref[konfigur
 For issuing a command, you just type it, followed by its arguments, into the command line field and press the enter key.
 For a complete list of the available commands see Section \ref{commandline-commands}.
 
+There is also an autocomplete feature for the command line, that may speed up typing your commands.
+This feature can be activated and customized in the preferences (see \ref{preferences}).
+It suggests commands and, depending on the current command, file names, sentence names, annotations, makros etc.
+A list of suggestions appears as soon as you have typed the first letter; then you choose the desired item with the up/down keys and select it with the tab key (attention: the enter key does not work for this, but submits the command line); you can close the suggestion list with the esc key.
+
 
 \subsection{Windows}\label{windows}
 
@@ -564,6 +569,13 @@ The command \code{file} opens a window, in which you can specify the settings fo
 			(Otherwise, the positions are only saved in the browser.)
 \end{itemize}
 
+
+\subsection{Program preferences}\label{preferences}
+
+For settings that aren’t related to a corpus but to the program, there is the preferences window, opened by the command \code{pref}.
+Currently, these settings comprise only the command line autocomplete feature (cf. \ref{commandline}).
+You may activate the autocomplete feature and then choose which kinds of entities (commands, file names, sentence names, annotations, makros etc.) you want to get suggestions for.
+Note that the autocomplete feature is useless if you don’t choose things that should be suggested.
 
 
 \section{Command line commands}\label{commandline-commands}

@@ -7,13 +7,13 @@
     %table
       %tbody
         %tr
-          %th{:colspan => 3} Autocompletion
+          %th{:colspan => 3} Autocomplete
         %tr
           %td
             %input#autocompletion{:name => 'autocompletion', :type => 'checkbox', :value => true, :checked => preferences[:autocompletion]}
           %td{:colspan => 2}
             %label{:for =>'autocompletion'}
-              enable command line autocompletion
+              enable command line autocomplete
         - {:command => 'commands', :file => 'file names', :sect => 'sentence and section names', :anno => 'annotations from tagset', :makro => 'layer shortcuts and annotation makros', :ref => 'element references'}.each do |key, text|
           %tr
             %td
