@@ -1205,7 +1205,7 @@ class GraphController
 			:anno => tagset + makros + refs,
 			:aanno => tagset + makros + arefs,
 			:ref => refs,
-			:layer => layers,
+			:layer => layers + refs,
 			:sect => sects,
 			:command => cmnds,
 			:commands => commands,
