@@ -704,7 +704,7 @@ class AnnoGraph
 	# @param sections [Array] a list of section nodes of the same level
 	# @return [Array] the ancestor and descendant sections of the given sections, grouped by level, starting with sentence level
 	def sections_hierarchy(sections)
-		return nil unless sections.map{|n| n.sectioning_level}.uniq.length == 1
+		return nil unless sections && sections.map{|n| n.sectioning_level}.uniq.length == 1
 		hierarchy = [sections]
 		# get ancestors
 		current = sections

@@ -1197,7 +1197,8 @@ class GraphController
 		makros = @preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []
 		layers = @preferences[:makro] ? @graph.layer_makros.keys : []
 		refs   = @preferences[:ref] ? @tokens.map.with_index{|t, i| "t#{i}"} + @nodes.map.with_index{|n, i| "n#{i}"} + @edges.map.with_index{|e, i| "e#{i}"} : []
-		arefs  = @preferences[:ref] ? refs + @graph.sections_hierarchy(@current_sections).map.with_index{|s, i| "s#{i}"} : []
+		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
+		arefs  = @preferences[:ref] ? refs + srefs : []
 		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
 		cmnds  = @preferences[:command] ? commands.keys : []
 		{
