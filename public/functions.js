@@ -91,6 +91,7 @@ function taste(e) {
 			39: 'next',
 			36: 'first',
 			35: 'last',
+			78: 'nextMatch',
 		};
 		var mapping2 = {
 			38: 'up',
