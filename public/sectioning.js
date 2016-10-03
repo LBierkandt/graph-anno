@@ -102,6 +102,18 @@ var Sectioning = (function () {
 		$(window).off('keydown', keyBinding);
 		$('.section').removeClass('chosen');
 	}
+	var sectionWithMatch = function (originalLevel, sentenceIndex) {
+		for (var level = originalLevel; level > 0; level--) {
+			for (var i in list[level]) {
+				if (list[level][i].first <= sentenceIndex && list[level][i].last >= sentenceIndex) {
+					currentLevel = level;
+					return i;
+				}
+			}
+		}
+		currentLevel = 0;
+		return sentenceIndex;
+	}
 
 	$(document).on('dblclick', '#sectioning .section', dblclick);
 	$(document).on('click', '#sectioning .section', click);
@@ -195,23 +207,27 @@ var Sectioning = (function () {
 					break;
 				case 'prevMatch':
 					newSentenceIndex = list[currentLevel][currentIndizes[0]].first;
-					currentLevel = 0;
+					// find previous sentence with match
 					for (var i = newSentenceIndex - 1; i >= newSentenceIndex - list[0].length ; i--) {
 						if (list[0].slice(i)[0].found) {
-							newIndizes = [list[0].slice(i)[0].first];
+							newSentenceIndex = list[0].slice(i)[0].first;
 							break;
 						}
 					}
+					// find section on current level with match
+					newIndizes = [sectionWithMatch(currentLevel, newSentenceIndex)];
 					break;
 				case 'nextMatch':
 					newSentenceIndex = list[currentLevel][currentIndizes[0]].last;
-					currentLevel = 0;
+					// find next sentence with match
 					for (var i = newSentenceIndex - list[0].length + 1; i <= newSentenceIndex; i++) {
 						if (list[0].slice(i)[0].found) {
-							newIndizes = [list[0].slice(i)[0].first];
+							newSentenceIndex = list[0].slice(i)[0].first;
 							break;
 						}
 					}
+					// find section on current level with match
+					newIndizes = [sectionWithMatch(currentLevel, newSentenceIndex)];
 					break;
 			}
 			if (newIndizes != currentIndizes) {
