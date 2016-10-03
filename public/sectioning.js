@@ -193,6 +193,16 @@ var Sectioning = (function () {
 					if (offset > 0)
 						newIndizes = $.map(currentIndizes, function(i){return i + offset;});
 					break;
+				case 'prevMatch':
+					newSentenceIndex = list[currentLevel][currentIndizes[0]].first;
+					currentLevel = 0;
+					for (var i = newSentenceIndex - 1; i >= newSentenceIndex - list[0].length ; i--) {
+						if (list[0].slice(i)[0].found) {
+							newIndizes = [list[0].slice(i)[0].first];
+							break;
+						}
+					}
+					break;
 				case 'nextMatch':
 					newSentenceIndex = list[currentLevel][currentIndizes[0]].last;
 					currentLevel = 0;
