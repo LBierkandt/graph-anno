@@ -1098,6 +1098,8 @@ class GraphController
 		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
 			@section_list[s][:found] = true
 		end
+		# set sections to found if dominated sentences contain matches
+		@section_list.each{|id, s| s[:found] = true if @graph.nodes[s[:id]].sentence_nodes.any?{|n| @section_list[n.id][:found]}}
 	end
 
 	def set_sections(h = {})
