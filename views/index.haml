@@ -20,11 +20,11 @@
       #textline.bottom-block
       #meta.bottom-block
       #cmddiv.bottom-block
-        %form{ :action => "/handle_commandline", :method => "post",  :name => "cmd" }
+        %form{ :name => "cmd" }
           %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}", :autocomplete => "off" }
           %select{ :name => "layer", :id => "layer" }
             = haml :layer_options, :locals => {:controller => controller}
-          %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
+          %input{ :type => "submit", :value => "Send" }
         %div
           #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
           #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end

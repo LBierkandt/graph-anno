@@ -5,6 +5,15 @@ window.onload = function() {
 
 	window.onkeydown = taste;
 
+	// commandline
+	$('#txtcmd').closest('form').on('submit', function(e){
+		e.preventDefault();
+		Autocomplete.disable();
+		sendCmd();
+	});
+	$('#txtcmd').on('blur', function(e){
+		Autocomplete.disable();
+	})
 	$('#txtcmd').focus().select();
 
 	// draggables

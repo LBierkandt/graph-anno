@@ -134,5 +134,6 @@ var Autocomplete = (function(){
 		setData: function(newData) {
 			if (newData) data = newData;
 		},
+		disable: disable,
 	}
 })();
