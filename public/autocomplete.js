@@ -8,9 +8,9 @@ var Autocomplete = (function(){
 	var parseInput = function() {
 		var cursorPosition = $element[0].selectionDirection == 'backward' ? $element[0].selectionStart : $element[0].selectionEnd;
 		var string = $element.val();
-		var before = string.slice(0, cursorPosition).match(/^(.*?)(\S*)$/);
+		var before = string.slice(0, cursorPosition).match(/^(.*(\.\.|\s|^))(\S*)$/);
 		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
-		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[2] : '';
+		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[3] : '';
 		var command = string.match(/^\s*\S+\s/) ? string.match(/^\s*(\S+)/)[1] : '';
 		var suggestionSet = data.commands[command];
 		var sep = suggestionSet == 'file' ? '/' : null;
@@ -34,7 +34,7 @@ var Autocomplete = (function(){
 	var insert = function() {
 		var word = $list.find('.active').text();
 		var input = parseInput();
-		var upToCursor = input.before + input.retain + word + (input.suggestionSet == 'file' ? '' : ' ');
+		var upToCursor = input.before + input.retain + word;
 		$element.val(upToCursor + input.after);
 		$element[0].setSelectionRange(upToCursor.length, upToCursor.length);
 		if (input.suggestionSet == 'file' && word.match(/\/$/)) handleInput();
