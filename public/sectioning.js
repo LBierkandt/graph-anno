@@ -102,6 +102,26 @@ var Sectioning = (function () {
 		$(window).off('keydown', keyBinding);
 		$('.section').removeClass('chosen');
 	}
+	var sentenceWithMatch = function (dir) {
+		newIndex = list[currentLevel][currentIndizes[0]][dir == 1 ? 'last' : 'first'];
+		negIndex = newIndex - list[0].length;
+		for (var i = (dir == 1 ? negIndex : newIndex) + dir; i != (dir == 1 ? newIndex : negIndex); i += dir) {
+			if (list[0].slice(i)[0].found) return list[0].slice(i)[0].first;
+		}
+		return newIndex;
+	}
+	var sectionWithMatch = function (originalLevel, sentenceIndex) {
+		for (var level = originalLevel; level > 0; level--) {
+			for (var i in list[level]) {
+				if (list[level][i].first <= sentenceIndex && list[level][i].last >= sentenceIndex) {
+					currentLevel = level;
+					return i;
+				}
+			}
+		}
+		currentLevel = 0;
+		return sentenceIndex;
+	}
 
 	$(document).on('dblclick', '#sectioning .section', dblclick);
 	$(document).on('click', '#sectioning .section', click);
@@ -193,8 +213,14 @@ var Sectioning = (function () {
 					if (offset > 0)
 						newIndizes = $.map(currentIndizes, function(i){return i + offset;});
 					break;
+				case 'prevMatch':
+					newIndizes = [sectionWithMatch(currentLevel, sentenceWithMatch(-1))];
+					break;
+				case 'nextMatch':
+					newIndizes = [sectionWithMatch(currentLevel, sentenceWithMatch(+1))];
+					break;
 			}
-			if (newIndizes != currentIndizes) {
+			if (JSON.stringify(newIndizes) != JSON.stringify(currentIndizes)) {
 				Sectioning.setCurrentIndizes(currentLevel, newIndizes);
 				Sectioning.changeSentence()
 			}

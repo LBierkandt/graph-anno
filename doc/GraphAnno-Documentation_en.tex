@@ -360,11 +360,6 @@ Most commands are executed immediately; some (like, e.g., the \hyperref[konfigur
 For issuing a command, you just type it, followed by its arguments, into the command line field and press the enter key.
 For a complete list of the available commands see Section \ref{commandline-commands}.
 
-There is also an autocomplete feature for the command line, that may speed up typing your commands.
-This feature can be activated and customized in the preferences (see \ref{preferences}).
-It suggests commands and, depending on the current command, file names, sentence names, annotations, makros etc.
-A list of suggestions appears as soon as you have typed the first letter; then you choose the desired item with the up/down keys and select it with the tab key (attention: the enter key does not work for this, but submits the command line); you can close the suggestion list with the esc key.
-
 
 \subsection{Windows}\label{windows}
 
@@ -411,7 +406,8 @@ As soon as you have entered your query, you can start the desired action (search
 
 When you want to search for a graph fragment, enter your search query in the input area and click the \textit{search} button.
 The search will then be executed and, as soon as it is finished, the number of matches will be displayed on the bottom of the search window.
-The matching fragments are highlighted in the graph view (default is red, but the color can be customized, see \ref{ebenenkonfiguration}), and in the navigation window all sentences that contain matches are highlighted as well.
+The matching fragments are highlighted in the graph view (default is red, but the color can be customized, see \ref{ebenenkonfiguration}), and in the navigation window all sentences and sections that contain matches are highlighted as well.
+In order to jump to the next or previous sentence/section with a match, you may use the shortcuts alt + n or alt + p, respectively. 
 If your query is not correct or if another error occurs during the search, an error message is displayed on the bottom of the search window.
 If you don’t want the matches to be highlighted anymore, just click the \textit{clear search} button (this will also internally clear the search results, so you have to search again before annotation – see the next paragraph).
 
@@ -450,6 +446,7 @@ The following is a table of the available shortcuts:
 		\midrule
 			Alt + ←/→ & previous/next sentence or section\\
 			Alt + Home/End & first/last sentence or section \\
+			Alt + p/n & previous/next sentence or section with match\\
 			Alt + ↑/↓ & jump into navigation window\\
 		\midrule
 		Graph & \\
@@ -569,13 +566,6 @@ The command \code{file} opens a window, in which you can specify the settings fo
 			(Otherwise, the positions are only saved in the browser.)
 \end{itemize}
 
-
-\subsection{Program preferences}\label{preferences}
-
-For settings that aren’t related to a corpus but to the program, there is the preferences window, opened by the command \code{pref}.
-Currently, these settings comprise only the command line autocomplete feature (cf. \ref{commandline}).
-You may activate the autocomplete feature and then choose which kinds of entities (commands, file names, sentence names, annotations, makros etc.) you want to get suggestions for.
-Note that the autocomplete feature is useless if you don’t choose things that should be suggested.
 
 
 \section{Command line commands}\label{commandline-commands}
