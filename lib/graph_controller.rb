@@ -282,7 +282,7 @@ class GraphController
 	end
 
 	def save_pref
-		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref].each do |property|
+		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref, :annotator].each do |property|
 			@preferences[property] = !!@sinatra.params[property.to_s]
 		end
 		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
@@ -1168,8 +1168,8 @@ class GraphController
 			:redo => nil,
 			:y => nil,
 			:l => :layer,
-			:annotator => nil,
-			:user => nil,
+			:annotator => :annotator,
+			:user => :annotator,
 			:ns => nil,
 			:'s-new' => :sect,
 			:'s-rem' => :sect,
@@ -1200,6 +1200,7 @@ class GraphController
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
 		arefs  = @preferences[:ref] ? refs + srefs : []
 		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
+		antors = @graph.annotators.map(&:name)
 		cmnds  = @preferences[:command] ? commands.keys : []
 		{
 			:anno => tagset + makros + refs,
@@ -1207,6 +1208,7 @@ class GraphController
 			:ref => refs,
 			:layer => layers + refs,
 			:sect => sects,
+			:annotator => antors,
 			:command => cmnds,
 			:commands => commands,
 		}
