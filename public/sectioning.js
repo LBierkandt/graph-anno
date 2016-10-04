@@ -220,7 +220,7 @@ var Sectioning = (function () {
 					newIndizes = [sectionWithMatch(currentLevel, sentenceWithMatch(+1))];
 					break;
 			}
-			if (newIndizes != currentIndizes) {
+			if (JSON.stringify(newIndizes) != JSON.stringify(currentIndizes)) {
 				Sectioning.setCurrentIndizes(currentLevel, newIndizes);
 				Sectioning.changeSentence()
 			}
