@@ -449,10 +449,10 @@ class GraphController
 		input = @sinatra.params[:input]
 		relative = input[0] != '/'
 		Dir.glob("#{'data/' if relative}#{input}*").map{|file|
-			file.sub!(/^data\//, '') if relative
 			if File.directory?(file)
+				file.sub!(/^data\//, '') if relative
 				# strip path and add trailing slash
-				file.sub(/^.*\/([^\/]+)$/, '\1/')
+				file.sub(/^.*\/([^\/]+)$/, '\1') + '/'
 			else
 				# exclude non-json and log files, strip path
 				(file.match(/\.json$/) && !file.match(/\.log\.json$/)) ? file.sub(/^(.+\/)?([^\/]+)$/, '\2') : nil
