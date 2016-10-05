@@ -8,11 +8,11 @@ var Autocomplete = (function(){
 	var parseInput = function() {
 		var cursorPosition = $element[0].selectionDirection == 'backward' ? $element[0].selectionStart : $element[0].selectionEnd;
 		var string = $element.val();
-		var before = string.slice(0, cursorPosition).match(/^(.*(\.\.|\s|^))(\S*)$/);
-		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
-		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[3] : '';
 		var command = string.match(/^\s*\S+\s/) ? string.match(/^\s*(\S+)/)[1] : '';
 		var suggestionSet = data.commands[command];
+		var before = string.slice(0, cursorPosition).match(suggestionSet == 'file' ? /^(.*(\s|^))(\S*)$/ : /^(.*(\.\.|\s|^))(\S*)$/);
+		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
+		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[3] : '';
 		var sep = suggestionSet == 'file' ? '/' : null;
 		var wordParts = word.match(sep) ? word.match('^(.*' + sep + ')([^'+ sep + ']*)$') : [null, '', word];
 		return {
