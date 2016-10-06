@@ -146,14 +146,14 @@ class AnnoGraph
 						else
 							k.type = 'a'
 						end
+						# populate node_index
+						@node_index[k.type][k.id] = k
 					else
 						k.type = 'o' if k.type == 't'
 						k.type = 'a' if k.type == 'g'
 						k.attr.public.delete('sentence')
 					end
 					k.attr.public.delete('tokenid')
-					# populate node_index
-					@node_index[k.type][k.id] = k
 				end
 			end
 			if version < 2
