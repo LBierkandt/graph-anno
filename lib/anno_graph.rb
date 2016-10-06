@@ -117,6 +117,7 @@ class AnnoGraph
 		if version < 7
 			puts 'Updating graph format ...'
 			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
+			@node_index.delete(nil)
 			(@nodes.values + @edges.values).each do |k|
 				if version < 2
 					if k.attr.public['typ']
@@ -151,6 +152,8 @@ class AnnoGraph
 						k.attr.public.delete('sentence')
 					end
 					k.attr.public.delete('tokenid')
+					# populate node_index
+					@node_index[k.type][k.id] = k
 				end
 			end
 			if version < 2
