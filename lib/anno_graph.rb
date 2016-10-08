@@ -92,11 +92,12 @@ class AnnoGraph
 			data['nodes'] = data.delete('knoten')
 			data['edges'] = data.delete('kanten')
 		end
-		(data['nodes'] + data['edges']).each do |el|
-			el.replace(el.symbolize_keys)
-			el[:id] = el[:ID] if version < 7
-			# IDs as integer
-			if version < 9
+		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys}
+		data['edges'] = data['edges'].map{|e| e.symbolize_keys}
+		if version < 9
+			(data['nodes'] + data['edges']).each do |el|
+				el[:id] = el[:ID] if version < 7
+				# IDs as integer
 				el[:id] = el[:id].to_i
 				el[:start] = el[:start].to_i if el[:start].is_a?(String)
 				el[:end] = el[:end].to_i if el[:end].is_a?(String)
