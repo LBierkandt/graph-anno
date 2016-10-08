@@ -86,12 +86,13 @@ class GraphController
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
 			@cmd_error_messages << e.message
+			value = {}
 		end
-		return value.to_json if value.is_a?(Hash)
-		return section_settings_and_graph.merge(
+		return value.to_json if value[:modal]
+		return section_settings_and_graph(value[:reload_sections]).merge(
 			:graph_file => @graph_file,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
-			:command => value,
+			:command => value[:command],
 			:windows => @windows,
 			:messages => @cmd_error_messages
 		).to_json
@@ -451,11 +452,12 @@ class GraphController
 		@log = Log.new(@graph)
 	end
 
-	def section_settings_and_graph
+	def section_settings_and_graph(reload_sections = true)
 		generate_graph.merge(
 			:current_sections => @current_sections ? current_section_ids : nil,
-			:sections => set_sections,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
+		).merge(
+			reload_sections ? {:sections => set_sections} : {}
 		)
 	end
 
@@ -592,6 +594,7 @@ class GraphController
 		command, foo, string = @command_line.strip.partition(' ')
 		parameters = string.parse_parameters
 		properties = @graph.conf.layer_attributes[layer] || {}
+		reload_sections = false
 
 		case command
 		when 'n' # new node
@@ -711,6 +714,7 @@ class GraphController
 			current_sentence = @current_sections ? @current_sections.last.sentence_nodes.last : nil
 			new_nodes = @graph.insert_sentences(current_sentence, parameters[:words], log_step)
 			@current_sections = [new_nodes.first]
+			reload_sections = true
 
 		when 't' # build tokens and append them
 			sentence_set?
@@ -734,10 +738,12 @@ class GraphController
 		when 'undo', 'z'
 			@log.undo
 			reset_current_sections
+			reload_sections = true
 
 		when 'redo', 'y'
 			@log.redo
 			reset_current_sections
+			reload_sections = true
 
 		when 's' # change sentence
 			@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
@@ -751,6 +757,7 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			new_section = @graph.build_section(section_nodes, log_step)
 			new_section.annotate(parameters[:attributes], log_step)
+			reload_sections = true
 
 		when 's-rem' # remove section nodes without deleting descendant nodes
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
@@ -759,6 +766,7 @@ class GraphController
 			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
 			begin
 				@graph.remove_sections(sections, log_step)
+				reload_sections = true
 			rescue StandardError => e
 				@current_sections = old_current_sections
 				raise e
@@ -769,11 +777,13 @@ class GraphController
 			sections = chosen_sections(parameters[:words][1..-1], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
 			@graph.add_sections(parent, sections, log_step)
+			reload_sections = true
 
 		when 's-det' # detach section(s) from existing section
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
 			@graph.detach_sections(sections)
+			reload_sections = true
 
 		when 's-del', 'del' # delete section(s)
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
@@ -790,6 +800,7 @@ class GraphController
 			# delete
 			begin
 				@graph.delete_sections(sections, log_step)
+				reload_sections = true
 			rescue StandardError => e
 				@current_sections = old_current_sections
 				raise e
@@ -812,12 +823,14 @@ class GraphController
 			sentence_nodes = @graph.sentence_nodes
 			@current_sections = [sentence_nodes.select{|n| n.name == @current_sections.first.name}[0]] if @current_sections
 			@current_sections = [sentence_nodes.first] unless @current_sections
+			reload_sections = true
 
 		when 'append', 'add' # load corpus file and append it to the workspace
 			addgraph = AnnoGraph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
 			@found = nil
+			reload_sections = true
 
 		when 'save' # save workspace to corpus file
 			raise 'Please specify a file name!' if @graph_file == '' and !parameters[:words][0]
@@ -834,6 +847,7 @@ class GraphController
 
 		when 'clear' # clear workspace
 			clear_workspace
+			reload_sections = true
 
 		when 'export' # export corpus in other format or export graph configurations
 			Dir.mkdir('exports') unless File.exist?('exports')
@@ -882,7 +896,7 @@ class GraphController
 		else
 			raise "Unknown command \"#{command}\""
 		end
-		return command
+		return {:command => command, :reload_sections => reload_sections}
 	end
 
 	def generate_graph(format = :svg, path = 'public/graph.svg')
