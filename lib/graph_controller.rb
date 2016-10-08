@@ -457,7 +457,7 @@ class GraphController
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
 		).merge(
-			reload_sections ? {:sections => set_sections} : {}
+			reload_sections ? {:sections => set_sections} : {:update_sections => update_sections}
 		)
 	end
 
@@ -522,6 +522,10 @@ class GraphController
 			label += "e#{i}" if i
 		end
 		return label
+	end
+
+	def sectioning_info(node)
+		{:id => node.id, :name => node.name, :text => node.text}
 	end
 
 	def set_cookie(key, value)
@@ -1118,11 +1122,18 @@ class GraphController
 
 	def set_sections(h = {})
 		@sections = @graph.section_structure.map do |level|
-			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false).except(:node)}
+			level.map{|s| s.merge(sectioning_info(s[:node])).merge(:found => false).except(:node)}
 		end
 		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
 		set_found_sentences if !h[:clear] and @found
 		@sections
+	end
+
+	def update_sections
+		sections = @graph.sections_hierarchy(@current_sections).flatten
+		section_info = sections.map{|s| sectioning_info(s)}
+		section_info.each{|s| @section_list[s[:id]].merge!(s)}
+		section_info
 	end
 
 	def undefined_references?(ids)

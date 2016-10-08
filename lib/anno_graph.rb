@@ -676,7 +676,7 @@ class AnnoGraph
 	# @return [Array] a list of ordered lists of self's section nodes, starting with the lowest level, enriched with additional information
 	def section_structure
 		level = 0
-		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i, :text => n.text}}]
+		result = [sentence_nodes.each_with_index.map{|n, i| {:node => n, :first => i, :last => i}}]
 		loop do
 			next_level_sections = result[level].map do |s|
 				s.merge(:node => s[:node].parent_section)
