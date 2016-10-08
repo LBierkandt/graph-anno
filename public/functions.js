@@ -192,6 +192,7 @@ function updateView(data) {
 	if (data['textline'] != undefined) $('#textline').html(data['textline']);
 	if (data['meta'] != undefined) $('#meta').html(data['meta']);
 	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
+	if (data['update_sections'] != undefined) Sectioning.updateList(data['update_sections']);
 	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
 	graphdivEinpassen();
 	// get old dimensions
