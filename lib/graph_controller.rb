@@ -811,6 +811,7 @@ class GraphController
 			end
 
 		when 'load' # clear workspace and load corpus file
+			raise 'Please specify a file name!' unless parameters[:words][0]
 			clear_workspace
 			data = @graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
@@ -830,6 +831,7 @@ class GraphController
 			reload_sections = true
 
 		when 'append', 'add' # load corpus file and append it to the workspace
+			raise 'Please specify a file name!' unless parameters[:words][0]
 			addgraph = AnnoGraph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
