@@ -903,9 +903,10 @@ class GraphController
 		return {:command => command, :reload_sections => reload_sections}
 	end
 
-	def generate_graph(format = :svg, path = 'public/graph.svg')
-		puts "Generating graph for section(s) \"#{@current_sections.map(&:name).join(', ')}\"..." if @current_sections
+	def generate_graph
 		satzinfo = {:textline => '', :meta => ''}
+		return satzinfo.merge(:dot => DotGraph.new(:G)) unless @current_sections
+		puts "Generating graph for section(s) \"#{@current_sections.map(&:name).join(', ')}\"..."
 
 		@tokens     = @current_sections ? @current_sections.map(&:sentence_tokens).flatten(1) : []
 		all_nodes   = @current_sections ? @current_sections.map(&:nodes).flatten(1) : []
@@ -1078,7 +1079,7 @@ class GraphController
 			viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 
-		return satzinfo.merge(:dot => viz_graph.to_s)
+		return satzinfo.merge(:dot => viz_graph)
 	end
 
 	def sentence_set?
