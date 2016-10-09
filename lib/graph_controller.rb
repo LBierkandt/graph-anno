@@ -1127,7 +1127,7 @@ class GraphController
 	end
 
 	def update_sections
-		sections = @graph.sections_hierarchy(@current_sections).flatten
+		sections = (@graph.sections_hierarchy(@current_sections) || []).flatten
 		section_info = sections.map{|s| sectioning_info(s)}
 		section_info.each{|s| @section_list[s[:id]].merge!(s)}
 		section_info
