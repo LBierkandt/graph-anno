@@ -690,12 +690,9 @@ class AnnoGraph
 				 next_level[s[:node]] = s
 				end
 			end
-			unless next_level.empty?
-				result << next_level.values
-				level += 1
-			else
-				break
-			end
+			break if next_level.empty?
+			result << next_level.values
+			level += 1
 		end
 		return result
 	end
@@ -714,23 +711,17 @@ class AnnoGraph
 		current = sections
 		loop do
 			parents = current.map{|n| n.parent_section}.compact.uniq
-			if parents.empty?
-				break
-			else
-				hierarchy << parents
-				current = parents
-			end
+			break if parents.empty?
+			hierarchy << parents
+			current = parents
 		end
 		# get descendants
 		current = sections
 		loop do
 			children = current.map{|n| n.child_sections}.flatten.uniq
-			if children.empty?
-				break
-			else
-				hierarchy.unshift(children)
-				current = children
-			end
+			break if children.empty?
+			hierarchy.unshift(children)
+			current = children
 		end
 		return hierarchy
 	end

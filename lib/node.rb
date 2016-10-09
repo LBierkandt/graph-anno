@@ -399,11 +399,8 @@ class Node < NodeOrEdge
 		ancestors = []
 		current_node = self
 		loop do
-			if p = current_node.parent_section
-				ancestors << current_node = p
-			else
-				return ancestors
-			end
+			return ancestors unless p = current_node.parent_section
+			ancestors << current_node = p
 		end
 	end
 

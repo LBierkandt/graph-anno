@@ -1082,11 +1082,8 @@ class GraphController
 	end
 
 	def sentence_set?
-		if @current_sections
-			return true
-		else
-			raise 'Create a sentence first!'
-		end
+		return true if @current_sections
+		raise 'Create a sentence first!'
 	end
 
 	def reset_current_sections
