@@ -938,34 +938,3 @@ class AnnoGraph
 		@makros = parse_query(layer_makros_array * "\n")['def']
 	end
 end
-
-class Annotator
-	attr_accessor :id, :name, :info
-
-	def initialize(h)
-		@graph = h[:graph]
-		@name = h[:name] || ''
-		@info = h[:info] || ''
-		@id = (h[:id] || new_id).to_i
-	end
-
-	def new_id
-		id_list = @graph.annotators.map(&:id)
-		id = 1
-		id += 1 while id_list.include?(id)
-		return id
- 	end
-
-	def to_h
-		{
-			:id => @id,
-			:name => @name,
-			:info => @info,
-		}
-	end
-
-	# provides the to_json method needed by the JSON gem
-	def to_json(*a)
-		self.to_h.to_json(*a)
-	end
-end
