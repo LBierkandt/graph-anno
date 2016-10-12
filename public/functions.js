@@ -5,6 +5,15 @@ window.onload = function() {
 
 	window.onkeydown = taste;
 
+	// commandline
+	$('#txtcmd').closest('form').on('submit', function(e){
+		e.preventDefault();
+		Autocomplete.disable();
+		sendCmd();
+	});
+	$('#txtcmd').on('blur', function(e){
+		Autocomplete.disable();
+	})
 	$('#txtcmd').focus().select();
 
 	// draggables
@@ -37,12 +46,17 @@ window.onload = function() {
 	});
 
 	// behaviour of file settings modal
-	$(document).on('click', '.file #save-log', function(){
-		if ($('.file #save-log').is(':checked'))
-			$('.file #separate-log').removeAttr('disabled');
-		else
-			$('.file #separate-log').attr('disabled', '');
+	$(document).on('change', '.file #save-log', function(){
+		disableInputs($(this), '.file #separate-log');
 	});
+
+	// behaviour of preferences modal
+	$(document).on('change', '.pref #autocompletion', function(){
+		disableInputs($(this), 'input.autocompletion');
+	});
+
+	// autocomplete
+	Autocomplete.init('#txtcmd');
 }
 window.onresize = graphdivEinpassen;
 
@@ -194,6 +208,8 @@ function updateView(data) {
 	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
 	if (data['update_sections'] != undefined) Sectioning.updateList(data['update_sections']);
 	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
+	if (data['preferences'] != undefined) window.preferences = data['preferences'];
+	Autocomplete.setData(data.autocomplete);
 	graphdivEinpassen();
 	// get old dimensions
 	var $div = $('#graph');
@@ -318,6 +334,12 @@ function getCookie(name) {
 	}
 	return null;
 }
+function disableInputs($master, selector) {
+	if ($master.is(':checked'))
+		$(selector).removeAttr('disabled');
+	else
+		$(selector).attr('disabled', '');
+}
 function postRequest(path, params) {
 	$.post(path, params, null, 'json')
 	.done(function(data) {
@@ -426,8 +448,12 @@ function sendModal(type) {
 		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
-		if (data == true) closeModal();
-		else $('#modal-warning').html(data['errors']).show();
+		if (data['preferences'] != undefined) window.preferences = data['preferences'];
+		if (!data || data.errors != undefined) $('#modal-warning').html(data.errors).show();
+		else {
+			Autocomplete.setData(data.autocomplete);
+			closeModal();
+		}
 	});
 }
 function closeModal() {
@@ -535,14 +561,21 @@ function saveState() {
 		for (var attr in {display: 0, left: 0, top: 0, width: 0, height: 0, 'z-index': 0}) {
 			data[key][attr] = $box.css(attr);
 		}
-		document.cookie = key + '=' + JSON.stringify(data[key]) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
 	});
+	document.cookie = 'traw_windows=' + JSON.stringify(data) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
 	$.post('/save_window_positions', {data: data});
 }
 function restoreState(id, data) {
 	var $element = $('#' + id);
-	if (data == undefined) var attributes = JSON.parse(getCookie(id));
-	else var attributes = data[id];
+	if (data == undefined) {
+		try {
+			var attributes = JSON.parse(getCookie('traw_windows'))[id];
+		} catch(e) {
+			var attributes = {};
+		}
+	} else {
+		var attributes = data[id];
+	}
 	for (var i in attributes) {
 		$element.css(i, attributes[i]);
 	}

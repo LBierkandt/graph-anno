@@ -42,6 +42,7 @@ class GraphController
 		@found = nil
 		@filter = {:mode => 'unfilter'}
 		@windows = {}
+		@preferences = File::open('conf/preferences.yml'){|f| YAML::load(f)}
 	end
 
 	def root
@@ -55,9 +56,7 @@ class GraphController
 	end
 
 	def draw_graph
-		generate_graph.merge(
-			:current_sections => @current_sections ? current_section_ids : nil,
-			:sections => set_sections,
+		section_settings_and_graph.merge(
 			:sections_changed => true
 		).to_json
 	end
@@ -101,6 +100,7 @@ class GraphController
 	def change_sentence
 		set_section(@sinatra.params[:sentence])
 		return generate_graph.merge(
+			:autocomplete => autocomplete_data,
 			:sections_changed => true
 		).to_json
 	end
@@ -146,11 +146,12 @@ class GraphController
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file'].each do |form_name|
+	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file', 'pref'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
 				:locals => {
+					:preferences => @preferences,
 					:graph => @graph
 				}
 			)
@@ -270,7 +271,7 @@ class GraphController
 		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
 		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
-		return true.to_json
+		return {:autocomplete => autocomplete_data}.to_json
 	end
 
 	def save_file
@@ -279,6 +280,17 @@ class GraphController
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		return true.to_json
+	end
+
+	def save_pref
+		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref, :annotator].each do |property|
+			@preferences[property] = !!@sinatra.params[property.to_s]
+		end
+		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
+		return {
+			:preferences => @preferences,
+			:autocomplete => autocomplete_data,
+		}.to_json
 	end
 
 	def new_layer(i)
@@ -434,6 +446,21 @@ class GraphController
 		true
 	end
 
+	def get_file_list
+		input = @sinatra.params[:input]
+		relative = input[0] != '/'
+		Dir.glob("#{'data/' if relative}#{input}*").map{|file|
+			if File.directory?(file)
+				file.sub!(/^data\//, '') if relative
+				# strip path and add trailing slash
+				file.sub(/^.*\/([^\/]+)$/, '\1') + '/'
+			else
+				# exclude non-json and log files, strip path
+				(file.match(/\.json$/) && !file.match(/\.log\.json$/)) ? file.sub(/^(.+\/)?([^\/]+)$/, '\2') : nil
+			end
+		}.compact.to_json
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
@@ -454,6 +481,8 @@ class GraphController
 
 	def section_settings_and_graph(reload_sections = true)
 		generate_graph.merge(
+			:autocomplete => autocomplete_data,
+			:preferences => @preferences,
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
 		).merge(
@@ -895,7 +924,7 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file', 'pref'
 			return {:modal => command}
 
 		when ''
@@ -1143,6 +1172,73 @@ class GraphController
 
 	def file_path(input)
 		(input[0] == '/' ? '' : 'data/') + input + (input.match(/\.json$/) ? '' : '.json')
+	end
+
+	def autocomplete_data
+		commands = {
+			:a => :aanno,
+			:n => :anno,
+			:e => :anno,
+			:p => :anno,
+			:g => :anno,
+			:c => :anno,
+			:h => :anno,
+			:ni => :anno,
+			:di => :anno,
+			:do => :anno,
+			:d => :ref,
+			:t => nil,
+			:tb => nil,
+			:ta => nil,
+			:undo => nil,
+			:z => nil,
+			:redo => nil,
+			:y => nil,
+			:l => :layer,
+			:annotator => :annotator,
+			:user => :annotator,
+			:ns => nil,
+			:'s-new' => :sect,
+			:'s-rem' => :sect,
+			:'s-add' => :sect,
+			:'s-det' => :sect,
+			:'s-del' => :sect,
+			:load => :file,
+			:append => :file,
+			:save => nil,
+			:clear => nil,
+			:s => :sect,
+			:image => nil,
+			:export => nil,
+			:import => nil,
+			:config => nil,
+			:tagset => nil,
+			:makros => nil,
+			:metadata => nil,
+			:annotators => nil,
+			:file => nil,
+			:pref => nil,
+			:'' => :command
+		}
+		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
+		makros = @preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []
+		layers = @preferences[:makro] ? @graph.layer_makros.keys : []
+		refs   = @preferences[:ref] ? @tokens.map.with_index{|t, i| "t#{i}"} + @nodes.map.with_index{|n, i| "n#{i}"} + @edges.map.with_index{|e, i| "e#{i}"} : []
+		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
+		arefs  = @preferences[:ref] ? refs + srefs : []
+		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
+		antors = @graph.annotators.map(&:name)
+		cmnds  = @preferences[:command] ? commands.keys : []
+		{
+			:anno => tagset + makros + refs,
+			:aanno => tagset + makros + arefs,
+			:ref => refs,
+			:layer => layers + refs,
+			:sect => sects,
+			:annotator => antors,
+			:command => cmnds,
+			:commands => commands,
+		}
 	end
 
 	def validate_config(data)
