@@ -18,11 +18,11 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require_relative 'graph_persistence_module.rb'
-require_relative 'search_module.rb'
-require_relative 'nlp_module.rb'
+require_relative 'graph_search_module.rb'
+require_relative 'nlp.rb'
 
 class AnnoGraph
-	include SearchableGraph
+	include GraphSearch
 	include GraphPersistence
 
 	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings

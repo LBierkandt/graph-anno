@@ -21,7 +21,7 @@ require 'unicode_utils/downcase.rb'
 require 'csv.rb'
 require_relative 'parser_module.rb'
 
-module SearchableGraph
+module GraphSearch
 	include Parser
 
 	def initialize
