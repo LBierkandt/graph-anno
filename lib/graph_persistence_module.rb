@@ -20,20 +20,22 @@
 require 'json.rb'
 
 module GraphPersistence
+	GRAPH_FORMAT_VERSION = 9
+
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
 		{
 			:nodes => @nodes.values.map(&:to_h),
-			:edges => @edges.values.map(&:to_h)
-		}.
-			merge(:version => 9).
-			merge(:conf => @conf.to_h.reject{|k,v| k == :font}).
-			merge(:info => @info).
-			merge(:anno_makros => @anno_makros).
-			merge(:tagset => @tagset).
-			merge(:annotators => @annotators).
-			merge(:file_settings => @file_settings).
-			merge(:search_makros => @makros_plain)
+			:edges => @edges.values.map(&:to_h),
+			:version => GRAPH_FORMAT_VERSION,
+			:conf => @conf.to_h.except(:font),
+			:info => @info,
+			:anno_makros => @anno_makros,
+			:tagset => @tagset,
+			:annotators => @annotators,
+			:file_settings => @file_settings,
+			:search_makros => @makros_plain,
+		}
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -51,24 +53,12 @@ module GraphPersistence
 		data = JSON.parse(file.read)
 		file.close
 		version = data['version'].to_i
-		# 'knoten' -> 'nodes', 'kanten' -> 'edges'
-		if version < 4
-			data['nodes'] = data.delete('knoten')
-			data['edges'] = data.delete('kanten')
-		end
+		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
 		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys}
 		data['edges'] = data['edges'].map{|e| e.symbolize_keys}
-		if version < 9
-			(data['nodes'] + data['edges']).each do |el|
-				el[:id] = el[:ID] if version < 7
-				# IDs as integer
-				el[:id] = el[:id].to_i
-				el[:start] = el[:start].to_i if el[:start].is_a?(String)
-				el[:end] = el[:end].to_i if el[:end].is_a?(String)
-			end
-		end
+
 		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
-		self.add_hash(data)
+		add_hash(data)
 		@anno_makros = data['anno_makros'] || {}
 		@info = data['info'] || {}
 		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
@@ -78,71 +68,7 @@ module GraphPersistence
 		@makros_plain += data['search_makros'] || []
 		@makros += parse_query(@makros_plain * "\n")['def']
 
-		# ggf. Format aktualisieren
-		if version < 7
-			puts 'Updating graph format ...'
-			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
-			@node_index.delete(nil)
-			(@nodes.values + @edges.values).each do |k|
-				if version < 2
-					if k.attr.public['typ']
-						k.attr.public['cat'] = k.attr.public.delete('typ')
-					end
-					if k.attr.public['namespace']
-						k.attr.public['sentence'] = k.attr.public.delete('namespace')
-					end
-					k.attr.public.delete('elementid')
-					k.attr.public.delete('edgetype')
-				end
-				if version < 5
-					k.attr.public['f-layer'] = 't' if k.attr.public['f-ebene'] == 'y'
-					k.attr.public['s-layer'] = 't' if k.attr.public['s-ebene'] == 'y'
-					k.attr.public.delete('f-ebene')
-					k.attr.public.delete('s-ebene')
-				end
-				if version < 7
-					# introduce node types
-					if k.kind_of?(Node)
-						if k.token
-							k.type = 't'
-						elsif k.attr.public['cat'] == 'meta'
-							k.type = 's'
-							k.attr.public.delete('cat')
-						else
-							k.type = 'a'
-						end
-						# populate node_index
-						@node_index[k.type][k.id] = k
-					else
-						k.type = 'o' if k.type == 't'
-						k.type = 'a' if k.type == 'g'
-						k.attr.public.delete('sentence')
-					end
-					k.attr.public.delete('tokenid')
-				end
-			end
-			if version < 2
-				# SectNode für jeden Satz
-				sect_nodes = @node_index['s'].values
-				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
-					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
-						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
-					end
-				end
-			end
-			if version < 7
-				# OrderEdges and SectEdges for SectNodes
-				sect_nodes = @node_index['s'].values.sort_by{|n| n.attr.public['sentence']}
-				sect_nodes.each_with_index do |s, i|
-					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
-					s.name = s.attr.public.delete('sentence')
-					@nodes.values.select{|n| n.attr.public['sentence'] == s.name}.each do |n|
-						n.attr.public.delete('sentence')
-						add_sect_edge(:start => s, :end => n)
-					end
-				end
-			end
-		end
+		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
 
 		puts 'Read "' + path + '".'
 
@@ -238,6 +164,100 @@ module GraphPersistence
 	def import_annotators(name)
 		File.open("exports/annotators/#{name}.annotators.json", 'r:utf-8') do |f|
 			@annotators = JSON.parse(f.read).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
+		end
+	end
+
+	private
+
+	def add_hash(h)
+		h['nodes'].each do |n|
+			self.add_node(n.merge(:raw => true))
+		end
+		h['edges'].each do |e|
+			self.add_edge(e.merge(:raw => true))
+		end
+	end
+
+	def update_raw_graph_data(data, version)
+		if version < 4
+			data['nodes'] = data.delete('knoten')
+			data['edges'] = data.delete('kanten')
+		end
+		if version < 9
+			(data['nodes'] + data['edges']).each do |el|
+				el['id'] = el.delete('ID') if version < 7
+				# IDs as integer
+				el['id'] = el['id'].to_i
+				el['start'] = el['start'].to_i if el['start'].is_a?(String)
+				el['end'] = el['end'].to_i if el['end'].is_a?(String)
+			end
+		end
+	end
+
+	def update_graph_format(version)
+		if version < 7
+			puts 'Updating graph format ...'
+			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
+			@node_index.delete(nil)
+			(@nodes.values + @edges.values).each do |k|
+				if version < 2
+					if k.attr.public['typ']
+						k.attr.public['cat'] = k.attr.public.delete('typ')
+					end
+					if k.attr.public['namespace']
+						k.attr.public['sentence'] = k.attr.public.delete('namespace')
+					end
+					k.attr.public.delete('elementid')
+					k.attr.public.delete('edgetype')
+				end
+				if version < 5
+					k.attr.public['f-layer'] = 't' if k.attr.public['f-ebene'] == 'y'
+					k.attr.public['s-layer'] = 't' if k.attr.public['s-ebene'] == 'y'
+					k.attr.public.delete('f-ebene')
+					k.attr.public.delete('s-ebene')
+				end
+				if version < 7
+					# introduce node types
+					if k.kind_of?(Node)
+						if k.token
+							k.type = 't'
+						elsif k.attr.public['cat'] == 'meta'
+							k.type = 's'
+							k.attr.public.delete('cat')
+						else
+							k.type = 'a'
+						end
+						# populate node_index
+						@node_index[k.type][k.id] = k
+					else
+						k.type = 'o' if k.type == 't'
+						k.type = 'a' if k.type == 'g'
+						k.attr.public.delete('sentence')
+					end
+					k.attr.public.delete('tokenid')
+				end
+			end
+			if version < 2
+				# SectNode für jeden Satz
+				sect_nodes = @node_index['s'].values
+				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
+					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
+						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
+					end
+				end
+			end
+			if version < 7
+				# OrderEdges and SectEdges for SectNodes
+				sect_nodes = @node_index['s'].values.sort_by{|n| n.attr.public['sentence']}
+				sect_nodes.each_with_index do |s, i|
+					add_order_edge(:start => sect_nodes[i - 1], :end => s) if i > 0
+					s.name = s.attr.public.delete('sentence')
+					@nodes.values.select{|n| n.attr.public['sentence'] == s.name}.each do |n|
+						n.attr.public.delete('sentence')
+						add_sect_edge(:start => s, :end => n)
+					end
+				end
+			end
 		end
 	end
 end

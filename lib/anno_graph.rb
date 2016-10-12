@@ -33,17 +33,6 @@ class AnnoGraph
 		clear
 	end
 
-	# adds a graph in hash format to self
-	# @param h [Hash] the graph to be added in hash format
-	def add_hash(h)
-		h['nodes'].each do |n|
-			self.add_node(n.merge(:raw => true))
-		end
-		h['edges'].each do |e|
-			self.add_edge(e.merge(:raw => true))
-		end
-	end
-
 	# organizes ids for new nodes or edges
 	# @param h [Hash] hash from which the new element is generated
 	# @param element_type [Symbol] :node or :edge
