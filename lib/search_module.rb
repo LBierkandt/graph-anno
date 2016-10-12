@@ -569,7 +569,7 @@ class Automat
 		when 'node', 'edge', 'redge'
 			return Automat.new(Zustand.new(operation[:operator].to_sym, nil, operation[:cond], ids))
 		when 'boundary'
-			return Automat.new(Zustand.new(:node, nil, SearchableGraph.new.parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
+			return Automat.new(Zustand.new(:node, nil, AnnoGraph.new.parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
 		when 'or'
 			folgeautomaten = [Automat.create(operation[:arg][0], ids), Automat.create(operation[:arg][1], ids)]
 			automat = Automat.new(Zustand.new(:split, [], ids))
