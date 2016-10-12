@@ -1,7 +1,7 @@
 ---
-:autocompletion: false
+:autocompletion: true
 :command: false
-:file: false
+:file: true
 :sect: false
 :anno: false
 :makro: false
