@@ -50,7 +50,7 @@ module GraphSearch
 		# edge/link: node/nodes-TGn und text-TGn kombinieren
 
 		# check validity of query
-		if (error_messages = query_errors(operations)) != []
+		unless (error_messages = query_errors(operations)).empty?
 			raise error_messages * "\n"
 		end
 
@@ -60,9 +60,12 @@ module GraphSearch
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
 		if metabedingung = operation_erzeugen(:op => 'and', :arg => operations['meta'].map{|op| op[:cond]})
-			metaknoten = sentence_nodes.select{|s| s.fulfil?(metabedingung, true)}
-			suchgraph.nodes.select!{|id, n| metaknoten.include?(n.sentence)}
-			suchgraph.edges.select!{|id, e| metaknoten.include?(e.start.sentence) || metaknoten.include?(e.end.sentence)}
+			sentence_nodes.reject{|s| s.fulfil?(metabedingung, true)}.each do |sentence|
+				sentence.nodes.each do |node|
+					suchgraph.nodes.delete(node.id)
+					(node.in + node.out).each{|e| suchgraph.edges.delete(e.id)}
+				end
+			end
 		end
 
 		# edge
@@ -77,7 +80,7 @@ module GraphSearch
 		# node/nodes
 		# gefundene Knoten werden als atomare Teilgraphen gesammelt
 		(operations['node'] + operations['nodes']).each do |operation|
-			gefundene_knoten = suchgraph.nodes.values.select{|k| k.type != 's' && k.fulfil?(operation[:cond])}
+			gefundene_knoten = suchgraph.nodes.values.select{|k| ['a', 't'].include?(k.type) && k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_knoten.map do |k|
 				Teilgraph.new([k], [], {operation[:id] => [k]})
 			end
@@ -122,7 +125,7 @@ module GraphSearch
 					# erstmal node(s) -> node(s)
 					tgl_start.each do |starttg|
 						startknot = starttg.ids[startid][0]
-						if !(breitensuche = schon_gesucht[startknot])
+						unless breitensuche = schon_gesucht[startknot]
 							if startknot
 								breitensuche = startknot.links(automat, id_index[zielid][:cond])
 							else
@@ -147,7 +150,7 @@ module GraphSearch
 				else # wenn Ziel 'text' ist
 					tgl_start.each do |starttg|
 						startknot = starttg.ids[startid][0]
-						if !(breitensuche = schon_gesucht[startknot])
+						unless breitensuche = schon_gesucht[startknot]
 							if startknot
 								breitensuche = startknot.links(automat, {:operator => 'token'}) # Zielknoten muß Token sein
 							else
@@ -315,19 +318,19 @@ module GraphSearch
 
 		# Grenzknoten einbauen (das muß natürlich bei einem Graph mit verbundenen Sätzen und mehreren Ebenen anders aussehen)
 		grenzknoten = []
-		@nodes.values.select{|k| k.token}.each do |tok|
-			if !tok.node_before
-				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
-				self.add_order_edge(:start => grenzknoten.last, :end => tok)
+		@nodes.values.of_type('t').each do |tok|
+			unless tok.node_before
+				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'})
+				add_order_edge(:start => grenzknoten.last, :end => tok)
 			end
-			if !tok.node_after
-				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
-				self.add_order_edge(:start => tok, :end => grenzknoten.last)
+			unless tok.node_after
+				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'})
+				add_order_edge(:start => tok, :end => grenzknoten.last)
 			end
 		end
 
 		ergebnis = []
-		@nodes.values.select{|k| k.token}.each do |node|
+		@nodes.values.of_type('t').each do |node|
 			if t = automat.text_suchen_ab(node)
 				t.remove_boundary_nodes!
 				ergebnis << t
@@ -815,7 +818,7 @@ class Teilgraph
 	end
 
 	def remove_boundary_nodes!
-		@nodes.reject!{|n| n.cat == 'boundary' and n.token == ''}
+		@nodes.reject!{|n| n.type == 't' && n.cat == 'boundary'}
 	end
 
 	def to_s
