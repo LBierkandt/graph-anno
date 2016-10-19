@@ -121,13 +121,7 @@ module Parser
 		@@keywords.each{|c| ops[c] = []}
 		ops['def'] = @makros
 
-		lines = string.split("\n")
-
-		puts 'Parsing input:'
-		lines.each{|z| puts '  ' + z}
-		puts
-
-		lines.each do |line|
+		string.split("\n").each do |line|
 			begin
 				if op = parse_line(line, ops['def'])
 					ops[op[:operator]] << op
