@@ -459,6 +459,7 @@ class AnnoGraph
 		@edges = other_graph.edges.clone
 		@highest_node_id = other_graph.highest_node_id
 		@highest_edge_id = other_graph.highest_edge_id
+		@node_index = other_graph.node_index.map_hash{|k, v| v.clone} # clone two levels deep
 		clone_graph_info(other_graph)
 		return self
 	end
@@ -470,6 +471,8 @@ class AnnoGraph
 		@info = other_graph.info.clone
 		@tagset = other_graph.tagset.clone
 		@annotators = other_graph.annotators.clone
+		@current_annotator = other_graph.current_annotator
+		@file_settings = other_graph.file_settings.clone
 		@anno_makros = other_graph.anno_makros.clone
 		@makros_plain = other_graph.makros_plain.clone
 		@makros = parse_query(@makros_plain * "\n")['def']
