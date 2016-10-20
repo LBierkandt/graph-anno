@@ -35,7 +35,8 @@ module GraphSearch
 		puts 'Searching for graph fragment ...'
 		startzeit = Time.new
 
-		suchgraph = self.clone
+		nodes_to_be_searched = []
+		edges_to_be_searched = []
 		tglisten = {}
 		id_index = {}
 		tgindex = 0
@@ -60,17 +61,16 @@ module GraphSearch
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
 		if metabedingung = operation_erzeugen(:op => 'and', :arg => operations['meta'].map{|op| op[:cond]})
-			sentence_nodes.reject{|s| s.fulfil?(metabedingung, true)}.each do |sentence|
-				sentence.nodes.each do |node|
-					suchgraph.nodes.delete(node.id)
-					(node.in + node.out).each{|e| suchgraph.edges.delete(e.id)}
-				end
-			end
+			nodes_to_be_searched = sentence_nodes.select{|s| s.fulfil?(metabedingung, true)}.map{|s| s.nodes}.flatten
+			edges_to_be_searched = nodes_to_be_searched.map{|n| n.in + n.out}.flatten.uniq
+		else
+			nodes_to_be_searched = @node_index['t'].values + @node_index['a'].values
+			edges_to_be_searched = @edges.values
 		end
 
 		# edge
 		operations['edge'].each do |operation|
-			gefundene_kanten = suchgraph.edges.values.select{|k| k.fulfil?(operation[:cond])}
+			gefundene_kanten = edges_to_be_searched.select{|k| k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_kanten.map do |k|
 				Teilgraph.new([], [k], {operation[:id] => [k]})
 			end
@@ -80,7 +80,7 @@ module GraphSearch
 		# node/nodes
 		# gefundene Knoten werden als atomare Teilgraphen gesammelt
 		(operations['node'] + operations['nodes']).each do |operation|
-			gefundene_knoten = suchgraph.nodes.values.select{|k| ['a', 't'].include?(k.type) && k.fulfil?(operation[:cond])}
+			gefundene_knoten = nodes_to_be_searched.select{|k| k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_knoten.map do |k|
 				Teilgraph.new([k], [], {operation[:id] => [k]})
 			end
@@ -93,7 +93,7 @@ module GraphSearch
 		# text
 		# ein oder mehrer Teilgraphenlisten werden erstellt
 		operations['text'].each do |operation|
-			tglisten[tgindex += 1] = suchgraph.textsuche_NFA(operation[:arg], operation[:id])
+			tglisten[tgindex += 1] = textsuche_NFA(nodes_to_be_searched.of_type('t'), operation[:arg], operation[:id])
 			# id_index führen
 			if operation[:id]
 				id_index[operation[:id]] = {:index => tgindex, :art => operation[:operator]}
@@ -312,13 +312,13 @@ module GraphSearch
 		end
 	end
 
-	def textsuche_NFA(operation, id = nil)
+	def textsuche_NFA(tokens_to_be_searched, operation, id = nil)
 		automat = Automat.create(operation)
 		automat.bereinigen
 
 		# Grenzknoten einbauen (das muß natürlich bei einem Graph mit verbundenen Sätzen und mehreren Ebenen anders aussehen)
 		grenzknoten = []
-		@nodes.values.of_type('t').each do |tok|
+		tokens_to_be_searched.each do |tok|
 			unless tok.node_before
 				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'})
 				add_order_edge(:start => grenzknoten.last, :end => tok)
@@ -330,7 +330,7 @@ module GraphSearch
 		end
 
 		ergebnis = []
-		@nodes.values.of_type('t').each do |node|
+		(tokens_to_be_searched + grenzknoten).each do |node|
 			if t = automat.text_suchen_ab(node)
 				t.remove_boundary_nodes!
 				ergebnis << t
