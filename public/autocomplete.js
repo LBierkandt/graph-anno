@@ -101,6 +101,7 @@ var Autocomplete = (function(){
 					showSuggestions(input, suggestions);
 				});
 			} else {
+				if (!input.suggestionSet) return;
 				var suggestionData = data[input.suggestionSet];
 				var suggestions = suggestionData.filter(function(suggestion){
 					return (suggestion.slice(0, input.word.length) == input.word);
