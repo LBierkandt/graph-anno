@@ -26,6 +26,7 @@ class DotGraph
 	end
 
 	def to_s(type = 'digraph')
+		return '' if type == 'subgraph' && (@nodes + @edges).empty?
 		"#{type} #{@name}{" +
 			options_string(@options, ';') +
 			@nodes.map{|n| "#{n.id}[#{options_string(n.options)}]"}.join +
