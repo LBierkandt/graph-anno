@@ -532,6 +532,12 @@ module GraphSearch
 					node = nodes.select{|e| e.is_a?(Node)}.of_type('t').last
 					build_tokens(command[:words][1..-1], :last_token => node)
 				when 'l'
+					if layer
+						elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+						elements.each do |el|
+							el.annotate(Hash[@conf.layers.map{|l| [l.attr, nil]}].merge(attrs)) if layer
+						end
+					end
 				end
 			end #command
 		end # tg
