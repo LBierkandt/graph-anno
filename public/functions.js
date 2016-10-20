@@ -211,6 +211,7 @@ function updateView(data) {
 	if (data['preferences'] != undefined) window.preferences = data['preferences'];
 	Autocomplete.setData(data.autocomplete);
 	graphdivEinpassen();
+	if (!data['dot']) return;
 	// get old dimensions
 	var $div = $('#graph');
 	var oldImageSize = {
