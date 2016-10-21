@@ -461,15 +461,15 @@ module GraphSearch
 				end
 				# extend attributes accordingly (same for all commands)
 				attrs.merge!(conf.layer_attributes[layer]) if layer
+				# extract elements
+				elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+				nodes = elements.select{|e| e.is_a?(Node)}
 				# process the commands
 				case command[:operator]
 				when 'a'
-					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					elements.each do |el|
-						el.annotate(attrs)
-					end
+					elements.each{|el| el.annotate(attrs)}
 				when 'n'
-					if ref_node = command[:ids].map{|id| tg.ids[id]}.flatten.select{|e| e.is_a?(Node)}.first
+					if ref_node = nodes.first
 						add_anno_node(
 							:attr => attrs,
 							:sentence => ref_node.sentence
@@ -488,7 +488,6 @@ module GraphSearch
 						)
 					end
 				when 'p', 'g'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					unless nodes.empty?
 						add_parent_node(
 							nodes,
@@ -497,7 +496,6 @@ module GraphSearch
 						)
 					end
 				when 'c', 'h'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					unless nodes.empty?
 						add_child_node(
 							nodes,
@@ -506,34 +504,26 @@ module GraphSearch
 						)
 					end
 				when 'd'
-					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
 						el.type == 't' ? el.remove_token : el.delete if el
 						search_result_preserved = false
 					end
 				when 'ni'
-					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Edge)}
-					edges.each do |e|
+					elements.select{|e| e.is_a?(Edge)}.each do |e|
 						insert_node(e, attrs)
 						search_result_preserved = false
 					end
 				when 'di', 'do'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					nodes.each do |n|
 						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
 						search_result_preserved = false
 					end
 				when 'tb', 'ti'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.is_a?(Node)}.of_type('t').first
-					build_tokens(command[:words][1..-1], :next_token => node)
+					build_tokens(command[:words][1..-1], :next_token => nodes.of_type('t').first)
 				when 'ta'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.is_a?(Node)}.of_type('t').last
-					build_tokens(command[:words][1..-1], :last_token => node)
+					build_tokens(command[:words][1..-1], :last_token => nodes.of_type('t').last)
 				when 'l'
 					if layer
-						elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 						elements.each do |el|
 							el.annotate(Hash[@conf.layers.map{|l| [l.attr, nil]}].merge(attrs)) if layer
 						end
