@@ -398,6 +398,7 @@ class GraphController
 	end
 
 	def annotate_query
+		return {:search_result => error_message_html('Execute a search first!')}.to_json unless @found
 		begin
 			search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
 		rescue StandardError => e
