@@ -1000,7 +1000,7 @@ Of the following sections, the first one explains how a to-be-matched element is
 \subsubsection{Element description}\label{elementbeschreibung}
 
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
-Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).
+Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).\\
 
 The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for \textit{not}, \code{\&} for \textit{and} and \code{|} for \textit{or} (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
 As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
@@ -1016,6 +1016,8 @@ The third format is a regular expression.
 A regular expression has to be written in slashes (\code{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \url{http://www.ruby-doc.org/core/Regexp.html}).
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
+
+If you omit a value string, those elements are matched that bear no annotation at all for the given key. So, e.g., \code{tns:} matches all elements without a tns annotation, \code{!tns:} matches all elements with a tns annotation, \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation.
 
 Additionally to key-value pairs you may also use the keyword \code{token}, which matches token nodes.\\
 
@@ -1053,6 +1055,7 @@ attribute           = string ":" attribute_value ("|" attribute_value)*
 attribute_value     = char_except_control_char+
                       """ character* """
                       "/" regular_expression "/"
+                      ""
 string              = char_except_control_char+
                       """ character* """
 edge_criterion      = "in" ("(" element_description")")? quantifier?

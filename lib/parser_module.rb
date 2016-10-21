@@ -284,22 +284,17 @@ module Parser
 				}
 				value_expected = false
 			when :operator
-				if value_expected
-					values << {:value => '', :method => 'plain'} # oder sollte hier ":value=>nil"? Dann müßte aber fulfil anders definiert sein!
+				values << {:value => nil, :method => 'plain'} if value_expected
+				if tok[:str] == '|'
+					value_expected = true
+				else
 					value_expected = false
 					break
-				else
-					if tok[:str] == '|'
-						value_expected = true
-					else
-						value_expected = false
-						break
-					end
 				end
 			end
 			i += 1
 		end
-		values << {:value => '', :method => 'plain'} if value_expected
+		values << {:value => nil, :method => 'plain'} if value_expected
 		# build operation
 		op.merge!(values.pop)
 		while values.length > 0
