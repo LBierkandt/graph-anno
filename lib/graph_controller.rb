@@ -27,7 +27,7 @@ class GraphController
 	attr_reader :graph, :log, :graph_file, :search_result
 
 	def initialize
-		@graph = AnnoGraph.new
+		@graph = Graph.new
 		@log = Log.new(@graph)
 		@graph_file = ''
 		@data_table = nil
@@ -172,7 +172,7 @@ class GraphController
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
 			@sinatra.params['combinations'] = @sinatra.params['combinations'] || {}
-			@graph.conf = AnnoGraphConf.new(
+			@graph.conf = GraphConf.new(
 				@sinatra.params['general'].inject({}) do |h, (k, v)|
 					k == 'edge_weight' ? h[k] = v.to_i : h[k] = v
 					h
@@ -862,7 +862,7 @@ class GraphController
 
 		when 'append', 'add' # load corpus file and append it to the workspace
 			raise 'Please specify a file name!' unless parameters[:words][0]
-			addgraph = AnnoGraph.new
+			addgraph = Graph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
 			@found = nil

@@ -21,7 +21,7 @@ require_relative 'graph_persistence_module.rb'
 require_relative 'graph_search_module.rb'
 require_relative 'nlp.rb'
 
-class AnnoGraph
+class Graph
 	include GraphSearch
 	include GraphPersistence
 
@@ -448,7 +448,7 @@ class AnnoGraph
 	# builds a clone of self, but does not clone the nodes and edges
 	# @return [Graph] the clone
 	def clone
-		new_graph = AnnoGraph.new
+		new_graph = Graph.new
 		return new_graph.clone_graph(self)
 	end
 
@@ -483,7 +483,7 @@ class AnnoGraph
 	# @return [Graph] the new graph
 	def subcorpus(sentence_list)
 		# create new graph
-		g = AnnoGraph.new
+		g = Graph.new
 		g.clone_graph_info(self)
 		last_sentence_node = nil
 		# copy speaker nodes
@@ -620,7 +620,7 @@ class AnnoGraph
 		@highest_node_id = 0
 		@highest_edge_id = 0
 		@node_index = Hash.new{|h, k| h[k] = {}}
-		@conf = AnnoGraphConf.new
+		@conf = GraphConf.new
 		@info = {}
 		@tagset = Tagset.new
 		@annotators = []

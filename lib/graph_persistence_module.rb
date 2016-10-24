@@ -63,7 +63,7 @@ module GraphPersistence
 		@info = data['info'] || {}
 		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
-		@conf = AnnoGraphConf.new(data['conf'])
+		@conf = GraphConf.new(data['conf'])
 		create_layer_makros
 		@makros_plain += data['search_makros'] || []
 		@makros += parse_query(@makros_plain * "\n")['def']
@@ -147,7 +147,7 @@ module GraphPersistence
 	# @param name [String] The name of the file
 	def import_config(name)
 		File.open("exports/config/#{name}.config.json", 'r:utf-8') do |f|
-			@conf = AnnoGraphConf.new(JSON.parse(f.read))
+			@conf = GraphConf.new(JSON.parse(f.read))
 		end
 	end
 
