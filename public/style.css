@@ -58,13 +58,12 @@ table {
 #bottom {
   position: fixed;
   bottom: 0px;
-  width: 100%; }
+  width: 100%;
+  background-color: #dddddd; }
 
 .bottom-block {
-  background-color: #dddddd;
   border-top: solid 1px #002050;
-  padding-bottom: 2px;
-  overflow: auto; }
+  padding-bottom: 2px; }
 
 #textline, #meta {
   padding-left: 5px; }
@@ -75,13 +74,28 @@ table {
     display: block;
     float: left;
     margin-right: 5px;
-    margin-bottom: 0; }
+    margin-bottom: 0;
+    position: relative; }
   #cmddiv #active_file, #cmddiv #current_annotator {
     background-color: white;
     padding: 0 0.5em;
     display: inline-block; }
   #cmddiv #documentation {
     float: right; }
+
+#autocomplete {
+  display: none;
+  position: absolute;
+  bottom: 25px;
+  background-color: #eeeeee;
+  padding: 4px;
+  max-height: 204px;
+  overflow: hidden; }
+  #autocomplete div {
+    padding: 0 2px; }
+    #autocomplete div.active {
+      color: white;
+      background-color: #003090; }
 
 #sectioning {
   display: block;

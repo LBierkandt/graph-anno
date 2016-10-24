@@ -18,10 +18,13 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Tagset < Array
+	attr_reader :for_autocomplete
+
 	def initialize(a = [])
 		a.to_a.each do |rule|
 			self << TagsetRule.new(rule['key'], rule['values']) if rule['key'].strip != ''
 		end
+		@for_autocomplete = to_autocomplete
 	end
 
 	def allowed_attributes(attr)
@@ -38,6 +41,12 @@ class Tagset < Array
 	def to_json(*a)
 		self.to_a.to_json(*a)
 	end
+
+	private
+
+	def to_autocomplete
+		self.map{|rule| rule.to_autocomplete}.flatten
+	end
 end
 
 class TagsetRule
@@ -50,6 +59,16 @@ class TagsetRule
 
 	def to_h
 		{:key => @key, :values => values_string}
+	end
+
+	def to_autocomplete
+		@values.map do |tok|
+			if tok[:cl] == :bstring
+				"#{@key}:#{tok[:str]}"
+			elsif tok[:cl] == :qstring
+				"#{@key}:\"#{tok[:str]}\""
+			end
+		end.compact
 	end
 
 	def values_string

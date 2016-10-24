@@ -1,0 +1,9 @@
+---
+:autocompletion: true
+:command: false
+:file: true
+:sect: false
+:anno: false
+:makro: false
+:ref: false
+:annotator: false

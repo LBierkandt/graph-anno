@@ -1,5 +1,6 @@
 var Sectioning = (function () {
 	var list = [];
+	var index = {};
 	var current = [];
 	var currentIndizes = [];
 	var currentLevel = 0
@@ -102,6 +103,30 @@ var Sectioning = (function () {
 		$(window).off('keydown', keyBinding);
 		$('.section').removeClass('chosen');
 	}
+	var setContent = function ($el, section, level) {
+		$el.html('<span class="sentence-name">' + (section.name || '') + '</span>');
+		if (level == 0) $el.append(': <span class="sentence-start">' + section.text + '</span>')
+	}
+	var sentenceWithMatch = function (dir) {
+		newIndex = list[currentLevel][currentIndizes[0]][dir == 1 ? 'last' : 'first'];
+		negIndex = newIndex - list[0].length;
+		for (var i = (dir == 1 ? negIndex : newIndex) + dir; i != (dir == 1 ? newIndex : negIndex); i += dir) {
+			if (list[0].slice(i)[0].found) return list[0].slice(i)[0].first;
+		}
+		return newIndex;
+	}
+	var sectionWithMatch = function (originalLevel, sentenceIndex) {
+		for (var level = originalLevel; level > 0; level--) {
+			for (var i in list[level]) {
+				if (list[level][i].first <= sentenceIndex && list[level][i].last >= sentenceIndex) {
+					currentLevel = level;
+					return i;
+				}
+			}
+		}
+		currentLevel = 0;
+		return sentenceIndex;
+	}
 
 	$(document).on('dblclick', '#sectioning .section', dblclick);
 	$(document).on('click', '#sectioning .section', click);
@@ -116,15 +141,24 @@ var Sectioning = (function () {
 				.css('left', (list.length - level - 1) * 86 + 2);
 				for (var i in list[level]) {
 					var section = list[level][i];
+					index[section.id] = section;
 					var li = $(document.createElement('li')).appendTo(ul)
 					.addClass('section')
 					.css('top', section.first * 18)
 					.css('height', (section.last - section.first) * 18 + 16)
 					.attr('section-id', section.id)
-					.html('<span class="sentence-name">' + (section.name || '') + '</span>');
-					if (level == 0) li.append(': <span class="sentence-start">' + section.text + '</span>')
 					if (section.found) li.addClass('found_sentence')
+					setContent(li, section, level);
 				}
+			}
+		},
+		updateList: function (data) {
+			for (var i in data) {
+				var section = data[i];
+				for (var prop in section) index[section.id][prop] = section[prop];
+				var li = $('[section-id=' + section.id + ']');
+				var level = parseInt(li.closest('ul').attr('level'));
+				setContent(li, section, level);
 			}
 		},
 		setCurrent: function (sections) {
@@ -193,8 +227,14 @@ var Sectioning = (function () {
 					if (offset > 0)
 						newIndizes = $.map(currentIndizes, function(i){return i + offset;});
 					break;
+				case 'prevMatch':
+					newIndizes = [sectionWithMatch(currentLevel, sentenceWithMatch(-1))];
+					break;
+				case 'nextMatch':
+					newIndizes = [sectionWithMatch(currentLevel, sentenceWithMatch(+1))];
+					break;
 			}
-			if (newIndizes != currentIndizes) {
+			if (JSON.stringify(newIndizes) != JSON.stringify(currentIndizes)) {
 				Sectioning.setCurrentIndizes(currentLevel, newIndizes);
 				Sectioning.changeSentence()
 			}

@@ -113,10 +113,12 @@ class String
 		r = {}
 		r[:ctrl] = '(\s|:)'
 		r[:comment] = '#'
-		r[:bstring] = '[^\s:"#]+'
+		r[:bstring] = '(\.?([^\s:"#\.]+\.|[^\s:"#\.])+)'
 		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
 		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\")|)"'
+		r[:rstring] = '/.*/'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
+		r[:bsequence] = r[:bstring] + '\.\.' + r[:bstring]
 		r[:sequence] = r[:string] + '\.\.' + r[:string]
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
 		r[:id] = '@' + '[_[:alnum:]]+'
@@ -127,7 +129,9 @@ class String
 			if m = str.match(r[:comment])
 				break
 			elsif m = str.match(r[:ctrl])
-			elsif m = str.match(r[:sequence])
+			elsif m = str.match(r[:rstring])
+				h[:words] << m[0]
+			elsif m = str.match(r[:bsequence])
 				if mm = str.match(/^([ent])(\d+)\.\.\1(\d+)/)
 					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
 						h[:elements] << mm[1] + n.to_s
@@ -143,17 +147,21 @@ class String
 						end
 					end
 				else
-					h[:name_sequences] << [
-						m[2] ? m[2].gsub('\"', '"') : m[1],
-						m[6] ? m[6].gsub('\"', '"') : m[5],
-					]
+					h[:name_sequences] << [m[1], m[3]]
 				end
+			elsif m = str.match(r[:sequence])
+				h[:name_sequences] << [
+					m[2] ? m[2].gsub('\"', '"') : m[1],
+					m[8] ? m[8].gsub('\"', '"') : m[7],
+				]
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
-				val = m[6] ? m[6].gsub('\"', '"') : m[5]
+				val = m[8] ? m[8].gsub('\"', '"') : m[7]
 				h[:attributes][key] = val
-			elsif m = str.match(r[:string])
-				word = m[2] ? m[2].gsub('\"', '"') : m[1]
+			elsif m = str.match(r[:qstring])
+				h[:words] << m[1].gsub('\"', '"')
+			elsif m = str.match(r[:bstring])
+				word = m[0]
 				h[:words] << word
 				if word.match(/^(([ents]\d+)|m)$/)
 					h[:elements] << word

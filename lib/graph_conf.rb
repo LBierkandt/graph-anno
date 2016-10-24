@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class AnnoGraphConf
+class GraphConf
 	attr_accessor :font, :default_color, :token_color, :found_color, :filtered_color, :edge_weight, :xlabel, :layers, :combinations
 
 	def initialize(h = {})
