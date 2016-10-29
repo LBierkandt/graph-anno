@@ -69,18 +69,14 @@ class Node < NodeOrEdge
 	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
 	# @return [Array] list of found parent nodes
 	def parent_nodes(&block)
-		selected = @in.select(&block)
-		selected = @in if selected.is_a?(Enumerator)
-		return selected.map(&:start)
+		@in.select(&block).map(&:start)
 	end
 
 	# returns nodes connected to self by outgoing edges which fulfil the (optional) block
 	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
 	# @return [Array] child nodes connected by edges with the defined attributes
 	def child_nodes(&block)
-		selected = @out.select(&block)
-		selected = @out if selected.is_a?(Enumerator)
-		return selected.map(&:end)
+		@out.select(&block).map(&:end)
 	end
 
 	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
