@@ -21,6 +21,7 @@ require 'yaml.rb'
 require 'htmlentities.rb'
 require_relative 'log.rb'
 require_relative 'dot_graph.rb'
+require_relative 'search_result.rb'
 
 class GraphController
 	attr_writer :sinatra
@@ -31,7 +32,6 @@ class GraphController
 		@log = Log.new(@graph)
 		@graph_file = ''
 		@data_table = nil
-		@search_result = ''
 		@section_list = {}
 		@sections = []
 		@current_sections = nil
@@ -39,7 +39,7 @@ class GraphController
 		@nodes = []
 		@edges = []
 		@show_refs = true
-		@found = nil
+		@search_result = SearchResult.new
 		@filter = {:mode => 'unfilter'}
 		@windows = {}
 		@preferences = File::open('conf/preferences.yml'){|f| YAML::load(f)}
@@ -117,31 +117,26 @@ class GraphController
 
 	def search
 		set_cookie('traw_query', @sinatra.params[:query])
-		@found = {:tg => []}
 		begin
-			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
-			@search_result = @found[:tg].length.to_s + ' matches'
+			@search_result.set(@graph.teilgraph_suchen(@sinatra.params[:query]))
 		rescue StandardError => e
-			@search_result = error_message_html(e.message)
+			@search_result.error(error_message_html(e.message))
 		end
-		@found[:nodes] = Hash[@found[:tg].map(&:nodes).flatten.uniq.map{|n| [n.id, n]}]
-		@found[:edges] = Hash[@found[:tg].map(&:edges).flatten.uniq.map{|e| [e.id, e]}]
 		@section_list.each{|id, h| h[:found] = false}
 		set_found_sentences
 		return generate_graph.merge(
 			:sections => @sections,
 			:current_sections => current_section_ids,
-			:search_result => @search_result,
+			:search_result => @search_result.text,
 			:sections_changed => false
 		).to_json
 	end
 
 	def clear_search
-		@found = nil
-		@search_result = ''
+		@search_result.reset
 		return generate_graph.merge(
 			:sections => set_sections,
-			:search_result => @search_result,
+			:search_result => @search_result.text,
 			:sections_changed => false
 		).to_json
 	end
@@ -371,7 +366,7 @@ class GraphController
 	end
 
 	def export_subcorpus(filename)
-		if @found
+		if @search_result.valid?
 			subgraph = @graph.subcorpus(@section_list.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
@@ -379,10 +374,10 @@ class GraphController
 	end
 
 	def export_data
-		if @found
+		if @search_result.valid?
 			begin
 				anfrage = @sinatra.params[:query]
-				@data_table = @graph.teilgraph_ausgeben(@found, anfrage, :string)
+				@data_table = @graph.teilgraph_ausgeben(@search_result, anfrage, :string)
 				return ''
 			rescue StandardError => e
 				return error_message_html(e.message)
@@ -398,19 +393,16 @@ class GraphController
 	end
 
 	def annotate_query
-		return {:search_result => error_message_html('Execute a search first!')}.to_json unless @found
+		return {:search_result => error_message_html('Execute a search first!')}.to_json unless @search_result.valid?
 		begin
-			search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+			search_result_preserved = @graph.teilgraph_annotieren(@search_result, @sinatra.params[:query])
 		rescue StandardError => e
 			return {:search_result => error_message_html(e.message)}.to_json
 		end
-		unless search_result_preserved
-			@found = nil
-			@search_result = ''
-		end
+		@search_result.reset unless search_result_preserved
 		return generate_graph.merge(
 			:sections => set_sections,
-			:search_result => @search_result,
+			:search_result => @search_result.text,
 			:sections_changed => false
 		).to_json
 	end
@@ -475,7 +467,7 @@ class GraphController
 	def clear_workspace
 		@graph_file.replace('')
 		@graph.clear
-		@found = nil
+		@search_result.reset
 		@current_sections = nil
 		@log = Log.new(@graph)
 	end
@@ -862,7 +854,7 @@ class GraphController
 			addgraph = Graph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
-			@found = nil
+			@search_result.reset
 			reload_sections = true
 
 		when 'save' # save workspace to corpus file
@@ -996,7 +988,7 @@ class GraphController
 				:color => @graph.conf.token_color,
 				:fontcolor => @graph.conf.token_color
 			}
-			if @found && @found[:nodes][token.id]
+			if @search_result.nodes[token.id]
 				options[:color] = @graph.conf.found_color
 				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
 			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
@@ -1052,7 +1044,7 @@ class GraphController
 				end
 			end
 			options[:fontcolor] = options[:color]
-			if @found && @found[:nodes][node.id]
+			if @search_result.nodes[node.id]
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
@@ -1097,7 +1089,7 @@ class GraphController
 				end
 			end
 			options[:fontcolor] = options[:color]
-			if @found && @found[:edges][edge.id]
+			if @search_result.edges[edge.id]
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
@@ -1140,7 +1132,7 @@ class GraphController
 	end
 
 	def set_found_sentences
-		(@found[:nodes].values.map{|n| n.sentence.id} + @found[:edges].values.map{|e| e.end.sentence.id}).uniq.each do |s|
+		(@search_result.nodes.values.map{|n| n.sentence.id} + @search_result.edges.values.map{|e| e.end.sentence.id}).uniq.each do |s|
 			@section_list[s][:found] = true
 		end
 		# set sections to found if dominated sentences contain matches
@@ -1152,7 +1144,7 @@ class GraphController
 			level.map{|s| s.merge(sectioning_info(s[:node])).merge(:found => false).except(:node)}
 		end
 		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
-		set_found_sentences if @found
+		set_found_sentences if @search_result.valid?
 		@sections
 	end
 
