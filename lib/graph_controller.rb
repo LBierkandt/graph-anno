@@ -374,14 +374,13 @@ class GraphController
 	end
 
 	def export_data
-		if @search_result.valid?
-			begin
-				anfrage = @sinatra.params[:query]
-				@data_table = @graph.teilgraph_ausgeben(@search_result, anfrage, :string)
-				return ''
-			rescue StandardError => e
-				return error_message_html(e.message)
-			end
+		return error_message_html('Execute a search first!') unless @search_result.valid?
+		begin
+			anfrage = @sinatra.params[:query]
+			@data_table = @graph.teilgraph_ausgeben(@search_result, anfrage, :string)
+			return ''
+		rescue StandardError => e
+			return error_message_html(e.message)
 		end
 	end
 
