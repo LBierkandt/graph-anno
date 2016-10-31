@@ -45,4 +45,11 @@ class SearchResult
 		reset
 		@text = message
 	end
+
+	def sentence_ids
+		(
+			@nodes.values.map{|n| n.sentence.id rescue nil} +
+			@edges.values.map{|e| e.end.sentence.id rescue nil}
+		).uniq.compact
+	end
 end
