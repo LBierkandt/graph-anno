@@ -32,7 +32,7 @@ class GraphController
 		@log = Log.new(@graph)
 		@graph_file = ''
 		@data_table = nil
-		@section_list = {}
+		@section_index = {}
 		@sections = []
 		@current_sections = nil
 		@tokens = []
@@ -122,7 +122,7 @@ class GraphController
 		rescue StandardError => e
 			@search_result.error(error_message_html(e.message))
 		end
-		@section_list.each{|id, h| h[:found] = false}
+		@section_index.each{|id, h| h[:found] = false}
 		set_found_sentences
 		return generate_graph.merge(
 			:sections => @sections,
@@ -357,7 +357,7 @@ class GraphController
 			@graph.toolbox_einlesen(file, format)
 		end
 		set_sections
-		@current_sections = [@graph.nodes[@section_list.keys.first]]
+		@current_sections = [@graph.nodes[@section_index.keys.first]]
 		return {
 			:current_sections => current_section_ids,
 			:sections => @sections,
@@ -367,7 +367,7 @@ class GraphController
 
 	def export_subcorpus(filename)
 		if @search_result.valid?
-			subgraph = @graph.subcorpus(@section_list.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
+			subgraph = @graph.subcorpus(@section_index.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
 		end
@@ -1131,16 +1131,16 @@ class GraphController
 	end
 
 	def set_found_sentences
-		@search_result.sentence_ids.each{|id| @section_list[id][:found] = true}
+		@search_result.sentence_ids.each{|id| @section_index[id][:found] = true}
 		# set sections to found if dominated sentences contain matches
-		@section_list.each{|id, s| s[:found] = true if @graph.nodes[s[:id]].sentence_nodes.any?{|n| @section_list[n.id][:found]}}
+		@section_index.each{|id, s| s[:found] = true if @graph.nodes[s[:id]].sentence_nodes.any?{|n| @section_index[n.id][:found]}}
 	end
 
 	def set_sections
 		@sections = @graph.section_structure.map do |level|
 			level.map{|s| s.merge(sectioning_info(s[:node])).merge(:found => false).except(:node)}
 		end
-		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
+		@section_index = Hash[@sections.flatten.map{|s| [s[:id], s]}]
 		set_found_sentences if @search_result.valid?
 		@sections
 	end
@@ -1148,7 +1148,7 @@ class GraphController
 	def update_sections
 		sections = (@graph.sections_hierarchy(@current_sections) || []).flatten
 		section_info = sections.map{|s| sectioning_info(s)}
-		section_info.each{|s| @section_list[s[:id]].merge!(s)}
+		section_info.each{|s| @section_index[s[:id]].merge!(s)}
 		section_info
 	end
 
