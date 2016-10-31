@@ -18,14 +18,13 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'yaml.rb'
-require 'htmlentities.rb'
 require_relative 'log.rb'
-require_relative 'dot_graph.rb'
+require_relative 'graph_view.rb'
 require_relative 'search_result.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :graph_file, :search_result
+	attr_reader :graph, :log, :graph_file, :search_result, :current_sections
 
 	def initialize
 		@graph = Graph.new
@@ -35,12 +34,8 @@ class GraphController
 		@section_index = {}
 		@sections = []
 		@current_sections = nil
-		@tokens = []
-		@nodes = []
-		@edges = []
-		@show_refs = true
+		@view = GraphView.new(self)
 		@search_result = SearchResult.new
-		@filter = {:mode => 'unfilter'}
 		@windows = {}
 		@preferences = File::open('conf/preferences.yml'){|f| YAML::load(f)}
 	end
@@ -62,8 +57,8 @@ class GraphController
 	end
 
 	def toggle_refs
-		@show_refs = !@show_refs
-		return generate_graph.merge(
+		@view.show_refs = !@view.show_refs
+		return @view.generate.merge(
 			:sections_changed => false
 		).to_json
 	end
@@ -99,17 +94,17 @@ class GraphController
 
 	def change_sentence
 		set_section(@sinatra.params[:sentence])
-		return generate_graph.merge(
+		return @view.generate.merge(
 			:autocomplete => autocomplete_data,
 			:sections_changed => true
 		).to_json
 	end
 
-	def filter
+	def set_filter
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
-		@filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
-		return generate_graph.merge(
+		@view.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
+		return @view.generate.merge(
 			:sections_changed => false,
 			:filter_applied => true
 		).to_json
@@ -124,7 +119,7 @@ class GraphController
 		end
 		@section_index.each{|id, h| h[:found] = false}
 		set_found_sentences
-		return generate_graph.merge(
+		return @view.generate.merge(
 			:sections => @sections,
 			:current_sections => current_section_ids,
 			:search_result => @search_result.text,
@@ -134,7 +129,7 @@ class GraphController
 
 	def clear_search
 		@search_result.reset
-		return generate_graph.merge(
+		return @view.generate.merge(
 			:sections => set_sections,
 			:search_result => @search_result.text,
 			:sections_changed => false
@@ -399,7 +394,7 @@ class GraphController
 			return {:search_result => error_message_html(e.message)}.to_json
 		end
 		@search_result.reset unless search_result_preserved
-		return generate_graph.merge(
+		return @view.generate.merge(
 			:sections => set_sections,
 			:search_result => @search_result.text,
 			:sections_changed => false
@@ -472,7 +467,7 @@ class GraphController
 	end
 
 	def section_settings_and_graph(reload_sections = true)
-		generate_graph.merge(
+		@view.generate.merge(
 			:autocomplete => autocomplete_data,
 			:preferences => @preferences,
 			:current_sections => @current_sections ? current_section_ids : nil,
@@ -504,47 +499,6 @@ class GraphController
 		 '<span class="error_message">' + message.gsub("\n", '<br/>') + '</span>'
 	end
 
-	def build_label(e, i = nil)
-		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map(&:attr)).include?(k)}
-		if e.is_a?(Node)
-			if e.type == 's' || e.type == 'p'
-				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
-			elsif e.type == 't'
-				display_attr.each do |key, value|
-					case key
-					when 'token'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-					end
-				end
-				label += "t#{i}" if i
-			else # normaler Knoten
-				display_attr.each do |key,value|
-					case key
-					when 'cat'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-					end
-				end
-				label += "n#{i}" if i
-			end
-		elsif e.is_a?(Edge)
-			display_attr.each do |key,value|
-				case key
-				when 'cat'
-					label = "#{value}\n#{label}"
-				else
-					label += "#{key}: #{value}\n"
-				end
-			end
-			label += "e#{i}" if i
-		end
-		return label
-	end
-
 	def sectioning_info(node)
 		{:id => node.id, :name => node.name, :text => node.text}
 	end
@@ -572,9 +526,9 @@ class GraphController
 		{
 			'm' => @current_sections,
 			's' => @graph.sections_hierarchy(@current_sections)[i],
-			'n' => @nodes[i],
-			'e' => @edges[i],
-			't' => @tokens[i],
+			'n' => @view.nodes[i],
+			'e' => @view.edges[i],
+			't' => @view.tokens[i],
 		}[identifier[0]]
 	end
 
@@ -923,185 +877,6 @@ class GraphController
 		return {:command => command, :reload_sections => reload_sections}
 	end
 
-	def generate_graph
-		satzinfo = {:textline => '', :meta => ''}
-		return satzinfo.merge(:dot => DotGraph.new(:G)) unless @current_sections
-		puts "Generating graph for section(s) \"#{@current_sections.map(&:name).join(', ')}\"..."
-
-		@tokens     = @current_sections ? @current_sections.map(&:sentence_tokens).flatten(1) : []
-		all_nodes   = @current_sections ? @current_sections.map(&:nodes).flatten(1) : []
-		@nodes      = all_nodes.reject{|n| n.type == 't'}
-		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
-		@edges      = all_edges.of_type('a')
-		order_edges = all_edges.of_type('o')
-
-		if @filter[:mode] == 'filter'
-			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
-			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
-		end
-
-		satzinfo[:meta] = if @current_sections && @current_sections.length == 1
-			build_label(@current_sections.first)
-		else
-			''
-		end
-
-		graph_options = {
-			:type => :digraph,
-			:rankdir => :TB,
-			:use => :dot,
-			:ranksep => 0.3
-		}.merge(@graph.conf.xlabel ? {:forcelabels => true, :ranksep => 0.85} : {})
-		viz_graph = DotGraph.new(:G, graph_options)
-		token_graph = viz_graph.subgraph(:rank => :same)
-		layer_graphs = {}
-		@graph.conf.combinations.each do |c|
-			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
-		end
-		@graph.conf.layers.each do |l|
-			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
-		end
-		# speaker subgraphs
-		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map(&:speaker).include?(sp)}) != []
-			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => :same)]}]
-			# induce speaker labels and layering of speaker graphs:
-			gv_speaker_nodes = []
-			speaker_graphs.each do |speaker_node, speaker_graph|
-				gv_speaker_nodes << speaker_graph.add_nodes(
-					's' + speaker_node.id.to_s,
-					{:shape => :plaintext, :label => speaker_node['name'], :fontname => @graph.conf.font}
-				)
-				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => :invis}) if gv_speaker_nodes.length > 1
-			end
-			timeline_graph = viz_graph.subgraph(:rank => :same)
-			gv_anchor = timeline_graph.add_nodes('anchor', {:style => :invis})
-			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => :invis})
-		end
-
-		@tokens.each_with_index do |token, i|
-			options = {
-				:fontname => @graph.conf.font,
-				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
-				:shape => :box,
-				:style => :bold,
-				:color => @graph.conf.token_color,
-				:fontcolor => @graph.conf.token_color
-			}
-			if @search_result.nodes[token.id]
-				options[:color] = @graph.conf.found_color
-				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
-			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
-				options[:color] = @graph.conf.filtered_color
-				options[:fontcolor]= @graph.conf.filtered_color
-				satzinfo[:textline] += '<span class="hidden_word">' + token.token + '</span> '
-			else
-				satzinfo[:textline] += token.token + ' '
-			end
-			unless token.speaker
-				token_graph.add_nodes(token, options)
-			else
-				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token, options)
-				gv_time  = timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
-				# add ordering edge from speaker to speaker's first token
-				viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
-				# multiple lines between token and point on timeline in order to force correct order:
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
-				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => :none, :weight => 9999})
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
-				# order points on timeline:
-				if i > 0
-					viz_graph.add_edges('t' + @tokens[i-1].id.to_s, gv_time, {:arrowhead => :none})
-				else
-					viz_graph.add_edges(gv_anchor, gv_time, {:style => :invis})
-				end
-			end
-		end
-
-		@nodes.each_with_index do |node, i|
-			options = {
-				:fontname => @graph.conf.font,
-				:color => @graph.conf.default_color,
-				:shape => :box,
-				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
-			}
-			actual_layer_graph = nil
-			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
-				options[:color] = @graph.conf.filtered_color
-			else
-				@graph.conf.layers.each do |l|
-					if node[l.attr] == 't'
-						options[:color] = l.color
-						actual_layer_graph = layer_graphs[l.attr]
-					end
-				end
-				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
-					if c.attr.all?{|a| node[a] == 't'}
-						options[:color] = c.color
-						actual_layer_graph = layer_graphs[c.attr]
-					end
-				end
-			end
-			options[:fontcolor] = options[:color]
-			if @search_result.nodes[node.id]
-				options[:color] = @graph.conf.found_color
-				options[:penwidth] = 2
-			end
-			viz_graph.add_nodes(node, options)
-			actual_layer_graph.add_nodes(node) if actual_layer_graph
-		end
-
-		@edges.each_with_index do |edge, i|
-			label = HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal)
-			options = {
-				:fontname => @graph.conf.font,
-				:color => @graph.conf.default_color,
-				:weight => @graph.conf.edge_weight,
-				:constraint => true
-			}.merge(
-				@graph.conf.xlabel ? {:xlabel => label} : {:label => label}
-			)
-			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
-				options[:color] = @graph.conf.filtered_color
-			else
-				@graph.conf.layers.each do |l|
-					if edge[l.attr] == 't'
-						options[:color] = l.color
-						if l.weight == 0
-							options[:constraint] = false
-						else
-							options[:weight] = l.weight
-							options[:constraint] = true
-						end
-					end
-				end
-				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
-					if c.attr.all?{|a| edge[a] == 't'}
-						options[:color] = c.color
-						if c.weight == 0
-							options[:constraint] = false
-						else
-							options[:weight] = c.weight
-							options[:constraint] = true
-						end
-					end
-				end
-			end
-			options[:fontcolor] = options[:color]
-			if @search_result.edges[edge.id]
-				options[:color] = @graph.conf.found_color
-				options[:penwidth] = 2
-			end
-			viz_graph.add_edges(edge.start, edge.end, options)
-		end
-
-		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
-		end
-
-		return satzinfo.merge(:dot => viz_graph)
-	end
-
 	def sentence_set?
 		return true if @current_sections
 		raise 'Create a sentence first!'
@@ -1210,7 +985,7 @@ class GraphController
 		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
 		makros = @preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []
 		layers = @preferences[:makro] ? @graph.layer_makros.keys : []
-		refs   = @preferences[:ref] ? @tokens.map.with_index{|t, i| "t#{i}"} + @nodes.map.with_index{|n, i| "n#{i}"} + @edges.map.with_index{|e, i| "e#{i}"} : []
+		refs   = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} + @view.nodes.map.with_index{|n, i| "n#{i}"} + @view.edges.map.with_index{|e, i| "e#{i}"} : []
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
 		arefs  = @preferences[:ref] ? refs + srefs : []
 		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
