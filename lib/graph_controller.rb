@@ -124,8 +124,8 @@ class GraphController
 		rescue StandardError => e
 			@search_result = error_message_html(e.message)
 		end
-		@found[:all_nodes] = @found[:tg].map(&:nodes).flatten.uniq
-		@found[:all_edges] = @found[:tg].map(&:edges).flatten.uniq
+		@found[:nodes] = Hash[@found[:tg].map(&:nodes).flatten.uniq.map{|n| [n.id, n]}]
+		@found[:edges] = Hash[@found[:tg].map(&:edges).flatten.uniq.map{|e| [e.id, e]}]
 		@section_list.each{|id, h| h[:found] = false}
 		set_found_sentences
 		return generate_graph.merge(
@@ -996,7 +996,7 @@ class GraphController
 				:color => @graph.conf.token_color,
 				:fontcolor => @graph.conf.token_color
 			}
-			if @found && @found[:all_nodes].include?(token)
+			if @found && @found[:nodes][token.id]
 				options[:color] = @graph.conf.found_color
 				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
 			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
@@ -1052,7 +1052,7 @@ class GraphController
 				end
 			end
 			options[:fontcolor] = options[:color]
-			if @found && @found[:all_nodes].include?(node)
+			if @found && @found[:nodes][node.id]
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
@@ -1097,7 +1097,7 @@ class GraphController
 				end
 			end
 			options[:fontcolor] = options[:color]
-			if @found && @found[:all_edges].include?(edge)
+			if @found && @found[:edges][edge.id]
 				options[:color] = @graph.conf.found_color
 				options[:penwidth] = 2
 			end
@@ -1140,7 +1140,7 @@ class GraphController
 	end
 
 	def set_found_sentences
-		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
+		(@found[:nodes].values.map{|n| n.sentence.id} + @found[:edges].values.map{|e| e.end.sentence.id}).uniq.each do |s|
 			@section_list[s][:found] = true
 		end
 		# set sections to found if dominated sentences contain matches
