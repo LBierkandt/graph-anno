@@ -682,11 +682,8 @@ class GraphController
 		when 'd' # delete elements
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			extract_elements(parameters[:nodes] + parameters[:edges]).each do |element|
-				element.delete(log_step)
-			end
-			extract_elements(parameters[:tokens]).each do |element|
-				element.remove_token(log_step)
+			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |element|
+				element.delete(log_step, true)
 			end
 			undefined_references?(parameters[:elements])
 

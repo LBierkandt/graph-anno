@@ -505,7 +505,7 @@ module GraphSearch
 					end
 				when 'd'
 					elements.each do |el|
-						el.type == 't' ? el.remove_token : el.delete if el
+						el.delete(nil, true) if el
 						search_result_preserved = false
 					end
 				when 'ni'
