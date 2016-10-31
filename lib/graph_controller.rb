@@ -361,7 +361,7 @@ class GraphController
 			format = JSON.parse(format_description)
 			@graph.toolbox_einlesen(file, format)
 		end
-		set_sections(:clear => true)
+		set_sections
 		@current_sections = [@graph.nodes[@section_list.keys.first]]
 		return {
 			:current_sections => current_section_ids,
@@ -1147,12 +1147,12 @@ class GraphController
 		@section_list.each{|id, s| s[:found] = true if @graph.nodes[s[:id]].sentence_nodes.any?{|n| @section_list[n.id][:found]}}
 	end
 
-	def set_sections(h = {})
+	def set_sections
 		@sections = @graph.section_structure.map do |level|
 			level.map{|s| s.merge(sectioning_info(s[:node])).merge(:found => false).except(:node)}
 		end
 		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
-		set_found_sentences if !h[:clear] and @found
+		set_found_sentences if @found
 		@sections
 	end
 
