@@ -628,6 +628,7 @@ class Graph
 		@anno_makros = {}
 		@file_settings = {}
 		create_layer_makros
+		GC.start
 	end
 
 	# import corpus from pre-formatted text
