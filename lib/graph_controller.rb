@@ -118,7 +118,7 @@ class GraphController
 			@search_result.error(error_message_html(e.message))
 		end
 		@section_index.each{|id, h| h[:found] = false}
-		set_found_sentences
+		set_found_sections
 		return @view.generate.merge(
 			:sections => @sections,
 			:current_sections => current_section_ids,
@@ -905,10 +905,8 @@ class GraphController
 		end
 	end
 
-	def set_found_sentences
-		@search_result.sentence_ids.each{|id| @section_index[id][:found] = true}
-		# set sections to found if dominated sentences contain matches
-		@section_index.each{|id, s| s[:found] = true if @graph.nodes[s[:id]].sentence_nodes.any?{|n| @section_index[n.id][:found]}}
+	def set_found_sections
+		@search_result.sections.each{|s| @section_index[s.id][:found] = true}
 	end
 
 	def set_sections
@@ -916,7 +914,7 @@ class GraphController
 			level.map{|s| s.merge(sectioning_info(s[:node])).merge(:found => false).except(:node)}
 		end
 		@section_index = Hash[@sections.flatten.map{|s| [s[:id], s]}]
-		set_found_sentences if @search_result.valid?
+		set_found_sections if @search_result.valid?
 		@sections
 	end
 

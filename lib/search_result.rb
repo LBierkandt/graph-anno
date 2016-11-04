@@ -46,10 +46,9 @@ class SearchResult
 		@text = message
 	end
 
-	def sentence_ids
-		(
-			@nodes.values.map{|n| n.sentence.id rescue nil} +
-			@edges.values.map{|e| e.end.sentence.id rescue nil}
-		).uniq.compact
+	def sections
+		(@nodes.values + @edges.values.map{|e| e.end})
+			.uniq.compact.map(&:sentence)
+			.map{|s| [s] + s.ancestor_sections}.flatten.uniq
 	end
 end
