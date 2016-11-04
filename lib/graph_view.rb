@@ -34,27 +34,13 @@ class GraphView
 	end
 
 	def generate
-		satzinfo = {:textline => '', :meta => ''}
-		return satzinfo.merge(:dot => DotGraph.new(:G)) unless @ctrl.current_sections
+		section_info = {:textline => '', :meta => ''}
+		return section_info.merge(:dot => DotGraph.new(:G)) unless @ctrl.current_sections
 		puts "Generating graph for section(s) \"#{@ctrl.current_sections.map(&:name).join(', ')}\"..."
 
-		@tokens     = @ctrl.current_sections ? @ctrl.current_sections.map(&:sentence_tokens).flatten(1) : []
-		all_nodes   = @ctrl.current_sections ? @ctrl.current_sections.map(&:nodes).flatten(1) : []
-		@nodes      = all_nodes.reject{|n| n.type == 't'}
-		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
-		@edges      = all_edges.of_type('a')
-		order_edges = all_edges.of_type('o')
-
-		if @filter[:mode] == 'filter'
-			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
-			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
-		end
-
-		satzinfo[:meta] = if @ctrl.current_sections && @ctrl.current_sections.length == 1
-			build_label(@ctrl.current_sections.first)
-		else
-			''
-		end
+		set_elements
+		apply_filter
+		section_info = set_section_label(section_info)
 
 		graph_options = {
 			:type => :digraph,
@@ -99,13 +85,13 @@ class GraphView
 			}
 			if @ctrl.search_result.nodes[token.id]
 				options[:color] = @ctrl.graph.conf.found_color
-				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
+				section_info[:textline] += '<span class="found_word">' + token.token + '</span> '
 			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
 				options[:color] = @ctrl.graph.conf.filtered_color
 				options[:fontcolor]= @ctrl.graph.conf.filtered_color
-				satzinfo[:textline] += '<span class="hidden_word">' + token.token + '</span> '
+				section_info[:textline] += '<span class="hidden_word">' + token.token + '</span> '
 			else
-				satzinfo[:textline] += token.token + ' '
+				section_info[:textline] += token.token + ' '
 			end
 			unless token.speaker
 				token_graph.add_nodes(token, options)
@@ -205,14 +191,35 @@ class GraphView
 			viz_graph.add_edges(edge.start, edge.end, options)
 		end
 
-		order_edges.each do |edge|
+		@order_edges.each do |edge|
 			viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 
-		return satzinfo.merge(:dot => viz_graph)
+		return section_info.merge(:dot => viz_graph)
 	end
 
 	private
+
+	def set_elements
+		@tokens      = @ctrl.current_sections ? @ctrl.current_sections.map(&:sentence_tokens).flatten(1) : []
+		all_nodes    = @ctrl.current_sections ? @ctrl.current_sections.map(&:nodes).flatten(1) : []
+		@nodes       = all_nodes.reject{|n| n.type == 't'}
+		all_edges    = all_nodes.map{|n| n.in + n.out}.flatten.uniq
+		@edges       = all_edges.of_type('a')
+		@order_edges = all_edges.of_type('o')
+	end
+
+	def apply_filter
+		if @filter[:mode] == 'filter'
+			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
+			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
+		end
+	end
+
+	def set_section_label(section_info)
+		return section_info unless @ctrl.current_sections && @ctrl.current_sections.length == 1
+		section_info.merge(:meta => build_label(@ctrl.current_sections.first))
+	end
 
 	def build_label(e, i = nil)
 		label = ''
