@@ -18,30 +18,26 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'yaml.rb'
-require 'htmlentities.rb'
 require_relative 'log.rb'
-require_relative 'dot_graph.rb'
+require_relative 'graph_view.rb'
+require_relative 'search_result.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :graph_file, :search_result
+	attr_reader :graph, :log, :graph_file, :search_result, :current_sections
 
 	def initialize
-		@graph = AnnoGraph.new
+		@graph = Graph.new
 		@log = Log.new(@graph)
 		@graph_file = ''
 		@data_table = nil
-		@search_result = ''
-		@section_list = {}
+		@section_index = {}
 		@sections = []
 		@current_sections = nil
-		@tokens = []
-		@nodes = []
-		@edges = []
-		@show_refs = true
-		@found = nil
-		@filter = {:mode => 'unfilter'}
+		@view = GraphView.new(self)
+		@search_result = SearchResult.new
 		@windows = {}
+		@preferences = File::open('conf/preferences.yml'){|f| YAML::load(f)}
 	end
 
 	def root
@@ -55,16 +51,14 @@ class GraphController
 	end
 
 	def draw_graph
-		generate_graph.merge(
-			:current_sections => @current_sections ? current_section_ids : nil,
-			:sections => set_sections,
+		section_settings_and_graph.merge(
 			:sections_changed => true
 		).to_json
 	end
 
 	def toggle_refs
-		@show_refs = !@show_refs
-		return generate_graph.merge(
+		@view.show_refs = !@view.show_refs
+		return @view.generate.merge(
 			:sections_changed => false
 		).to_json
 	end
@@ -86,12 +80,13 @@ class GraphController
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
 			@cmd_error_messages << e.message
+			value = {}
 		end
-		return value.to_json if value.is_a?(Hash)
-		return section_settings_and_graph.merge(
+		return value.to_json if value[:modal]
+		return section_settings_and_graph(value[:reload_sections]).merge(
 			:graph_file => @graph_file,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
-			:command => value,
+			:command => value[:command],
 			:windows => @windows,
 			:messages => @cmd_error_messages
 		).to_json
@@ -99,16 +94,17 @@ class GraphController
 
 	def change_sentence
 		set_section(@sinatra.params[:sentence])
-		return generate_graph.merge(
+		return @view.generate.merge(
+			:autocomplete => autocomplete_data,
 			:sections_changed => true
 		).to_json
 	end
 
-	def filter
+	def set_filter
 		set_filter_cookies
 		mode = @sinatra.params[:mode].partition(' ')
-		@filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
-		return generate_graph.merge(
+		@view.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
+		return @view.generate.merge(
 			:sections_changed => false,
 			:filter_applied => true
 		).to_json
@@ -116,40 +112,36 @@ class GraphController
 
 	def search
 		set_cookie('traw_query', @sinatra.params[:query])
-		@found = {:tg => []}
 		begin
-			@found[:tg] = @graph.teilgraph_suchen(@sinatra.params[:query])
-			@search_result = @found[:tg].length.to_s + ' matches'
+			@search_result.set(@graph.teilgraph_suchen(@sinatra.params[:query]))
 		rescue StandardError => e
-			@search_result = error_message_html(e.message)
+			@search_result.error(error_message_html(e.message))
 		end
-		@found[:all_nodes] = @found[:tg].map(&:nodes).flatten.uniq
-		@found[:all_edges] = @found[:tg].map(&:edges).flatten.uniq
-		@section_list.each{|id, h| h[:found] = false}
-		set_found_sentences
-		return generate_graph.merge(
+		@section_index.each{|id, h| h[:found] = false}
+		set_found_sections
+		return @view.generate.merge(
 			:sections => @sections,
 			:current_sections => current_section_ids,
-			:search_result => @search_result,
+			:search_result => @search_result.text,
 			:sections_changed => false
 		).to_json
 	end
 
 	def clear_search
-		@found = nil
-		@search_result = ''
-		return generate_graph.merge(
+		@search_result.reset
+		return @view.generate.merge(
 			:sections => set_sections,
-			:search_result => @search_result,
+			:search_result => @search_result.text,
 			:sections_changed => false
 		).to_json
 	end
 
-	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file'].each do |form_name|
+	['config', 'metadata', 'makros', 'tagset', 'speakers', 'annotators', 'file', 'pref'].each do |form_name|
 		define_method("#{form_name}_form") do
 			@sinatra.haml(
 				:"#{form_name}_form",
 				:locals => {
+					:preferences => @preferences,
 					:graph => @graph
 				}
 			)
@@ -170,7 +162,7 @@ class GraphController
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
 			@sinatra.params['combinations'] = @sinatra.params['combinations'] || {}
-			@graph.conf = AnnoGraphConf.new(
+			@graph.conf = GraphConf.new(
 				@sinatra.params['general'].inject({}) do |h, (k, v)|
 					k == 'edge_weight' ? h[k] = v.to_i : h[k] = v
 					h
@@ -269,7 +261,7 @@ class GraphController
 		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
 		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
 		@graph.tagset = Tagset.new(tagset_hash)
-		return true.to_json
+		return {:autocomplete => autocomplete_data}.to_json
 	end
 
 	def save_file
@@ -278,6 +270,17 @@ class GraphController
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		return true.to_json
+	end
+
+	def save_pref
+		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref, :annotator].each do |property|
+			@preferences[property] = !!@sinatra.params[property.to_s]
+		end
+		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
+		return {
+			:preferences => @preferences,
+			:autocomplete => autocomplete_data,
+		}.to_json
 	end
 
 	def new_layer(i)
@@ -348,8 +351,8 @@ class GraphController
 			format = JSON.parse(format_description)
 			@graph.toolbox_einlesen(file, format)
 		end
-		set_sections(:clear => true)
-		@current_sections = [@graph.nodes[@section_list.keys.first]]
+		set_sections
+		@current_sections = [@graph.nodes[@section_index.keys.first]]
 		return {
 			:current_sections => current_section_ids,
 			:sections => @sections,
@@ -358,22 +361,21 @@ class GraphController
 	end
 
 	def export_subcorpus(filename)
-		if @found
-			subgraph = @graph.subcorpus(@section_list.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
+		if @search_result.valid?
+			subgraph = @graph.subcorpus(@section_index.values.select{|s| s[:found]}.map{|s| @graph.nodes[s[:id]]})
 			@sinatra.headers("Content-Type" => "data:Application/octet-stream; charset=utf8")
 			return JSON.pretty_generate(subgraph, :indent => ' ', :space => '').encode('UTF-8')
 		end
 	end
 
 	def export_data
-		if @found
-			begin
-				anfrage = @sinatra.params[:query]
-				@data_table = @graph.teilgraph_ausgeben(@found, anfrage, :string)
-				return ''
-			rescue StandardError => e
-				return error_message_html(e.message)
-			end
+		return error_message_html('Execute a search first!') unless @search_result.valid?
+		begin
+			anfrage = @sinatra.params[:query]
+			@data_table = @graph.teilgraph_ausgeben(@search_result, anfrage, :string)
+			return ''
+		rescue StandardError => e
+			return error_message_html(e.message)
 		end
 	end
 
@@ -385,18 +387,16 @@ class GraphController
 	end
 
 	def annotate_query
+		return {:search_result => error_message_html('Execute a search first!')}.to_json unless @search_result.valid?
 		begin
-			search_result_preserved = @graph.teilgraph_annotieren(@found, @sinatra.params[:query])
+			search_result_preserved = @graph.teilgraph_annotieren(@search_result, @sinatra.params[:query])
 		rescue StandardError => e
 			return {:search_result => error_message_html(e.message)}.to_json
 		end
-		unless search_result_preserved
-			@found = nil
-			@search_result = ''
-		end
-		return generate_graph.merge(
+		@search_result.reset unless search_result_preserved
+		return @view.generate.merge(
 			:sections => set_sections,
-			:search_result => @search_result,
+			:search_result => @search_result.text,
 			:sections_changed => false
 		).to_json
 	end
@@ -433,6 +433,21 @@ class GraphController
 		true
 	end
 
+	def get_file_list
+		input = @sinatra.params[:input]
+		relative = input[0] != '/'
+		Dir.glob("#{'data/' if relative}#{input}*").map{|file|
+			if File.directory?(file)
+				file.sub!(/^data\//, '') if relative
+				# strip path and add trailing slash
+				file.sub(/^.*\/([^\/]+)$/, '\1') + '/'
+			else
+				# exclude non-json and log files, strip path
+				(file.match(/\.json$/) && !file.match(/\.log\.json$/)) ? file.sub(/^(.+\/)?([^\/]+)$/, '\2') : nil
+			end
+		}.compact.to_json
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
@@ -446,16 +461,19 @@ class GraphController
 	def clear_workspace
 		@graph_file.replace('')
 		@graph.clear
-		@found = nil
+		@search_result.reset
 		@current_sections = nil
 		@log = Log.new(@graph)
 	end
 
-	def section_settings_and_graph
-		generate_graph.merge(
+	def section_settings_and_graph(reload_sections = true)
+		@view.generate.merge(
+			:autocomplete => autocomplete_data,
+			:preferences => @preferences,
 			:current_sections => @current_sections ? current_section_ids : nil,
-			:sections => set_sections,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
+		).merge(
+			reload_sections ? {:sections => set_sections} : {:update_sections => update_sections}
 		)
 	end
 
@@ -481,45 +499,8 @@ class GraphController
 		 '<span class="error_message">' + message.gsub("\n", '<br/>') + '</span>'
 	end
 
-	def build_label(e, i = nil)
-		label = ''
-		display_attr = e.attr.reject{|k,v| (@graph.conf.layers.map(&:attr)).include?(k)}
-		if e.is_a?(Node)
-			if e.type == 's' || e.type == 'p'
-				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
-			elsif e.type == 't'
-				display_attr.each do |key, value|
-					case key
-					when 'token'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-					end
-				end
-				label += "t#{i}" if i
-			else # normaler Knoten
-				display_attr.each do |key,value|
-					case key
-					when 'cat'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-					end
-				end
-				label += "n#{i}" if i
-			end
-		elsif e.is_a?(Edge)
-			display_attr.each do |key,value|
-				case key
-				when 'cat'
-					label = "#{value}\n#{label}"
-				else
-					label += "#{key}: #{value}\n"
-				end
-			end
-			label += "e#{i}" if i
-		end
-		return label
+	def sectioning_info(node)
+		{:id => node.id, :name => node.name, :text => node.text}
 	end
 
 	def set_cookie(key, value)
@@ -545,9 +526,9 @@ class GraphController
 		{
 			'm' => @current_sections,
 			's' => @graph.sections_hierarchy(@current_sections)[i],
-			'n' => @nodes[i],
-			'e' => @edges[i],
-			't' => @tokens[i],
+			'n' => @view.nodes[i],
+			'e' => @view.edges[i],
+			't' => @view.tokens[i],
 		}[identifier[0]]
 	end
 
@@ -592,6 +573,7 @@ class GraphController
 		command, foo, string = @command_line.strip.partition(' ')
 		parameters = string.parse_parameters
 		properties = @graph.conf.layer_attributes[layer] || {}
+		reload_sections = false
 
 		case command
 		when 'n' # new node
@@ -645,11 +627,8 @@ class GraphController
 		when 'd' # delete elements
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			extract_elements(parameters[:nodes] + parameters[:edges]).each do |element|
-				element.delete(log_step)
-			end
-			extract_elements(parameters[:tokens]).each do |element|
-				element.remove_token(log_step)
+			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |element|
+				element.delete(log_step, true)
 			end
 			undefined_references?(parameters[:elements])
 
@@ -711,6 +690,7 @@ class GraphController
 			current_sentence = @current_sections ? @current_sections.last.sentence_nodes.last : nil
 			new_nodes = @graph.insert_sentences(current_sentence, parameters[:words], log_step)
 			@current_sections = [new_nodes.first]
+			reload_sections = true
 
 		when 't' # build tokens and append them
 			sentence_set?
@@ -734,10 +714,12 @@ class GraphController
 		when 'undo', 'z'
 			@log.undo
 			reset_current_sections
+			reload_sections = true
 
 		when 'redo', 'y'
 			@log.redo
 			reset_current_sections
+			reload_sections = true
 
 		when 's' # change sentence
 			@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
@@ -751,6 +733,7 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			new_section = @graph.build_section(section_nodes, log_step)
 			new_section.annotate(parameters[:attributes], log_step)
+			reload_sections = true
 
 		when 's-rem' # remove section nodes without deleting descendant nodes
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
@@ -759,6 +742,7 @@ class GraphController
 			@current_sections = @current_sections.map(&:sentence_nodes).flatten if @current_sections & sections != []
 			begin
 				@graph.remove_sections(sections, log_step)
+				reload_sections = true
 			rescue StandardError => e
 				@current_sections = old_current_sections
 				raise e
@@ -769,11 +753,13 @@ class GraphController
 			sections = chosen_sections(parameters[:words][1..-1], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
 			@graph.add_sections(parent, sections, log_step)
+			reload_sections = true
 
 		when 's-det' # detach section(s) from existing section
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
 			@graph.detach_sections(sections)
+			reload_sections = true
 
 		when 's-del', 'del' # delete section(s)
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
@@ -790,12 +776,14 @@ class GraphController
 			# delete
 			begin
 				@graph.delete_sections(sections, log_step)
+				reload_sections = true
 			rescue StandardError => e
 				@current_sections = old_current_sections
 				raise e
 			end
 
 		when 'load' # clear workspace and load corpus file
+			raise 'Please specify a file name!' unless parameters[:words][0]
 			clear_workspace
 			data = @graph.read_json_file(file_path(parameters[:words][0]))
 			@graph_file.replace(file_path(parameters[:words][0]))
@@ -812,12 +800,15 @@ class GraphController
 			sentence_nodes = @graph.sentence_nodes
 			@current_sections = [sentence_nodes.select{|n| n.name == @current_sections.first.name}[0]] if @current_sections
 			@current_sections = [sentence_nodes.first] unless @current_sections
+			reload_sections = true
 
 		when 'append', 'add' # load corpus file and append it to the workspace
-			addgraph = AnnoGraph.new
+			raise 'Please specify a file name!' unless parameters[:words][0]
+			addgraph = Graph.new
 			addgraph.read_json_file(file_path(parameters[:words][0]))
 			@graph.merge!(addgraph)
-			@found = nil
+			@search_result.reset
+			reload_sections = true
 
 		when 'save' # save workspace to corpus file
 			raise 'Please specify a file name!' if @graph_file == '' and !parameters[:words][0]
@@ -834,6 +825,7 @@ class GraphController
 
 		when 'clear' # clear workspace
 			clear_workspace
+			reload_sections = true
 
 		when 'export' # export corpus in other format or export graph configurations
 			Dir.mkdir('exports') unless File.exist?('exports')
@@ -875,200 +867,19 @@ class GraphController
 				raise "Unknown import type"
 			end
 
-		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file'
+		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file', 'pref'
 			return {:modal => command}
 
 		when ''
 		else
 			raise "Unknown command \"#{command}\""
 		end
-		return command
-	end
-
-	def generate_graph(format = :svg, path = 'public/graph.svg')
-		puts "Generating graph for section(s) \"#{@current_sections.map(&:name).join(', ')}\"..." if @current_sections
-		satzinfo = {:textline => '', :meta => ''}
-
-		@tokens     = @current_sections ? @current_sections.map(&:sentence_tokens).flatten(1) : []
-		all_nodes   = @current_sections ? @current_sections.map(&:nodes).flatten(1) : []
-		@nodes      = all_nodes.reject{|n| n.type == 't'}
-		all_edges   = all_nodes.map{|n| n.in + n.out}.flatten.uniq
-		@edges      = all_edges.of_type('a')
-		order_edges = all_edges.of_type('o')
-
-		if @filter[:mode] == 'filter'
-			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
-			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
-		end
-
-		satzinfo[:meta] = if @current_sections && @current_sections.length == 1
-			build_label(@current_sections.first)
-		else
-			''
-		end
-
-		graph_options = {
-			:type => :digraph,
-			:rankdir => :TB,
-			:use => :dot,
-			:ranksep => 0.3
-		}.merge(@graph.conf.xlabel ? {:forcelabels => true, :ranksep => 0.85} : {})
-		viz_graph = DotGraph.new(:G, graph_options)
-		token_graph = viz_graph.subgraph(:rank => :same)
-		layer_graphs = {}
-		@graph.conf.combinations.each do |c|
-			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
-		end
-		@graph.conf.layers.each do |l|
-			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
-		end
-		# speaker subgraphs
-		if (speakers = @graph.speaker_nodes.select{|sp| @tokens.map(&:speaker).include?(sp)}) != []
-			speaker_graphs = Hash[speakers.map{|s| [s, viz_graph.subgraph(:rank => :same)]}]
-			# induce speaker labels and layering of speaker graphs:
-			gv_speaker_nodes = []
-			speaker_graphs.each do |speaker_node, speaker_graph|
-				gv_speaker_nodes << speaker_graph.add_nodes(
-					's' + speaker_node.id.to_s,
-					{:shape => :plaintext, :label => speaker_node['name'], :fontname => @graph.conf.font}
-				)
-				viz_graph.add_edges(gv_speaker_nodes[-2], gv_speaker_nodes[-1], {:style => :invis}) if gv_speaker_nodes.length > 1
-			end
-			timeline_graph = viz_graph.subgraph(:rank => :same)
-			gv_anchor = timeline_graph.add_nodes('anchor', {:style => :invis})
-			viz_graph.add_edges(gv_speaker_nodes[-1], gv_anchor, {:style => :invis})
-		end
-
-		@tokens.each_with_index do |token, i|
-			options = {
-				:fontname => @graph.conf.font,
-				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
-				:shape => :box,
-				:style => :bold,
-				:color => @graph.conf.token_color,
-				:fontcolor => @graph.conf.token_color
-			}
-			if @found && @found[:all_nodes].include?(token)
-				options[:color] = @graph.conf.found_color
-				satzinfo[:textline] += '<span class="found_word">' + token.token + '</span> '
-			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
-				options[:color] = @graph.conf.filtered_color
-				options[:fontcolor]= @graph.conf.filtered_color
-				satzinfo[:textline] += '<span class="hidden_word">' + token.token + '</span> '
-			else
-				satzinfo[:textline] += token.token + ' '
-			end
-			unless token.speaker
-				token_graph.add_nodes(token, options)
-			else
-				# create token and point on timeline:
-				gv_token = speaker_graphs[token.speaker].add_nodes(token, options)
-				gv_time  = timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @graph.conf.font})
-				# add ordering edge from speaker to speaker's first token
-				viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
-				# multiple lines between token and point on timeline in order to force correct order:
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
-				viz_graph.add_edges(gv_token, gv_time, {:arrowhead => :none, :weight => 9999})
-				viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
-				# order points on timeline:
-				if i > 0
-					viz_graph.add_edges('t' + @tokens[i-1].id.to_s, gv_time, {:arrowhead => :none})
-				else
-					viz_graph.add_edges(gv_anchor, gv_time, {:style => :invis})
-				end
-			end
-		end
-
-		@nodes.each_with_index do |node, i|
-			options = {
-				:fontname => @graph.conf.font,
-				:color => @graph.conf.default_color,
-				:shape => :box,
-				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
-			}
-			actual_layer_graph = nil
-			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
-				options[:color] = @graph.conf.filtered_color
-			else
-				@graph.conf.layers.each do |l|
-					if node[l.attr] == 't'
-						options[:color] = l.color
-						actual_layer_graph = layer_graphs[l.attr]
-					end
-				end
-				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
-					if c.attr.all?{|a| node[a] == 't'}
-						options[:color] = c.color
-						actual_layer_graph = layer_graphs[c.attr]
-					end
-				end
-			end
-			options[:fontcolor] = options[:color]
-			if @found && @found[:all_nodes].include?(node)
-				options[:color] = @graph.conf.found_color
-				options[:penwidth] = 2
-			end
-			viz_graph.add_nodes(node, options)
-			actual_layer_graph.add_nodes(node) if actual_layer_graph
-		end
-
-		@edges.each_with_index do |edge, i|
-			label = HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal)
-			options = {
-				:fontname => @graph.conf.font,
-				:color => @graph.conf.default_color,
-				:weight => @graph.conf.edge_weight,
-				:constraint => true
-			}.merge(
-				@graph.conf.xlabel ? {:xlabel => label} : {:label => label}
-			)
-			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
-				options[:color] = @graph.conf.filtered_color
-			else
-				@graph.conf.layers.each do |l|
-					if edge[l.attr] == 't'
-						options[:color] = l.color
-						if l.weight == 0
-							options[:constraint] = false
-						else
-							options[:weight] = l.weight
-							options[:constraint] = true
-						end
-					end
-				end
-				@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
-					if c.attr.all?{|a| edge[a] == 't'}
-						options[:color] = c.color
-						if c.weight == 0
-							options[:constraint] = false
-						else
-							options[:weight] = c.weight
-							options[:constraint] = true
-						end
-					end
-				end
-			end
-			options[:fontcolor] = options[:color]
-			if @found && @found[:all_edges].include?(edge)
-				options[:color] = @graph.conf.found_color
-				options[:penwidth] = 2
-			end
-			viz_graph.add_edges(edge.start, edge.end, options)
-		end
-
-		order_edges.each do |edge|
-			viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
-		end
-
-		return satzinfo.merge(:dot => viz_graph.to_s)
+		return {:command => command, :reload_sections => reload_sections}
 	end
 
 	def sentence_set?
-		if @current_sections
-			return true
-		else
-			raise 'Create a sentence first!'
-		end
+		return true if @current_sections
+		raise 'Create a sentence first!'
 	end
 
 	def reset_current_sections
@@ -1094,21 +905,24 @@ class GraphController
 		end
 	end
 
-	def set_found_sentences
-		(@found[:all_nodes].map{|n| n.sentence.id} + @found[:all_edges].map{|e| e.end.sentence.id}).uniq.each do |s|
-			@section_list[s][:found] = true
-		end
-		# set sections to found if dominated sentences contain matches
-		@section_list.each{|id, s| s[:found] = true if @graph.nodes[s[:id]].sentence_nodes.any?{|n| @section_list[n.id][:found]}}
+	def set_found_sections
+		@search_result.sections.each{|s| @section_index[s.id][:found] = true}
 	end
 
-	def set_sections(h = {})
+	def set_sections
 		@sections = @graph.section_structure.map do |level|
-			level.map{|s| s.merge(:id => s[:node].id, :name => s[:node].name, :found => false).except(:node)}
+			level.map{|s| s.merge(sectioning_info(s[:node])).merge(:found => false).except(:node)}
 		end
-		@section_list = Hash[@sections.flatten.map{|s| [s[:id], s]}]
-		set_found_sentences if !h[:clear] and @found
+		@section_index = Hash[@sections.flatten.map{|s| [s[:id], s]}]
+		set_found_sections if @search_result.valid?
 		@sections
+	end
+
+	def update_sections
+		sections = (@graph.sections_hierarchy(@current_sections) || []).flatten
+		section_info = sections.map{|s| sectioning_info(s)}
+		section_info.each{|s| @section_index[s[:id]].merge!(s)}
+		section_info
 	end
 
 	def undefined_references?(ids)
@@ -1118,6 +932,73 @@ class GraphController
 
 	def file_path(input)
 		(input[0] == '/' ? '' : 'data/') + input + (input.match(/\.json$/) ? '' : '.json')
+	end
+
+	def autocomplete_data
+		commands = {
+			:a => :aanno,
+			:n => :anno,
+			:e => :anno,
+			:p => :anno,
+			:g => :anno,
+			:c => :anno,
+			:h => :anno,
+			:ni => :anno,
+			:di => :anno,
+			:do => :anno,
+			:d => :ref,
+			:t => nil,
+			:tb => nil,
+			:ta => nil,
+			:undo => nil,
+			:z => nil,
+			:redo => nil,
+			:y => nil,
+			:l => :layer,
+			:annotator => :annotator,
+			:user => :annotator,
+			:ns => nil,
+			:'s-new' => :sect,
+			:'s-rem' => :sect,
+			:'s-add' => :sect,
+			:'s-det' => :sect,
+			:'s-del' => :sect,
+			:load => :file,
+			:append => :file,
+			:save => nil,
+			:clear => nil,
+			:s => :sect,
+			:image => nil,
+			:export => nil,
+			:import => nil,
+			:config => nil,
+			:tagset => nil,
+			:makros => nil,
+			:metadata => nil,
+			:annotators => nil,
+			:file => nil,
+			:pref => nil,
+			:'' => :command
+		}
+		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
+		makros = @preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []
+		layers = @preferences[:makro] ? @graph.layer_makros.keys : []
+		refs   = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} + @view.nodes.map.with_index{|n, i| "n#{i}"} + @view.edges.map.with_index{|e, i| "e#{i}"} : []
+		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
+		arefs  = @preferences[:ref] ? refs + srefs : []
+		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
+		antors = @graph.annotators.map(&:name)
+		cmnds  = @preferences[:command] ? commands.keys : []
+		{
+			:anno => tagset + makros + refs,
+			:aanno => tagset + makros + arefs,
+			:ref => refs,
+			:layer => layers + refs,
+			:sect => sects,
+			:annotator => antors,
+			:command => cmnds,
+			:commands => commands,
+		}
 	end
 
 	def validate_config(data)

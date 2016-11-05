@@ -50,7 +50,7 @@ class Edge < NodeOrEdge
 	# deletes self from graph and from out and in lists of start and end node
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	# @return [Edge] self
-	def delete(log_step = nil)
+	def delete(log_step = nil, _)
 		if log_step
 			log_step.add_change(:action => :delete, :element => self)
 		end

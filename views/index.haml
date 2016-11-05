@@ -6,9 +6,11 @@
     %link{ :rel => "stylesheet", :type => "text/css", :href => "/style.css" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/jquery-2.1.1.min.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/jquery-ui.min.js' }
-    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz0.0.3.js', :async => '' }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/caret-position.js' }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz1.3.0.js', :async => '' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/sectioning.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/log.js" }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/autocomplete.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
 
   %body
@@ -18,11 +20,11 @@
       #textline.bottom-block
       #meta.bottom-block
       #cmddiv.bottom-block
-        %form{ :action => "/handle_commandline", :method => "post",  :name => "cmd" }
-          %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}" }
+        %form{ :name => "cmd" }
+          %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}", :autocomplete => "off" }
           %select{ :name => "layer", :id => "layer" }
             = haml :layer_options, :locals => {:controller => controller}
-          %input{ :type => "submit", :value => "Send", :onclick => "sendCmd(); return false" }
+          %input{ :type => "submit", :value => "Send" }
         %div
           #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
           #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
@@ -46,7 +48,7 @@
           %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
           %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export_subcorpus/subcorpus.json'" }
           #searchresult
-            = controller.search_result
+            = controller.search_result.text
 
     #filter.box
       .handle

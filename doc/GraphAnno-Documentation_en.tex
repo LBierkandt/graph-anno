@@ -360,6 +360,11 @@ Most commands are executed immediately; some (like, e.g., the \hyperref[konfigur
 For issuing a command, you just type it, followed by its arguments, into the command line field and press the enter key.
 For a complete list of the available commands see Section \ref{commandline-commands}.
 
+There is also an autocomplete feature for the command line, that may speed up typing your commands.
+This feature can be activated and customized in the preferences (see \ref{preferences}).
+It suggests commands and, depending on the current command, file names, sentence names, annotations, makros etc.
+A list of suggestions appears as soon as you have typed the first letter; then you choose the desired item with the up/down keys and select it with the tab key (attention: the enter key does not work for this, but submits the command line); you can close the suggestion list with the esc key.
+
 
 \subsection{Windows}\label{windows}
 
@@ -565,6 +570,14 @@ The command \code{file} opens a window, in which you can specify the settings fo
 	\item	\textit{save window positions}: Should the position of the windows (filter, search etc.) be saved in the graph file (i.e., project-specific)?
 			(Otherwise, the positions are only saved in the browser.)
 \end{itemize}
+
+
+\subsection{Program preferences}\label{preferences}
+
+For settings that aren’t related to a corpus but to the program, there is the preferences window, opened by the command \code{pref}.
+Currently, these settings comprise only the command line autocomplete feature (cf. \ref{commandline}).
+You may activate the autocomplete feature and then choose which kinds of entities (commands, file names, sentence names, annotations, makros etc.) you want to get suggestions for.
+Note that the autocomplete feature is useless if you don’t choose things that should be suggested.
 
 
 
@@ -1000,7 +1013,7 @@ Of the following sections, the first one explains how a to-be-matched element is
 \subsubsection{Element description}\label{elementbeschreibung}
 
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
-Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).
+Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).\\
 
 The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for \textit{not}, \code{\&} for \textit{and} and \code{|} for \textit{or} (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
 As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
@@ -1016,6 +1029,8 @@ The third format is a regular expression.
 A regular expression has to be written in slashes (\code{/x.z/}) and has to conform to Ruby’s regular expression syntax (cf. \url{http://www.ruby-doc.org/core/Regexp.html}).
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
+
+If you omit a value string, those elements are matched that bear no annotation at all for the given key. So, e.g., \code{tns:} matches all elements without a tns annotation, \code{!tns:} matches all elements with a tns annotation, \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation.
 
 Additionally to key-value pairs you may also use the keyword \code{token}, which matches token nodes.\\
 
@@ -1053,6 +1068,7 @@ attribute           = string ":" attribute_value ("|" attribute_value)*
 attribute_value     = char_except_control_char+
                       """ character* """
                       "/" regular_expression "/"
+                      ""
 string              = char_except_control_char+
                       """ character* """
 edge_criterion      = "in" ("(" element_description")")? quantifier?

@@ -21,7 +21,7 @@ require 'unicode_utils/downcase.rb'
 require 'csv.rb'
 require_relative 'parser_module.rb'
 
-module SearchableGraph
+module GraphSearch
 	include Parser
 
 	def initialize
@@ -35,7 +35,8 @@ module SearchableGraph
 		puts 'Searching for graph fragment ...'
 		startzeit = Time.new
 
-		suchgraph = self.clone
+		nodes_to_be_searched = []
+		edges_to_be_searched = []
 		tglisten = {}
 		id_index = {}
 		tgindex = 0
@@ -50,7 +51,7 @@ module SearchableGraph
 		# edge/link: node/nodes-TGn und text-TGn kombinieren
 
 		# check validity of query
-		if (error_messages = query_errors(operations)) != []
+		unless (error_messages = query_errors(operations)).empty?
 			raise error_messages * "\n"
 		end
 
@@ -60,14 +61,16 @@ module SearchableGraph
 		# meta
 		# hier wird ggf. der zu durchsuchende Graph eingeschränkt
 		if metabedingung = operation_erzeugen(:op => 'and', :arg => operations['meta'].map{|op| op[:cond]})
-			metaknoten = sentence_nodes.select{|s| s.fulfil?(metabedingung, true)}
-			suchgraph.nodes.select!{|id, n| metaknoten.include?(n.sentence)}
-			suchgraph.edges.select!{|id, e| metaknoten.include?(e.start.sentence) || metaknoten.include?(e.end.sentence)}
+			nodes_to_be_searched = sentence_nodes.select{|s| s.fulfil?(metabedingung, true)}.map{|s| s.nodes}.flatten
+			edges_to_be_searched = nodes_to_be_searched.map{|n| n.in + n.out}.flatten.uniq
+		else
+			nodes_to_be_searched = @node_index['t'].values + @node_index['a'].values
+			edges_to_be_searched = @edges.values
 		end
 
 		# edge
 		operations['edge'].each do |operation|
-			gefundene_kanten = suchgraph.edges.values.select{|k| k.fulfil?(operation[:cond])}
+			gefundene_kanten = edges_to_be_searched.select{|k| k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_kanten.map do |k|
 				Teilgraph.new([], [k], {operation[:id] => [k]})
 			end
@@ -77,7 +80,7 @@ module SearchableGraph
 		# node/nodes
 		# gefundene Knoten werden als atomare Teilgraphen gesammelt
 		(operations['node'] + operations['nodes']).each do |operation|
-			gefundene_knoten = suchgraph.nodes.values.select{|k| k.type != 's' && k.fulfil?(operation[:cond])}
+			gefundene_knoten = nodes_to_be_searched.select{|k| k.fulfil?(operation[:cond])}
 			tglisten[tgindex += 1] = gefundene_knoten.map do |k|
 				Teilgraph.new([k], [], {operation[:id] => [k]})
 			end
@@ -90,7 +93,7 @@ module SearchableGraph
 		# text
 		# ein oder mehrer Teilgraphenlisten werden erstellt
 		operations['text'].each do |operation|
-			tglisten[tgindex += 1] = suchgraph.textsuche_NFA(operation[:arg], operation[:id])
+			tglisten[tgindex += 1] = textsuche_NFA(nodes_to_be_searched.of_type('t'), operation[:arg], operation[:id])
 			# id_index führen
 			if operation[:id]
 				id_index[operation[:id]] = {:index => tgindex, :art => operation[:operator]}
@@ -122,7 +125,7 @@ module SearchableGraph
 					# erstmal node(s) -> node(s)
 					tgl_start.each do |starttg|
 						startknot = starttg.ids[startid][0]
-						if !(breitensuche = schon_gesucht[startknot])
+						unless breitensuche = schon_gesucht[startknot]
 							if startknot
 								breitensuche = startknot.links(automat, id_index[zielid][:cond])
 							else
@@ -147,7 +150,7 @@ module SearchableGraph
 				else # wenn Ziel 'text' ist
 					tgl_start.each do |starttg|
 						startknot = starttg.ids[startid][0]
-						if !(breitensuche = schon_gesucht[startknot])
+						unless breitensuche = schon_gesucht[startknot]
 							if startknot
 								breitensuche = startknot.links(automat, {:operator => 'token'}) # Zielknoten muß Token sein
 							else
@@ -309,25 +312,25 @@ module SearchableGraph
 		end
 	end
 
-	def textsuche_NFA(operation, id = nil)
+	def textsuche_NFA(tokens_to_be_searched, operation, id = nil)
 		automat = Automat.create(operation)
 		automat.bereinigen
 
 		# Grenzknoten einbauen (das muß natürlich bei einem Graph mit verbundenen Sätzen und mehreren Ebenen anders aussehen)
 		grenzknoten = []
-		@nodes.values.select{|k| k.token}.each do |tok|
-			if !tok.node_before
-				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
-				self.add_order_edge(:start => grenzknoten.last, :end => tok)
+		tokens_to_be_searched.each do |tok|
+			unless tok.node_before
+				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'})
+				add_order_edge(:start => grenzknoten.last, :end => tok)
 			end
-			if !tok.node_after
-				grenzknoten << self.add_token_node(:attr => {'token' => '', 'cat' => 'boundary', 'level' => 's'})
-				self.add_order_edge(:start => tok, :end => grenzknoten.last)
+			unless tok.node_after
+				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'})
+				add_order_edge(:start => tok, :end => grenzknoten.last)
 			end
 		end
 
 		ergebnis = []
-		@nodes.values.select{|k| k.token}.each do |node|
+		(tokens_to_be_searched + grenzknoten).each do |node|
 			if t = automat.text_suchen_ab(node)
 				t.remove_boundary_nodes!
 				ergebnis << t
@@ -379,10 +382,10 @@ module SearchableGraph
 		operations = parse_query(befehle)
 
 		# Sortieren
-		found[:tg].each do |tg|
+		found.tg.each do |tg|
 			tg.ids.values.each{|arr| arr.sort_by!{|n| n.id.to_i}}
 		end
-		found[:tg].sort! do |a,b|
+		found.tg.sort! do |a,b|
 			# Hierarchie der sort-Befehle abarbeiten
 			vergleich = 0
 			operations['sort'].reject{|op| !op}.each do |op|
@@ -405,7 +408,7 @@ module SearchableGraph
 		if datei.is_a?(String) or datei == :string
 			rueck = CSV.generate(:col_sep => "\t") do |csv|
 				csv << ['match_no'] + operations['col'].map{|o| o[:title]}
-				found[:tg].each_with_index do |tg, i|
+				found.tg.each_with_index do |tg, i|
 					csv << [i+1] + operations['col'].map do |op|
 						begin
 							tg.execute(op[:string])
@@ -429,7 +432,7 @@ module SearchableGraph
 				return rueck
 			end
 		elsif datei == :console
-			found[:tg].each_with_index do |tg, i|
+			found.tg.each_with_index do |tg, i|
 				puts "match #{i}"
 				operations['col'].each do |op|
 					begin
@@ -446,7 +449,7 @@ module SearchableGraph
 	def teilgraph_annotieren(found, command_string)
 		search_result_preserved = true
 		commands = parse_query(command_string)[:all].select{|c| @@annotation_commands.include?(c[:operator])}
-		found[:tg].each do |tg|
+		found.tg.each do |tg|
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands)
@@ -458,15 +461,15 @@ module SearchableGraph
 				end
 				# extend attributes accordingly (same for all commands)
 				attrs.merge!(conf.layer_attributes[layer]) if layer
+				# extract elements
+				elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
+				nodes = elements.select{|e| e.is_a?(Node)}
 				# process the commands
 				case command[:operator]
 				when 'a'
-					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					elements.each do |el|
-						el.annotate(attrs)
-					end
+					elements.each{|el| el.annotate(attrs)}
 				when 'n'
-					if ref_node = command[:ids].map{|id| tg.ids[id]}.flatten.select{|e| e.is_a?(Node)}.first
+					if ref_node = nodes.first
 						add_anno_node(
 							:attr => attrs,
 							:sentence => ref_node.sentence
@@ -485,7 +488,6 @@ module SearchableGraph
 						)
 					end
 				when 'p', 'g'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					unless nodes.empty?
 						add_parent_node(
 							nodes,
@@ -494,7 +496,6 @@ module SearchableGraph
 						)
 					end
 				when 'c', 'h'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					unless nodes.empty?
 						add_child_node(
 							nodes,
@@ -503,32 +504,30 @@ module SearchableGraph
 						)
 					end
 				when 'd'
-					elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 					elements.each do |el|
-						el.type == 't' ? el.remove_token : el.delete if el
+						el.delete(nil, true) if el
 						search_result_preserved = false
 					end
 				when 'ni'
-					edges = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Edge)}
-					edges.each do |e|
+					elements.select{|e| e.is_a?(Edge)}.each do |e|
 						insert_node(e, attrs)
 						search_result_preserved = false
 					end
 				when 'di', 'do'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.select{|e| e.is_a?(Node)}
 					nodes.each do |n|
 						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
 						search_result_preserved = false
 					end
 				when 'tb', 'ti'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.is_a?(Node)}.of_type('t').first
-					build_tokens(command[:words][1..-1], :next_token => node)
+					build_tokens(command[:words][1..-1], :next_token => nodes.of_type('t').first)
 				when 'ta'
-					nodes = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
-					node = nodes.select{|e| e.is_a?(Node)}.of_type('t').last
-					build_tokens(command[:words][1..-1], :last_token => node)
+					build_tokens(command[:words][1..-1], :last_token => nodes.of_type('t').last)
 				when 'l'
+					if layer
+						elements.each do |el|
+							el.annotate(Hash[@conf.layers.map{|l| [l.attr, nil]}].merge(attrs)) if layer
+						end
+					end
 				end
 			end #command
 		end # tg
@@ -569,7 +568,7 @@ class Automat
 		when 'node', 'edge', 'redge'
 			return Automat.new(Zustand.new(operation[:operator].to_sym, nil, operation[:cond], ids))
 		when 'boundary'
-			return Automat.new(Zustand.new(:node, nil, AnnoGraph.new.parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
+			return Automat.new(Zustand.new(:node, nil, Graph.new.parse_attributes('cat:"boundary" & level:'+operation[:level])[:op]))
 		when 'or'
 			folgeautomaten = [Automat.create(operation[:arg][0], ids), Automat.create(operation[:arg][1], ids)]
 			automat = Automat.new(Zustand.new(:split, [], ids))
@@ -815,7 +814,7 @@ class Teilgraph
 	end
 
 	def remove_boundary_nodes!
-		@nodes.reject!{|n| n.cat == 'boundary' and n.token == ''}
+		@nodes.reject!{|n| n.type == 't' && n.cat == 'boundary'}
 	end
 
 	def to_s

@@ -76,9 +76,9 @@ class NodeOrEdge
 		case bedingung[:operator]
 		when 'attr'
 			knotenwert = inherited && is_a?(Node) ? inherited_attributes[bedingung[:key]] : @attr[bedingung[:key]]
-			return false unless knotenwert
 			wert = bedingung[:value]
-			return true unless wert
+			return true unless knotenwert || wert
+			return false unless knotenwert && wert
 			case bedingung[:method]
 			when 'plain'
 				return true if knotenwert == wert
