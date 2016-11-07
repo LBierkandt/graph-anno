@@ -53,7 +53,8 @@ class Node < NodeOrEdge
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	# @return [Node] self
-	def delete(log_step = nil)
+	def delete(log_step = nil, join_if_ordered = false)
+		join_adjacent(log_step) if join_if_ordered
 		if log_step
 			@out.each{|e| log_step.add_change(:action => :delete, :element => e)}
 			@in.each{|e| log_step.add_change(:action => :delete, :element => e)}
@@ -69,18 +70,14 @@ class Node < NodeOrEdge
 	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
 	# @return [Array] list of found parent nodes
 	def parent_nodes(&block)
-		selected = @in.select(&block)
-		selected = @in if selected.is_a?(Enumerator)
-		return selected.map(&:start)
+		@in.select(&block).map(&:start)
 	end
 
 	# returns nodes connected to self by outgoing edges which fulfil the (optional) block
 	# @param &block [Proc] only edges for which &block evaluates to true are taken into account; if no block is given, alls edges are considered
 	# @return [Array] child nodes connected by edges with the defined attributes
 	def child_nodes(&block)
-		selected = @out.select(&block)
-		selected = @out if selected.is_a?(Enumerator)
-		return selected.map(&:end)
+		@out.select(&block).map(&:end)
 	end
 
 	# returns all token nodes that are dominated by self, or connected to self via the given link (in their linear order)
@@ -348,16 +345,12 @@ class Node < NodeOrEdge
 		self.sentence_tokens.index(self)
 	end
 
-	# deletes self and joins adjacent tokens if possible
+	# joins adjacent nodes if possible
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def remove_token(log_step = nil)
-		if self.token
-			s = self.sentence
-			if self.node_before && self.node_after
-				e = @graph.add_order_edge(:start => self.node_before, :end => self.node_after)
-				log_step.add_change(:action => :create, :element => e) if log_step
-			end
-			self.delete(log_step)
+	def join_adjacent(log_step = nil)
+		if node_before && node_after
+			e = @graph.add_order_edge(:start => node_before, :end => node_after)
+			log_step.add_change(:action => :create, :element => e) if log_step
 		end
 	end
 

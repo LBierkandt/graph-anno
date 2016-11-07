@@ -52,7 +52,7 @@
           %input{ :type => "button", :value => "Export data table", :onclick => "sendDataExport()" }
           %input{ :type => "button", :value => "Export subcorpus", :onclick => "location='/export_subcorpus/subcorpus.json'" }
           #searchresult
-            = controller.search_result
+            = controller.search_result.text
 
     #filter.box
       .handle

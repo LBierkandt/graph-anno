@@ -382,10 +382,10 @@ module GraphSearch
 		operations = parse_query(befehle)
 
 		# Sortieren
-		found[:tg].each do |tg|
+		found.tg.each do |tg|
 			tg.ids.values.each{|arr| arr.sort_by!{|n| n.id.to_i}}
 		end
-		found[:tg].sort! do |a,b|
+		found.tg.sort! do |a,b|
 			# Hierarchie der sort-Befehle abarbeiten
 			vergleich = 0
 			operations['sort'].reject{|op| !op}.each do |op|
@@ -408,7 +408,7 @@ module GraphSearch
 		if datei.is_a?(String) or datei == :string
 			rueck = CSV.generate(:col_sep => "\t") do |csv|
 				csv << ['match_no'] + operations['col'].map{|o| o[:title]}
-				found[:tg].each_with_index do |tg, i|
+				found.tg.each_with_index do |tg, i|
 					csv << [i+1] + operations['col'].map do |op|
 						begin
 							tg.execute(op[:string])
@@ -432,7 +432,7 @@ module GraphSearch
 				return rueck
 			end
 		elsif datei == :console
-			found[:tg].each_with_index do |tg, i|
+			found.tg.each_with_index do |tg, i|
 				puts "match #{i}"
 				operations['col'].each do |op|
 					begin
@@ -449,7 +449,7 @@ module GraphSearch
 	def teilgraph_annotieren(found, command_string)
 		search_result_preserved = true
 		commands = parse_query(command_string)[:all].select{|c| @@annotation_commands.include?(c[:operator])}
-		found[:tg].each do |tg|
+		found.tg.each do |tg|
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands)
@@ -505,7 +505,7 @@ module GraphSearch
 					end
 				when 'd'
 					elements.each do |el|
-						el.type == 't' ? el.remove_token : el.delete if el
+						el.delete(nil, true) if el
 						search_result_preserved = false
 					end
 				when 'ni'

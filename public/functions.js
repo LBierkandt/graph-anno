@@ -300,7 +300,7 @@ function downloadFile(url, format) {
 	link.remove();
 }
 function sendFilter(mode) {
-	postRequest('/filter', {filter: document.filter.filterfield.value, mode: mode});
+	postRequest('/set_filter', {filter: document.filter.filterfield.value, mode: mode});
 	$('#filter input').removeClass('selected_filter_mode');
 	document.getElementById(mode).className = 'selected_filter_mode';
 }
