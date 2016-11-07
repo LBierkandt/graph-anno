@@ -260,7 +260,7 @@ class Graph
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
-		edge.delete(log_step)
+		edge.delete(:log => log_step)
 	end
 
 	# deletes a node and connects its outgoing edges to its parents or its ingoing edges to its children
@@ -281,7 +281,7 @@ class Graph
 				)
 			end
 		end
-		node.delete(log_step)
+		node.delete(:log => log_step)
 	end
 
 	# builds sentence nodes from a list of names and inserts them after the given sentence node
@@ -351,7 +351,7 @@ class Graph
 		elsif list.any?{|s| s.parent_section && s.parent_section.comprise_section?(s)}
 			raise 'You cannot remove sections from the middle of their containing section'
 		end
-		list.each{|s| s.delete(log_step)}
+		list.each{|s| s.delete(:log => log_step)}
 	end
 
 	# adds the given sections to parent section
@@ -381,7 +381,7 @@ class Graph
 			raise 'You cannot detach sections from the middle of their containing section'
 		end
 		list.each do |section|
-			section.in.of_type('p').each{|e| e.delete(log_step)}
+			section.in.of_type('p').each{|e| e.delete(:log => log_step)}
 		end
 	end
 
@@ -401,15 +401,15 @@ class Graph
 				)
 			# delete dependent nodes
 			if section.type == 's'
-				section.nodes.each{|n| n.delete(log_step)}
+				section.nodes.each{|n| n.delete(:log => log_step)}
 			else
 				section.descendant_sections.each do |n|
-					n.nodes.each{|n| n.delete(log_step)}
-					n.delete(log_step)
+					n.nodes.each{|n| n.delete(:log => log_step)}
+					n.delete(:log => log_step)
 				end
 			end
 			# delete the section node itself
-			section.delete(log_step)
+			section.delete(:log => log_step)
 		end
 	end
 
@@ -609,7 +609,7 @@ class Graph
 		# If there are already tokens, append the new ones
 		add_order_edge(:start => last_token, :end => token_collection[0], :log => h[:log]) if last_token
 		add_order_edge(:start => token_collection[-1], :end => next_token, :log => h[:log]) if next_token
-		self.edges_between(last_token, next_token).of_type('o')[0].delete(h[:log]) if last_token && next_token
+		self.edges_between(last_token, next_token).of_type('o')[0].delete(:log => h[:log]) if last_token && next_token
 		return token_collection
 	end
 
