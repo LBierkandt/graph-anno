@@ -1,8 +1,6 @@
 window.onload = function() {
 	loadGraph();
 
-	for (var id in {help: 0, search: 0, filter: 0, log: 0, sectioning: 0}) restoreState(id);
-
 	window.onkeydown = taste;
 
 	// commandline
@@ -15,35 +13,6 @@ window.onload = function() {
 		Autocomplete.disable();
 	})
 	$('#txtcmd').focus().select();
-
-	// draggables
-	$('.box').draggable({handle: '.handle', stack: '.box', stop: saveState});
-	// draggables on top when clicked
-	$('.box').on('mouseup', function(){
-		var $box = $(this);
-		if(!$box.hasClass('ui-draggable-dragging')){
-			var zIndexList = $('.box').map(function(){return $(this).zIndex()}).get();
-			var highestZIndex = Math.max.apply(null, zIndexList);
-			if($box.zIndex() < highestZIndex){
-				$box.zIndex(highestZIndex + 1);
-				saveState();
-			}
-		}
-	});
-	// resizables
-	$('#help').resizable({handles: 'all', minHeight: 45, minWidth: 120, stop: saveState});
-	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310, stop: saveState});
-	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220, stop: saveState});
-	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400, stop: saveState});
-	$('#sectioning').resizable({handles: 'all', minHeight: 45, minWidth: 50, stop: saveState});
-
-	// function of close button
-	$('.handle').html('<div class="close"></div>')
-	$(document).on('click', '.close', function(){
-		$(this).closest('.box').hide();
-		saveState();
-		$('#txtcmd').focus().select();
-	});
 
 	// behaviour of file settings modal
 	$(document).on('change', '.file #save-log', function(){
@@ -117,14 +86,14 @@ function taste(e) {
 			Sectioning.navigateSentences(mapping[e.which]);
 		} else if (e.which in mapping2) {
 			e.preventDefault();
-			toggleAndSave('#sectioning', true)
+			Box.instances.sectioning.toggleAndSave(true);
 			Sectioning.selection(mapping2[e.which]);
 		}
 	}
 	else {
 		var mapping = {
 			112: function(){
-				toggleAndSave('#help')
+				Box.instances.help.toggleAndSave();
 			},
 			113: function(){
 				var textline = document.getElementById('textline');
@@ -146,7 +115,7 @@ function taste(e) {
 				$.getJSON('/toggle_refs').done(updateView);
 			},
 			117: function(){
-				toggleAndSave('#filter');
+				Box.instances.filter.toggleAndSave();
 				if ($('#filter').css('display') == 'none') {
 					$('#txtcmd').focus().select();
 				} else {
@@ -154,7 +123,7 @@ function taste(e) {
 				}
 			},
 			118: function(){
-				toggleAndSave('#search');
+				Box.instances.search.toggleAndSave();
 				if ($('#search').css('display') == 'none') {
 					$('#txtcmd').focus().select();
 				} else {
@@ -162,10 +131,10 @@ function taste(e) {
 				}
 			},
 			119: function(){
-				toggleAndSave('#log');
+				Box.instances.log.toggleAndSave();
 			},
 			120: function(){
-				toggleAndSave('#sectioning');
+				Box.instances.sectioning.toggleAndSave();
 			},
 		};
 		if (e.which in mapping) {
@@ -358,9 +327,9 @@ function postRequest(path, params) {
 		txtcmd.value = getCookie('traw_cmd');
 		updateLayerOptions();
 		for (var id in data['windows']) {
-			restoreState(id, data['windows']);
+			Box.instances[id].restoreState(data['windows']);
 		};
-		saveState();
+		Box.saveState();
 		if (data['messages'] != undefined && data['messages'].length > 0) alert(data['messages'].join("\n"));
 		if (data['command'] == 'load') Log.load();
 		if (data['graph_file'] != undefined) $('#active_file').html('file: ' + data['graph_file']);
@@ -548,36 +517,4 @@ function disable_import_form_fields(type) {
 function display_search_message(message) {
 	$('#searchresult').html(message);
 	query.focus();
-}
-function toggleAndSave(selector, state) {
-	$(selector).toggle(state);
-	saveState();
-}
-function saveState() {
-	var data = {};
-	$('.box').each(function(){
-		var $box = $(this);
-		var key = $box.attr('id');
-		data[key] = {};
-		for (var attr in {display: 0, left: 0, top: 0, width: 0, height: 0, 'z-index': 0}) {
-			data[key][attr] = $box.css(attr);
-		}
-	});
-	document.cookie = 'traw_windows=' + JSON.stringify(data) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
-	$.post('/save_window_positions', {data: data});
-}
-function restoreState(id, data) {
-	var $element = $('#' + id);
-	if (data == undefined) {
-		try {
-			var attributes = JSON.parse(getCookie('traw_windows'))[id];
-		} catch(e) {
-			var attributes = {};
-		}
-	} else {
-		var attributes = data[id];
-	}
-	for (var i in attributes) {
-		$element.css(i, attributes[i]);
-	}
 }
