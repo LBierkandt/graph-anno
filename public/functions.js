@@ -12,7 +12,6 @@ window.onload = function() {
 	$('#txtcmd').on('blur', function(e){
 		Autocomplete.disable();
 	})
-	$('#txtcmd').focus().select();
 
 	// behaviour of file settings modal
 	$(document).on('change', '.file #save-log', function(){
@@ -172,15 +171,10 @@ function verschiebeBild(richtung) {
 }
 function updateView(data) {
 	data = data || {};
-	if (data['textline'] != undefined) $('#textline').html(data['textline']);
-	if (data['meta'] != undefined) $('#meta').html(data['meta']);
-	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
-	if (data['update_sections'] != undefined) Sectioning.updateList(data['update_sections']);
-	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
-	if (data['preferences'] != undefined) window.preferences = data['preferences'];
-	Autocomplete.setData(data.autocomplete);
+	updateLayerOptions();
+	handleResponse(data);
 	graphdivEinpassen();
-	if (!data['dot']) return;
+	if (!data.dot) return;
 	// get old dimensions
 	var $div = $('#graph');
 	var oldImageSize = {
@@ -190,7 +184,7 @@ function updateView(data) {
 	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
 	// create svg
 	try {
-		var svgElement = new DOMParser().parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
+		var svgElement = new DOMParser().parseFromString(Viz(data.dot, 'svg'), 'image/svg+xml');
 	} catch(e) {
 		alert('An error occurred while generating the graph. Try reloading your browser window; if that doesn’t help, try the edge label compatibility mode (see config window)');
 		return;
@@ -204,7 +198,7 @@ function updateView(data) {
 	$div.empty().append(svgElement.documentElement);
 	var $svg = $div.find('svg');
 	// scale svg
-	if (data['sections_changed']) {
+	if (data.sections_changed) {
 		$svg.width(newSvgSize.width);
 		$svg.height(newSvgSize.height);
 		graphEinpassen();
@@ -271,6 +265,9 @@ function sendFilter(mode) {
 function sendSearch() {
 	postRequest('/search', {query: document.search.query.value});
 }
+function sendAnnotateQuery() {
+	postRequest('/annotate_query', {query: document.search.query.value});
+}
 function clearSearch() {
 	postRequest('/clear_search', {});
 }
@@ -280,11 +277,8 @@ function sendDataExport() {
 		{query: document.search.query.value}
 	).done(function(data){
 		if (data == '') location = "/export_data_table/data_table.csv";
-		else display_search_message(data);
+		else displaySearchMessage(data);
 	});
-}
-function sendAnnotateQuery() {
-	postRequest('/annotate_query', {query: document.search.query.value});
 }
 function setSelectedIndex(s, v) {
 	for (var i = 0; i < s.options.length; i++) {
@@ -313,35 +307,17 @@ function disableInputs($master, selector) {
 function postRequest(path, params) {
 	$.post(path, params, null, 'json')
 	.done(function(data) {
-		switch (data['modal']) {
+		switch (data.modal) {
 			case undefined:
 				break;
 			case 'import':
-				openImport(data['type']);
+				openImport(data.type);
 				return;
 			default:
-				openModal(data['modal']);
+				openModal(data.modal);
 				return;
 		}
-		var txtcmd = document.getElementById('txtcmd');
-		txtcmd.value = getCookie('traw_cmd');
-		updateLayerOptions();
-		for (var id in data['windows']) {
-			Box.instances[id].restoreState(data['windows']);
-		};
-		Box.saveState();
-		if (data['messages'] != undefined && data['messages'].length > 0) alert(data['messages'].join("\n"));
-		if (data['command'] == 'load') Log.load();
-		if (data['graph_file'] != undefined) $('#active_file').html('file: ' + data['graph_file']);
-		if (data['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + data['current_annotator']);
-		if (data['search_result'] != undefined) {
-			display_search_message(data['search_result']);
-		} else if (data['filter_applied'] != undefined) {
-			filterfield.focus();
-		} else {
-			txtcmd.focus();
-			txtcmd.select();
-		}
+		$('#txtcmd').val(getCookie('traw_cmd'));
 		updateView(data);
 		Log.update();
 	});
@@ -399,7 +375,6 @@ function sendConfig() {
 	.done(function(data) {
 		if (data == true) {
 			closeModal();
-			updateLayerOptions();
 			loadGraph();
 		} else {
 			$('#modal-warning').show();
@@ -418,7 +393,7 @@ function sendModal(type) {
 		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
-		if (data['preferences'] != undefined) window.preferences = data['preferences'];
+		if (data.preferences != undefined) window.preferences = data.preferences;
 		if (!data || data.errors != undefined) $('#modal-warning').html(data.errors).show();
 		else {
 			Autocomplete.setData(data.autocomplete);
@@ -428,7 +403,7 @@ function sendModal(type) {
 }
 function closeModal() {
 	$('#modal-background').hide();
-	$('#txtcmd').focus();
+	$('#txtcmd').focus().select();
 	window.onkeydown = taste;
 }
 function updateLayerOptions() {
@@ -485,13 +460,11 @@ function sendImport(type) {
 		processData: false
 	})
 	.done(function(data) {
-		if (data['sections'] != undefined) {
+		if (data.sections != undefined) {
 			closeModal();
-			updateLayerOptions();
 			loadGraph();
 			$('#active_file').html('file:');
 		}
-		if (data['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + data['current_annotator']);
 	})
 	.error(function(data) {
 		alert('An error occurred while importing.');
@@ -514,7 +487,29 @@ function disable_import_form_fields(type) {
 		$('input[name="language"]').removeAttr('disabled');
 	}
 }
-function display_search_message(message) {
+function displaySearchMessage(message) {
 	$('#searchresult').html(message);
-	query.focus();
+	$('#query').focus();
+}
+function handleResponse(data) {
+	if (data.windows != undefined) {
+		for (var id in data.windows) Box.instances[id].restoreState(data.windows);
+		Box.saveState();
+	}
+	if (data.messages != undefined && data.messages.length > 0) alert(data.messages.join("\n"));
+	if (data.command == 'load') Log.load();
+	if (data.graph_file != undefined) $('#active_file').html('file: ' + data.graph_file);
+	if (data.current_annotator != undefined) $('#current_annotator').html('annotator: ' + data.current_annotator);
+	if (data.textline != undefined) $('#textline').html(data.textline);
+	if (data.meta != undefined) $('#meta').html(data.meta);
+	if (data.sections != undefined) Sectioning.setList(data.sections);
+	if (data.update_sections != undefined) Sectioning.updateList(data.update_sections);
+	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
+	if (data.preferences != undefined) window.preferences = data.preferences;
+	Autocomplete.setData(data.autocomplete);
+	if (data.search_result != undefined) displaySearchMessage(data.search_result);
+	else if (data.filter_applied != undefined) $('#filterfield').focus();
+	else {
+		$('#txtcmd').focus().select();
+	}
 }
