@@ -115,19 +115,13 @@ function taste(e) {
 			},
 			117: function(){
 				Box.instances.filter.toggleAndSave();
-				if ($('#filter').css('display') == 'none') {
-					$('#txtcmd').focus().select();
-				} else {
-					$('#filterfield').focus();
-				}
+				if ($('#filter').css('display') == 'none') focusCommandLine();
+				else focusFilterField;
 			},
 			118: function(){
 				Box.instances.search.toggleAndSave();
-				if ($('#search').css('display') == 'none') {
-					$('#txtcmd').focus().select();
-				} else {
-					$('#query').focus();
-				}
+				if ($('#search').css('display') == 'none') focusCommandLine();
+				else focusSearchField();
 			},
 			119: function(){
 				Box.instances.log.toggleAndSave();
@@ -258,18 +252,18 @@ function downloadFile(url, format) {
 	link.remove();
 }
 function sendFilter(mode) {
-	postRequest('/set_filter', {filter: document.filter.filterfield.value, mode: mode});
+	postRequest('/set_filter', {filter: document.filter.filterfield.value, mode: mode}, focusFilterField);
 	$('#filter input').removeClass('selected_filter_mode');
 	document.getElementById(mode).className = 'selected_filter_mode';
 }
 function sendSearch() {
-	postRequest('/search', {query: document.search.query.value});
+	postRequest('/search', {query: document.search.query.value}, focusSearchField);
 }
 function sendAnnotateQuery() {
-	postRequest('/annotate_query', {query: document.search.query.value});
+	postRequest('/annotate_query', {query: document.search.query.value}, focusSearchField);
 }
 function clearSearch() {
-	postRequest('/clear_search', {});
+	postRequest('/clear_search', {}, focusSearchField);
 }
 function sendDataExport() {
 	$.post(
@@ -277,7 +271,7 @@ function sendDataExport() {
 		{query: document.search.query.value}
 	).done(function(data){
 		if (data == '') location = "/export_data_table/data_table.csv";
-		else displaySearchMessage(data);
+		else {$('#searchresult').html(data); focusSearchField();}
 	});
 }
 function setSelectedIndex(s, v) {
@@ -304,7 +298,7 @@ function disableInputs($master, selector) {
 	else
 		$(selector).attr('disabled', '');
 }
-function postRequest(path, params) {
+function postRequest(path, params, callback) {
 	$.post(path, params, null, 'json')
 	.done(function(data) {
 		switch (data.modal) {
@@ -320,6 +314,8 @@ function postRequest(path, params) {
 		$('#txtcmd').val(getCookie('traw_cmd'));
 		updateView(data);
 		Log.update();
+		if (callback) callback();
+		else focusCommandLine();
 	});
 }
 function newLayer(element) {
@@ -403,7 +399,7 @@ function sendModal(type) {
 }
 function closeModal() {
 	$('#modal-background').hide();
-	$('#txtcmd').focus().select();
+	focusCommandLine();
 	window.onkeydown = taste;
 }
 function updateLayerOptions() {
@@ -487,9 +483,14 @@ function disable_import_form_fields(type) {
 		$('input[name="language"]').removeAttr('disabled');
 	}
 }
-function displaySearchMessage(message) {
-	$('#searchresult').html(message);
+function focusCommandLine() {
+	$('#txtcmd').focus().select();
+}
+function focusSearchField() {
 	$('#query').focus();
+}
+function focusFilterField() {
+	$('#filterfield').focus()
 }
 function handleResponse(data) {
 	if (data.windows != undefined) {
@@ -506,10 +507,6 @@ function handleResponse(data) {
 	if (data.update_sections != undefined) Sectioning.updateList(data.update_sections);
 	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
 	if (data.preferences != undefined) window.preferences = data.preferences;
+	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
 	Autocomplete.setData(data.autocomplete);
-	if (data.search_result != undefined) displaySearchMessage(data.search_result);
-	else if (data.filter_applied != undefined) $('#filterfield').focus();
-	else {
-		$('#txtcmd').focus().select();
-	}
 }

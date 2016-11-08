@@ -105,8 +105,7 @@ class GraphController
 		mode = @sinatra.params[:mode].partition(' ')
 		@view.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		return @view.generate.merge(
-			:sections_changed => false,
-			:filter_applied => true
+			:sections_changed => false
 		).to_json
 	end
 
