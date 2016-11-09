@@ -159,13 +159,19 @@ module GraphPersistence
 
 	private
 
-	def add_elements(h)
-		h['nodes'].each do |n|
-			self.add_node(n.merge(:raw => true))
+	def add_elements(data)
+		@highest_node_id = [@highest_node_id, data['max_node_id'].to_i].max
+		@highest_edge_id = [@highest_edge_id, data['max_edge_id'].to_i].max
+		sentence_node = nil
+		(data['nodes'] || []).each do |n|
+			node = add_node(n.merge(:raw => true))
+			sentence_node = node if node.type == 's'
 		end
-		h['edges'].each do |e|
-			self.add_edge(e.merge(:raw => true))
+		(data['edges'] || []).each do |e|
+			add_edge(e.merge(:raw => true))
 		end
+		return [] unless sentence_node
+		sentence_node.ordered_sister_nodes
 	end
 
 	def add_configuration(data)
