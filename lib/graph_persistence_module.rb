@@ -18,6 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'json.rb'
+require 'pathname.rb'
 
 module GraphPersistence
 	GRAPH_FORMAT_VERSION = 9
@@ -45,8 +46,9 @@ module GraphPersistence
 
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file
-	def read_json_file(path)
-		puts 'Reading file "' + path + '" ...'
+	def read_json_file(p)
+		path = Pathname.new(p)
+		puts "Reading file #{path} ..."
 		self.clear
 
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
@@ -58,21 +60,22 @@ module GraphPersistence
 			@sentence_index[:master] = add_elements(data)
 			data['files'].each do |file|
 				last_sentence_node = sentence_nodes.last
-				d = File.open("#{path.rpartition('/').first}/#{file}", 'r:utf-8'){|f| JSON.parse(f.read)}
+				d = File.open(path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
 				preprocess_raw_data(d, version)
 				@sentence_index[file] = add_elements(d)
 				add_order_edge(:start => last_sentence_node, :end => @sentence_index[file].first)
 			end
 		elsif data['master']
 			# read in master data
-			d = File.open("#{path.rpartition('/').first}/#{data['master']}", 'r:utf-8'){|f| JSON.parse(f.read)}
+			master_path = path.dirname + data['master']
+			d = File.open(master_path, 'r:utf-8'){|f| JSON.parse(f.read)}
 			version = d['version'].to_i
 			preprocess_raw_data(d, version)
 			add_configuration(d)
 			@sentence_index[:master] = add_elements(d)
 			# read in file data
 			preprocess_raw_data(data, version)
-			@sentence_index[path] = add_elements(data)
+			@sentence_index[path.relative_path_from(master_path.dirname).to_s] = add_elements(data)
 		else
 			version = data['version'].to_i
 			preprocess_raw_data(data, version)
@@ -82,7 +85,7 @@ module GraphPersistence
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
 
-		puts 'Read "' + path + '".'
+		puts "Read #{path}."
 
 		return data
 	end
