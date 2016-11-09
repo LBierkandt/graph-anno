@@ -50,13 +50,35 @@ module GraphPersistence
 		self.clear
 
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		version = data['version'].to_i
-		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
-		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys}
-		data['edges'] = data['edges'].map{|e| e.symbolize_keys}
 
-		add_configuration(data)
-		add_elements(data)
+		if data['files']
+			version = data['version'].to_i
+			preprocess_raw_data(data, version)
+			add_configuration(data)
+			@sentence_index[:master] = add_elements(data)
+			data['files'].each do |file|
+				last_sentence_node = sentence_nodes.last
+				d = File.open("#{path.rpartition('/').first}/#{file}", 'r:utf-8'){|f| JSON.parse(f.read)}
+				preprocess_raw_data(d, version)
+				@sentence_index[file] = add_elements(d)
+				add_order_edge(:start => last_sentence_node, :end => @sentence_index[file].first)
+			end
+		elsif data['master']
+			# read in master data
+			d = File.open("#{path.rpartition('/').first}/#{data['master']}", 'r:utf-8'){|f| JSON.parse(f.read)}
+			version = d['version'].to_i
+			preprocess_raw_data(d, version)
+			add_configuration(d)
+			@sentence_index[:master] = add_elements(d)
+			# read in file data
+			preprocess_raw_data(data, version)
+			@sentence_index[path] = add_elements(data)
+		else
+			version = data['version'].to_i
+			preprocess_raw_data(data, version)
+			add_configuration(data)
+			add_elements(data)
+		end
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
 
@@ -184,6 +206,12 @@ module GraphPersistence
 		create_layer_makros
 		@makros_plain += data['search_makros'] || []
 		@makros += parse_query(@makros_plain * "\n")['def']
+	end
+
+	def preprocess_raw_data(data, version)
+		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
+		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys} if data['nodes']
+		data['edges'] = data['edges'].map{|e| e.symbolize_keys} if data['edges']
 	end
 
 	def update_raw_graph_data(data, version)
