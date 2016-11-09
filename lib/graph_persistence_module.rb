@@ -54,28 +54,36 @@ module GraphPersistence
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
 
 		if data['files']
+			@multifile = {
+				:sentence_index => {},
+				:master_path => path.to_s,
+			}
 			version = data['version'].to_i
 			preprocess_raw_data(data, version)
 			add_configuration(data)
-			@sentence_index[:master] = add_elements(data)
+			@multifile[:sentence_index][:master] = add_elements(data)
 			data['files'].each do |file|
 				last_sentence_node = sentence_nodes.last
 				d = File.open(path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
 				preprocess_raw_data(d, version)
-				@sentence_index[file] = add_elements(d)
-				add_order_edge(:start => last_sentence_node, :end => @sentence_index[file].first)
+				@multifile[:sentence_index][file] = add_elements(d)
+				add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 			end
 		elsif data['master']
 			# read in master data
 			master_path = path.dirname + data['master']
+			@multifile = {
+				:sentence_index => {},
+				:master_path => master_path.to_s,
+			}
 			d = File.open(master_path, 'r:utf-8'){|f| JSON.parse(f.read)}
 			version = d['version'].to_i
 			preprocess_raw_data(d, version)
 			add_configuration(d)
-			@sentence_index[:master] = add_elements(d)
+			@multifile[:sentence_index][:master] = add_elements(d)
 			# read in file data
 			preprocess_raw_data(data, version)
-			@sentence_index[path.relative_path_from(master_path.dirname).to_s] = add_elements(data)
+			@multifile[:sentence_index][path.relative_path_from(master_path.dirname).to_s] = add_elements(data)
 		else
 			version = data['version'].to_i
 			preprocess_raw_data(data, version)
