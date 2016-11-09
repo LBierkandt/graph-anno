@@ -1,8 +1,6 @@
 window.onload = function() {
 	loadGraph();
 
-	for (var id in {help: 0, search: 0, filter: 0, log: 0, sectioning: 0, independent: 0}) restoreState(id);
-
 	window.onkeydown = taste;
 
 	// commandline
@@ -14,37 +12,6 @@ window.onload = function() {
 	$('#txtcmd').on('blur', function(e){
 		Autocomplete.disable();
 	})
-	$('#txtcmd').focus().select();
-
-	// draggables
-	$('.box').draggable({handle: '.handle', stack: '.box', stop: saveState});
-	// draggables on top when clicked
-	$('.box').on('mouseup', function(){
-		var $box = $(this);
-		if(!$box.hasClass('ui-draggable-dragging')){
-			var zIndexList = $('.box').map(function(){return $(this).zIndex()}).get();
-			var highestZIndex = Math.max.apply(null, zIndexList);
-			if($box.zIndex() < highestZIndex){
-				$box.zIndex(highestZIndex + 1);
-				saveState();
-			}
-		}
-	});
-	// resizables
-	$('#help').resizable({handles: 'all', minHeight: 45, minWidth: 120, stop: saveState});
-	$('#search').resizable({handles: 'all', minHeight: 141, minWidth: 310, stop: saveState});
-	$('#filter').resizable({handles: 'all', minHeight: 131, minWidth: 220, stop: saveState});
-	$('#log').resizable({handles: 'all', minHeight: 90, minWidth: 400, stop: saveState});
-	$('#sectioning').resizable({handles: 'all', minHeight: 45, minWidth: 50, stop: saveState});
-	$('#independent').resizable({handles: 'all', minHeight: 45, minWidth: 50, stop: saveState});
-
-	// function of close button
-	$('.handle').html('<div class="close"></div>')
-	$(document).on('click', '.close', function(){
-		$(this).closest('.box').hide();
-		saveState();
-		$('#txtcmd').focus().select();
-	});
 
 	// behaviour of file settings modal
 	$(document).on('change', '.file #save-log', function(){
@@ -118,14 +85,14 @@ function taste(e) {
 			Sectioning.navigateSentences(mapping[e.which]);
 		} else if (e.which in mapping2) {
 			e.preventDefault();
-			toggleAndSave('#sectioning', true)
+			Box.instances.sectioning.toggleAndSave(true);
 			Sectioning.selection(mapping2[e.which]);
 		}
 	}
 	else {
 		var mapping = {
 			112: function(){
-				toggleAndSave('#help')
+				Box.instances.help.toggleAndSave();
 			},
 			113: function(){
 				var textline = document.getElementById('textline');
@@ -147,26 +114,20 @@ function taste(e) {
 				$.getJSON('/toggle_refs').done(updateView);
 			},
 			117: function(){
-				toggleAndSave('#filter');
-				if ($('#filter').css('display') == 'none') {
-					$('#txtcmd').focus().select();
-				} else {
-					$('#filterfield').focus();
-				}
+				Box.instances.filter.toggleAndSave();
+				if ($('#filter').css('display') == 'none') focusCommandLine();
+				else focusFilterField;
 			},
 			118: function(){
-				toggleAndSave('#search');
-				if ($('#search').css('display') == 'none') {
-					$('#txtcmd').focus().select();
-				} else {
-					$('#query').focus();
-				}
+				Box.instances.search.toggleAndSave();
+				if ($('#search').css('display') == 'none') focusCommandLine();
+				else focusSearchField();
 			},
 			119: function(){
-				toggleAndSave('#log');
+				Box.instances.log.toggleAndSave();
 			},
 			120: function(){
-				toggleAndSave('#sectioning');
+				Box.instances.sectioning.toggleAndSave();
 			},
 			121: function(){
 				$('#independent').toggle();
@@ -208,15 +169,10 @@ function verschiebeBild(richtung) {
 }
 function updateView(data) {
 	data = data || {};
-	if (data['textline'] != undefined) $('#textline').html(data['textline']);
-	if (data['meta'] != undefined) $('#meta').html(data['meta']);
-	if (data['sections'] != undefined) Sectioning.setList(data['sections']);
-	if (data['update_sections'] != undefined) Sectioning.updateList(data['update_sections']);
-	if (data['current_sections'] != undefined) Sectioning.setCurrent(data['current_sections']);
-	if (data['preferences'] != undefined) window.preferences = data['preferences'];
-	Autocomplete.setData(data.autocomplete);
+	updateLayerOptions();
+	handleResponse(data);
 	graphdivEinpassen();
-	if (!data['dot']) return;
+	if (!data.dot) return;
 	// get old dimensions
 	var $div = $('#graph');
 	var oldImageSize = {
@@ -226,7 +182,7 @@ function updateView(data) {
 	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
 	// create svg
 	try {
-		var svgElement = new DOMParser().parseFromString(Viz(data['dot'], 'svg'), 'image/svg+xml');
+		var svgElement = new DOMParser().parseFromString(Viz(data.dot, 'svg'), 'image/svg+xml');
 	} catch(e) {
 		alert('An error occurred while generating the graph. Try reloading your browser window; if that doesn’t help, try the edge label compatibility mode (see config window)');
 		return;
@@ -240,7 +196,7 @@ function updateView(data) {
 	$div.empty().append(svgElement.documentElement);
 	var $svg = $div.find('svg');
 	// scale svg
-	if (data['sections_changed']) {
+	if (data.sections_changed) {
 		$svg.width(newSvgSize.width);
 		$svg.height(newSvgSize.height);
 		graphEinpassen();
@@ -300,15 +256,18 @@ function downloadFile(url, format) {
 	link.remove();
 }
 function sendFilter(mode) {
-	postRequest('/set_filter', {filter: document.filter.filterfield.value, mode: mode});
+	postRequest('/set_filter', {filter: document.filter.filterfield.value, mode: mode}, focusFilterField);
 	$('#filter input').removeClass('selected_filter_mode');
 	document.getElementById(mode).className = 'selected_filter_mode';
 }
 function sendSearch() {
-	postRequest('/search', {query: document.search.query.value});
+	postRequest('/search', {query: document.search.query.value}, focusSearchField);
+}
+function sendAnnotateQuery() {
+	postRequest('/annotate_query', {query: document.search.query.value}, focusSearchField);
 }
 function clearSearch() {
-	postRequest('/clear_search', {});
+	postRequest('/clear_search', {}, focusSearchField);
 }
 function sendDataExport() {
 	$.post(
@@ -316,11 +275,8 @@ function sendDataExport() {
 		{query: document.search.query.value}
 	).done(function(data){
 		if (data == '') location = "/export_data_table/data_table.csv";
-		else display_search_message(data);
+		else {$('#searchresult').html(data); focusSearchField();}
 	});
-}
-function sendAnnotateQuery() {
-	postRequest('/annotate_query', {query: document.search.query.value});
 }
 function setSelectedIndex(s, v) {
 	for (var i = 0; i < s.options.length; i++) {
@@ -346,40 +302,24 @@ function disableInputs($master, selector) {
 	else
 		$(selector).attr('disabled', '');
 }
-function postRequest(path, params) {
+function postRequest(path, params, callback) {
 	$.post(path, params, null, 'json')
 	.done(function(data) {
-		switch (data['modal']) {
+		switch (data.modal) {
 			case undefined:
 				break;
 			case 'import':
-				openImport(data['type']);
+				openImport(data.type);
 				return;
 			default:
-				openModal(data['modal']);
+				openModal(data.modal);
 				return;
 		}
-		var txtcmd = document.getElementById('txtcmd');
-		txtcmd.value = getCookie('traw_cmd');
-		updateLayerOptions();
-		for (var id in data['windows']) {
-			restoreState(id, data['windows']);
-		};
-		saveState();
-		if (data['messages'] != undefined && data['messages'].length > 0) alert(data['messages'].join("\n"));
-		if (data['command'] == 'load') Log.load();
-		if (data['graph_file'] != undefined) $('#active_file').html('file: ' + data['graph_file']);
-		if (data['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + data['current_annotator']);
-		if (data['search_result'] != undefined) {
-			display_search_message(data['search_result']);
-		} else if (data['filter_applied'] != undefined) {
-			filterfield.focus();
-		} else {
-			txtcmd.focus();
-			txtcmd.select();
-		}
+		$('#txtcmd').val(getCookie('traw_cmd'));
 		updateView(data);
 		Log.update();
+		if (callback) callback();
+		else focusCommandLine();
 	});
 }
 function newLayer(element) {
@@ -435,7 +375,6 @@ function sendConfig() {
 	.done(function(data) {
 		if (data == true) {
 			closeModal();
-			updateLayerOptions();
 			loadGraph();
 		} else {
 			$('#modal-warning').show();
@@ -454,7 +393,7 @@ function sendModal(type) {
 		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
-		if (data['preferences'] != undefined) window.preferences = data['preferences'];
+		if (data.preferences != undefined) window.preferences = data.preferences;
 		if (!data || data.errors != undefined) $('#modal-warning').html(data.errors).show();
 		else {
 			Autocomplete.setData(data.autocomplete);
@@ -464,7 +403,7 @@ function sendModal(type) {
 }
 function closeModal() {
 	$('#modal-background').hide();
-	$('#txtcmd').focus();
+	focusCommandLine();
 	window.onkeydown = taste;
 }
 function updateLayerOptions() {
@@ -521,13 +460,11 @@ function sendImport(type) {
 		processData: false
 	})
 	.done(function(data) {
-		if (data['sections'] != undefined) {
+		if (data.sections != undefined) {
 			closeModal();
-			updateLayerOptions();
 			loadGraph();
 			$('#active_file').html('file:');
 		}
-		if (data['current_annotator'] != undefined) $('#current_annotator').html('annotator: ' + data['current_annotator']);
 	})
 	.error(function(data) {
 		alert('An error occurred while importing.');
@@ -550,39 +487,30 @@ function disable_import_form_fields(type) {
 		$('input[name="language"]').removeAttr('disabled');
 	}
 }
-function display_search_message(message) {
-	$('#searchresult').html(message);
-	query.focus();
+function focusCommandLine() {
+	$('#txtcmd').focus().select();
 }
-function toggleAndSave(selector, state) {
-	$(selector).toggle(state);
-	saveState();
+function focusSearchField() {
+	$('#query').focus();
 }
-function saveState() {
-	var data = {};
-	$('.box').each(function(){
-		var $box = $(this);
-		var key = $box.attr('id');
-		data[key] = {};
-		for (var attr in {display: 0, left: 0, top: 0, width: 0, height: 0, 'z-index': 0}) {
-			data[key][attr] = $box.css(attr);
-		}
-	});
-	document.cookie = 'traw_windows=' + JSON.stringify(data) + '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
-	$.post('/save_window_positions', {data: data});
+function focusFilterField() {
+	$('#filterfield').focus()
 }
-function restoreState(id, data) {
-	var $element = $('#' + id);
-	if (data == undefined) {
-		try {
-			var attributes = JSON.parse(getCookie('traw_windows'))[id];
-		} catch(e) {
-			var attributes = {};
-		}
-	} else {
-		var attributes = data[id];
+function handleResponse(data) {
+	if (data.windows != undefined) {
+		for (var id in data.windows) Box.instances[id].restoreState(data.windows);
+		Box.saveState();
 	}
-	for (var i in attributes) {
-		$element.css(i, attributes[i]);
-	}
+	if (data.messages != undefined && data.messages.length > 0) alert(data.messages.join("\n"));
+	if (data.command == 'load') Log.load();
+	if (data.graph_file != undefined) $('#active_file').html('file: ' + data.graph_file);
+	if (data.current_annotator != undefined) $('#current_annotator').html('annotator: ' + data.current_annotator);
+	if (data.textline != undefined) $('#textline').html(data.textline);
+	if (data.meta != undefined) $('#meta').html(data.meta);
+	if (data.sections != undefined) Sectioning.setList(data.sections);
+	if (data.update_sections != undefined) Sectioning.updateList(data.update_sections);
+	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
+	if (data.preferences != undefined) window.preferences = data.preferences;
+	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
+	Autocomplete.setData(data.autocomplete);
 }

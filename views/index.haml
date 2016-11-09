@@ -10,6 +10,7 @@
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz1.3.0.js', :async => '' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/sectioning.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/log.js" }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/box.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/autocomplete.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
 
@@ -31,15 +32,15 @@
         #documentation
           %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
 
-    #sectioning.box
+    #sectioning.box{ :'min-height' => 45, :'min-width' => 50 }
       .handle
       .content
 
-    #independent.box
+    #independent.box{ :'min-height' => 45, :'min-width' => 50 }
       .handle
       .content
 
-    #search.box
+    #search.box{ :'min-height' => 141, :'min-width' => 310 }
       .handle
       %form{ :action => "/search", :method => "post", :name => "search" }
         .textarea-container
@@ -54,7 +55,7 @@
           #searchresult
             = controller.search_result.text
 
-    #filter.box
+    #filter.box{ :'min-height' => 131, :'min-width' => 220 }
       .handle
       %form{ :action => "/filter", :method => "post", :name => "filter" }
         .textarea-container
@@ -76,12 +77,12 @@
               %td{ :colspan => "2" }
                 %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
 
-    #log.box
+    #log.box{ :'min-height' => 90, :'min-width' => 400 }
       .handle
       .content
         = haml :log_table, :locals => {:log => controller.log}
 
-    #help.box
+    #help.box{ :'min-height' => 45, :'min-width' => 120 }
       .handle
       .content
         %h3 Key commands
