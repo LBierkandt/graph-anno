@@ -49,24 +49,14 @@ module GraphPersistence
 		puts 'Reading file "' + path + '" ...'
 		self.clear
 
-		file = open(path, 'r:utf-8')
-		data = JSON.parse(file.read)
-		file.close
+		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
 		version = data['version'].to_i
 		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
 		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys}
 		data['edges'] = data['edges'].map{|e| e.symbolize_keys}
 
-		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
-		add_hash(data)
-		@anno_makros = data['anno_makros'] || {}
-		@info = data['info'] || {}
-		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
-		@file_settings = (data['file_settings'] || {}).symbolize_keys
-		@conf = GraphConf.new(data['conf'])
-		create_layer_makros
-		@makros_plain += data['search_makros'] || []
-		@makros += parse_query(@makros_plain * "\n")['def']
+		add_configuration(data)
+		add_elements(data)
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
 
@@ -169,13 +159,25 @@ module GraphPersistence
 
 	private
 
-	def add_hash(h)
+	def add_elements(h)
 		h['nodes'].each do |n|
 			self.add_node(n.merge(:raw => true))
 		end
 		h['edges'].each do |e|
 			self.add_edge(e.merge(:raw => true))
 		end
+	end
+
+	def add_configuration(data)
+		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
+		@anno_makros = data['anno_makros'] || {}
+		@info = data['info'] || {}
+		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
+		@file_settings = (data['file_settings'] || {}).symbolize_keys
+		@conf = GraphConf.new(data['conf'])
+		create_layer_makros
+		@makros_plain += data['search_makros'] || []
+		@makros += parse_query(@makros_plain * "\n")['def']
 	end
 
 	def update_raw_graph_data(data, version)
