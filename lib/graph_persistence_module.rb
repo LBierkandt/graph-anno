@@ -22,6 +22,7 @@ require 'pathname.rb'
 
 module GraphPersistence
 	GRAPH_FORMAT_VERSION = 9
+	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
 	def to_h
@@ -51,39 +52,33 @@ module GraphPersistence
 		puts "Reading file #{path} ..."
 		self.clear
 
+		@path = path
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-
 		if data['files']
-			@multifile = {
-				:sentence_index => {},
-				:master_path => path.to_s,
-			}
+			@multifile = {:sentence_index => {}}
 			version = data['version'].to_i
 			preprocess_raw_data(data, version)
 			add_configuration(data)
 			@multifile[:sentence_index][:master] = add_elements(data)
 			data['files'].each do |file|
 				last_sentence_node = sentence_nodes.last
-				d = File.open(path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
+				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
 				preprocess_raw_data(d, version)
 				@multifile[:sentence_index][file] = add_elements(d)
 				add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 			end
 		elsif data['master']
 			# read in master data
-			master_path = path.dirname + data['master']
-			@multifile = {
-				:sentence_index => {},
-				:master_path => master_path.to_s,
-			}
-			d = File.open(master_path, 'r:utf-8'){|f| JSON.parse(f.read)}
-			version = d['version'].to_i
-			preprocess_raw_data(d, version)
-			add_configuration(d)
-			@multifile[:sentence_index][:master] = add_elements(d)
+			@path = path.dirname + data['master']
+			@multifile = {:sentence_index => {}}
+			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
+			version = master_data['version'].to_i
+			preprocess_raw_data(master_data, version)
+			add_configuration(master_data)
+			@multifile[:sentence_index][:master] = add_elements(master_data)
 			# read in file data
 			preprocess_raw_data(data, version)
-			@multifile[:sentence_index][path.relative_path_from(master_path.dirname).to_s] = add_elements(data)
+			@multifile[:sentence_index][path.relative_path_from(@path.dirname).to_s] = add_elements(data)
 		else
 			version = data['version'].to_i
 			preprocess_raw_data(data, version)
@@ -102,14 +97,16 @@ module GraphPersistence
 	# @param path [String] path to the JSON file
 	# @param compact [Boolean] write compact JSON?
 	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
-	def write_json_file(path, compact = false, additional = {})
-		puts 'Writing file "' + path + '"...'
+	def write_json_file(path = @path, additional = {})
+		path = Pathname.new(path)
+		puts "Writing file #{path}..."
+		FileUtils.mkdir_p(path.dirname) unless File.exist?(path.dirname)
 		hash = self.to_h.merge(additional)
-		json = compact ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
+		json = @file_settings[:compact] ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
 		File.open(path, 'w') do |file|
 			file.write(json.encode('UTF-8'))
 		end
-		puts 'Wrote "' + path + '".'
+		puts "Wrote #{path}."
 	end
 
 	# export corpus as SQL file for import in GraphInspect
@@ -208,7 +205,8 @@ module GraphPersistence
 	end
 
 	def add_configuration(data)
-		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
+		@multifile[:files] = data[:files] if @multifile
+ 		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		@anno_makros = data['anno_makros'] || {}
 		@info = data['info'] || {}
 		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])

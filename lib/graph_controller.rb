@@ -24,12 +24,11 @@ require_relative 'search_result.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :graph_file, :search_result, :current_sections
+	attr_reader :graph, :log, :search_result, :current_sections
 
 	def initialize
 		@graph = Graph.new
 		@log = Log.new(@graph)
-		@graph_file = ''
 		@data_table = nil
 		@section_index = {}
 		@sections = []
@@ -84,7 +83,7 @@ class GraphController
 		end
 		return value.to_json if value[:modal]
 		return section_settings_and_graph(value[:reload_sections]).merge(
-			:graph_file => @graph_file,
+			:graph_file => @graph.path.to_s,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:command => value[:command],
 			:windows => @windows,
@@ -458,7 +457,6 @@ class GraphController
 	end
 
 	def clear_workspace
-		@graph_file.replace('')
 		@graph.clear
 		@search_result.reset
 		@current_sections = nil
@@ -785,10 +783,9 @@ class GraphController
 			raise 'Please specify a file name!' unless parameters[:words][0]
 			clear_workspace
 			data = @graph.read_json_file(file_path(parameters[:words][0]))
-			@graph_file.replace(file_path(parameters[:words][0]))
 			if @graph.file_settings[:separate_log]
 				begin
-					@log = Log.new_from_file(@graph, @graph_file.sub(/.json$/, '.log.json'))
+					@log = Log.new_from_file(@graph, @graph.path.sub(/\.json$/, '.log.json'))
 				rescue
 					@log = Log.new(@graph, nil, data['log'])
 				end
@@ -810,16 +807,14 @@ class GraphController
 			reload_sections = true
 
 		when 'save' # save workspace to corpus file
-			raise 'Please specify a file name!' if @graph_file == '' and !parameters[:words][0]
-			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
-			dir = @graph_file.rpartition('/').first
-			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
+			path = @graph.path || parameters[:words][0]
+			raise 'Please specify a file name!' unless path
 			additional = {}
 			additional.merge!(:log => @log) if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
 			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
-			@graph.write_json_file(@graph_file, @graph.file_settings[:compact], additional)
+			@graph.write_json_file(path, additional)
 			if @graph.file_settings[:separate_log]
-				@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'), @graph.file_settings[:compact])
+				@log.write_json_file(path.sub(/\.json$/, '.log.json'), @graph.file_settings[:compact])
 			end
 
 		when 'clear' # clear workspace

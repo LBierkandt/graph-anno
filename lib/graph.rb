@@ -620,6 +620,7 @@ class Graph
 		@highest_node_id = 0
 		@highest_edge_id = 0
 		@node_index = Hash.new{|h, k| h[k] = {}}
+		@path = nil
 		@multifile = nil
 		@conf = GraphConf.new
 		@info = {}
