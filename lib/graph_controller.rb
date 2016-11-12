@@ -800,9 +800,7 @@ class GraphController
 
 		when 'append', 'add' # load corpus file and append it to the workspace
 			raise 'Please specify a file name!' unless parameters[:words][0]
-			addgraph = Graph.new
-			addgraph.read_json_file(file_path(parameters[:words][0]))
-			@graph.merge!(addgraph)
+			@graph.add_file(file_path(parameters[:words][0]))
 			@search_result.reset
 			reload_sections = true
 

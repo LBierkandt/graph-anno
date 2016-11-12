@@ -67,7 +67,7 @@ module GraphPersistence
 			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
 			version = init_from_master(master_data)
 			preprocess_raw_data(data, master_data['version'])
-			@multifile[:sentence_index][path.relative_path_from(@path.dirname).to_s] = add_elements(data)
+			@multifile[:sentence_index][relative_path(path)] = add_elements(data)
 		else
 			version = init_from_master(data)
 		end
@@ -77,6 +77,29 @@ module GraphPersistence
 		puts "Read #{path}."
 
 		return data
+	end
+
+	def add_file(p)
+		puts "Reading file #{p} ..."
+		path = Pathname.new(p)
+		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		if data['master'] and data['master'] == relative_path(@path)
+			file = relative_path(path)
+			if @multifile[:files].include?(file)
+				raise "#{path} has been loaded already!" if @multifile[:sentence_index][file]
+				before, after = adjacent_sentence_nodes(file)
+				preprocess_raw_data(data, @multifile[:version])
+				@multifile[:sentence_index][file] = add_elements(data)
+				add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
+				add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
+			else
+				raise "#{path} is not listed as part of #{@path}!"
+			end
+		else
+			new_graph = Graph.new
+			new_graph.read_json_file(path)
+			self.merge!(new_graph)
+		end
 	end
 
 	# serializes self in a JSON file
@@ -176,7 +199,7 @@ module GraphPersistence
 	private
 
 	def init_from_master(data)
-		@multifile = {:sentence_index => {}} if data['files']
+		@multifile = {:sentence_index => {}, :version => data['version'].to_i} if data['files']
 		preprocess_raw_data(data)
 		add_configuration(data)
 		sentence_nodes = add_elements(data)
@@ -200,7 +223,7 @@ module GraphPersistence
 	end
 
 	def add_configuration(data)
-		@multifile[:files] = data[:files] if @multifile
+		@multifile[:files] = data['files'] if @multifile
  		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		@anno_makros = data['anno_makros'] || {}
 		@info = data['info'] || {}
@@ -216,6 +239,21 @@ module GraphPersistence
 		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
 		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys} if data['nodes']
 		data['edges'] = data['edges'].map{|e| e.symbolize_keys} if data['edges']
+	end
+
+	def relative_path(path)
+		return nil unless @path
+		path.relative_path_from(@path.dirname).to_s
+	end
+
+	def adjacent_sentence_nodes(file)
+		i = @multifile[:files].index(file)
+		before = @multifile[:files][0..([i-1, 0].max)].select{|f| @multifile[:sentence_index][f]}.to_a.last
+		after = @multifile[:files][(i+1)..-1].select{|f| @multifile[:sentence_index][f]}.to_a.first
+		return [
+			@multifile[:sentence_index][before].to_a.last,
+			@multifile[:sentence_index][after].to_a.first,
+		]
 	end
 
 	def update_raw_graph_data(data, version)
