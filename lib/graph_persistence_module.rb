@@ -48,42 +48,28 @@ module GraphPersistence
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file
 	def read_json_file(p)
-		path = Pathname.new(p)
-		puts "Reading file #{path} ..."
+		puts "Reading file #{p} ..."
 		self.clear
 
-		@path = path
+		@path = path = Pathname.new(p)
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
 		if data['files']
-			@multifile = {:sentence_index => {}}
-			version = data['version'].to_i
-			preprocess_raw_data(data, version)
-			add_configuration(data)
-			@multifile[:sentence_index][:master] = add_elements(data)
+			version = init_from_master(data)
 			data['files'].each do |file|
 				last_sentence_node = sentence_nodes.last
 				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
-				preprocess_raw_data(d, version)
+				preprocess_raw_data(d, data['version'])
 				@multifile[:sentence_index][file] = add_elements(d)
 				add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 			end
 		elsif data['master']
-			# read in master data
 			@path = path.dirname + data['master']
-			@multifile = {:sentence_index => {}}
 			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
-			version = master_data['version'].to_i
-			preprocess_raw_data(master_data, version)
-			add_configuration(master_data)
-			@multifile[:sentence_index][:master] = add_elements(master_data)
-			# read in file data
-			preprocess_raw_data(data, version)
+			version = init_from_master(master_data)
+			preprocess_raw_data(data, master_data['version'])
 			@multifile[:sentence_index][path.relative_path_from(@path.dirname).to_s] = add_elements(data)
 		else
-			version = data['version'].to_i
-			preprocess_raw_data(data, version)
-			add_configuration(data)
-			add_elements(data)
+			version = init_from_master(data)
 		end
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
@@ -189,6 +175,15 @@ module GraphPersistence
 
 	private
 
+	def init_from_master(data)
+		@multifile = {:sentence_index => {}} if data['files']
+		preprocess_raw_data(data)
+		add_configuration(data)
+		sentence_nodes = add_elements(data)
+		@multifile[:sentence_index][:master] = sentence_nodes if @multifile
+		return data['version'].to_i
+	end
+
 	def add_elements(data)
 		@highest_node_id = [@highest_node_id, data['max_node_id'].to_i].max
 		@highest_edge_id = [@highest_edge_id, data['max_edge_id'].to_i].max
@@ -217,7 +212,7 @@ module GraphPersistence
 		@makros += parse_query(@makros_plain * "\n")['def']
 	end
 
-	def preprocess_raw_data(data, version)
+	def preprocess_raw_data(data, version = data['version'].to_i)
 		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
 		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys} if data['nodes']
 		data['edges'] = data['edges'].map{|e| e.symbolize_keys} if data['edges']
