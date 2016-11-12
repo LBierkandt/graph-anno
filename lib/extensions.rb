@@ -116,7 +116,7 @@ class String
 		r[:bstring] = '(\.?([^\s:"#\.]+\.|[^\s:"#\.])+)'
 		#r[:qstring] = '"(([^"]*(\\\"[^"]*)*[^\\\])|)"'
 		r[:qstring] = '"([^"]*(\\\"[^"]*)*([^"\\\]|\\\")|)"'
-		r[:rstring] = '/.*/'
+		r[:rstring] = '/.*/(?=\s|$)'
 		r[:string] = '(' + r[:qstring] + '|' + r[:bstring] + ')'
 		r[:bsequence] = r[:bstring] + '\.\.' + r[:bstring]
 		r[:sequence] = r[:string] + '\.\.' + r[:string]
