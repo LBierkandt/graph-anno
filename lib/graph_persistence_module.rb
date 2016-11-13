@@ -243,7 +243,7 @@ module GraphPersistence
 
 	def relative_path(path)
 		return nil unless @path
-		path.relative_path_from(@path.dirname).to_s
+		path.expand_path.relative_path_from(@path.expand_path.dirname).to_s
 	end
 
 	def adjacent_sentence_nodes(file)
