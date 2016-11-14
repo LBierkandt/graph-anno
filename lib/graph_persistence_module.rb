@@ -88,6 +88,7 @@ module GraphPersistence
 			if @multifile[:files].include?(file)
 				raise "#{path} has been loaded already!" if @multifile[:sentence_index][file]
 				before, after = adjacent_sentence_nodes(file)
+				edges_between(before, after).of_type('o').each(&:delete)
 				preprocess_raw_data(data, @multifile[:version])
 				@multifile[:sentence_index][file] = add_elements(data)
 				add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
