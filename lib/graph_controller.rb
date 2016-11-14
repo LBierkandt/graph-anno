@@ -956,6 +956,7 @@ class GraphController
 			:'s-det' => :sect,
 			:'s-del' => :sect,
 			:load => :file,
+			:add => :file,
 			:append => :file,
 			:save => nil,
 			:clear => nil,
