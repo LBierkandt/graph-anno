@@ -25,10 +25,13 @@ module GraphPersistence
 	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
-	def to_h
+	def to_h(h)
+		nodes = h[:nodes] || @nodes.values
+		edges = h[:edges] || @edges.values
+		additional = h[:additional] || {}
 		{
-			:nodes => @nodes.values.map(&:to_h),
-			:edges => @edges.values.map(&:to_h),
+			:nodes => nodes.map(&:to_h),
+			:edges => edges.map(&:to_h),
 			:version => GRAPH_FORMAT_VERSION,
 			:conf => @conf.to_h.except(:font),
 			:info => @info,
@@ -37,7 +40,7 @@ module GraphPersistence
 			:annotators => @annotators,
 			:file_settings => @file_settings,
 			:search_makros => @makros_plain,
-		}
+		}.merge(additional)
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -60,7 +63,7 @@ module GraphPersistence
 				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
 				preprocess_raw_data(d, data['version'])
 				@multifile[:sentence_index][file] = add_elements(d)
-				add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
+				@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 			end
 		elsif data['master']
 			@path = path.dirname + data['master']
@@ -88,11 +91,13 @@ module GraphPersistence
 			if @multifile[:files].include?(file)
 				raise "#{path} has been loaded already!" if @multifile[:sentence_index][file]
 				before, after = adjacent_sentence_nodes(file)
-				edges_between(before, after).of_type('o').each(&:delete)
+				edges_between(before, after).of_type('o').each do |e|
+					@multifile[:order_edges].delete(e.delete)
+				end
 				preprocess_raw_data(data, @multifile[:version])
 				@multifile[:sentence_index][file] = add_elements(data)
-				add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
-				add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
+				@multifile[:order_edges] << add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
+				@multifile[:order_edges] << add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
 			else
 				raise "#{path} is not listed as part of #{@path}!"
 			end
@@ -103,20 +108,26 @@ module GraphPersistence
 		end
 	end
 
-	# serializes self in a JSON file
+	# serializes self in one ore multiple JSON file(s)
 	# @param path [String] path to the JSON file
-	# @param compact [Boolean] write compact JSON?
 	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
-	def write_json_file(path = @path, additional = {})
-		path = Pathname.new(path)
-		puts "Writing file #{path}..."
-		FileUtils.mkdir_p(path.dirname) unless File.exist?(path.dirname)
-		hash = self.to_h.merge(additional)
-		json = @file_settings[:compact] ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
-		File.open(path, 'w') do |file|
-			file.write(json.encode('UTF-8'))
+	def store(path = @path, additional = {})
+		unless @multifile
+			write_corpus_file(path, additional)
+		else
+			@path = Pathname.new(path)
+			nodes_per_file = {}
+			edges_per_file = {}
+			@multifile[:sentence_index].each do |file, sentences|
+				next if file == :master
+				nodes_per_file[file] = sentences + sentences.map(&:nodes).flatten
+				edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
+				write_part_file(file, nodes_per_file[file], edges_per_file[file])
+			end
+			nodes_per_file[:master] = @nodes.values - nodes_per_file.values.flatten
+			edges_per_file[:master] = @edges.values - edges_per_file.values.flatten  - @multifile[:order_edges]
+			write_master_file(nodes_per_file[:master], edges_per_file[:master], additional)
 		end
-		puts "Wrote #{path}."
 	end
 
 	# export corpus as SQL file for import in GraphInspect
@@ -200,7 +211,7 @@ module GraphPersistence
 	private
 
 	def init_from_master(data)
-		@multifile = {:sentence_index => {}, :version => data['version'].to_i} if data['files']
+		@multifile = {:sentence_index => {}, :order_edges => [], :version => data['version'].to_i} if data['files']
 		preprocess_raw_data(data)
 		add_configuration(data)
 		sentence_nodes = add_elements(data)
@@ -242,9 +253,9 @@ module GraphPersistence
 		data['edges'] = data['edges'].map{|e| e.symbolize_keys} if data['edges']
 	end
 
-	def relative_path(path)
-		return nil unless @path
-		path.expand_path.relative_path_from(@path.expand_path.dirname).to_s
+	def relative_path(path, base_path = @path)
+		return nil unless base_path
+		path.expand_path.relative_path_from(base_path.expand_path.dirname).to_s
 	end
 
 	def adjacent_sentence_nodes(file)
@@ -255,6 +266,48 @@ module GraphPersistence
 			@multifile[:sentence_index][before].to_a.last,
 			@multifile[:sentence_index][after].to_a.first,
 		]
+	end
+
+	def write_json_file(path, data)
+		path = Pathname.new(path)
+		puts "Writing file #{path}..."
+		FileUtils.mkdir_p(path.dirname) unless File.exist?(path.dirname)
+		json = @file_settings[:compact] ? data.to_json : JSON.pretty_generate(data, :indent => ' ', :space => '')
+		File.open(path, 'w') do |file|
+			file.write(json.encode('UTF-8'))
+		end
+		puts "Wrote #{path}."
+	end
+
+	def write_corpus_file(path, additional)
+		write_json_file(path, self.to_h(:additional => additional))
+	end
+
+	def write_part_file(file, nodes, edges)
+		path = Pathname.new(@path.dirname + file)
+		write_json_file(
+			path,
+			{
+				:master => relative_path(@path, path),
+				:nodes => nodes.map(&:to_h),
+				:edges => edges.map(&:to_h),
+			}
+		)
+	end
+
+	def write_master_file(nodes, edges, additional)
+		write_json_file(
+			@path,
+			self.to_h(
+				:nodes => nodes,
+				:edges => edges,
+				:additional => {
+					:max_node_id => @highest_node_id,
+					:max_edge_id => @highest_edge_id,
+					:files => @multifile[:files],
+				}.merge(additional)
+			)
+		)
 	end
 
 	def update_raw_graph_data(data, version)
