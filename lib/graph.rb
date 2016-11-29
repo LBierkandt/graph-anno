@@ -320,6 +320,8 @@ class Graph
 			raise 'Given sections already belong to another section!'
 		elsif !sections_contiguous?(list)
 			raise 'Sections have to be contiguous!'
+		elsif sections_in_different_files?(list)
+			raise 'Sections have to belong to one file!'
 		else
 			section_node = add_part_node(:log => log_step)
 			list.each do |child_node|
@@ -365,6 +367,8 @@ class Graph
 			raise 'Given sections already belong to another section!'
 		elsif !sections_contiguous?(list + parent.child_sections)
 			raise 'Sections have to be contiguous!'
+		elsif sections_in_different_files?(list + parent.child_sections)
+			raise 'Sections have to belong to one file!'
 		end
 		list.each do |section|
 			add_part_edge(:start => parent, :end => section, :log => log_step)
@@ -419,6 +423,16 @@ class Graph
 	def sections_contiguous?(sections)
 		sections.map{|sect| sect.same_level_sections.index(sect)}
 			.sort.each_cons(2).all?{|a, b| b == a + 1}
+	end
+
+	# true if the given sections belong to different files of a multifile corpus
+	# @param sections [Array] the sections to be tested
+	# @return [Boolean]
+	def sections_in_different_files?(sections)
+		@multifile &&
+			@multifile[:sentence_index].values.none?{|file_sentences|
+				(sections.map(&:sentence_nodes).flatten - file_sentences).empty?
+			}
 	end
 
 	def inspect

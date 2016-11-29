@@ -119,12 +119,12 @@ module GraphPersistence
 			nodes_per_file = {}
 			edges_per_file = {}
 			@multifile[:sentence_index].each do |file, sentences|
-				nodes_per_file[file] = sentences + sentences.map(&:nodes).flatten
+				nodes_per_file[file] = (sections_hierarchy(sentences) + sentences.map(&:nodes)).flatten
 				edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
 				write_part_file(file, nodes_per_file[file], edges_per_file[file])
 			end
-			master_nodes = @nodes.values - nodes_per_file.values.flatten
-			master_edges = @edges.values - edges_per_file.values.flatten  - @multifile[:order_edges]
+			master_nodes = @node_index['sp']
+			master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
 			write_master_file(master_nodes, master_edges, additional)
 		end
 	end
