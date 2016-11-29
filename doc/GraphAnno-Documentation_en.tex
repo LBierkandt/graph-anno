@@ -121,6 +121,34 @@ We hope that you will find GraphAnno as useful as we do and enjoy working with i
 
 
 
+\section{Requirements and installation}
+
+GraphAnno is a Ruby program and thus needs an installation of Ruby (version 2.0 or higher; you may install it with your package manager or from \url{http://www.ruby-lang.org/}); you don’t need Ruby on Windows as there is a precompiled version of GraphAnno for Windows. For GraphAnno’s user interface you need a decent browser (GraphAnno has been developed with Firefox, but Chrome should work, too).\\
+
+\noindent
+Installation:
+\begin{enumerate}
+	\item Download the ZIP file \url{https://github.com/LBierkandt/graph-anno/archive/master.zip} and extract it to a directory of your choice (or clone the GraphAnno repository if you like to use Git).
+	\item Install the needed libraries (Rubygems):
+		\begin{enumerate}
+			\item navigate to the GraphAnno main directory,
+			\item run \code{gem install bundler} if you haven't installed bundler already,
+			\item run \code{bundle install}
+		\end{enumerate}
+\end{enumerate}
+
+\noindent
+Starting GraphAnno:
+\begin{enumerate}
+	\item start \code{main.rb} in the GraphAnno main directory by running \code{bundle exec ruby main.rb}; on Windows without Ruby, run \code{main.exe},
+	\item navigate to this address in your browser: \code{http://localhost:4567/}
+\end{enumerate}
+
+\noindent
+To stop the program, press ctrl + C in the console where it is running.
+
+
+
 \section{GraphAnno’s data model}
 
 All data in GraphAnno is represented as a graph, i.e., a set of nodes and a set of directed edges that connect the nodes.
