@@ -962,7 +962,7 @@ class GraphController
 			:clear => nil,
 			:s => :sect,
 			:image => nil,
-			:export => nil,
+			# :export => nil,
 			:import => nil,
 			:config => nil,
 			:tagset => nil,

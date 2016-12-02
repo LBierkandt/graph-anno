@@ -125,17 +125,9 @@ class GraphView
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 				options[:color] = @ctrl.graph.conf.filtered_color
 			else
-				@ctrl.graph.conf.layers.each do |l|
-					if node[l.attr] == 't'
-						options[:color] = l.color
-						actual_layer_graph = layer_graphs[l.attr]
-					end
-				end
-				@ctrl.graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
-					if c.attr.all?{|a| node[a] == 't'}
-						options[:color] = c.color
-						actual_layer_graph = layer_graphs[c.attr]
-					end
+				if l = node.layer
+					options[:color] = l.color
+					actual_layer_graph = layer_graphs[l.attr]
 				end
 			end
 			options[:fontcolor] = options[:color]
@@ -160,26 +152,13 @@ class GraphView
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				options[:color] = @ctrl.graph.conf.filtered_color
 			else
-				@ctrl.graph.conf.layers.each do |l|
-					if edge[l.attr] == 't'
-						options[:color] = l.color
-						if l.weight == 0
-							options[:constraint] = false
-						else
-							options[:weight] = l.weight
-							options[:constraint] = true
-						end
-					end
-				end
-				@ctrl.graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
-					if c.attr.all?{|a| edge[a] == 't'}
-						options[:color] = c.color
-						if c.weight == 0
-							options[:constraint] = false
-						else
-							options[:weight] = c.weight
-							options[:constraint] = true
-						end
+				if l = edge.layer
+					options[:color] = l.color
+					if l.weight == 0
+						options[:constraint] = false
+					else
+						options[:weight] = l.weight
+						options[:constraint] = true
 					end
 				end
 			end

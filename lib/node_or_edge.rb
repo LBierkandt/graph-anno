@@ -65,6 +65,19 @@ class NodeOrEdge
 		@attr.annotate_with(attributes).remove_empty!
 	end
 
+	# returns the layer or layer combination that should be used for the display of self (i.e. the most specific one)
+	# @return [AnnoLayer]
+	def layer
+		layer = nil
+		@graph.conf.layers.each do |l|
+			layer = l if attr[l.attr] == 't'
+		end
+		@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
+			layer = c if c.attr.all?{|a| attr[a] == 't'}
+		end
+		return layer
+	end
+
 	# whether self fulfils a given condition; returns numeral values for some condition types
 	# @param bedingung [Hash] a condition hash
 	# @param inherited [Hash] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false

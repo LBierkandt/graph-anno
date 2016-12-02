@@ -121,6 +121,34 @@ We hope that you will find GraphAnno as useful as we do and enjoy working with i
 
 
 
+\section{Requirements and installation}
+
+GraphAnno is a Ruby program and thus needs an installation of Ruby (version 2.0 or higher; you may install it with your package manager or from \url{http://www.ruby-lang.org/}); you don’t need Ruby on Windows as there is a precompiled version of GraphAnno for Windows. For GraphAnno’s user interface you need a decent browser (GraphAnno has been developed with Firefox, but Chrome should work, too).\\
+
+\noindent
+Installation:
+\begin{enumerate}
+	\item Download the ZIP file \url{https://github.com/LBierkandt/graph-anno/archive/master.zip} and extract it to a directory of your choice (or clone the GraphAnno repository if you like to use Git).
+	\item Install the needed libraries (Rubygems):
+		\begin{enumerate}
+			\item navigate to the GraphAnno main directory,
+			\item run \code{gem install bundler} if you haven't installed bundler already,
+			\item run \code{bundle install}
+		\end{enumerate}
+\end{enumerate}
+
+\noindent
+Starting GraphAnno:
+\begin{enumerate}
+	\item start \code{main.rb} in the GraphAnno main directory by running \code{bundle exec ruby main.rb}; on Windows without Ruby, run \code{main.exe},
+	\item navigate to this address in your browser: \code{http://localhost:4567/}
+\end{enumerate}
+
+\noindent
+To stop the program, press ctrl + C in the console where it is running.
+
+
+
 \section{GraphAnno’s data model}
 
 All data in GraphAnno is represented as a graph, i.e., a set of nodes and a set of directed edges that connect the nodes.
@@ -627,14 +655,6 @@ In order to navigate to a sentence or section (or multiple of them), you may use
 With the command \texttt{image}, you can export the graphic that GraphAnno is currently displaying.
 As argument you must specify the desired format (\texttt{svg} or \texttt{png}).
 The file will then be downloaded.
-
-
-\subsubsection{Export corpus: \texttt{export}}\label{befehl-export}
-
-Using the command \code{export}, you can export the contents of the work space as a corpus in another format.
-The first argument is the format (at present the only fully functional format is \code{sql} for the import in GraphInspect; the format \code{paula} is theoretically available, but it is heavily restricted with respect to layers), the second argument is the name of the corpus to be saved.
-For \code{paula} you can optionally specify the name of the corpus document to be created as third argument.
-The exported corpus will be saved in GraphAnno’s \texttt{exports} directory.
 
 
 \subsubsection{Import text: \texttt{import text}}\label{befehl-import}
