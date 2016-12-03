@@ -56,7 +56,7 @@ module GraphPersistence
 
 		@path = path = Pathname.new(p)
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		if data['files']
+		if data['files'] # is master file
 			version = init_from_master(data)
 			data['files'].each do |file|
 				last_sentence_node = sentence_nodes.last
@@ -65,13 +65,13 @@ module GraphPersistence
 				@multifile[:sentence_index][file] = add_elements(d)
 				@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 			end
-		elsif data['master']
+		elsif data['master'] # is part file
 			@path = path.dirname + data['master']
 			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
 			version = init_from_master(master_data)
 			preprocess_raw_data(data)
 			@multifile[:sentence_index][relative_path(path)] = add_elements(data)
-		else
+		else # is single-file corpus
 			version = init_from_master(data)
 		end
 
