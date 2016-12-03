@@ -86,7 +86,7 @@ module GraphPersistence
 		puts "Reading file #{p} ..."
 		path = Pathname.new(p)
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		if data['master'] and data['master'] == relative_path(@path)
+		if data['master'] and data['master'] == relative_path(@path, path)
 			file = relative_path(path)
 			if @multifile[:files].include?(file)
 				raise "#{path} has been loaded already!" if @multifile[:sentence_index][file]
