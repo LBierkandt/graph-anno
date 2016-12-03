@@ -61,7 +61,7 @@ module GraphPersistence
 			data['files'].each do |file|
 				last_sentence_node = sentence_nodes.last
 				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
-				preprocess_raw_data(d, data['version'])
+				preprocess_raw_data(d)
 				@multifile[:sentence_index][file] = add_elements(d)
 				@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 			end
@@ -69,7 +69,7 @@ module GraphPersistence
 			@path = path.dirname + data['master']
 			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
 			version = init_from_master(master_data)
-			preprocess_raw_data(data, master_data['version'])
+			preprocess_raw_data(data)
 			@multifile[:sentence_index][relative_path(path)] = add_elements(data)
 		else
 			version = init_from_master(data)
@@ -94,7 +94,7 @@ module GraphPersistence
 				edges_between(before, after).of_type('o').each do |e|
 					@multifile[:order_edges].delete(e.delete)
 				end
-				preprocess_raw_data(data, @multifile[:version])
+				preprocess_raw_data(data)
 				@multifile[:sentence_index][file] = add_elements(data)
 				@multifile[:order_edges] << add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
 				@multifile[:order_edges] << add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
@@ -210,7 +210,7 @@ module GraphPersistence
 	private
 
 	def init_from_master(data)
-		@multifile = {:sentence_index => {}, :order_edges => [], :version => data['version'].to_i} if data['files']
+		@multifile = {:sentence_index => {}, :order_edges => []} if data['files']
 		preprocess_raw_data(data)
 		add_configuration(data)
 		add_elements(data)
@@ -245,8 +245,9 @@ module GraphPersistence
 		@makros += parse_query(@makros_plain * "\n")['def']
 	end
 
-	def preprocess_raw_data(data, version = data['version'].to_i)
-		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
+	def preprocess_raw_data(data)
+		version = data['version']
+		update_raw_graph_data(data, version.to_i) if version and version.to_i < GRAPH_FORMAT_VERSION
 		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys} if data['nodes']
 		data['edges'] = data['edges'].map{|e| e.symbolize_keys} if data['edges']
 	end
@@ -286,6 +287,7 @@ module GraphPersistence
 		write_json_file(
 			path,
 			{
+				:version => GRAPH_FORMAT_VERSION,
 				:master => relative_path(@path, path),
 				:nodes => nodes.map(&:to_h),
 				:edges => edges.map(&:to_h),
@@ -314,7 +316,7 @@ module GraphPersistence
 			data['edges'] = data.delete('kanten')
 		end
 		if version < 9
-			(data['nodes'] + data['edges']).each do |el|
+			(data['nodes'].to_a + data['edges'].to_a).each do |el|
 				el['id'] = el.delete('ID') if version < 7
 				# IDs as integer
 				el['id'] = el['id'].to_i
