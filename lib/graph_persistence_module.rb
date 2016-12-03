@@ -104,6 +104,8 @@ module GraphPersistence
 		else
 			new_graph = Graph.new
 			new_graph.read_json_file(path)
+			@path = nil
+			@multifile = nil
 			self.merge!(new_graph)
 		end
 	end
