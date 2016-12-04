@@ -304,6 +304,17 @@ class Graph
 					add_part_edge(:start => sentence_before.parent_section, :end => s, :log => log_step)
 				end
 			end
+			if @multifile
+				@multifile[:order_edges] = []
+				@multifile[:sentence_index].each do |file, file_sentences|
+					if index = file_sentences.index(sentence_before)
+						file_sentences.insert(index + 1, *new_nodes)
+					end
+					if e = file_sentences.last.out.of_type('o').first
+						@multifile[:order_edges] << e
+					end
+				end
+			end
 		end
 		return new_nodes
 	end
