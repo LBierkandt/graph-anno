@@ -371,6 +371,27 @@ This structure could describe arbitrary directed graphs, but in order to work wi
 \end{table}
 
 
+\subsubsection{Multi-file corpora}
+
+For working with larger corpora, it can be handy to load only parts of a corpus.
+To this end you may create multi-file corpora, that can be loaded partially (currently it is not yet possible to create such multi-file corpora from within GraphAnno).
+A multi-file corpus consists of a master file and several part files, where the master file contains the configuration of the corpus and, optionally, independent nodes or edges, and the part files contain (consecutive) sentence nodes with their dominating section nodes and their associated token and annotation node, plus all connecting edges.
+
+The master file contains the version attribute, all configuration attributes and, additionally, the attributes \code{files}, \code{max\_node\_id} and \code{max\_edge\_id}.
+The value for \code{files} is an array of the relative paths of the part files (in the order their content has in the corpus).
+The value for \code{max\_node\_id} and \code{max\_edge\_id} is the highest node ID or edge ID, respectively, of the whole corpus graph.
+In some cases the master file may contain nodes, but no sentence or section nodes (i.e. a section cannot cross the boundaries of part files); only speaker nodes and sentence-independent nodes (to be implemented) are allowed.
+The master file contains those edges that connect nodes of the master file itself; nodes that connect nodes of the master file and nodes of a part file belong to the part file.
+
+A part file contains the version attribute, the attribute \code{master}, and nodes and edges.
+The value of \code{master} is the relative path of the master file.
+The nodes are a consecutive number of sentence nodes, with their dominating section nodes as well as their associated tokens and annotation nodes.
+The edges comprise all edges that connect the nodes of the part file, plus those edges that connect nodes of the part file and nodes of the master file.
+It is not possible to have edges between nodes of different part files.
+
+See Section \ref{data-and-navigation} for how to handle loading and saving of multi-file corpora.
+
+
 
 \section{User interface}
 
@@ -611,7 +632,7 @@ Note that the autocomplete feature is useless if you don’t choose things that 
 
 \section{Command line commands}\label{commandline-commands}
 
-\subsection{Data and navigation}
+\subsection{Data and navigation}\label{data-and-navigation}
 
 \subsubsection{Load file: \texttt{load}}
 
@@ -622,20 +643,34 @@ Provide the file name with or without the extension \code{.json}; the path has t
 
 Before loading, the work space is cleared from all data.
 So, changes that were not saved explicitly (using the command \code{save}) are lost.
-The name of the loaded file is shown next to the input line on the bottom of the user interface.
+The name of the loaded file (or the master file in case of multi-file corpora) is shown next to the input line on the bottom of the user interface.
+
+When working with a multi-file corpus, you have two options:
+Either you provide the path to the master file, then the whole corpus is loaded into the work space; or you provide the path to a part file, then only this part of the corpus is loaded.
+You can add other parts of the corpus using the command \code{add}.
+
+
+\subsubsection{Add part file of multi-file corpus: \texttt{add}}
+
+The command \code{add} adds to the work space a part file of a multi-file corpus that is already partially loaded.
+Provide the path of the part file as described for \code{load}.
+You will see an error message if you try to load a file that is not part of the loaded corpus or if the file has been loaded already.
 
 
 \subsubsection{Append file: \texttt{append}}
 
 The command \code{append} appends the contents of the given file (specify the file as described for \code{load}) to the work space.
+If you had loaded a multi-file corpus before, the content of the workspace will be treated as one-file corpus after the \code{append}.
 
 
 \subsubsection{Save file: \texttt{save}}
 
-The command \code{save} saves the work space to a GraphAnno file in the \texttt{data} directory.
-The file name has to be entered in the same way as with the command \code{load}.
-If there is a filename indicated next to the input line, the work space can be saved to this file without specifying the file name.
+The command \code{save} saves the work space to a GraphAnno file (see the command \code{load} for details concerning the file path).
+If there is a file name indicated next to the input line, the work space can be saved to this file without specifying the file name.
 Attention: no warning is issued when an existing file will be overwritten.
+
+When working with a multi-file corpus, only the loaded parts and the master file will be rewritten (the other parts remain unchanged).
+If you specify a new name when saving a partially loaded multi-file corpus, the new corpus will only consist of the loaded parts.
 
 
 \subsubsection{Clear work space: \texttt{clear}}
