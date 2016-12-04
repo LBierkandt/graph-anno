@@ -296,12 +296,23 @@ class Graph
 		end
 		if sentence_before
 			sentence_after = sentence_before.node_after
-			edges_between(sentence_before, sentence_after).of_type('o').each{|e| e.delete(log_step)}
+			edges_between(sentence_before, sentence_after).of_type('o').each{|e| e.delete(:log => log_step)}
 			add_order_edge(:start => sentence_before, :end => new_nodes.first, :log => log_step)
 			add_order_edge(:start => new_nodes.last, :end => sentence_after, :log => log_step)
 			if sentence_before.parent_section
 				new_nodes.each do |s|
 					add_part_edge(:start => sentence_before.parent_section, :end => s, :log => log_step)
+				end
+			end
+			if @multifile
+				@multifile[:order_edges] = []
+				@multifile[:sentence_index].each do |file, file_sentences|
+					if index = file_sentences.index(sentence_before)
+						file_sentences.insert(index + 1, *new_nodes)
+					end
+					if e = file_sentences.last.out.of_type('o').first
+						@multifile[:order_edges] << e
+					end
 				end
 			end
 		end
