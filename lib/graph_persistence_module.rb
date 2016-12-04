@@ -18,15 +18,20 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'json.rb'
+require 'pathname.rb'
 
 module GraphPersistence
 	GRAPH_FORMAT_VERSION = 9
+	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
-	def to_h
+	def to_h(h)
+		nodes = h[:nodes] || @nodes.values
+		edges = h[:edges] || @edges.values
+		additional = h[:additional] || {}
 		{
-			:nodes => @nodes.values.map(&:to_h),
-			:edges => @edges.values.map(&:to_h),
+			:nodes => nodes.map(&:to_h),
+			:edges => edges.map(&:to_h),
 			:version => GRAPH_FORMAT_VERSION,
 			:conf => @conf.to_h.except(:font),
 			:info => @info,
@@ -35,7 +40,7 @@ module GraphPersistence
 			:annotators => @annotators,
 			:file_settings => @file_settings,
 			:search_makros => @makros_plain,
-		}
+		}.merge(additional)
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -45,48 +50,89 @@ module GraphPersistence
 
 	# reads a graph JSON file into self, clearing self before
 	# @param path [String] path to the JSON file
-	def read_json_file(path)
-		puts 'Reading file "' + path + '" ...'
+	def read_json_file(p)
+		puts "Reading file #{p} ..."
 		self.clear
 
-		file = open(path, 'r:utf-8')
-		data = JSON.parse(file.read)
-		file.close
-		version = data['version'].to_i
-		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
-		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys}
-		data['edges'] = data['edges'].map{|e| e.symbolize_keys}
-
-		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
-		add_hash(data)
-		@anno_makros = data['anno_makros'] || {}
-		@info = data['info'] || {}
-		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
-		@file_settings = (data['file_settings'] || {}).symbolize_keys
-		@conf = GraphConf.new(data['conf'])
-		create_layer_makros
-		@makros_plain += data['search_makros'] || []
-		@makros += parse_query(@makros_plain * "\n")['def']
+		@path = path = Pathname.new(p)
+		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		if data['files'] # is master file
+			version = init_from_master(data)
+			data['files'].each do |file|
+				last_sentence_node = sentence_nodes.last
+				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
+				preprocess_raw_data(d)
+				@multifile[:sentence_index][file] = add_elements(d)
+				@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
+			end
+		elsif data['master'] # is part file
+			@path = path.dirname + data['master']
+			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
+			version = init_from_master(master_data)
+			preprocess_raw_data(data)
+			@multifile[:sentence_index][relative_path(path)] = add_elements(data)
+		else # is single-file corpus
+			version = init_from_master(data)
+		end
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
 
-		puts 'Read "' + path + '".'
+		puts "Read #{path}."
 
 		return data
 	end
 
-	# serializes self in a JSON file
-	# @param path [String] path to the JSON file
-	# @param compact [Boolean] write compact JSON?
-	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
-	def write_json_file(path, compact = false, additional = {})
-		puts 'Writing file "' + path + '"...'
-		hash = self.to_h.merge(additional)
-		json = compact ? hash.to_json : JSON.pretty_generate(hash, :indent => ' ', :space => '')
-		File.open(path, 'w') do |file|
-			file.write(json.encode('UTF-8'))
+	# load another part file of a partially loaded multi-file corpus
+	# @param p [String] path to the part file
+	def add_part_file(p)
+		puts "Reading file #{p} ..."
+		path = Pathname.new(p)
+		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		file = relative_path(path)
+		raise 'File is not a part of the loaded corpus!' unless data['master'] and data['master'] == relative_path(@path, path)
+		raise 'File is not listed as part of the loaded corpus!' unless @multifile[:files].include?(file)
+		raise 'File has been loaded already!' if @multifile[:sentence_index][file]
+		before, after = adjacent_sentence_nodes(file)
+		edges_between(before, after).of_type('o').each do |e|
+			@multifile[:order_edges].delete(e.delete)
 		end
-		puts 'Wrote "' + path + '".'
+		preprocess_raw_data(data)
+		@multifile[:sentence_index][file] = add_elements(data)
+		@multifile[:order_edges] << add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
+		@multifile[:order_edges] << add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
+	end
+
+	# load corpus and append it to the workspace
+	# @param p [String] path to the graph file
+	def append_file(p)
+		puts "Reading file #{p} ..."
+		path = Pathname.new(p)
+		new_graph = Graph.new
+		new_graph.read_json_file(path)
+		@path = nil
+		@multifile = nil
+		self.merge!(new_graph)
+	end
+
+	# serializes self in one ore multiple JSON file(s)
+	# @param path [String] path to the JSON file
+	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
+	def store(path, additional = {})
+		unless @multifile
+			write_corpus_file(path, additional)
+		else
+			@path = Pathname.new(path)
+			nodes_per_file = {}
+			edges_per_file = {}
+			@multifile[:sentence_index].each do |file, sentences|
+				nodes_per_file[file] = (sections_hierarchy(sentences) + sentences.map(&:nodes)).flatten
+				edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
+				write_part_file(file, nodes_per_file[file], edges_per_file[file])
+			end
+			master_nodes = @node_index['sp']
+			master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
+			write_master_file(master_nodes, master_edges, additional, path != @path)
+		end
 	end
 
 	# export corpus as SQL file for import in GraphInspect
@@ -169,13 +215,105 @@ module GraphPersistence
 
 	private
 
-	def add_hash(h)
-		h['nodes'].each do |n|
-			self.add_node(n.merge(:raw => true))
+	def init_from_master(data)
+		@multifile = {:sentence_index => {}, :order_edges => []} if data['files']
+		preprocess_raw_data(data)
+		add_configuration(data)
+		add_elements(data)
+		return data['version'].to_i
+	end
+
+	def add_elements(data)
+		@highest_node_id = [@highest_node_id, data['max_node_id'].to_i].max
+		@highest_edge_id = [@highest_edge_id, data['max_edge_id'].to_i].max
+		sentence_node = nil
+		(data['nodes'] || []).each do |n|
+			node = add_node(n.merge(:raw => true))
+			sentence_node = node if node.type == 's'
 		end
-		h['edges'].each do |e|
-			self.add_edge(e.merge(:raw => true))
+		(data['edges'] || []).each do |e|
+			add_edge(e.merge(:raw => true))
 		end
+		return [] unless sentence_node
+		sentence_node.ordered_sister_nodes
+	end
+
+	def add_configuration(data)
+		@multifile[:files] = data['files'] if @multifile
+ 		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
+		@anno_makros = data['anno_makros'] || {}
+		@info = data['info'] || {}
+		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
+		@file_settings = (data['file_settings'] || {}).symbolize_keys
+		@conf = GraphConf.new(data['conf'])
+		create_layer_makros
+		@makros_plain += data['search_makros'] || []
+		@makros += parse_query(@makros_plain * "\n")['def']
+	end
+
+	def preprocess_raw_data(data)
+		version = data['version']
+		update_raw_graph_data(data, version.to_i) if version and version.to_i < GRAPH_FORMAT_VERSION
+		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys} if data['nodes']
+		data['edges'] = data['edges'].map{|e| e.symbolize_keys} if data['edges']
+	end
+
+	def relative_path(path, base_path = @path)
+		return nil unless base_path
+		path.expand_path.relative_path_from(base_path.expand_path.dirname).to_s
+	end
+
+	def adjacent_sentence_nodes(file)
+		i = @multifile[:files].index(file)
+		before = @multifile[:files][0..([i-1, 0].max)].select{|f| @multifile[:sentence_index][f]}.to_a.last
+		after = @multifile[:files][(i+1)..-1].select{|f| @multifile[:sentence_index][f]}.to_a.first
+		return [
+			@multifile[:sentence_index][before].to_a.last,
+			@multifile[:sentence_index][after].to_a.first,
+		]
+	end
+
+	def write_json_file(path, data)
+		path = Pathname.new(path)
+		puts "Writing file #{path}..."
+		FileUtils.mkdir_p(path.dirname) unless File.exist?(path.dirname)
+		json = @file_settings[:compact] ? data.to_json : JSON.pretty_generate(data, :indent => ' ', :space => '')
+		File.open(path, 'w') do |file|
+			file.write(json.encode('UTF-8'))
+		end
+		puts "Wrote #{path}."
+	end
+
+	def write_corpus_file(path, additional)
+		write_json_file(path, self.to_h(:additional => additional))
+	end
+
+	def write_part_file(file, nodes, edges)
+		path = Pathname.new(@path.dirname + file)
+		write_json_file(
+			path,
+			{
+				:version => GRAPH_FORMAT_VERSION,
+				:master => relative_path(@path, path),
+				:nodes => nodes.map(&:to_h),
+				:edges => edges.map(&:to_h),
+			}
+		)
+	end
+
+	def write_master_file(nodes, edges, additional, new_corpus = false)
+		write_json_file(
+			@path,
+			self.to_h(
+				:nodes => nodes,
+				:edges => edges,
+				:additional => {
+					:max_node_id => @highest_node_id,
+					:max_edge_id => @highest_edge_id,
+					:files => new_corpus ? @multifile[:sentence_index].keys : @multifile[:files],
+				}.merge(additional)
+			)
+		)
 	end
 
 	def update_raw_graph_data(data, version)
@@ -184,7 +322,7 @@ module GraphPersistence
 			data['edges'] = data.delete('kanten')
 		end
 		if version < 9
-			(data['nodes'] + data['edges']).each do |el|
+			(data['nodes'].to_a + data['edges'].to_a).each do |el|
 				el['id'] = el.delete('ID') if version < 7
 				# IDs as integer
 				el['id'] = el['id'].to_i

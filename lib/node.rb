@@ -53,12 +53,12 @@ class Node < NodeOrEdge
 	# deletes self and all in- and outgoing edges; optionally writes changes to log
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	# @return [Node] self
-	def delete(log_step = nil, join_if_ordered = false)
-		join_adjacent(log_step) if join_if_ordered
-		if log_step
-			@out.each{|e| log_step.add_change(:action => :delete, :element => e)}
-			@in.each{|e| log_step.add_change(:action => :delete, :element => e)}
-			log_step.add_change(:action => :delete, :element => self)
+	def delete(h = {})
+		join_adjacent(h[:log]) if h[:join]
+		if h[:log]
+			@out.each{|e| h[:log].add_change(:action => :delete, :element => e)}
+			@in.each{|e| h[:log].add_change(:action => :delete, :element => e)}
+			h[:log].add_change(:action => :delete, :element => self)
 		end
 		Array.new(@out).each(&:delete)
 		Array.new(@in).each(&:delete)

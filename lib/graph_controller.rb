@@ -24,12 +24,11 @@ require_relative 'search_result.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :graph_file, :search_result, :current_sections
+	attr_reader :graph, :log, :search_result, :current_sections
 
 	def initialize
 		@graph = Graph.new
 		@log = Log.new(@graph)
-		@graph_file = ''
 		@data_table = nil
 		@section_index = {}
 		@sections = []
@@ -84,7 +83,7 @@ class GraphController
 		end
 		return value.to_json if value[:modal]
 		return section_settings_and_graph(value[:reload_sections]).merge(
-			:graph_file => @graph_file,
+			:graph_file => @graph.path.to_s,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:command => value[:command],
 			:windows => @windows,
@@ -105,8 +104,7 @@ class GraphController
 		mode = @sinatra.params[:mode].partition(' ')
 		@view.filter = {:cond => @graph.parse_attributes(@sinatra.params[:filter])[:op], :mode => mode[0], :show => (mode[2] == 'rest')}
 		return @view.generate.merge(
-			:sections_changed => false,
-			:filter_applied => true
+			:sections_changed => false
 		).to_json
 	end
 
@@ -459,7 +457,6 @@ class GraphController
 	end
 
 	def clear_workspace
-		@graph_file.replace('')
 		@graph.clear
 		@search_result.reset
 		@current_sections = nil
@@ -628,7 +625,7 @@ class GraphController
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |element|
-				element.delete(log_step, true)
+				element.delete(:log => log_step, :join => true)
 			end
 			undefined_references?(parameters[:elements])
 
@@ -786,10 +783,9 @@ class GraphController
 			raise 'Please specify a file name!' unless parameters[:words][0]
 			clear_workspace
 			data = @graph.read_json_file(file_path(parameters[:words][0]))
-			@graph_file.replace(file_path(parameters[:words][0]))
 			if @graph.file_settings[:separate_log]
 				begin
-					@log = Log.new_from_file(@graph, @graph_file.sub(/.json$/, '.log.json'))
+					@log = Log.new_from_file(@graph, @graph.path.sub(/\.json$/, '.log.json'))
 				rescue
 					@log = Log.new(@graph, nil, data['log'])
 				end
@@ -802,25 +798,27 @@ class GraphController
 			@current_sections = [sentence_nodes.first] unless @current_sections
 			reload_sections = true
 
-		when 'append', 'add' # load corpus file and append it to the workspace
+		when 'add' # load another part file of a partially loaded multi-file corpus
 			raise 'Please specify a file name!' unless parameters[:words][0]
-			addgraph = Graph.new
-			addgraph.read_json_file(file_path(parameters[:words][0]))
-			@graph.merge!(addgraph)
+			@graph.add_part_file(file_path(parameters[:words][0]))
+			@search_result.reset
+			reload_sections = true
+
+		when 'append' # load corpus and append it to the workspace
+			raise 'Please specify a file name!' unless parameters[:words][0]
+			@graph.append_file(file_path(parameters[:words][0]))
 			@search_result.reset
 			reload_sections = true
 
 		when 'save' # save workspace to corpus file
-			raise 'Please specify a file name!' if @graph_file == '' and !parameters[:words][0]
-			@graph_file.replace(file_path(parameters[:words][0])) if parameters[:words][0]
-			dir = @graph_file.rpartition('/').first
-			FileUtils.mkdir_p(dir) unless dir == '' or File.exist?(dir)
+			path = parameters[:words][0] ? file_path(parameters[:words][0]) : @graph.path
+			raise 'Please specify a file name!' unless path
 			additional = {}
 			additional.merge!(:log => @log) if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
 			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
-			@graph.write_json_file(@graph_file, @graph.file_settings[:compact], additional)
+			@graph.store(path, additional)
 			if @graph.file_settings[:separate_log]
-				@log.write_json_file(@graph_file.sub(/.json$/, '.log.json'), @graph.file_settings[:compact])
+				@log.write_json_file(path.sub(/\.json$/, '.log.json'), @graph.file_settings[:compact])
 			end
 
 		when 'clear' # clear workspace
@@ -964,6 +962,7 @@ class GraphController
 			:'s-det' => :sect,
 			:'s-del' => :sect,
 			:load => :file,
+			:add => :file,
 			:append => :file,
 			:save => nil,
 			:clear => nil,

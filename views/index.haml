@@ -10,6 +10,7 @@
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz1.3.0.js', :async => '' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/sectioning.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/log.js" }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/box.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/autocomplete.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
 
@@ -26,16 +27,16 @@
             = haml :layer_options, :locals => {:controller => controller}
           %input{ :type => "submit", :value => "Send" }
         %div
-          #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
+          #active_file= "file: #{controller.graph.path}"
           #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
         #documentation
           %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
 
-    #sectioning.box
+    #sectioning.box{ :'min-height' => 45, :'min-width' => 50 }
       .handle
       .content
 
-    #search.box
+    #search.box{ :'min-height' => 141, :'min-width' => 310 }
       .handle
       %form{ :action => "/search", :method => "post", :name => "search" }
         .textarea-container
@@ -50,7 +51,7 @@
           #searchresult
             = controller.search_result.text
 
-    #filter.box
+    #filter.box{ :'min-height' => 131, :'min-width' => 220 }
       .handle
       %form{ :action => "/filter", :method => "post", :name => "filter" }
         .textarea-container
@@ -72,12 +73,12 @@
               %td{ :colspan => "2" }
                 %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
 
-    #log.box
+    #log.box{ :'min-height' => 90, :'min-width' => 400 }
       .handle
       .content
         = haml :log_table, :locals => {:log => controller.log}
 
-    #help.box
+    #help.box{ :'min-height' => 45, :'min-width' => 120 }
       .handle
       .content
         %h3 Key commands
@@ -96,6 +97,7 @@
         %h4 Data and navigation
         %ul
           %li load file: <i>load file_name_or_path</i>
+          %li add corpus part: <i>add file_name_or_path</i>
           %li append file: <i>append file_name_or_path</i>
           %li save workspace to file: <i>save (file_name_or_path)</i>
           %li clear workspace: <i>clear</i>
