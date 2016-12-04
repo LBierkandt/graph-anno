@@ -117,7 +117,7 @@ module GraphPersistence
 	# serializes self in one ore multiple JSON file(s)
 	# @param path [String] path to the JSON file
 	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
-	def store(path = @path, additional = {})
+	def store(path, additional = {})
 		unless @multifile
 			write_corpus_file(path, additional)
 		else
@@ -131,7 +131,7 @@ module GraphPersistence
 			end
 			master_nodes = @node_index['sp']
 			master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
-			write_master_file(master_nodes, master_edges, additional)
+			write_master_file(master_nodes, master_edges, additional, path != @path)
 		end
 	end
 
@@ -301,7 +301,7 @@ module GraphPersistence
 		)
 	end
 
-	def write_master_file(nodes, edges, additional)
+	def write_master_file(nodes, edges, additional, new_corpus = false)
 		write_json_file(
 			@path,
 			self.to_h(
@@ -310,7 +310,7 @@ module GraphPersistence
 				:additional => {
 					:max_node_id => @highest_node_id,
 					:max_edge_id => @highest_edge_id,
-					:files => @multifile[:files],
+					:files => new_corpus ? @multifile[:sentence_index].keys : @multifile[:files],
 				}.merge(additional)
 			)
 		)
