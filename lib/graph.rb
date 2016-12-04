@@ -296,7 +296,7 @@ class Graph
 		end
 		if sentence_before
 			sentence_after = sentence_before.node_after
-			edges_between(sentence_before, sentence_after).of_type('o').each{|e| e.delete(log_step)}
+			edges_between(sentence_before, sentence_after).of_type('o').each{|e| e.delete(:log => log_step)}
 			add_order_edge(:start => sentence_before, :end => new_nodes.first, :log => log_step)
 			add_order_edge(:start => new_nodes.last, :end => sentence_after, :log => log_step)
 			if sentence_before.parent_section
