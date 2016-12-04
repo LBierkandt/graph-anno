@@ -82,32 +82,36 @@ module GraphPersistence
 		return data
 	end
 
-	def add_file(p)
+	# load another part file of a partially loaded multi-file corpus
+	# @param p [String] path to the part file
+	def add_part_file(p)
 		puts "Reading file #{p} ..."
 		path = Pathname.new(p)
 		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		if data['master'] and data['master'] == relative_path(@path, path)
-			file = relative_path(path)
-			if @multifile[:files].include?(file)
-				raise "#{path} has been loaded already!" if @multifile[:sentence_index][file]
-				before, after = adjacent_sentence_nodes(file)
-				edges_between(before, after).of_type('o').each do |e|
-					@multifile[:order_edges].delete(e.delete)
-				end
-				preprocess_raw_data(data)
-				@multifile[:sentence_index][file] = add_elements(data)
-				@multifile[:order_edges] << add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
-				@multifile[:order_edges] << add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
-			else
-				raise "#{path} is not listed as part of #{@path}!"
-			end
-		else
-			new_graph = Graph.new
-			new_graph.read_json_file(path)
-			@path = nil
-			@multifile = nil
-			self.merge!(new_graph)
+		file = relative_path(path)
+		raise 'File is not a part of the loaded corpus!' unless data['master'] and data['master'] == relative_path(@path, path)
+		raise 'File is not listed as part of the loaded corpus!' unless @multifile[:files].include?(file)
+		raise 'File has been loaded already!' if @multifile[:sentence_index][file]
+		before, after = adjacent_sentence_nodes(file)
+		edges_between(before, after).of_type('o').each do |e|
+			@multifile[:order_edges].delete(e.delete)
 		end
+		preprocess_raw_data(data)
+		@multifile[:sentence_index][file] = add_elements(data)
+		@multifile[:order_edges] << add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
+		@multifile[:order_edges] << add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
+	end
+
+	# load corpus and append it to the workspace
+	# @param p [String] path to the graph file
+	def append_file(p)
+		puts "Reading file #{p} ..."
+		path = Pathname.new(p)
+		new_graph = Graph.new
+		new_graph.read_json_file(path)
+		@path = nil
+		@multifile = nil
+		self.merge!(new_graph)
 	end
 
 	# serializes self in one ore multiple JSON file(s)

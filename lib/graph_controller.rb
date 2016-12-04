@@ -798,9 +798,15 @@ class GraphController
 			@current_sections = [sentence_nodes.first] unless @current_sections
 			reload_sections = true
 
-		when 'append', 'add' # load corpus file and append it to the workspace
+		when 'add' # load another part file of a partially loaded multi-file corpus
 			raise 'Please specify a file name!' unless parameters[:words][0]
-			@graph.add_file(file_path(parameters[:words][0]))
+			@graph.add_part_file(file_path(parameters[:words][0]))
+			@search_result.reset
+			reload_sections = true
+
+		when 'append' # load corpus and append it to the workspace
+			raise 'Please specify a file name!' unless parameters[:words][0]
+			@graph.append_file(file_path(parameters[:words][0]))
 			@search_result.reset
 			reload_sections = true
 
