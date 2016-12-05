@@ -118,10 +118,10 @@ module GraphPersistence
 	# @param path [String] path to the JSON file
 	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
 	def store(path, additional = {})
+		@path = Pathname.new(path)
 		unless @multifile
 			write_corpus_file(path, additional)
 		else
-			@path = Pathname.new(path)
 			nodes_per_file = {}
 			edges_per_file = {}
 			@multifile[:sentence_index].each do |file, sentences|
