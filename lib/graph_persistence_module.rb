@@ -21,7 +21,7 @@ require 'json.rb'
 require 'pathname.rb'
 
 module GraphPersistence
-	GRAPH_FORMAT_VERSION = 9
+	GRAPH_FORMAT_VERSION = 10
 	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
@@ -321,13 +321,23 @@ module GraphPersistence
 			data['nodes'] = data.delete('knoten')
 			data['edges'] = data.delete('kanten')
 		end
-		if version < 9
+		if version < 10
+			layer_map = Hash[data['conf']['layers'].map{|l| [l['attr'], l['shortcut']]}]
+			data['conf']['combinations'].each do |c|
+				c['layers'] = c['attr'].map{|a| layer_map[a]}
+			end
 			(data['nodes'].to_a + data['edges'].to_a).each do |el|
 				el['id'] = el.delete('ID') if version < 7
 				# IDs as integer
-				el['id'] = el['id'].to_i
-				el['start'] = el['start'].to_i if el['start'].is_a?(String)
-				el['end'] = el['end'].to_i if el['end'].is_a?(String)
+				if version < 9
+					el['id'] = el['id'].to_i
+					el['start'] = el['start'].to_i if el['start'].is_a?(String)
+					el['end'] = el['end'].to_i if el['end'].is_a?(String)
+				end
+				if version < 10 && el['attr']
+					layers = layer_map.map{|attr, shortcut| ('t' == el['attr'].delete(attr)) ? shortcut : nil}.compact
+					el['layer'] = layers unless layers.empty?
+				end
 			end
 		end
 	end
