@@ -456,22 +456,24 @@ module GraphSearch
 				attrs = interpolate(command[:attributes], tg)
 				attrs = allowed_attributes(attrs)
 				# set layer (same for all commands)
-				if layer_shortcut = command[:words].select{|l| conf.layer_shortcuts.keys.include?(l)}.last
-					layer = conf.layer_shortcuts[layer_shortcut]
+				if layer_shortcut = command[:words].select{|l| conf.layer_by_shortcut.keys.include?(l)}.last
+					layer = conf.layer_by_shortcut[layer_shortcut]
 				end
-				# extend attributes accordingly (same for all commands)
-				attrs.merge!(conf.layer_attributes[layer]) if layer
 				# extract elements
 				elements = command[:ids].map{|id| tg.ids[id]}.flatten.uniq.compact
 				nodes = elements.select{|e| e.is_a?(Node)}
 				# process the commands
 				case command[:operator]
 				when 'a'
-					elements.each{|el| el.annotate(attrs)}
+					elements.each do |el|
+						el.annotate(attrs)
+						el.set_layer(layer) if layer
+					end
 				when 'n'
 					if ref_node = nodes.first
 						add_anno_node(
 							:attr => attrs,
+							:layer => layer,
 							:sentence => ref_node.sentence
 						)
 					end
@@ -484,7 +486,8 @@ module GraphSearch
 						add_anno_edge(
 							:start => start_node,
 							:end => end_node,
-							:attr => attrs
+							:attr => attrs,
+							:layer => layer
 						)
 					end
 				when 'p', 'g'
@@ -492,7 +495,8 @@ module GraphSearch
 						add_parent_node(
 							nodes,
 							attrs,
-							conf.layer_attributes[layer],
+							{},
+							layer
 						)
 					end
 				when 'c', 'h'
@@ -500,7 +504,8 @@ module GraphSearch
 						add_child_node(
 							nodes,
 							attrs,
-							conf.layer_attributes[layer],
+							{},
+							layer
 						)
 					end
 				when 'd'
@@ -510,7 +515,7 @@ module GraphSearch
 					end
 				when 'ni'
 					elements.select{|e| e.is_a?(Edge)}.each do |e|
-						insert_node(e, attrs)
+						insert_node(e, attrs, layer)
 						search_result_preserved = false
 					end
 				when 'di', 'do'
@@ -523,11 +528,7 @@ module GraphSearch
 				when 'ta'
 					build_tokens(command[:words][1..-1], :last_token => nodes.of_type('t').last)
 				when 'l'
-					if layer
-						elements.each do |el|
-							el.annotate(Hash[@conf.layers.map{|l| [l.attr, nil]}].merge(attrs)) if layer
-						end
-					end
+					elements.each{|el| el.set_layer(layer)} if layer
 				end
 			end #command
 		end # tg

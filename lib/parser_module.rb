@@ -236,6 +236,8 @@ module Parser
 				p = parse_element(obj[i..-1])
 				if ['in', 'out', 'start', 'end', 'link', 'quant', 'token'].include?(p[:op][:operator])
 					terms << p[:op]
+				elsif @conf.layers_and_combinations.map(&:shortcut).include?(tok[:str])
+					terms << {:operator => 'layer', :layers => @conf.layer_by_shortcut[tok[:str]].layers}
 				elsif @makros.map{|m| m[:name]}.include?(tok[:str])
 					m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
 					terms << m[:op]
