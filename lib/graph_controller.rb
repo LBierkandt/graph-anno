@@ -170,12 +170,12 @@ class GraphController
 				AnnoLayer.new(layer.map_hash{|k, v| k == 'weight' ? v.to_i : v})
 			end
 			@graph.conf.combinations = @sinatra.params['combinations'].values.map do |combination|
-				combination['attr'] = combination['attr'] || {}
+				combination['layers'] = combination['layers'] || {}
 				AnnoLayer.new(
 					combination.map_hash do |k, v|
 						if k == 'weight'
 							v.to_i
-						elsif k == 'attr'
+						elsif k == 'layers'
 							v.values
 						else
 							v
@@ -565,26 +565,26 @@ class GraphController
 		end
 	end
 
-	def execute_command(command_line, layer)
+	def execute_command(command_line, layer_shortcut)
 		@command_line = command_line
 		command, foo, string = @command_line.strip.partition(' ')
 		parameters = string.parse_parameters
-		properties = @graph.conf.layer_attributes[layer] || {}
+		layer = @graph.conf.layer_by_shortcut[layer_shortcut]
 		reload_sections = false
 
 		case command
 		when 'n' # new node
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words], properties)
-			properties.merge!(extract_attributes(parameters))
+			layer = set_new_layer(parameters[:words]) || layer
 			sentence = if ref_node_reference = parameters[:all_nodes][0]
 				element_by_identifier(ref_node_reference).sentence
 			else
 				@current_sections.first.sentence_nodes.first
 			end
 			@graph.add_anno_node(
-				:attr => properties,
+				:attr => extract_attributes(parameters),
+				:layer => layer,
 				:sentence => sentence,
 				:log => log_step
 			)
@@ -592,12 +592,12 @@ class GraphController
 		when 'e' # new edge
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words], properties)
-			properties.merge!(extract_attributes(parameters))
+			layer = set_new_layer(parameters[:words]) || layer
 			@graph.add_anno_edge(
 				:start => element_by_identifier(parameters[:all_nodes][0]),
 				:end => element_by_identifier(parameters[:all_nodes][1]),
-				:attr => properties,
+				:attr => extract_attributes(parameters),
+				:layer => layer,
 				:log => log_step
 			)
 			undefined_references?(parameters[:all_nodes][0..1])
@@ -605,10 +605,7 @@ class GraphController
 		when 'a' # annotate elements
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			@graph.conf.layers.map(&:attr).each do |a|
-				properties.delete(a)
-			end
-			layer = set_new_layer(parameters[:words], properties)
+			layer = set_new_layer(parameters[:words])
 			elements = extract_elements(parameters[:elements])
 			# sentence and section nodes may be annotated with arbitrary key-value pairs
 			elements.of_type('s', 'p').each do |element|
@@ -616,8 +613,11 @@ class GraphController
 			end
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
-				annotations = properties.merge(extract_attributes(parameters))
-				anno_elements.each{|e| e.annotate(annotations, log_step)}
+				annotations = extract_attributes(parameters)
+				anno_elements.each do |e|
+					e.annotate(annotations, log_step)
+					e.set_layer(layer, log_step) if layer
+				end
 			end
 			undefined_references?(parameters[:elements])
 
@@ -631,21 +631,21 @@ class GraphController
 
 		when 'l' # set current layer and layer of elements
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words], properties)
-			annotations = Hash[@graph.conf.layers.map{|l| [l.attr, nil]}].merge(properties)
+			layer = set_new_layer(parameters[:words])
 			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |e|
-				e.annotate(annotations, log_step)
+				e.set_layer(layer, log_step)
 			end
 			undefined_references?(parameters[:elements])
 
 		when 'p', 'g' # group under new parent node
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words], properties)
+			layer = set_new_layer(parameters[:words]) || layer
 			@graph.add_parent_node(
 				extract_elements(parameters[:all_nodes]),
-				properties.merge(extract_attributes(parameters)),
-				properties.clone,
+				extract_attributes(parameters),
+				{},
+				layer,
 				log_step
 			)
 			undefined_references?(parameters[:all_nodes])
@@ -653,11 +653,12 @@ class GraphController
 		when 'c', 'h' # attach new child node
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words], properties)
+			annotations = extract_attributes(parameters)
+			layer = set_new_layer(parameters[:words]) || layer
 			@graph.add_child_node(
 				extract_elements(parameters[:all_nodes]),
-				properties.merge(extract_attributes(parameters)),
-				properties.clone,
+				extract_attributes(parameters),
+				{},
 				log_step
 			)
 			undefined_references?(parameters[:all_nodes])
@@ -665,17 +666,16 @@ class GraphController
 		when 'ni' # build node and "insert in edge"
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words], properties)
-			properties.merge!(extract_attributes(parameters))
+			layer = set_new_layer(parameters[:words]) || layer
 			extract_elements(parameters[:edges]).each do |edge|
-				@graph.insert_node(edge, properties, log_step)
+				@graph.insert_node(edge, extract_attributes(parameters), layer, log_step)
 			end
 			undefined_references?(parameters[:edges])
 
 		when 'di', 'do' # remove node and connect parent/child nodes
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words], properties)
+			layer = set_new_layer(parameters[:words]) || layer
 			extract_elements(parameters[:nodes]).each do |node|
 				@graph.delete_and_join(node, command == 'di' ? :in : :out, log_step)
 			end
@@ -894,11 +894,10 @@ class GraphController
 		set_cookie('traw_filter_mode', @sinatra.params[:mode])
 	end
 
-	def set_new_layer(words, properties)
-		if new_layer_shortcut = words.select{|w| @graph.conf.layer_shortcuts.keys.include?(w)}.last
-			layer = @graph.conf.layer_shortcuts[new_layer_shortcut]
-			set_cookie('traw_layer', layer)
-			properties.replace(@graph.conf.layer_attributes[layer])
+	def set_new_layer(words)
+		if new_layer_shortcut = words.select{|w| @graph.conf.layer_by_shortcut.keys.include?(w)}.last
+			layer = @graph.conf.layer_by_shortcut[new_layer_shortcut]
+			set_cookie('traw_layer', layer.shortcut)
 			return layer
 		end
 	end
@@ -980,8 +979,8 @@ class GraphController
 			:'' => :command
 		}
 		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
-		makros = @preferences[:makro] ? @graph.layer_makros.merge(@graph.anno_makros).keys : []
-		layers = @preferences[:makro] ? @graph.layer_makros.keys : []
+		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
+		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
 		refs   = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} + @view.nodes.map.with_index{|n, i| "n#{i}"} + @view.edges.map.with_index{|e, i| "e#{i}"} : []
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
 		arefs  = @preferences[:ref] ? refs + srefs : []
@@ -989,8 +988,8 @@ class GraphController
 		antors = @graph.annotators.map(&:name)
 		cmnds  = @preferences[:command] ? commands.keys : []
 		{
-			:anno => tagset + makros + refs,
-			:aanno => tagset + makros + arefs,
+			:anno => tagset + makros + layers + refs,
+			:aanno => tagset + makros + layers + arefs,
 			:ref => refs,
 			:layer => layers + refs,
 			:sect => sects,
@@ -1017,11 +1016,11 @@ class GraphController
 					result["layers[#{i}[#{k}]]"] = true unless v.is_hex_color?
 				elsif k == 'weight'
 					result["layers[#{i}[#{k}]]"] = true unless v.is_number?
-				elsif ['name', 'attr', 'shortcut'].include?(k)
+				elsif ['name', 'shortcut'].include?(k)
 					result["layers[#{i}[#{k}]]"] = true unless v != ''
 				end
 			end
-			['name', 'attr', 'shortcut'].each do |key|
+			['name', 'shortcut'].each do |key|
 				data['layers'].each do |i2, l2|
 					if !layer.equal?(l2) and layer[key] == l2[key]
 						result["layers[#{i}[#{key}]]"] = true
@@ -1045,11 +1044,11 @@ class GraphController
 				elsif ['name', 'shortcut'].include?(k)
 					result["combinations[#{i}[#{k}]]"] = true unless v != ''
 				end
-				if !combination['attr'] or combination['attr'].length == 1
-					result["combinations[#{i}[attr]]"] = true
+				if !combination['layers'] or combination['layers'].length == 1
+					result["combinations[#{i}[layers]]"] = true
 				end
 			end
-			['name', 'attr', 'shortcut'].each do |key|
+			['name', 'layers', 'shortcut'].each do |key|
 				data['combinations'].each do |i2, c2|
 					if !combination.equal?(c2) and combination[key] == c2[key]
 						result["combinations[#{i}[#{key}]]"] = true
