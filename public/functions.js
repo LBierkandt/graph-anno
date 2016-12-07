@@ -323,8 +323,8 @@ function newLayer(element) {
 	$.get('/new_layer/' + number)
 	.done(function(data){
 		$('#new-layer').closest('tbody').before(data);
-		$('label[for^="combinations["][for$="[attr]]"]').closest('td').next().each(function(i){
-			$(this).append("<input name='combinations["+i+"[attr["+number+"]]]' type='checkbox' value=''>\n<label for='combinations["+i+"[attr["+number+"]]]'></label>\n<br>");
+		$('label[for^="combinations["][for$="[layers]]"]').closest('td').next().each(function(i){
+			$(this).append("<input name='combinations["+i+"[layers["+number+"]]]' type='checkbox' value=''>\n<label for='combinations["+i+"[layers["+number+"]]]'></label>\n<br>");
 		});
 	});
 }
@@ -334,7 +334,7 @@ function newCombination(element) {
 	.done(function(data) {
 		$('#new-combination').closest('tbody').before(data);
 		removeLayerAttributes();
-		$('input[name^="layers["][name$="[attr]]"]').each(function(i){
+		$('input[name^="layers["][name$="[shortcut]]"]').each(function(i){
 		  setLayerAttributes(this);
 		});
 	});
@@ -414,14 +414,14 @@ function configKeys(e) {
 	}
 }
 function setLayerAttributes(field) {
-	var number = field.name.match(/layers\[(\d+)/)[1];
+	var number = field.name.match(/^layers\[(\d+)/)[1];
 	var value = field.value;
-	$('input[name^="combinations["][name$="[attr[' + number + ']]]"]').attr('value', value).next().html(value);
+	$('input[name^="combinations["][name$="[layers[' + number + ']]]"]').attr('value', value).next().html(value);
 }
 function removeLayerAttributes(number) {
 	$('table.combinations tbody').each(function() {
-		$(this).find('input[name*="[attr["]').each(function() {
-			var number = this.name.match(/attr\[(\d+)/)[1];
+		$(this).find('input[name*="[layers["]').each(function() {
+			var number = this.name.match(/layers\[(\d+)/)[1];
 			if($('table.layers tbody[no='+number+']').length == 0) {
 				$(this).next().remove();
 				$(this).next().remove();
