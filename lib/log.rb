@@ -168,9 +168,13 @@ class Change
 					:after => h[:data]['after'].symbolize_keys
 				}
 			else
+				before_attr = h[:element].attr.to_h
+				after_attr = h[:element].attr.clone.annotate_with(h[:attr] || {}).remove_empty!.to_h
+				before_layer = {:layer => h[:element].layer}
+				after_layer = {:layer => h[:layer] || h[:element].layer}
 				{
-					:before => h[:element].attr.to_h,
-					:after  => h[:element].attr.clone.annotate_with(h[:attr]).remove_empty!.to_h
+					:before => {}.merge(h[:attr] ? before_attr : {}).merge(h[:layer] ? before_layer : {}),
+					:after => {}.merge(h[:attr] ? after_attr : {}).merge(h[:layer] ? after_layer : {}),
 				}
 			end
 		end
@@ -217,7 +221,10 @@ class Change
 	end
 
 	def update(before_or_after = :after)
-		element.attr = Attributes.new({:host => element, :raw => true}.merge(@data[before_or_after]))
+		if @data[before_or_after][:attr] || @data[before_or_after][:private_attr]
+			element.attr = Attributes.new({:host => element, :raw => true}.merge(@data[before_or_after]))
+		end
+		element.layer = @data[before_or_after][:layer].clone if @data[before_or_after][:layer]
 	end
 
 	def element
