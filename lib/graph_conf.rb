@@ -53,12 +53,12 @@ class GraphConf
 
 	def merge!(other)
 		other.layers.each do |layer|
-			unless @layers.map(&:attr).include?(layer.attr)
+			unless @layers.map(&:shortcut).include?(layer.shortcut)
 				@layers << layer
 			end
 		end
 		other.combinations.each do |combination|
-			unless @combinations.map(&:attr).include?(combination.attr)
+			unless @combinations.map{|c| c.layers.sort}.include?(combination.layers.sort)
 				@combinations << combination
 			end
 		end
@@ -82,16 +82,8 @@ class GraphConf
 		@layers + @combinations
 	end
 
-	def layer_shortcuts
-		layers_and_combinations.map{|l| {l.shortcut => l.name}}.reduce{|m, h| m.merge(h)}
-	end
-
-	def layer_attributes
-		h = {}
-		layers_and_combinations.map do |l|
-			h[l.name] = [*l.attr].map{|attr| {attr => 't'}}.reduce{|m, h| m.merge(h)}
-		end
-		return h
+	def layer_by_shortcut
+		Hash[layers_and_combinations.map{|l| [l.shortcut, l]}]
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -101,12 +93,13 @@ class GraphConf
 end
 
 class AnnoLayer
-	attr_accessor :name, :attr, :shortcut, :color, :weight
+	attr_accessor :name, :shortcut, :layers, :color, :weight
 
 	def initialize(h = {})
 		@name = h['name'] || ''
-		@attr = h['attr'] || ''
 		@shortcut = h['shortcut'] || ''
+		@layers = h['layers'] || [h['shortcut']]
+		@attr = h['attr'] # keep in the json in order to stay able to update format of part files
 		@color = h['color'] || '#000000'
 		@weight = h['weight'] || '1'
 		@graph = h['graph'] || nil
@@ -115,10 +108,11 @@ class AnnoLayer
 	def to_h
 		{
 			:name => @name,
-			:attr => @attr,
 			:shortcut => @shortcut,
+			:layers => @layers == [@shortcut] ? nil : @layers,
+			:attr => @attr, # keep in the json in order to stay able to update format of part files
 			:color => @color,
 			:weight => @weight
-		}
+		}.compact
 	end
 end

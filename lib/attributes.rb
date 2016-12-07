@@ -37,7 +37,7 @@ class Attributes
 	def neutral?(key)
 		case @host.type
 		when 'a'
-			return @host.graph.conf.layers.map{|l| l.attr}.include?(key)
+			return false
 		when 't'
 			return key == 'token'
 		when 's', 'p'

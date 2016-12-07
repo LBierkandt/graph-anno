@@ -197,9 +197,10 @@ class Graph
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_parent_node(nodes, node_attrs, edge_attrs, log_step = nil)
+	def add_parent_node(nodes, node_attrs, edge_attrs, layer, log_step = nil)
 		parent_node = add_anno_node(
 			:attr => node_attrs,
+			:layer => layer,
 			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
@@ -208,6 +209,7 @@ class Graph
 				:start => parent_node,
 				:end => n,
 				:attr => edge_attrs,
+				:layer => layer,
 				:log => log_step
 			)
 		end
@@ -218,9 +220,10 @@ class Graph
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_child_node(nodes, node_attrs, edge_attrs, log_step = nil)
+	def add_child_node(nodes, node_attrs, edge_attrs, layer, log_step = nil)
 		child_node = add_anno_node(
 			:attr => node_attrs,
+			:layer => layer,
 			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
@@ -229,6 +232,7 @@ class Graph
 				:start => n,
 				:end => child_node,
 				:attr => edge_attrs,
+				:layer => layer,
 				:log => log_step
 			)
 		end
@@ -238,9 +242,10 @@ class Graph
 	# @param edge [Edge] the edge to be replaced
 	# @param attrs [Hash] the annotations for the new node
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def insert_node(edge, attrs, log_step = nil)
+	def insert_node(edge, attrs, layer, log_step = nil)
 		new_node = add_anno_node(
 			:attr => attrs,
+			:layer => layer,
 			:sentence => edge.end.sentence,
 			:log => log_step
 		)
@@ -249,6 +254,7 @@ class Graph
 				:start => edge.start,
 				:end => new_node,
 				:raw => true,
+				:layer => edge.layer,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -257,6 +263,7 @@ class Graph
 				:start => new_node,
 				:end => edge.end,
 				:raw => true,
+				:layer => edge.layer,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -276,6 +283,7 @@ class Graph
 						:start => in_edge.start,
 						:end => out_edge.end,
 						:raw => true,
+						:layer => devisor.layer,
 						:log => log_step
 					}.merge(devisor.attr.to_h)
 				)
@@ -732,20 +740,9 @@ class Graph
 		@makros = []
 		@makros_plain = []
 		@makros = parse_query(
-			layer_makros.map{|shortcut, attributes|
-				"def #{shortcut} #{attributes.map{|k, v| "#{k}:#{v}"} * ' & '}"
+			@conf.layers_and_combinations.map{|l|
+				"def #{l.shortcut} layer(#{l.shortcut})"
 			} * "\n"
 		)['def']
-	end
-
-	def layer_makros
-		Hash[
-			(@conf.layers_and_combinations).map do |layer|
-				[
-					layer.shortcut,
-					Hash[[*layer.attr].map{|a| [a, 't']}]
-				]
-			end
-		]
 	end
 end
