@@ -320,11 +320,24 @@ module GraphPersistence
 			data['edges'] = data.delete('kanten')
 		end
 		if version < 10
-			layer_map = Hash[data['conf']['layers'].map{|l| [l['attr'], l['shortcut']]}]
-			data['conf']['combinations'].each do |c|
+			layer_definitions = data['conf'] || {
+				'layers' => [
+					{'attr' => 'f-layer', 'shortcut' => 'f'},
+					{'attr' => 's-layer', 'shortcut' => 's'},
+				],
+				'combinations' => ['attr' => ['f-layer', 's-layer']]
+      }
+			layer_map = Hash[layer_definitions['layers'].map{|l| [l['attr'], l['shortcut']]}]
+			layer_definitions['combinations'].each do |c|
 				c['layers'] = c['attr'].map{|a| layer_map[a]}
 			end
 			(data['nodes'].to_a + data['edges'].to_a).each do |el|
+				if version < 5
+					el['attr']['f-layer'] = 't' if el['attr']['f-ebene'] == 'y'
+					el['attr']['s-layer'] = 't' if el['attr']['s-ebene'] == 'y'
+					el['attr'].delete('f-ebene')
+					el['attr'].delete('s-ebene')
+				end
 				el['id'] = el.delete('ID') if version < 7
 				# IDs as integer
 				if version < 9
@@ -355,12 +368,6 @@ module GraphPersistence
 					end
 					k.attr.public.delete('elementid')
 					k.attr.public.delete('edgetype')
-				end
-				if version < 5
-					k.attr.public['f-layer'] = 't' if k.attr.public['f-ebene'] == 'y'
-					k.attr.public['s-layer'] = 't' if k.attr.public['s-ebene'] == 'y'
-					k.attr.public.delete('f-ebene')
-					k.attr.public.delete('s-ebene')
 				end
 				if version < 7
 					# introduce node types
