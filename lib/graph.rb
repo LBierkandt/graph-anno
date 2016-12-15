@@ -254,7 +254,7 @@ class Graph
 				:start => edge.start,
 				:end => new_node,
 				:raw => true,
-				:layer => edge.layer,
+				:layer => edge.layers,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -263,7 +263,7 @@ class Graph
 				:start => new_node,
 				:end => edge.end,
 				:raw => true,
-				:layer => edge.layer,
+				:layer => edge.layers,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -283,7 +283,7 @@ class Graph
 						:start => in_edge.start,
 						:end => out_edge.end,
 						:raw => true,
-						:layer => devisor.layer,
+						:layer => devisor.layers,
 						:log => log_step
 					}.merge(devisor.attr.to_h)
 				)

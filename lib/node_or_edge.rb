@@ -20,6 +20,8 @@
 class NodeOrEdge
 	attr_reader :graph
 	attr_accessor :attr, :type, :layer
+	alias_method :layers, :layer
+	alias_method :layers=, :layer=
 
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
@@ -70,7 +72,7 @@ class NodeOrEdge
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def set_layer(layer, log_step = nil)
 		layers_array = layer ? layer.layers : []
-		log_step.add_change(:action => :update, :element => self, :layer => layers_array) if log_step
+		log_step.add_change(:action => :update, :element => self, :layers => layers_array) if log_step
 		@layer = layers_array
 	end
 
