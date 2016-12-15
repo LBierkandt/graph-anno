@@ -40,8 +40,8 @@ class Attributes
 			return @host.graph.conf.layers.map{|l| l.attr}.include?(key)
 		when 't'
 			return key == 'token'
-		when 's'
-			return key == 'name'
+		when 's', 'p'
+			return true
 		end
 	end
 

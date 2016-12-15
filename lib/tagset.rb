@@ -30,7 +30,7 @@ class Tagset < Array
 	def allowed_attributes(attr)
 		return attr.clone if self.empty?
 		attr.select do |key, value|
-			self.any?{|rule| rule.key == key and rule.allowes?(value)}
+			value.nil? or self.any?{|rule| rule.key == key and rule.allowes?(value)}
 		end
 	end
 
