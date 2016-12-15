@@ -250,8 +250,8 @@ module GraphPersistence
 	end
 
 	def preprocess_raw_data(data)
-		version = data['version']
-		update_raw_graph_data(data, version.to_i) if version and version.to_i < GRAPH_FORMAT_VERSION
+		version = data['version'].to_i
+		update_raw_graph_data(data, version) if version < GRAPH_FORMAT_VERSION
 		data['nodes'] = data['nodes'].map{|n| n.symbolize_keys} if data['nodes']
 		data['edges'] = data['edges'].map{|e| e.symbolize_keys} if data['edges']
 	end
