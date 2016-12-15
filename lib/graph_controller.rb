@@ -584,7 +584,7 @@ class GraphController
 			end
 			@graph.add_anno_node(
 				:attr => extract_attributes(parameters),
-				:layer => layer,
+				:layers => layer,
 				:sentence => sentence,
 				:log => log_step
 			)
@@ -597,7 +597,7 @@ class GraphController
 				:start => element_by_identifier(parameters[:all_nodes][0]),
 				:end => element_by_identifier(parameters[:all_nodes][1]),
 				:attr => extract_attributes(parameters),
-				:layer => layer,
+				:layers => layer,
 				:log => log_step
 			)
 			undefined_references?(parameters[:all_nodes][0..1])

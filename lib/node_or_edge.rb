@@ -19,9 +19,7 @@
 
 class NodeOrEdge
 	attr_reader :graph
-	attr_accessor :attr, :type, :layer
-	alias_method :layers, :layer
-	alias_method :layers=, :layer=
+	attr_accessor :attr, :type, :layers
 
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
@@ -73,14 +71,14 @@ class NodeOrEdge
 	def set_layer(layer, log_step = nil)
 		layers_array = layer ? layer.layers : []
 		log_step.add_change(:action => :update, :element => self, :layers => layers_array) if log_step
-		@layer = layers_array
+		@layers = layers_array
 	end
 
 	# returns the layer or layer combination that should be used for the display of self (i.e. the most specific one)
 	# @return [AnnoLayer]
 	def layer_or_combination
 		@graph.conf.layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
-			return l if @layer and l.layers.sort == @layer.sort
+			return l if @layers and l.layers.sort == @layers.sort
 		end
 		return nil
 	end
@@ -113,7 +111,7 @@ class NodeOrEdge
 			end
 			return false
 		when 'layer'
-			return bedingung[:layers] - @layer == []
+			return bedingung[:layers] - @layers == []
 		when 'not'
 			return (not self.fulfil?(bedingung[:arg]))
 		when 'and'

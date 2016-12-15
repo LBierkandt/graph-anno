@@ -200,7 +200,7 @@ class Graph
 	def add_parent_node(nodes, node_attrs, edge_attrs, layer, log_step = nil)
 		parent_node = add_anno_node(
 			:attr => node_attrs,
-			:layer => layer,
+			:layers => layer,
 			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
@@ -209,7 +209,7 @@ class Graph
 				:start => parent_node,
 				:end => n,
 				:attr => edge_attrs,
-				:layer => layer,
+				:layers => layer,
 				:log => log_step
 			)
 		end
@@ -223,7 +223,7 @@ class Graph
 	def add_child_node(nodes, node_attrs, edge_attrs, layer, log_step = nil)
 		child_node = add_anno_node(
 			:attr => node_attrs,
-			:layer => layer,
+			:layers => layer,
 			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
@@ -232,7 +232,7 @@ class Graph
 				:start => n,
 				:end => child_node,
 				:attr => edge_attrs,
-				:layer => layer,
+				:layers => layer,
 				:log => log_step
 			)
 		end
@@ -245,7 +245,7 @@ class Graph
 	def insert_node(edge, attrs, layer, log_step = nil)
 		new_node = add_anno_node(
 			:attr => attrs,
-			:layer => layer,
+			:layers => layer,
 			:sentence => edge.end.sentence,
 			:log => log_step
 		)
@@ -254,7 +254,7 @@ class Graph
 				:start => edge.start,
 				:end => new_node,
 				:raw => true,
-				:layer => edge.layers,
+				:layers => edge.layers,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -263,7 +263,7 @@ class Graph
 				:start => new_node,
 				:end => edge.end,
 				:raw => true,
-				:layer => edge.layers,
+				:layers => edge.layers,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -283,7 +283,7 @@ class Graph
 						:start => in_edge.start,
 						:end => out_edge.end,
 						:raw => true,
-						:layer => devisor.layers,
+						:layers => devisor.layers,
 						:log => log_step
 					}.merge(devisor.attr.to_h)
 				)

@@ -334,7 +334,7 @@ module GraphPersistence
 				end
 				if version < 10 && el['attr']
 					layers = layer_map.map{|attr, shortcut| ('t' == el['attr'].delete(attr)) ? shortcut : nil}.compact
-					el['layer'] = layers unless layers.empty?
+					el['layers'] = layers unless layers.empty?
 				end
 			end
 		end

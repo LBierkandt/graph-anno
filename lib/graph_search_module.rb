@@ -468,7 +468,7 @@ module GraphSearch
 					if ref_node = nodes.first
 						add_anno_node(
 							:attr => attrs,
-							:layer => layer,
+							:layers => layer,
 							:sentence => ref_node.sentence
 						)
 					end
@@ -482,7 +482,7 @@ module GraphSearch
 							:start => start_node,
 							:end => end_node,
 							:attr => attrs,
-							:layer => layer
+							:layers => layer
 						)
 					end
 				when 'p', 'g'
