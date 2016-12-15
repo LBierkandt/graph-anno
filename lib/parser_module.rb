@@ -113,10 +113,10 @@ module Parser
 	]
 	@@keywords = @@query_operators + @@annotation_commands
 
-	def parse_query(string)
+	def parse_query(string, makros = @makros)
 		ops = {:all => []}
 		@@keywords.each{|c| ops[c] = []}
-		ops['def'] = @makros
+		ops['def'] = makros || []
 
 		string.split("\n").each do |line|
 			begin

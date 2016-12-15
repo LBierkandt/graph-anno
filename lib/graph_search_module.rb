@@ -24,11 +24,6 @@ require_relative 'parser_module.rb'
 module GraphSearch
 	include Parser
 
-	def initialize
-		super
-		@makros = []
-	end
-
 	def teilgraph_suchen(query)
 		operations = parse_query(query)
 

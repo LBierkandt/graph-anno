@@ -244,11 +244,11 @@ class GraphController
 					[key.strip, params['anno']['values'][i].parse_parameters[:attributes]] unless key.empty?
 				}.compact
 			]
-			@graph.create_layer_makros
-			@graph.makros_plain = params['search']['names'].map{|i, name|
-				"def #{name} #{params['search']['queries'][i]}" unless name.empty?
-			}.compact
-			@graph.makros += @graph.parse_query(@graph.makros_plain * "\n")['def']
+			@graph.set_makros(
+				params['search']['names'].map{|i, name|
+					"def #{name} #{params['search']['queries'][i]}" unless name.empty?
+				}.compact
+			)
 		rescue StandardError => e
 			return {:errors => e.message}.to_json
 		end

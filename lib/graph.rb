@@ -507,8 +507,7 @@ class Graph
 		@current_annotator = other_graph.current_annotator
 		@file_settings = other_graph.file_settings.clone
 		@anno_makros = other_graph.anno_makros.clone
-		@makros_plain = other_graph.makros_plain.clone
-		@makros = parse_query(@makros_plain * "\n")['def']
+		set_makros(other_graph.makros_plain.clone)
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
@@ -662,7 +661,7 @@ class Graph
 		@current_annotator = nil
 		@anno_makros = {}
 		@file_settings = {}
-		create_layer_makros
+		set_makros
 		GC.start
 	end
 
@@ -735,14 +734,10 @@ class Graph
 		@annotators -= annotators
 	end
 
-	# create search makros from the layer shortcuts defined in the graph configuration
-	def create_layer_makros
-		@makros = []
-		@makros_plain = []
-		@makros = parse_query(
-			@conf.layers_and_combinations.map{|l|
-				"def #{l.shortcut} layer(#{l.shortcut})"
-			} * "\n"
-		)['def']
+	# set the search makros
+	# @param makro_definitions [Array] the makro definitions as strings, i.e. "def" commands
+	def set_makros(makro_definitions = [])
+		@makros_plain = makro_definitions
+		@makros = parse_query(@makros_plain * "\n", nil)['def']
 	end
 end

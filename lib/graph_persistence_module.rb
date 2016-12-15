@@ -246,9 +246,7 @@ module GraphPersistence
 		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
 		@conf = GraphConf.new(data['conf'])
-		create_layer_makros
-		@makros_plain += data['search_makros'] || []
-		@makros += parse_query(@makros_plain * "\n")['def']
+		set_makros(data['search_makros'] || [])
 	end
 
 	def preprocess_raw_data(data)
