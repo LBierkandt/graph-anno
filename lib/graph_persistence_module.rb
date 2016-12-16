@@ -315,6 +315,7 @@ module GraphPersistence
 	end
 
 	def update_raw_graph_data(data, version)
+		puts 'Updating graph data ...'
 		if version < 4
 			data['nodes'] = data.delete('knoten')
 			data['edges'] = data.delete('kanten')
@@ -331,15 +332,42 @@ module GraphPersistence
 			layer_definitions['combinations'].each do |c|
 				c['layers'] = c['attr'].map{|a| layer_map[a]}
 			end
-			(data['nodes'].to_a + data['edges'].to_a).each do |el|
-				if version < 5
-					el['attr']['f-layer'] = 't' if el['attr']['f-ebene'] == 'y'
-					el['attr']['s-layer'] = 't' if el['attr']['s-ebene'] == 'y'
-					el['attr'].delete('f-ebene')
-					el['attr'].delete('s-ebene')
+			klass = nil
+			([:node] + data['nodes'].to_a + [:edge] + data['edges'].to_a).each do |el|
+				klass = el and next if el.is_a?(Symbol)
+				if version < 2
+					if typ = el['attr'].delete('typ')
+						el['attr']['cat'] = typ
+					end
+					if namespace = el['attr'].delete('namespace')
+						el['attr']['sentence'] = namespace
+					end
+					el['attr'].delete('elementid')
+					el['attr'].delete('edgetype')
 				end
-				el['id'] = el.delete('ID') if version < 7
-				# IDs as integer
+				if version < 5
+					el['attr']['f-layer'] = 't' if 'y' == el['attr'].delete('f-ebene')
+					el['attr']['s-layer'] = 't' if 'y' == el['attr'].delete('s-ebene')
+				end
+				if version < 7
+					el['id'] = el.delete('ID')
+					el['attr'].delete('tokenid')
+					# introduce types
+					if klass == :node
+						if el['attr']['token']
+							el['type'] = 't'
+						elsif el['attr']['cat'] == 'meta'
+							el['type'] = 's'
+							el['attr'].delete('cat')
+						else
+							el['type'] = 'a'
+						end
+					else
+						el['type'] = 'o' if el['type'] == 't'
+						el['type'] = 'a' if el['type'] == 'g'
+						el['attr'].delete('sentence')
+					end
+				end
 				if version < 9
 					el['id'] = el['id'].to_i
 					el['start'] = el['start'].to_i if el['start'].is_a?(String)
@@ -356,46 +384,12 @@ module GraphPersistence
 	def update_graph_format(version)
 		if version < 7
 			puts 'Updating graph format ...'
-			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
-			@node_index.delete(nil)
-			(@nodes.values + @edges.values).each do |k|
-				if version < 2
-					if k.attr.public['typ']
-						k.attr.public['cat'] = k.attr.public.delete('typ')
-					end
-					if k.attr.public['namespace']
-						k.attr.public['sentence'] = k.attr.public.delete('namespace')
-					end
-					k.attr.public.delete('elementid')
-					k.attr.public.delete('edgetype')
-				end
-				if version < 7
-					# introduce node types
-					if k.kind_of?(Node)
-						if k.token
-							k.type = 't'
-						elsif k.attr.public['cat'] == 'meta'
-							k.type = 's'
-							k.attr.public.delete('cat')
-						else
-							k.type = 'a'
-						end
-						# populate node_index
-						@node_index[k.type][k.id] = k
-					else
-						k.type = 'o' if k.type == 't'
-						k.type = 'a' if k.type == 'g'
-						k.attr.public.delete('sentence')
-					end
-					k.attr.public.delete('tokenid')
-				end
-			end
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @node_index['s'].values
 				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
 					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
-						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
+						add_sect_node(:attr => {'sentence' => s}, :raw => true)
 					end
 				end
 			end
