@@ -78,7 +78,7 @@ class NodeOrEdge
 	# @return [AnnoLayer]
 	def layer_or_combination
 		@graph.conf.layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
-			return l if @layers and l.layers.sort == @layers.sort
+			return l if @layers and l.layers - @layers == []
 		end
 		return nil
 	end
