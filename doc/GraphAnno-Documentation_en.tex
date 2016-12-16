@@ -254,10 +254,10 @@ Both keys and values are always strings.
 There are some privileged keys that bear a special meaning in GraphAnno:
 The text of token nodes is stored as value of the key \code{token}; the key \code{cat} on annotation nodes and edges is privileged insofar as its value is displayed on top of the element’s annotations without the key; on sentence and section nodes the value of the key \code{name} is used as label for the elements in the navigation window and for referencing.
 
-GraphAnno also provides the possibility to assign annotation nodes and edges to different layers.
-The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation with the key corresponding to the layer and the value \code{t} (for \textit{true}).
-This representation allows for elements to belong to more than one layer, with the consequence that layers my overlap in an arbitrary manner.
-Nodes and edges of different layers may be displayed in different colors and aligned in different ways (see \ref{ebenenkonfiguration} for how to configure the layers and their diplay).
+GraphAnno also provides the possibility to assign annotation nodes and edges to different layers (token nodes cannot belong to layers).
+Each node or edge may belong to one or more layers, which is represented by the element carrying a list of layers to which it belongs.
+This representation allows for layers to overlap in an arbitrary manner.
+Nodes and edges of different layers may be displayed in different colors and aligned in different ways (see \ref{ebenenkonfiguration} for how to configure the layers and their display).
 
 
 \subsection{Serialization format}\label{serialization-format}
@@ -281,11 +281,11 @@ Furthermore, the JSON object has a number of optional attributes for configurati
 
 Each node has the attributes \code{id} with a unique identifier (integer) and \code{type} for representing the type of the node (string).
 For the strings representing the different node and edge types see Table \ref{types-strings}.
-Optionally, a node bears the attribute \code{attr} with its annotations (object).
-The \code{attr} object contains arbitrary keys with string values.
+Optionally, a node bears the attribute \code{attr} with its annotations (object), that are arbitrary keys with string values.
+Annotation nodes also optionally bear the attribute \code{layers} (array), a list of strings that are taken from the layer shortcuts as defined in the \code{conf} attribute of the graph.
 
 Edges have the same attributes as nodes plus the additional attributes \code{start} and \code{end} with the IDs of the edges’s start and end node, respectively.
-Only annotation edges, however, bear \code{attr}.
+Only annotation edges, however, may bear \code{attr} and \code{layers}.
 
 The structure of nodes and edges in JSON format can be seen in Figure \ref{json-node} and \ref{json-edge}, respectively.
 
@@ -316,7 +316,8 @@ The structure of nodes and edges in JSON format can be seen in Figure \ref{json-
 		{
 		  "id": <integer>,
 		  "type": "t" | "a" | "s" | "p",
-		  "attr": <object>
+		  "attr": <object>,
+		  "layers": <array>
 		}
 	\end{lstlisting}
 	\caption{A GraphAnno node JSON object}
@@ -329,7 +330,8 @@ The structure of nodes and edges in JSON format can be seen in Figure \ref{json-
 		  "start":<integer>,
 		  "end":<integer>,
 		  "type": "a" | "s" | "p" | "o",
-		  "attr":<object>
+		  "attr":<object>,
+		  "layers": <array>
 		}
 	\end{lstlisting}
 	\caption{A GraphAnno edge JSON object}
@@ -542,17 +544,17 @@ This leads to a poorer graph layout (more collisions) but avoids graph rendering
 
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
-\textit{Attribute} is the attribute that will be set to \code{t} for elements that belong to the layer in question.
-The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and as a search makro in searches (cf. Section \ref{def}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n} or \code{e} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
+The \textit{shortcut} is an identifier that is used for representing the layers of elements internally (cf. Section \ref{serialization-format}), for setting the layers of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and for matching elements of specific layers in searches; this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n}, \code{e} or \code{s} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
 \textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
-The heigher this value (integer values), the shorter the rendering algorithm will try to make the edges.
+The higher this value (integer values), the shorter the rendering algorithm will try to make the edges.
 When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
 If you enter \textit{0} as edge weight, the edges will not enforce a hierachy between the nodes of that layer (otherwise, the start node of an edge is always placed higher than the end node).
 If a negative value is entered, all nodes of that layer are displayed horizontally on one tier.
 
 The section \textit{layer combinations} contains the settings for elements that belong to multiple layers.
-Via the checkboxes under \textit{attributes} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
+Via the checkboxes under \textit{layers} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
 The other settings work like those described for the \textit{layers}, and for those elements that belong to the layer combination, they override the values given for the single layers.
+Note that elements can only be assigned to layer combinations that are defined here.
 
 
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
@@ -823,9 +825,9 @@ Key and value can be given either as simple string (if it doesn’t contain any 
 You can also use the shortcut from your previously defined annotation makros (see Section \ref{annotationsmakros}).
 When you additionally enter attributes with keys present in the makro, these override the annotations defined in the makro.
 
-Additionally, you can specify the layer to which the new node is to belong (if you don’t, it will belong to the layer set in the layer dropdown field).
+Additionally, you can specify the layer or layer combination to which the new node is to belong (if you don’t, it will belong to the layer/combination set in the layer dropdown field).
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
-The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations.
+The use of these shortcuts also has the effect of a switch, insofar as it sets the layer/combination for the following operations.
 
 Per default, the new node will belong to the first of the current sentences.
 You may, however, provide in your command a node to whose sentence the new node should belong instead.
@@ -909,9 +911,8 @@ edge_sequence          =   edge_reference ".." edge_reference
 
 \subsubsection{Set layer: \texttt{l}}\label{befehl-l}
 
-The command \code{l} sets the layer of the given elements and switches to the specified layer for the following operations (as the other commands that may use layer shortcuts).
-As arguments, specify the elements to be affected and the layer shortcut as defined in the layer configuration (cf. \ref{ebenenkonfiguration}).
-The difference to the use of the \code{a} command with layer shortcuts is that \code{a} \textit{adds} the specified layer, whereas \code{l} \textit{changes} the layer (i.e., it removes the attributes of the element’s old layer).
+The command \code{l} sets the layer or layer combination of the given elements and switches to the specified layer/combination for the following operations (as the other commands that may use layer shortcuts).
+As arguments, specify the elements to be affected and the layer shortcut as defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
 
 You may also use the command as a simple layer switch (as an alternative to the select field) by giving only the layer shortcut without any elements.
 
@@ -1068,7 +1069,7 @@ Of the following sections, the first one explains how a to-be-matched element is
 \subsubsection{Element description}\label{elementbeschreibung}
 
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
-Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).\\
+Such an element description defines which conditions the attributes and layers of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).\\
 
 The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for \textit{not}, \code{\&} for \textit{and} and \code{|} for \textit{or} (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
 As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
@@ -1085,11 +1086,15 @@ A regular expression has to be written in slashes (\code{/x.z/}) and has to conf
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
 
-If you omit a value string, those elements are matched that bear no annotation at all for the given key. So, e.g., \code{tns:} matches all elements without a tns annotation, \code{!tns:} matches all elements with a tns annotation, \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation.
+If you omit a value string, those elements are matched that bear no annotation at all for the given key. So, e.g., \code{tns:} matches all elements without a tns annotation, \code{!tns:} matches all elements with a tns annotation, \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation.\\
 
-Additionally to key-value pairs you may also use the keyword \code{token}, which matches token nodes.\\
+For matching the layer of an element, you use the shortcut defined for that layer (cf. Section \ref{ebenenkonfiguration}).
+Layer shortcuts can be combined using logical operators just like key-value pairs.
+So, if you want to find elements with a specific layer combination you may of course use the respective layer shortcuts joined by \code{\&}, but also the shortcut for that combination.
 
-\phantomsection\label{quantifiers}For nodes, the element description may, in addition to key-value pairs, contain criteria for ingoing and outgoing edges.
+Token nodes are matched by using the keyword \code{token}.\\
+
+\phantomsection\label{quantifiers}For nodes, the element description may, in addition to key-value pairs and layer shortcuts, contain criteria for ingoing and outgoing edges.
 These criteria are composed of the keyword \code{in} or \code{out}, an optional element description in parentheses and an optional quantifier.
 The operators \code{in} or \code{out} find all ingoing or outgoing edges, respectively, that match the given element description.
 The quantifier specifies how many edges matching the given description have to be present; its syntax is familiar from regular expressions:
@@ -1116,6 +1121,7 @@ element_description = element_description" & " element_description
                       "!" element_description
                       "(" element_description ")"
                       attribute
+                      layer_shortcut
                       edge_criterion
                       node_criterion
                       "token"
@@ -1384,7 +1390,7 @@ When using attribute values, bear in mind that these are always string; you may 
 
 With \code{def} you can define makros for use in your query.
 After the keyword \code{def} you specify a name for the makro and an attribute description or connection description that will be filled in for your makro.
-The attribute or connection description is formulated as described for \code{node} and \code{link} in \ref{node} and \ref{link}, respectively.
+The attribute or connection description is formulated as described in \ref{element-description} or \ref{link}, respectively.
 
 Bear in mind that a makro will be interpreted as it was in parentheses, i.e. it will be evaluated first.
 E.g., if you define a makro \code{cat:S | cat:VP} and combine it with the condition \code{tns:prs} using the operator \code{\&}, this will not be evaluated as \code{cat:S | cat:VP \& tns:prs} with the \code{\&} preceding the \code{|} but as \code{(cat:S | cat:VP) \& tns:prs}.
