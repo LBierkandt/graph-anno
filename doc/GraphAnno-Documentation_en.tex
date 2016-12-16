@@ -822,12 +822,13 @@ The commands require to be in a sentence, i.e., you have to create a sentence fi
 The command for creating a new node is \code{n}, followed by the attributes the new node is to bear as key-value pairs in the format \code{key:value}.
 Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation language: \code{␣:\quo\#})\footnote{The symbol \code{\mbox{\,␣\,}} stands for the space.}) or as string in double quotes (\code{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \code{\quo...\textbackslash\quo...\quo}).
 
-You can also use the shortcut from your previously defined annotation makros (see Section \ref{annotationsmakros}).
+You can also use a shortcut from previously defined annotation makros (see Section \ref{annotationsmakros}).
 When you additionally enter attributes with keys present in the makro, these override the annotations defined in the makro.
 
 Additionally, you can specify the layer or layer combination to which the new node is to belong (if you don’t, it will belong to the layer/combination set in the layer dropdown field).
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
 The use of these shortcuts also has the effect of a switch, insofar as it sets the layer/combination for the following operations.
+If you want to create a node without layer affiliation, you have to set the current layer to \textit{none} via the command \code{l} (see \ref{befehl-l}) or the layer dropdown.
 
 Per default, the new node will belong to the first of the current sentences.
 You may, however, provide in your command a node to whose sentence the new node should belong instead.
@@ -911,15 +912,16 @@ edge_sequence          =   edge_reference ".." edge_reference
 
 \subsubsection{Set layer: \texttt{l}}\label{befehl-l}
 
-The command \code{l} sets the layer or layer combination of the given elements and switches to the specified layer/combination for the following operations (as the other commands that may use layer shortcuts).
+The command \code{l} sets the layer or layer combination of the given elements and switches to the specified layer/combination for the following operations.
 As arguments, specify the elements to be affected and the layer shortcut as defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
+If you don’t provide a layer shortcut, the elements are set to belonging to no layer at all, and the current layer is set to \textit{none}.
 
-You may also use the command as a simple layer switch (as an alternative to the select field) by giving only the layer shortcut without any elements.
+You may also use the command as a simple layer switch (as an alternative to the select field) by giving only the layer shortcut (or none) without any elements.
 
 \paragraph*{Command \code{l} in modified BNF:}
 ~
 \begin{lstlisting}
-command_l     =   "l " l_parameters
+command_l     =   "l " l_parameters?
 l_parameters  =   l_parameters " " l_parameters
                   element_reference
                   layer_shortcut

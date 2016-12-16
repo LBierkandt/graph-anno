@@ -632,6 +632,7 @@ class GraphController
 		when 'l' # set current layer and layer of elements
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words])
+			set_cookie('traw_layer', '') unless layer
 			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |e|
 				e.set_layer(layer, log_step)
 			end
