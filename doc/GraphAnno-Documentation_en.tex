@@ -1365,8 +1365,9 @@ The nodes and node sets are referenced with the IDs used in the other clauses of
 When using IDs, note that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
 In the condition, you may access the attributes of elements using square brackets like this: \code{['key']}; for the attributes \code{token} and \code{cat} you can use as a shortcut the accessor methods \code{.token} and \code{.cat}.
+The layer(s) of an element are accessed via the method \code{.layers}; this method returns an array of the shortcuts of the layers the element belongs to.
 Via the method \code{.sentence} you can access the sentence node the element belongs to.
-When using attribute values, bear in mind that these are always string; you may cast them to numbers with \code{.to\_i} or \code{.to\_f} for integers or floating point numbers, respectively.
+When using attribute values, bear in mind that these are always strings; you may cast them to numbers with \code{.to\_i} or \code{.to\_f} for integers or floating point numbers, respectively.
 
 
 \paragraph*{Examples:}
@@ -1392,7 +1393,7 @@ When using attribute values, bear in mind that these are always string; you may 
 
 With \code{def} you can define makros for use in your query.
 After the keyword \code{def} you specify a name for the makro and an attribute description or connection description that will be filled in for your makro.
-The attribute or connection description is formulated as described in \ref{element-description} or \ref{link}, respectively.
+The attribute or connection description is formulated as described in \ref{elementbeschreibung} or \ref{link}, respectively.
 
 Bear in mind that a makro will be interpreted as it was in parentheses, i.e. it will be evaluated first.
 E.g., if you define a makro \code{cat:S | cat:VP} and combine it with the condition \code{tns:prs} using the operator \code{\&}, this will not be evaluated as \code{cat:S | cat:VP \& tns:prs} with the \code{\&} preceding the \code{|} but as \code{(cat:S | cat:VP) \& tns:prs}.
@@ -1462,7 +1463,7 @@ Its first parameter is the column title (which must not contain spaces); it is f
 Nodes and edges are referenced using the IDs defined in your search query.
 Again, bear in mind that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
-You can access the attributes as described in \ref{cond} for \code{cond}.
+You can access the attributes and layers as described in \ref{cond} for \code{cond}.
 There are also other useful methods for exporting data:
 E.g., \code{.tokens} returns a list of the dominated tokens (you may also give a more specific link description string as argument of the method); \code{.text} works in the same way but returns the token text as a string.
 \code{.sentence\_tokens} returns a list of all token nodes of the sentence the element belongs to, \code{.sentence\_text}, again, their text.
