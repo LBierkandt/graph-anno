@@ -25,7 +25,7 @@ class Graph
 	include GraphSearch
 	include GraphPersistence
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -49,6 +49,7 @@ class Graph
 		@current_annotator = nil
 		@anno_makros = {}
 		@file_settings = {}
+		@media = nil
 		set_makros
 		GC.start
 	end

@@ -36,11 +36,12 @@ module GraphPersistence
 			:conf => @conf.to_h.except(:font),
 			:info => @info,
 			:anno_makros => @anno_makros,
+			:search_makros => @makros_plain,
 			:tagset => @tagset,
 			:annotators => @annotators,
 			:file_settings => @file_settings,
-			:search_makros => @makros_plain,
-		}.merge(additional)
+			:media => relative_path(@media),
+		}.merge(additional).compact
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -245,6 +246,7 @@ module GraphPersistence
 		@info = data['info'] || {}
 		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
+		@media = data['media'] ? (@path.dirname + data['media']).expand_path : nil
 		@conf = GraphConf.new(data['conf'])
 		set_makros(data['search_makros'] || [])
 	end
@@ -257,7 +259,7 @@ module GraphPersistence
 	end
 
 	def relative_path(path, base_path = @path)
-		return nil unless base_path
+		return nil unless path && base_path
 		path.expand_path.relative_path_from(base_path.expand_path.dirname).to_s
 	end
 
