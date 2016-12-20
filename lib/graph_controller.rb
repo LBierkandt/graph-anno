@@ -81,7 +81,7 @@ class GraphController
 			@cmd_error_messages << e.message
 			value = {}
 		end
-		return value.to_json if value[:modal]
+		return value.to_json if value[:no_redraw]
 		return section_settings_and_graph(value[:reload_sections]).merge(
 			:graph_file => @graph.path.to_s,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
@@ -869,15 +869,24 @@ class GraphController
 			when 'annotators'
 				@graph.import_annotators(name)
 			when 'toolbox'
-				return {:modal => 'import', :type => 'toolbox'}
+				return {:no_redraw => true, :modal => 'import', :type => 'toolbox'}
 			when 'text'
-				return {:modal => 'import', :type => 'text'}
+				return {:no_redraw => true, :modal => 'import', :type => 'text'}
 			else
 				raise "Unknown import type"
 			end
 
+		when 'play'
+			undefined_references?(parameters[:tokens])
+			val = {:no_redraw => true, :command => command}
+			first_token = !parameters[:tokens].empty? ? element_by_identifier(parameters[:tokens].first) : @view.tokens.first
+			last_token = parameters[:tokens].length > 1 ? element_by_identifier(parameters[:tokens].last) : @view.tokens.last
+			val[:start] = first_token.start
+			val[:end] = last_token.end
+			return val
+
 		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file', 'pref'
-			return {:modal => command}
+			return {:no_redraw => true, :modal => command}
 
 		when ''
 		else

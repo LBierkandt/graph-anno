@@ -490,6 +490,17 @@ function setMedia(path) {
 	else if (!($video.attr('src') && $video.attr('src') == path))
 		$video.attr('src', path);
 }
+function playMedia(data) {
+	var $video = $('#media video');
+	if (data.start != undefined) $video[0].currentTime = data.start;
+	if (data.end != undefined) $video.on('timeupdate', function(){
+		if (this.currentTime >= data.end) {
+			$(this).off('timeupdate');
+			this.pause();
+		}
+	});
+	$video[0].play();
+}
 function focusCommandLine() {
 	$('#txtcmd').focus().select();
 }
@@ -506,6 +517,7 @@ function handleResponse(data) {
 	}
 	if (data.messages != undefined && data.messages.length > 0) alert(data.messages.join("\n"));
 	if (data.command == 'load') Log.load();
+	if (data.command == 'play') playMedia(data);
 	if (data.graph_file != undefined) $('#active_file').html('file: ' + data.graph_file);
 	if (data.current_annotator != undefined) $('#current_annotator').html('annotator: ' + data.current_annotator);
 	if (data.textline != undefined) $('#textline').html(data.textline);
