@@ -483,6 +483,13 @@ function disable_import_form_fields(type) {
 		$('input[name="language"]').removeAttr('disabled');
 	}
 }
+function setMedia(path) {
+	if (path === undefined) return;
+	var $video = $('#media video');
+	if (path === null) $video.removeAttr('src').load();
+	else if (!($video.attr('src') && $video.attr('src') == path))
+		$video.attr('src', path);
+}
 function focusCommandLine() {
 	$('#txtcmd').focus().select();
 }
@@ -508,5 +515,6 @@ function handleResponse(data) {
 	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
 	if (data.preferences != undefined) window.preferences = data.preferences;
 	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
+	setMedia(data.media);
 	Autocomplete.setData(data.autocomplete);
 }
