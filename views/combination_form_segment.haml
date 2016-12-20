@@ -6,15 +6,15 @@
       %input{ :name => "combinations[#{i}[name]]", :type => 'text', :value => combination.name }
   %tr
     %td
-      %label{:for => "combinations[#{i}[attr]]"} Attributes
+      %label{:for => "combinations[#{i}[layers]]"} Layers
     %td
       - layers.each_with_index do |layer, ii|
-        - if combination.attr.include?(layer.attr)
-          %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer.attr, :checked => 'checked' }
+        - if combination.layers.include?(layer.shortcut)
+          %input{ :name => "combinations[#{i}[layers[#{ii}]]]", :type => 'checkbox', :value => layer.shortcut, :checked => 'checked' }
         - else
-          %input{ :name => "combinations[#{i}[attr[#{ii}]]]", :type => 'checkbox', :value => layer.attr }
-        %label{:for => "combinations[#{i}[attr[#{ii}]]]"}
-          = layer.attr
+          %input{ :name => "combinations[#{i}[layers[#{ii}]]]", :type => 'checkbox', :value => layer.shortcut }
+        %label{:for => "combinations[#{i}[layers[#{ii}]]]"}
+          = layer.shortcut
         %br
   %tr
     %td
