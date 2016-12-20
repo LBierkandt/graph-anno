@@ -33,6 +33,26 @@ class Graph
 		clear
 	end
 
+	# clear all nodes and edges from self, reset layer configuration and search makros
+	def clear
+		@nodes = {}
+		@edges = {}
+		@highest_node_id = 0
+		@highest_edge_id = 0
+		@node_index = Hash.new{|h, k| h[k] = {}}
+		@path = nil
+		@multifile = nil
+		@conf = GraphConf.new
+		@info = {}
+		@tagset = Tagset.new
+		@annotators = []
+		@current_annotator = nil
+		@anno_makros = {}
+		@file_settings = {}
+		set_makros
+		GC.start
+	end
+
 	# organizes ids for new nodes or edges
 	# @param h [Hash] hash from which the new element is generated
 	# @param element_type [Symbol] :node or :edge
@@ -643,26 +663,6 @@ class Graph
 		add_order_edge(:start => token_collection[-1], :end => next_token, :log => h[:log]) if next_token
 		self.edges_between(last_token, next_token).of_type('o')[0].delete(:log => h[:log]) if last_token && next_token
 		return token_collection
-	end
-
-	# clear all nodes and edges from self, reset layer configuration and search makros
-	def clear
-		@nodes = {}
-		@edges = {}
-		@highest_node_id = 0
-		@highest_edge_id = 0
-		@node_index = Hash.new{|h, k| h[k] = {}}
-		@path = nil
-		@multifile = nil
-		@conf = GraphConf.new
-		@info = {}
-		@tagset = Tagset.new
-		@annotators = []
-		@current_annotator = nil
-		@anno_makros = {}
-		@file_settings = {}
-		set_makros
-		GC.start
 	end
 
 	# import corpus from pre-formatted text
