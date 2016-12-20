@@ -483,12 +483,11 @@ function disable_import_form_fields(type) {
 		$('input[name="language"]').removeAttr('disabled');
 	}
 }
-function setMedia(path) {
-	if (path === undefined) return;
+function setMedia(media) {
+	if (media === undefined) return;
 	var $video = $('#media video');
-	if (path === null) $video.removeAttr('src').load();
-	else if (!($video.attr('src') && $video.attr('src') == path))
-		$video.attr('src', path);
+	if (media === null) $video.removeAttr('src').load();
+	else if (!$video.attr('src')) $video.attr('src', 'media');
 }
 function playMedia(data) {
 	var $video = $('#media video');

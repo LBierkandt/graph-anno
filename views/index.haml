@@ -81,7 +81,7 @@
     #media.box{ :'min-height' => 53, :'min-width' => 200 }
       .handle
       .content
-        %video{ :src => controller.media_path, :controls => true }
+        %video{ :src => controller.graph.media ? 'media' : nil, :controls => true }
 
     #help.box{ :'min-height' => 45, :'min-width' => 120 }
       .handle

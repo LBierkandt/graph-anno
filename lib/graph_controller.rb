@@ -86,7 +86,7 @@ class GraphController
 			:graph_file => @graph.path.to_s,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:command => value[:command],
-			:media => media_path,
+			:media => @graph.media,
 			:windows => @windows,
 			:messages => @cmd_error_messages
 		).to_json
@@ -448,12 +448,7 @@ class GraphController
 	end
 
 	def media
-		@sinatra.send_file(@sinatra.params['path'])
-	end
-
-	def media_path
-		return nil unless @graph.media
-		"media?path=#{CGI.escape(@graph.media.to_s)}"
+		@sinatra.send_file(@graph.media)
 	end
 
 	def documentation(filename)
