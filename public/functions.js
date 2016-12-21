@@ -129,6 +129,9 @@ function taste(e) {
 			120: function(){
 				Box.instances.sectioning.toggleAndSave();
 			},
+			121: function(){
+				Box.instances.media.toggleAndSave();
+			},
 		};
 		if (e.which in mapping) {
 			e.preventDefault();

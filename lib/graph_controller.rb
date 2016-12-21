@@ -984,6 +984,7 @@ class GraphController
 			:image => nil,
 			# :export => nil,
 			:import => nil,
+			:play => :tokens,
 			:config => nil,
 			:tagset => nil,
 			:makros => nil,
@@ -996,7 +997,8 @@ class GraphController
 		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
 		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
 		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
-		refs   = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} + @view.nodes.map.with_index{|n, i| "n#{i}"} + @view.edges.map.with_index{|e, i| "e#{i}"} : []
+		tokens = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} : []
+		refs   = @preferences[:ref] ? tokens + @view.nodes.map.with_index{|n, i| "n#{i}"} + @view.edges.map.with_index{|e, i| "e#{i}"} : []
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
 		arefs  = @preferences[:ref] ? refs + srefs : []
 		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
@@ -1005,6 +1007,7 @@ class GraphController
 		{
 			:anno => tagset + makros + layers + refs,
 			:aanno => tagset + makros + layers + arefs,
+			:tokens => tokens,
 			:ref => refs,
 			:layer => layers + refs,
 			:sect => sects,
