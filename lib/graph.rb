@@ -334,15 +334,12 @@ class Graph
 				end
 			end
 			if @multifile
-				@multifile[:order_edges] = []
 				@multifile[:sentence_index].each do |file, file_sentences|
 					if index = file_sentences.index(sentence_before)
 						file_sentences.insert(index + 1, *new_nodes)
 					end
-					if e = file_sentences.last.out.of_type('o').first
-						@multifile[:order_edges] << e
-					end
 				end
+				rebuild_multifile_order_edges_list
 			end
 		end
 		return new_nodes
@@ -453,8 +450,12 @@ class Graph
 				end
 			end
 			# delete the section node itself
+			if @multifile && section.type == 's'
+				@multifile[:sentence_index].each{|file, list| list.delete(section)}
+			end
 			section.delete(:log => log_step)
 		end
+		rebuild_multifile_order_edges_list
 	end
 
 	# true it the given sections are contiguous
@@ -740,5 +741,13 @@ class Graph
 	def set_makros(makro_definitions = [])
 		@makros_plain = makro_definitions
 		@makros = parse_query(@makros_plain * "\n", nil)['def']
+	end
+
+	# rebuild list of order edges that connect the sentences of different files
+	def rebuild_multifile_order_edges_list
+		return unless @multifile
+		@multifile[:order_edges] = @multifile[:sentence_index].map{|f, list|
+			list.last.out.of_type('o').first
+		}.compact
 	end
 end
