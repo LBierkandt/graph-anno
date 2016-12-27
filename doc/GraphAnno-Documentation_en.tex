@@ -554,7 +554,10 @@ If a negative value is entered, all nodes of that layer are displayed horizontal
 The section \textit{layer combinations} contains the settings for elements that belong to multiple layers.
 Via the checkboxes under \textit{layers} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
 The other settings work like those described for the \textit{layers}, and for those elements that belong to the layer combination, they override the values given for the single layers.
-Note that elements can only be assigned to layer combinations that are defined here.
+Note that elements can only be assigned to layer combinations that are defined here.\\
+
+Note that changes in the layers window do not affect existing nodes and edges!
+That means, e.g., that if you change the shortcut of a layer, the elements formerly belonging to this layer don’t belong to it anymore (but now have a non-meaningful shortcut in their layers list).
 
 
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
