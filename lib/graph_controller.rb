@@ -83,13 +83,16 @@ class GraphController
 			value = {}
 		end
 		return value.to_json if value[:no_redraw]
-		return section_settings_and_graph(value[:reload_sections]).merge(
-			:graph_file => @graph.path.to_s,
-			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
-			:command => value[:command],
-			:windows => @windows,
-			:messages => @cmd_error_messages
-		).merge(@graph.media != old_media ? {:media => @graph.media} : {}).to_json
+		return section_settings_and_graph(value[:reload_sections])
+			.merge(
+				:graph_file => @graph.path.to_s,
+				:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
+				:command => value[:command],
+				:windows => @windows,
+				:messages => @cmd_error_messages
+			)
+			.merge(@graph.media != old_media ? {:media => @graph.media} : {})
+			.to_json
 	end
 
 	def change_sentence
