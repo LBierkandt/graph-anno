@@ -490,7 +490,7 @@ function setMedia(media) {
 	if (media === undefined) return;
 	var $video = $('#media video');
 	if (media === null) $video.removeAttr('src').load();
-	else if (!$video.attr('src')) $video.attr('src', 'media');
+	else $video.removeAttr('src').attr('src', 'media');
 }
 function playMedia(data) {
 	var $video = $('#media video');

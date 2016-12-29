@@ -75,6 +75,7 @@ class GraphController
 		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
+		old_media = @graph.media
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
@@ -86,10 +87,9 @@ class GraphController
 			:graph_file => @graph.path.to_s,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:command => value[:command],
-			:media => @graph.media,
 			:windows => @windows,
 			:messages => @cmd_error_messages
-		).to_json
+		).merge(@graph.media != old_media ? {:media => @graph.media} : {}).to_json
 	end
 
 	def change_sentence
