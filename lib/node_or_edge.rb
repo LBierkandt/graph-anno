@@ -19,7 +19,7 @@
 
 class NodeOrEdge
 	attr_reader :graph
-	attr_accessor :attr, :type
+	attr_accessor :attr, :type, :layers
 
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
@@ -65,17 +65,22 @@ class NodeOrEdge
 		@attr.annotate_with(attributes).remove_empty!
 	end
 
+	# set self's layer array
+	# @param attributes [AnnoLayer] the new layer or layer combination
+	# @param log_step [Step] optionally a log step to which the changes will be logged
+	def set_layer(layer, log_step = nil)
+		layers_array = layer ? layer.layers : []
+		log_step.add_change(:action => :update, :element => self, :layers => layers_array) if log_step
+		@layers = layers_array
+	end
+
 	# returns the layer or layer combination that should be used for the display of self (i.e. the most specific one)
 	# @return [AnnoLayer]
-	def layer
-		layer = nil
-		@graph.conf.layers.each do |l|
-			layer = l if attr[l.attr] == 't'
+	def layer_or_combination
+		@graph.conf.layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
+			return l if @layers and l.layers - @layers == []
 		end
-		@graph.conf.combinations.sort{|a,b| a.attr.length <=> b.attr.length}.each do |c|
-			layer = c if c.attr.all?{|a| attr[a] == 't'}
-		end
-		return layer
+		return nil
 	end
 
 	# whether self fulfils a given condition; returns numeral values for some condition types
@@ -105,6 +110,8 @@ class NodeOrEdge
 				return true if knotenwert.match(wert)
 			end
 			return false
+		when 'layer'
+			return bedingung[:layers] - @layers == []
 		when 'not'
 			return (not self.fulfil?(bedingung[:arg]))
 		when 'and'

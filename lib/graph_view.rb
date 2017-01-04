@@ -52,10 +52,10 @@ class GraphView
 		token_graph = viz_graph.subgraph(:rank => :same)
 		layer_graphs = {}
 		@ctrl.graph.conf.combinations.each do |c|
-			layer_graphs[c.attr] = c.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
+			layer_graphs[c] = c.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
 		end
 		@ctrl.graph.conf.layers.each do |l|
-			layer_graphs[l.attr] = l.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
+			layer_graphs[l] = l.weight < 0 ? viz_graph.subgraph(:rank => :same) : viz_graph.subgraph
 		end
 		# speaker subgraphs
 		if (speakers = @ctrl.graph.speaker_nodes.select{|sp| @tokens.map(&:speaker).include?(sp)}) != []
@@ -125,9 +125,9 @@ class GraphView
 			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 				options[:color] = @ctrl.graph.conf.filtered_color
 			else
-				if l = node.layer
+				if l = node.layer_or_combination
 					options[:color] = l.color
-					actual_layer_graph = layer_graphs[l.attr]
+					actual_layer_graph = layer_graphs[l]
 				end
 			end
 			options[:fontcolor] = options[:color]
@@ -152,7 +152,7 @@ class GraphView
 			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 				options[:color] = @ctrl.graph.conf.filtered_color
 			else
-				if l = edge.layer
+				if l = edge.layer_or_combination
 					options[:color] = l.color
 					if l.weight == 0
 						options[:constraint] = false
@@ -202,7 +202,7 @@ class GraphView
 
 	def build_label(e, i = nil)
 		label = ''
-		display_attr = e.attr.reject{|k,v| (@ctrl.graph.conf.layers.map(&:attr)).include?(k)}
+		display_attr = e.attr.output
 		if e.is_a?(Node)
 			if e.type == 's' || e.type == 'p'
 				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join

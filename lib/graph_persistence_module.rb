@@ -21,7 +21,7 @@ require 'json.rb'
 require 'pathname.rb'
 
 module GraphPersistence
-	GRAPH_FORMAT_VERSION = 9
+	GRAPH_FORMAT_VERSION = 10
 	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
@@ -246,9 +246,7 @@ module GraphPersistence
 		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
 		@conf = GraphConf.new(data['conf'])
-		create_layer_makros
-		@makros_plain += data['search_makros'] || []
-		@makros += parse_query(@makros_plain * "\n")['def']
+		set_makros(data['search_makros'] || [])
 	end
 
 	def preprocess_raw_data(data)
@@ -317,17 +315,68 @@ module GraphPersistence
 	end
 
 	def update_raw_graph_data(data, version)
+		puts 'Updating graph data ...'
 		if version < 4
 			data['nodes'] = data.delete('knoten')
 			data['edges'] = data.delete('kanten')
 		end
-		if version < 9
-			(data['nodes'].to_a + data['edges'].to_a).each do |el|
-				el['id'] = el.delete('ID') if version < 7
-				# IDs as integer
-				el['id'] = el['id'].to_i
-				el['start'] = el['start'].to_i if el['start'].is_a?(String)
-				el['end'] = el['end'].to_i if el['end'].is_a?(String)
+		if version < 10
+			layer_definitions = data['conf'] || {
+				'layers' => [
+					{'attr' => 'f-layer', 'shortcut' => 'f'},
+					{'attr' => 's-layer', 'shortcut' => 's'},
+				],
+				'combinations' => ['attr' => ['f-layer', 's-layer']]
+			}
+			layer_map = Hash[layer_definitions['layers'].map{|l| [l['attr'], l['shortcut']]}]
+			layer_definitions['combinations'].each do |c|
+				c['layers'] = c['attr'].map{|a| layer_map[a]}
+			end
+			klass = nil
+			([:node] + data['nodes'].to_a + [:edge] + data['edges'].to_a).each do |el|
+				klass = el and next if el.is_a?(Symbol)
+				if version < 2
+					if typ = el['attr'].delete('typ')
+						el['attr']['cat'] = typ
+					end
+					if namespace = el['attr'].delete('namespace')
+						el['attr']['sentence'] = namespace
+					end
+					el['attr'].delete('elementid')
+					el['attr'].delete('edgetype')
+				end
+				if version < 5
+					el['attr']['f-layer'] = 't' if 'y' == el['attr'].delete('f-ebene')
+					el['attr']['s-layer'] = 't' if 'y' == el['attr'].delete('s-ebene')
+				end
+				if version < 7
+					el['id'] = el.delete('ID')
+					el['attr'].delete('tokenid')
+					# introduce types
+					if klass == :node
+						if el['attr']['token']
+							el['type'] = 't'
+						elsif el['attr']['cat'] == 'meta'
+							el['type'] = 's'
+							el['attr'].delete('cat')
+						else
+							el['type'] = 'a'
+						end
+					else
+						el['type'] = 'o' if el['type'] == 't'
+						el['type'] = 'a' if el['type'] == 'g'
+						el['attr'].delete('sentence')
+					end
+				end
+				if version < 9
+					el['id'] = el['id'].to_i
+					el['start'] = el['start'].to_i if el['start'].is_a?(String)
+					el['end'] = el['end'].to_i if el['end'].is_a?(String)
+				end
+				if version < 10 && el['attr']
+					layers = layer_map.map{|attr, shortcut| ('t' == el['attr'].delete(attr)) ? shortcut : nil}.compact
+					el['layers'] = layers unless layers.empty?
+				end
 			end
 		end
 	end
@@ -335,52 +384,12 @@ module GraphPersistence
 	def update_graph_format(version)
 		if version < 7
 			puts 'Updating graph format ...'
-			# Attribut 'typ' -> 'cat', 'namespace' -> 'sentence', Attribut 'elementid' entfernen
-			@node_index.delete(nil)
-			(@nodes.values + @edges.values).each do |k|
-				if version < 2
-					if k.attr.public['typ']
-						k.attr.public['cat'] = k.attr.public.delete('typ')
-					end
-					if k.attr.public['namespace']
-						k.attr.public['sentence'] = k.attr.public.delete('namespace')
-					end
-					k.attr.public.delete('elementid')
-					k.attr.public.delete('edgetype')
-				end
-				if version < 5
-					k.attr.public['f-layer'] = 't' if k.attr.public['f-ebene'] == 'y'
-					k.attr.public['s-layer'] = 't' if k.attr.public['s-ebene'] == 'y'
-					k.attr.public.delete('f-ebene')
-					k.attr.public.delete('s-ebene')
-				end
-				if version < 7
-					# introduce node types
-					if k.kind_of?(Node)
-						if k.token
-							k.type = 't'
-						elsif k.attr.public['cat'] == 'meta'
-							k.type = 's'
-							k.attr.public.delete('cat')
-						else
-							k.type = 'a'
-						end
-						# populate node_index
-						@node_index[k.type][k.id] = k
-					else
-						k.type = 'o' if k.type == 't'
-						k.type = 'a' if k.type == 'g'
-						k.attr.public.delete('sentence')
-					end
-					k.attr.public.delete('tokenid')
-				end
-			end
 			if version < 2
 				# SectNode für jeden Satz
 				sect_nodes = @node_index['s'].values
 				@nodes.values.map{|n| n.attr.public['sentence']}.uniq.each do |s|
 					if sect_nodes.select{|k| k.attr.public['sentence'] == s}.empty?
-						add_node(:type => 's', :attr => {'sentence' => s}, :raw => true)
+						add_sect_node(:attr => {'sentence' => s}, :raw => true)
 					end
 				end
 			end

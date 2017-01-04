@@ -29,6 +29,7 @@ class Node < NodeOrEdge
 		@out = []
 		@type = h[:type]
 		@attr = Attributes.new(h.merge(:host => self))
+		@layers = h[:layers].is_a?(AnnoLayer) ? h[:layers].layers : h[:layers] || []
 		@start= h[:start]
 		@end  = h[:end]
 		@custom = h[:custom]
@@ -47,6 +48,7 @@ class Node < NodeOrEdge
 			:start  => @start,
 			:end    => @end,
 			:custom => @custom,
+			:layers => @layers.empty? ? nil : @layers,
 		}.merge(@attr.to_h).compact
 	end
 
