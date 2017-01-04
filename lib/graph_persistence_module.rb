@@ -329,7 +329,7 @@ module GraphPersistence
 					{'attr' => 's-layer', 'shortcut' => 's'},
 				],
 				'combinations' => ['attr' => ['f-layer', 's-layer']]
-      }
+			}
 			layer_map = Hash[layer_definitions['layers'].map{|l| [l['attr'], l['shortcut']]}]
 			layer_definitions['combinations'].each do |c|
 				c['layers'] = c['attr'].map{|a| layer_map[a]}
