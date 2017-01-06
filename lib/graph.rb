@@ -33,6 +33,26 @@ class Graph
 		clear
 	end
 
+	# clear all nodes and edges from self, reset layer configuration and search makros
+	def clear
+		@nodes = {}
+		@edges = {}
+		@highest_node_id = 0
+		@highest_edge_id = 0
+		@node_index = Hash.new{|h, k| h[k] = {}}
+		@path = nil
+		@multifile = nil
+		@conf = GraphConf.new
+		@info = {}
+		@tagset = Tagset.new
+		@annotators = []
+		@current_annotator = nil
+		@anno_makros = {}
+		@file_settings = {}
+		set_makros
+		GC.start
+	end
+
 	# organizes ids for new nodes or edges
 	# @param h [Hash] hash from which the new element is generated
 	# @param element_type [Symbol] :node or :edge
@@ -197,9 +217,10 @@ class Graph
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_parent_node(nodes, node_attrs, edge_attrs, log_step = nil)
+	def add_parent_node(nodes, node_attrs, edge_attrs, layer, log_step = nil)
 		parent_node = add_anno_node(
 			:attr => node_attrs,
+			:layers => layer,
 			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
@@ -208,6 +229,7 @@ class Graph
 				:start => parent_node,
 				:end => n,
 				:attr => edge_attrs,
+				:layers => layer,
 				:log => log_step
 			)
 		end
@@ -218,9 +240,10 @@ class Graph
 	# @param node_attrs [Hash] the annotations for the new node
 	# @param edge_attrs [Hash] the annotations for the new edges
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_child_node(nodes, node_attrs, edge_attrs, log_step = nil)
+	def add_child_node(nodes, node_attrs, edge_attrs, layer, log_step = nil)
 		child_node = add_anno_node(
 			:attr => node_attrs,
+			:layers => layer,
 			:sentence => nodes.first.sentence,
 			:log => log_step
 		)
@@ -229,6 +252,7 @@ class Graph
 				:start => n,
 				:end => child_node,
 				:attr => edge_attrs,
+				:layers => layer,
 				:log => log_step
 			)
 		end
@@ -238,9 +262,10 @@ class Graph
 	# @param edge [Edge] the edge to be replaced
 	# @param attrs [Hash] the annotations for the new node
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def insert_node(edge, attrs, log_step = nil)
+	def insert_node(edge, attrs, layer, log_step = nil)
 		new_node = add_anno_node(
 			:attr => attrs,
+			:layers => layer,
 			:sentence => edge.end.sentence,
 			:log => log_step
 		)
@@ -249,6 +274,7 @@ class Graph
 				:start => edge.start,
 				:end => new_node,
 				:raw => true,
+				:layers => edge.layers,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -257,6 +283,7 @@ class Graph
 				:start => new_node,
 				:end => edge.end,
 				:raw => true,
+				:layers => edge.layers,
 				:log => log_step
 			}.merge(edge.attr.to_h)
 		)
@@ -276,6 +303,7 @@ class Graph
 						:start => in_edge.start,
 						:end => out_edge.end,
 						:raw => true,
+						:layers => devisor.layers,
 						:log => log_step
 					}.merge(devisor.attr.to_h)
 				)
@@ -296,13 +324,21 @@ class Graph
 		end
 		if sentence_before
 			sentence_after = sentence_before.node_after
-			edges_between(sentence_before, sentence_after).of_type('o').each{|e| e.delete(log_step)}
+			edges_between(sentence_before, sentence_after).of_type('o').each{|e| e.delete(:log => log_step)}
 			add_order_edge(:start => sentence_before, :end => new_nodes.first, :log => log_step)
 			add_order_edge(:start => new_nodes.last, :end => sentence_after, :log => log_step)
 			if sentence_before.parent_section
 				new_nodes.each do |s|
 					add_part_edge(:start => sentence_before.parent_section, :end => s, :log => log_step)
 				end
+			end
+			if @multifile
+				@multifile[:sentence_index].each do |file, file_sentences|
+					if index = file_sentences.index(sentence_before)
+						file_sentences.insert(index + 1, *new_nodes)
+					end
+				end
+				rebuild_multifile_order_edges_list
 			end
 		end
 		return new_nodes
@@ -320,6 +356,8 @@ class Graph
 			raise 'Given sections already belong to another section!'
 		elsif !sections_contiguous?(list)
 			raise 'Sections have to be contiguous!'
+		elsif sections_in_different_files?(list)
+			raise 'Sections have to belong to one file!'
 		else
 			section_node = add_part_node(:log => log_step)
 			list.each do |child_node|
@@ -365,6 +403,8 @@ class Graph
 			raise 'Given sections already belong to another section!'
 		elsif !sections_contiguous?(list + parent.child_sections)
 			raise 'Sections have to be contiguous!'
+		elsif sections_in_different_files?(list + parent.child_sections)
+			raise 'Sections have to belong to one file!'
 		end
 		list.each do |section|
 			add_part_edge(:start => parent, :end => section, :log => log_step)
@@ -409,8 +449,12 @@ class Graph
 				end
 			end
 			# delete the section node itself
+			if @multifile && section.type == 's'
+				@multifile[:sentence_index].each{|file, list| list.delete(section)}
+			end
 			section.delete(:log => log_step)
 		end
+		rebuild_multifile_order_edges_list
 	end
 
 	# true it the given sections are contiguous
@@ -419,6 +463,16 @@ class Graph
 	def sections_contiguous?(sections)
 		sections.map{|sect| sect.same_level_sections.index(sect)}
 			.sort.each_cons(2).all?{|a, b| b == a + 1}
+	end
+
+	# true if the given sections belong to different files of a multifile corpus
+	# @param sections [Array] the sections to be tested
+	# @return [Boolean]
+	def sections_in_different_files?(sections)
+		@multifile &&
+			@multifile[:sentence_index].values.none?{|file_sentences|
+				(sections.map(&:sentence_nodes).flatten - file_sentences).empty?
+			}
 	end
 
 	def inspect
@@ -474,8 +528,7 @@ class Graph
 		@current_annotator = other_graph.current_annotator
 		@file_settings = other_graph.file_settings.clone
 		@anno_makros = other_graph.anno_makros.clone
-		@makros_plain = other_graph.makros_plain.clone
-		@makros = parse_query(@makros_plain * "\n")['def']
+		set_makros(other_graph.makros_plain.clone)
 	end
 
 	# builds a subcorpus (as new graph) from a list of sentence nodes
@@ -613,24 +666,6 @@ class Graph
 		return token_collection
 	end
 
-	# clear all nodes and edges from self, reset layer configuration and search makros
-	def clear
-		@nodes = {}
-		@edges = {}
-		@highest_node_id = 0
-		@highest_edge_id = 0
-		@node_index = Hash.new{|h, k| h[k] = {}}
-		@conf = GraphConf.new
-		@info = {}
-		@tagset = Tagset.new
-		@annotators = []
-		@current_annotator = nil
-		@anno_makros = {}
-		@file_settings = {}
-		create_layer_makros
-		GC.start
-	end
-
 	# import corpus from pre-formatted text
 	# @param text [String] The text to be imported
 	# @param options [Hash] The options for the segmentation
@@ -700,25 +735,18 @@ class Graph
 		@annotators -= annotators
 	end
 
-	# create search makros from the layer shortcuts defined in the graph configuration
-	def create_layer_makros
-		@makros = []
-		@makros_plain = []
-		@makros = parse_query(
-			layer_makros.map{|shortcut, attributes|
-				"def #{shortcut} #{attributes.map{|k, v| "#{k}:#{v}"} * ' & '}"
-			} * "\n"
-		)['def']
+	# set the search makros
+	# @param makro_definitions [Array] the makro definitions as strings, i.e. "def" commands
+	def set_makros(makro_definitions = [])
+		@makros_plain = makro_definitions
+		@makros = parse_query(@makros_plain * "\n", nil)['def']
 	end
 
-	def layer_makros
-		Hash[
-			(@conf.layers_and_combinations).map do |layer|
-				[
-					layer.shortcut,
-					Hash[[*layer.attr].map{|a| [a, 't']}]
-				]
-			end
-		]
+	# rebuild list of order edges that connect the sentences of different files
+	def rebuild_multifile_order_edges_list
+		return unless @multifile
+		@multifile[:order_edges] = @multifile[:sentence_index].map{|f, list|
+			list.last.out.of_type('o').first
+		}.compact
 	end
 end

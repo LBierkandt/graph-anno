@@ -121,6 +121,34 @@ We hope that you will find GraphAnno as useful as we do and enjoy working with i
 
 
 
+\section{Requirements and installation}
+
+GraphAnno is a Ruby program and thus needs an installation of Ruby (version 2.0 or higher; you may install it with your package manager or from \url{http://www.ruby-lang.org/}); you don’t need Ruby on Windows as there is a precompiled version of GraphAnno for Windows. For GraphAnno’s user interface you need a decent browser (GraphAnno has been developed with Firefox, but Chrome should work, too).\\
+
+\noindent
+Installation:
+\begin{enumerate}
+	\item Download the ZIP file \url{https://github.com/LBierkandt/graph-anno/archive/master.zip} and extract it to a directory of your choice (or clone the GraphAnno repository if you like to use Git).
+	\item Install the needed libraries (Rubygems):
+		\begin{enumerate}
+			\item navigate to the GraphAnno main directory,
+			\item run \code{gem install bundler} if you haven't installed bundler already,
+			\item run \code{bundle install}
+		\end{enumerate}
+\end{enumerate}
+
+\noindent
+Starting GraphAnno:
+\begin{enumerate}
+	\item start \code{main.rb} in the GraphAnno main directory by running \code{bundle exec ruby main.rb}; on Windows without Ruby, run \code{main.exe},
+	\item navigate to this address in your browser: \code{http://localhost:4567/}
+\end{enumerate}
+
+\noindent
+To stop the program, press ctrl + C in the console where it is running.
+
+
+
 \section{GraphAnno’s data model}
 
 All data in GraphAnno is represented as a graph, i.e., a set of nodes and a set of directed edges that connect the nodes.
@@ -226,10 +254,10 @@ Both keys and values are always strings.
 There are some privileged keys that bear a special meaning in GraphAnno:
 The text of token nodes is stored as value of the key \code{token}; the key \code{cat} on annotation nodes and edges is privileged insofar as its value is displayed on top of the element’s annotations without the key; on sentence and section nodes the value of the key \code{name} is used as label for the elements in the navigation window and for referencing.
 
-GraphAnno also provides the possibility to assign annotation nodes and edges to different layers.
-The fact that a node or edge is affiliated to a certain layer is represented by that element bearing an annotation with the key corresponding to the layer and the value \code{t} (for \textit{true}).
-This representation allows for elements to belong to more than one layer, with the consequence that layers my overlap in an arbitrary manner.
-Nodes and edges of different layers may be displayed in different colors and aligned in different ways (see \ref{ebenenkonfiguration} for how to configure the layers and their diplay).
+GraphAnno also provides the possibility to assign annotation nodes and edges to different layers (token nodes cannot belong to layers).
+Each node or edge may belong to one or more layers, which is represented by the element carrying a list of layers to which it belongs.
+This representation allows for layers to overlap in an arbitrary manner.
+Nodes and edges of different layers may be displayed in different colors and aligned in different ways (see \ref{ebenenkonfiguration} for how to configure the layers and their display).
 
 
 \subsection{Serialization format}\label{serialization-format}
@@ -253,11 +281,11 @@ Furthermore, the JSON object has a number of optional attributes for configurati
 
 Each node has the attributes \code{id} with a unique identifier (integer) and \code{type} for representing the type of the node (string).
 For the strings representing the different node and edge types see Table \ref{types-strings}.
-Optionally, a node bears the attribute \code{attr} with its annotations (object).
-The \code{attr} object contains arbitrary keys with string values.
+Optionally, a node bears the attribute \code{attr} with its annotations (object), that are arbitrary keys with string values.
+Annotation nodes also optionally bear the attribute \code{layers} (array), a list of strings that are taken from the layer shortcuts as defined in the \code{conf} attribute of the graph.
 
 Edges have the same attributes as nodes plus the additional attributes \code{start} and \code{end} with the IDs of the edges’s start and end node, respectively.
-Only annotation edges, however, bear \code{attr}.
+Only annotation edges, however, may bear \code{attr} and \code{layers}.
 
 The structure of nodes and edges in JSON format can be seen in Figure \ref{json-node} and \ref{json-edge}, respectively.
 
@@ -288,7 +316,8 @@ The structure of nodes and edges in JSON format can be seen in Figure \ref{json-
 		{
 		  "id": <integer>,
 		  "type": "t" | "a" | "s" | "p",
-		  "attr": <object>
+		  "attr": <object>,
+		  "layers": <array>
 		}
 	\end{lstlisting}
 	\caption{A GraphAnno node JSON object}
@@ -301,7 +330,8 @@ The structure of nodes and edges in JSON format can be seen in Figure \ref{json-
 		  "start":<integer>,
 		  "end":<integer>,
 		  "type": "a" | "s" | "p" | "o",
-		  "attr":<object>
+		  "attr":<object>,
+		  "layers": <array>
 		}
 	\end{lstlisting}
 	\caption{A GraphAnno edge JSON object}
@@ -341,6 +371,27 @@ This structure could describe arbitrary directed graphs, but in order to work wi
 	\caption{Permitted node types for start and end nodes of different edge types}
 	\label{edge-types}
 \end{table}
+
+
+\subsubsection{Multi-file corpora}
+
+For working with larger corpora, it can be handy to load only parts of a corpus.
+To this end you may create multi-file corpora, that can be loaded partially (currently it is not yet possible to create such multi-file corpora from within GraphAnno).
+A multi-file corpus consists of a master file and several part files, where the master file contains the configuration of the corpus and, optionally, independent nodes or edges, and the part files contain (consecutive) sentence nodes with their dominating section nodes and their associated token and annotation node, plus all connecting edges.
+
+The master file contains the version attribute, all configuration attributes and, additionally, the attributes \code{files}, \code{max\_node\_id} and \code{max\_edge\_id}.
+The value for \code{files} is an array of the relative paths of the part files (in the order their content has in the corpus).
+The value for \code{max\_node\_id} and \code{max\_edge\_id} is the highest node ID or edge ID, respectively, of the whole corpus graph.
+In some cases the master file may contain nodes, but no sentence or section nodes (i.e. a section cannot cross the boundaries of part files); only speaker nodes and sentence-independent nodes (to be implemented) are allowed.
+The master file contains those edges that connect nodes of the master file itself; nodes that connect nodes of the master file and nodes of a part file belong to the part file.
+
+A part file contains the version attribute, the attribute \code{master}, and nodes and edges.
+The value of \code{master} is the relative path of the master file.
+The nodes are a consecutive number of sentence nodes, with their dominating section nodes as well as their associated tokens and annotation nodes.
+The edges comprise all edges that connect the nodes of the part file, plus those edges that connect nodes of the part file and nodes of the master file.
+It is not possible to have edges between nodes of different part files.
+
+See Section \ref{data-and-navigation} for how to handle loading and saving of multi-file corpora.
 
 
 
@@ -493,17 +544,20 @@ This leads to a poorer graph layout (more collisions) but avoids graph rendering
 
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
-\textit{Attribute} is the attribute that will be set to \code{t} for elements that belong to the layer in question.
-The \textit{shortcut} is an identifier that can be used for the annotation of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and as a search makro in searches (cf. Section \ref{def}); this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n} or \code{e} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
+The \textit{shortcut} is an identifier that is used for representing the layers of elements internally (cf. Section \ref{serialization-format}), for setting the layers of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and for matching elements of specific layers in searches; this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n}, \code{e} or \code{s} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
 \textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
-The heigher this value (integer values), the shorter the rendering algorithm will try to make the edges.
+The higher this value (integer values), the shorter the rendering algorithm will try to make the edges.
 When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
 If you enter \textit{0} as edge weight, the edges will not enforce a hierachy between the nodes of that layer (otherwise, the start node of an edge is always placed higher than the end node).
 If a negative value is entered, all nodes of that layer are displayed horizontally on one tier.
 
 The section \textit{layer combinations} contains the settings for elements that belong to multiple layers.
-Via the checkboxes under \textit{attributes} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
+Via the checkboxes under \textit{layers} you determine, to which layers an element has to belong in order to be subject to the definition of the combination in question.
 The other settings work like those described for the \textit{layers}, and for those elements that belong to the layer combination, they override the values given for the single layers.
+Note that elements can only be assigned to layer combinations that are defined here.\\
+
+Note that changes in the layers window do not affect existing nodes and edges!
+That means, e.g., that if you change the shortcut of a layer, the elements formerly belonging to this layer don’t belong to it anymore (but now have a non-meaningful shortcut in their layers list).
 
 
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
@@ -583,7 +637,7 @@ Note that the autocomplete feature is useless if you don’t choose things that 
 
 \section{Command line commands}\label{commandline-commands}
 
-\subsection{Data and navigation}
+\subsection{Data and navigation}\label{data-and-navigation}
 
 \subsubsection{Load file: \texttt{load}}
 
@@ -594,20 +648,34 @@ Provide the file name with or without the extension \code{.json}; the path has t
 
 Before loading, the work space is cleared from all data.
 So, changes that were not saved explicitly (using the command \code{save}) are lost.
-The name of the loaded file is shown next to the input line on the bottom of the user interface.
+The name of the loaded file (or the master file in case of multi-file corpora) is shown next to the input line on the bottom of the user interface.
+
+When working with a multi-file corpus, you have two options:
+Either you provide the path to the master file, then the whole corpus is loaded into the work space; or you provide the path to a part file, then only this part of the corpus is loaded.
+You can add other parts of the corpus using the command \code{add}.
+
+
+\subsubsection{Add part file of multi-file corpus: \texttt{add}}
+
+The command \code{add} adds to the work space a part file of a multi-file corpus that is already partially loaded.
+Provide the path of the part file as described for \code{load}.
+You will see an error message if you try to load a file that is not part of the loaded corpus or if the file has been loaded already.
 
 
 \subsubsection{Append file: \texttt{append}}
 
 The command \code{append} appends the contents of the given file (specify the file as described for \code{load}) to the work space.
+If you had loaded a multi-file corpus before, the content of the workspace will be treated as one-file corpus after the \code{append}.
 
 
 \subsubsection{Save file: \texttt{save}}
 
-The command \code{save} saves the work space to a GraphAnno file in the \texttt{data} directory.
-The file name has to be entered in the same way as with the command \code{load}.
-If there is a filename indicated next to the input line, the work space can be saved to this file without specifying the file name.
+The command \code{save} saves the work space to a GraphAnno file (see the command \code{load} for details concerning the file path).
+If there is a file name indicated next to the input line, the work space can be saved to this file without specifying the file name.
 Attention: no warning is issued when an existing file will be overwritten.
+
+When working with a multi-file corpus, only the loaded parts and the master file will be rewritten (the other parts remain unchanged).
+If you specify a new name when saving a partially loaded multi-file corpus, the new corpus will only consist of the loaded parts.
 
 
 \subsubsection{Clear work space: \texttt{clear}}
@@ -627,14 +695,6 @@ In order to navigate to a sentence or section (or multiple of them), you may use
 With the command \texttt{image}, you can export the graphic that GraphAnno is currently displaying.
 As argument you must specify the desired format (\texttt{svg} or \texttt{png}).
 The file will then be downloaded.
-
-
-\subsubsection{Export corpus: \texttt{export}}\label{befehl-export}
-
-Using the command \code{export}, you can export the contents of the work space as a corpus in another format.
-The first argument is the format (at present the only fully functional format is \code{sql} for the import in GraphInspect; the format \code{paula} is theoretically available, but it is heavily restricted with respect to layers), the second argument is the name of the corpus to be saved.
-For \code{paula} you can optionally specify the name of the corpus document to be created as third argument.
-The exported corpus will be saved in GraphAnno’s \texttt{exports} directory.
 
 
 \subsubsection{Import text: \texttt{import text}}\label{befehl-import}
@@ -765,12 +825,13 @@ The commands require to be in a sentence, i.e., you have to create a sentence fi
 The command for creating a new node is \code{n}, followed by the attributes the new node is to bear as key-value pairs in the format \code{key:value}.
 Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation language: \code{␣:\quo\#})\footnote{The symbol \code{\mbox{\,␣\,}} stands for the space.}) or as string in double quotes (\code{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \code{\quo...\textbackslash\quo...\quo}).
 
-You can also use the shortcut from your previously defined annotation makros (see Section \ref{annotationsmakros}).
+You can also use a shortcut from previously defined annotation makros (see Section \ref{annotationsmakros}).
 When you additionally enter attributes with keys present in the makro, these override the annotations defined in the makro.
 
-Additionally, you can specify the layer to which the new node is to belong (if you don’t, it will belong to the layer set in the layer dropdown field).
+Additionally, you can specify the layer or layer combination to which the new node is to belong (if you don’t, it will belong to the layer/combination set in the layer dropdown field).
 For this purpose you use the shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
-The use of these shortcuts also has the effect of a switch, insofar as it sets the layer for the following operations.
+The use of these shortcuts also has the effect of a switch, insofar as it sets the layer/combination for the following operations.
+If you want to create a node without layer affiliation, you have to set the current layer to \textit{none} via the command \code{l} (see \ref{befehl-l}) or the layer dropdown.
 
 Per default, the new node will belong to the first of the current sentences.
 You may, however, provide in your command a node to whose sentence the new node should belong instead.
@@ -854,16 +915,16 @@ edge_sequence          =   edge_reference ".." edge_reference
 
 \subsubsection{Set layer: \texttt{l}}\label{befehl-l}
 
-The command \code{l} sets the layer of the given elements and switches to the specified layer for the following operations (as the other commands that may use layer shortcuts).
-As arguments, specify the elements to be affected and the layer shortcut as defined in the layer configuration (cf. \ref{ebenenkonfiguration}).
-The difference to the use of the \code{a} command with layer shortcuts is that \code{a} \textit{adds} the specified layer, whereas \code{l} \textit{changes} the layer (i.e., it removes the attributes of the element’s old layer).
+The command \code{l} sets the layer or layer combination of the given elements and switches to the specified layer/combination for the following operations.
+As arguments, specify the elements to be affected and the layer shortcut as defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
+If you don’t provide a layer shortcut, the elements are set to belonging to no layer at all, and the current layer is set to \textit{none}.
 
-You may also use the command as a simple layer switch (as an alternative to the select field) by giving only the layer shortcut without any elements.
+You may also use the command as a simple layer switch (as an alternative to the select field) by giving only the layer shortcut (or none) without any elements.
 
 \paragraph*{Command \code{l} in modified BNF:}
 ~
 \begin{lstlisting}
-command_l     =   "l " l_parameters
+command_l     =   "l " l_parameters?
 l_parameters  =   l_parameters " " l_parameters
                   element_reference
                   layer_shortcut
@@ -1013,7 +1074,7 @@ Of the following sections, the first one explains how a to-be-matched element is
 \subsubsection{Element description}\label{elementbeschreibung}
 
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
-Such an element description defines which conditions the attributes of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).\\
+Such an element description defines which conditions the attributes and layers of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).\\
 
 The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for \textit{not}, \code{\&} for \textit{and} and \code{|} for \textit{or} (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
 As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
@@ -1030,11 +1091,15 @@ A regular expression has to be written in slashes (\code{/x.z/}) and has to conf
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
 
-If you omit a value string, those elements are matched that bear no annotation at all for the given key. So, e.g., \code{tns:} matches all elements without a tns annotation, \code{!tns:} matches all elements with a tns annotation, \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation.
+If you omit a value string, those elements are matched that bear no annotation at all for the given key. So, e.g., \code{tns:} matches all elements without a tns annotation, \code{!tns:} matches all elements with a tns annotation, \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation.\\
 
-Additionally to key-value pairs you may also use the keyword \code{token}, which matches token nodes.\\
+For matching the layer of an element, you use the shortcut defined for that layer (cf. Section \ref{ebenenkonfiguration}).
+Layer shortcuts can be combined using logical operators just like key-value pairs.
+So, if you want to find elements with a specific layer combination you may of course use the respective layer shortcuts joined by \code{\&}, but also the shortcut for that combination.
 
-\phantomsection\label{quantifiers}For nodes, the element description may, in addition to key-value pairs, contain criteria for ingoing and outgoing edges.
+Token nodes are matched by using the keyword \code{token}.\\
+
+\phantomsection\label{quantifiers}For nodes, the element description may, in addition to key-value pairs and layer shortcuts, contain criteria for ingoing and outgoing edges.
 These criteria are composed of the keyword \code{in} or \code{out}, an optional element description in parentheses and an optional quantifier.
 The operators \code{in} or \code{out} find all ingoing or outgoing edges, respectively, that match the given element description.
 The quantifier specifies how many edges matching the given description have to be present; its syntax is familiar from regular expressions:
@@ -1061,6 +1126,7 @@ element_description = element_description" & " element_description
                       "!" element_description
                       "(" element_description ")"
                       attribute
+                      layer_shortcut
                       edge_criterion
                       node_criterion
                       "token"
@@ -1302,8 +1368,9 @@ The nodes and node sets are referenced with the IDs used in the other clauses of
 When using IDs, note that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
 In the condition, you may access the attributes of elements using square brackets like this: \code{['key']}; for the attributes \code{token} and \code{cat} you can use as a shortcut the accessor methods \code{.token} and \code{.cat}.
+The layer(s) of an element are accessed via the method \code{.layers}; this method returns an array of the shortcuts of the layers the element belongs to.
 Via the method \code{.sentence} you can access the sentence node the element belongs to.
-When using attribute values, bear in mind that these are always string; you may cast them to numbers with \code{.to\_i} or \code{.to\_f} for integers or floating point numbers, respectively.
+When using attribute values, bear in mind that these are always strings; you may cast them to numbers with \code{.to\_i} or \code{.to\_f} for integers or floating point numbers, respectively.
 
 
 \paragraph*{Examples:}
@@ -1329,7 +1396,7 @@ When using attribute values, bear in mind that these are always string; you may 
 
 With \code{def} you can define makros for use in your query.
 After the keyword \code{def} you specify a name for the makro and an attribute description or connection description that will be filled in for your makro.
-The attribute or connection description is formulated as described for \code{node} and \code{link} in \ref{node} and \ref{link}, respectively.
+The attribute or connection description is formulated as described in \ref{elementbeschreibung} or \ref{link}, respectively.
 
 Bear in mind that a makro will be interpreted as it was in parentheses, i.e. it will be evaluated first.
 E.g., if you define a makro \code{cat:S | cat:VP} and combine it with the condition \code{tns:prs} using the operator \code{\&}, this will not be evaluated as \code{cat:S | cat:VP \& tns:prs} with the \code{\&} preceding the \code{|} but as \code{(cat:S | cat:VP) \& tns:prs}.
@@ -1399,7 +1466,7 @@ Its first parameter is the column title (which must not contain spaces); it is f
 Nodes and edges are referenced using the IDs defined in your search query.
 Again, bear in mind that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
-You can access the attributes as described in \ref{cond} for \code{cond}.
+You can access the attributes and layers as described in \ref{cond} for \code{cond}.
 There are also other useful methods for exporting data:
 E.g., \code{.tokens} returns a list of the dominated tokens (you may also give a more specific link description string as argument of the method); \code{.text} works in the same way but returns the token text as a string.
 \code{.sentence\_tokens} returns a list of all token nodes of the sentence the element belongs to, \code{.sentence\_text}, again, their text.

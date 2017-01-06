@@ -27,7 +27,7 @@
             = haml :layer_options, :locals => {:controller => controller}
           %input{ :type => "submit", :value => "Send" }
         %div
-          #active_file= if controller.graph_file != '' then 'file: ' + controller.graph_file else 'file:' end
+          #active_file= "file: #{controller.graph.path}"
           #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
         #documentation
           %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
@@ -101,6 +101,7 @@
         %h4 Data and navigation
         %ul
           %li load file: <i>load file_name_or_path</i>
+          %li add corpus part: <i>add file_name_or_path</i>
           %li append file: <i>append file_name_or_path</i>
           %li save workspace to file: <i>save (file_name_or_path)</i>
           %li clear workspace: <i>clear</i>
