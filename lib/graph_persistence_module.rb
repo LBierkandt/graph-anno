@@ -17,7 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'json.rb'
+begin
+	require 'yajl/json_gem.rb'
+rescue LoadError
+	require 'json.rb'
+end
 require 'pathname.rb'
 
 module GraphPersistence

@@ -5,4 +5,5 @@ gem 'haml', '~>4.0.5'
 gem 'htmlentities', '~>4.3.1'
 gem 'unicode_utils', '~>1.4.0'
 gem 'punkt-segmenter', '~>0.9.1'
-gem 'thin', '~>1.7.0'
+gem 'thin', '~>1.7.0', :group => :compile
+gem 'yajl-ruby', '~>1.3.0', :group => :compile
