@@ -27,10 +27,12 @@ class Tagset < Array
 		@for_autocomplete = to_autocomplete
 	end
 
-	def allowed_attributes(attr)
+	def allowed_attributes(attr, h = {})
 		return attr.clone if self.empty?
 		attr.select do |key, value|
-			value.nil? or self.any?{|rule| rule.key == key and rule.allowes?(value)}
+			value.nil? or
+				self.any?{|rule| rule.key == key and rule.allowes?(value)} or
+				(h[:element].is_a?(Node) && h[:element].type == 't' && key == 'token')
 		end
 	end
 
