@@ -660,6 +660,7 @@ class GraphController
 				extract_elements(parameters[:all_nodes]),
 				extract_attributes(parameters),
 				{},
+				layer,
 				log_step
 			)
 			undefined_references?(parameters[:all_nodes])
