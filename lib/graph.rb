@@ -749,12 +749,4 @@ class Graph
 			list.last.out.of_type('o').first
 		}.compact
 	end
-
-	# rebuild list of order edges that connect the sentences of different files
-	def rebuild_multifile_order_edges_list
-		return unless @multifile
-		@multifile[:order_edges] = @multifile[:sentence_index].map{|f, list|
-			list.last.out.of_type('o').first
-		}.compact
-	end
 end
