@@ -562,9 +562,10 @@ That means, e.g., that if you change the shortcut of a layer, the elements forme
 
 \subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
 
-In the window opened by the command \code{tagset}, you can specify which annotation are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
+In the window opened by the command \code{tagset}, you can specify which annotations are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
 Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
 Already existing annotations are not affected by changes of the permitted keys and values.
+The \code{token} annotation on token nodes – i.e., changing the token text – is always permitted.
 
 If you do not specify any keys and values, all annotations are permitted.
 If you specify keys, only these keys are allowed for annotations.

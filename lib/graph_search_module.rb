@@ -447,9 +447,9 @@ module GraphSearch
 		found.tg.each do |tg|
 			layer = nil
 			commands.each do |command|
-				# set attributes (same for all commands)
-				attrs = interpolate(command[:attributes], tg)
-				attrs = allowed_attributes(attrs)
+				# set attributes (same for all commands except 'a')
+				raw_attrs = interpolate(command[:attributes], tg)
+				attrs = allowed_attributes(raw_attrs)
 				# set layer (same for all commands)
 				if layer_shortcut = command[:words].select{|l| conf.layer_by_shortcut.keys.include?(l)}.last
 					layer = conf.layer_by_shortcut[layer_shortcut]
@@ -461,7 +461,7 @@ module GraphSearch
 				case command[:operator]
 				when 'a'
 					elements.each do |el|
-						el.annotate(attrs)
+						el.annotate(allowed_attributes(raw_attrs, :element => el))
 						el.set_layer(layer) if layer
 					end
 				when 'n'
