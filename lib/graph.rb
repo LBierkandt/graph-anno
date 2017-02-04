@@ -706,8 +706,8 @@ class Graph
 	# filter a hash of attributes to be annotated; let only attributes pass that are allowed
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
-	def allowed_attributes(attr)
-		@tagset.allowed_attributes(attr)
+	def allowed_attributes(attr, h = {})
+		@tagset.allowed_attributes(attr, h)
 	end
 
 
