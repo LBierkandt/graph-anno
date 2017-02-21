@@ -25,7 +25,7 @@ class Graph
 	include GraphSearch
 	include GraphPersistence
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :i_nodes, :annotators, :current_annotator, :file_settings
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -40,6 +40,7 @@ class Graph
 		@highest_node_id = 0
 		@highest_edge_id = 0
 		@node_index = Hash.new{|h, k| h[k] = {}}
+		@i_nodes = {}
 		@path = nil
 		@multifile = nil
 		@conf = GraphConf.new
@@ -95,10 +96,14 @@ class Graph
 	# @return [Node] the new node
 	def add_anno_node(h)
 		n = add_node(h.merge(:type => 'a'))
-		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
+		if h[:sentence]
+			e = add_sect_edge(:start => h[:sentence], :end => n)
+		else
+			@i_nodes[n.id] = n
+		end
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
-			h[:log].add_change(:action => :create, :element => e)
+			h[:log].add_change(:action => :create, :element => e) if e
 		end
 		return n
 	end

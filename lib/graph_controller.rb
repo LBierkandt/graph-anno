@@ -24,7 +24,7 @@ require_relative 'search_result.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :search_result, :current_sections
+	attr_reader :graph, :log, :search_result, :current_sections, :view
 
 	def initialize
 		@graph = Graph.new
@@ -86,6 +86,7 @@ class GraphController
 			:graph_file => @graph.path.to_s,
 			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
 			:command => value[:command],
+			:i_nodes => @sinatra.haml(:i_nodes, :locals => {:controller => self}),
 			:windows => @windows,
 			:messages => @cmd_error_messages
 		).to_json
@@ -527,6 +528,7 @@ class GraphController
 			'n' => @view.nodes[i],
 			'e' => @view.edges[i],
 			't' => @view.tokens[i],
+			'i' => @view.i_nodes[i],
 		}[identifier[0]]
 	end
 
@@ -578,7 +580,9 @@ class GraphController
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
-			sentence = if ref_node_reference = parameters[:all_nodes][0]
+			sentence = if parameters[:words].include?('i')
+				nil
+			elsif ref_node_reference = parameters[:all_nodes][0]
 				element_by_identifier(ref_node_reference).sentence
 			else
 				@current_sections.first.sentence_nodes.first

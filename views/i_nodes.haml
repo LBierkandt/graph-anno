@@ -1,0 +1,7 @@
+%ul
+	- controller.view.i_nodes.each_with_index do |n, i|
+		- color = controller.graph.conf.default_color
+		- if l = n.layer_or_combination
+			- color = l.color
+		%li{:style => "color: #{color};"}
+			= "i#{i} #{n.attr.output.map{|k, v| "#{k}: #{v}"}.join('; ')}"

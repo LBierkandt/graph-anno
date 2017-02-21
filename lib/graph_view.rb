@@ -21,7 +21,7 @@ require 'htmlentities.rb'
 require_relative 'dot_graph.rb'
 
 class GraphView
-	attr_reader :tokens, :nodes, :edges
+	attr_reader :tokens, :nodes, :edges, :i_nodes
 	attr_accessor :filter, :show_refs
 
 	def initialize(controller)
@@ -29,6 +29,7 @@ class GraphView
 		@tokens = []
 		@nodes = []
 		@edges = []
+		@i_nodes = []
 		@filter = {:mode => 'unfilter'}
 		@show_refs = true
 	end
@@ -180,13 +181,14 @@ class GraphView
 	private
 
 	def set_elements
-		@tokens = @current_sections ? @current_sections.map(&:sentence_tokens).flatten : []
-		sentence_nodes = @current_sections ? @current_sections.map(&:nodes).flatten : []
+		@tokens = @ctrl.current_sections ? @ctrl.current_sections.map(&:sentence_tokens).flatten : []
+		sentence_nodes = @ctrl.current_sections ? @ctrl.current_sections.map(&:nodes).flatten : []
 		all_edges = sentence_nodes.map{|n| n.in + n.out}.flatten.uniq
 		all_nodes = all_edges.map{|e| [e.start, e.end]}.flatten.uniq
 		@nodes = all_nodes.of_type('a')
 		@edges = all_edges.of_type('a')
 		@order_edges = all_edges.of_type('o')
+		@i_nodes = @ctrl.graph.i_nodes.values
 	end
 
 	def apply_filter
