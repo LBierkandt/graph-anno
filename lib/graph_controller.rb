@@ -474,14 +474,15 @@ class GraphController
 		)
 	end
 
-	def extract_attributes(parameters)
+	def extract_attributes(parameters, h = {})
 		allowed_attributes(
-			makros_to_attributes(parameters[:words]).merge(parameters[:attributes])
+			makros_to_attributes(parameters[:words]).merge(parameters[:attributes]),
+			h
 		)
 	end
 
-	def allowed_attributes(attr)
-		allowed_attr = @graph.allowed_attributes(attr)
+	def allowed_attributes(attr, h = {})
+		allowed_attr = @graph.allowed_attributes(attr, h)
 		if (forbidden = attr.select{|k, v| v}.keys - allowed_attr.keys) != []
 			@cmd_error_messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
 		end
@@ -613,9 +614,8 @@ class GraphController
 			end
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
-				annotations = extract_attributes(parameters)
 				anno_elements.each do |e|
-					e.annotate(annotations, log_step)
+					e.annotate(extract_attributes(parameters, :element => e), log_step)
 					e.set_layer(layer, log_step) if layer
 				end
 			end
@@ -654,12 +654,12 @@ class GraphController
 		when 'c', 'h' # attach new child node
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
-			annotations = extract_attributes(parameters)
 			layer = set_new_layer(parameters[:words]) || layer
 			@graph.add_child_node(
 				extract_elements(parameters[:all_nodes]),
 				extract_attributes(parameters),
 				{},
+				layer,
 				log_step
 			)
 			undefined_references?(parameters[:all_nodes])
