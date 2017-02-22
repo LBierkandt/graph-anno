@@ -660,12 +660,13 @@ class GraphController
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
+			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_child_node(
-				extract_elements(parameters[:all_nodes]),
-				extract_attributes(parameters),
-				{},
-				layer,
-				log_step
+				nodes,
+				:node_attr => extract_attributes(parameters),
+				:layers => layer,
+				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
+				:log => log_step
 			)
 			undefined_references?(parameters[:all_nodes])
 

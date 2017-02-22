@@ -498,9 +498,9 @@ module GraphSearch
 					unless nodes.empty?
 						add_child_node(
 							nodes,
-							attrs,
-							{},
-							layer
+							:node_attr => attrs,
+							:sentence => command[:words].include?('i') ? nil : nodes.first.sentence,
+							:layers => layer
 						)
 					end
 				when 'd'
