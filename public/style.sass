@@ -1,3 +1,5 @@
+@charset "UTF-8"
+
 $theme-color: #002050
 $theme-color-highlight: #003090
 $background-color: #ddd
@@ -106,7 +108,7 @@ table
 #sectioning
   display: block
   width: 20%
-  height: 40%
+  height: 50%
   .content
     ul
       position: absolute
@@ -161,8 +163,20 @@ table
     width: 20%
 
 #independent
-  width: 50%
+  width: 20%
   height: 50%
+  ul
+    padding-left: 0
+  li
+    margin: 2px
+    padding: 0 2px
+    white-space: nowrap
+    overflow: hidden
+    background-color: $background-color-light
+    .ref
+      font-weight: bold
+      &:after
+        content: " –"
 
 #filter
   width: 30%

@@ -4,4 +4,5 @@
 		- if l = n.layer_or_combination
 			- color = l.color
 		%li{:style => "color: #{color};"}
-			= "i#{i} #{n.attr.output.map{|k, v| "#{k}: #{v}"}.join('; ')}"
+			%span.ref= "i#{i}"
+			= n.attr.output.map{|k, v| "#{k}: #{v}"}.join('; ')
