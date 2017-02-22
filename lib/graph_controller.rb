@@ -694,6 +694,18 @@ class GraphController
 			end
 			undefined_references?(parameters[:nodes])
 
+		when 'sa', 'sd' # attach/detach nodes to from sentence
+			sentence_set?
+			log_step = @log.add_step(:command => @command_line)
+			extract_elements(parameters[:nodes]).each do |node|
+				if command == 'sa'
+					@graph.add_sect_edge(:start => @current_sections.first.sentence_nodes.first, :end => node)
+				else
+					node.in.of_type('s').first.delete(:log => log_step)
+				end
+			end
+			undefined_references?(parameters[:nodes])
+
 		when 'ns' # create and append new sentence(s)
 			raise 'Please specify a name!' if parameters[:words] == []
 			log_step = @log.add_step(:command => @command_line)
