@@ -136,6 +136,7 @@ class GraphView
 				options[:color] = @ctrl.graph.conf.found_color
 				options[:penwidth] = 2
 			end
+			options[:style] = 'dashed' if !node.sentence
 			viz_graph.add_nodes(node, options)
 			actual_layer_graph.add_nodes(node) if actual_layer_graph
 		end
