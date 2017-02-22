@@ -188,7 +188,7 @@ class GraphView
 		@nodes = all_nodes.of_type('a')
 		@edges = all_edges.of_type('a')
 		@order_edges = all_edges.of_type('o')
-		@i_nodes = @ctrl.graph.i_nodes.values
+		@i_nodes = @ctrl.graph.node_index['a'].values.select{|n| !n.sentence}
 	end
 
 	def apply_filter
