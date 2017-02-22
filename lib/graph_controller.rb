@@ -675,7 +675,13 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			extract_elements(parameters[:edges]).each do |edge|
-				@graph.insert_node(edge, extract_attributes(parameters), layer, log_step)
+				@graph.insert_node(
+					edge,
+					:attr => extract_attributes(parameters),
+					:layers => layer,
+					:sentence => parameters[:words].include?('i') ? nil : edge.end.sentence,
+					:log => log_step
+				)
 			end
 			undefined_references?(parameters[:edges])
 

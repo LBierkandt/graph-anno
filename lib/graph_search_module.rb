@@ -510,7 +510,12 @@ module GraphSearch
 					end
 				when 'ni'
 					elements.select{|e| e.is_a?(Edge)}.each do |e|
-						insert_node(e, attrs, layer)
+						insert_node(
+							e,
+							:attr => attrs,
+							:sentence => command[:words].include?('i') ? nil : e.end.sentence,
+							:layers => layer
+						)
 						search_result_preserved = false
 					end
 				when 'di', 'do'

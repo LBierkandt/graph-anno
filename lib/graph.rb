@@ -256,22 +256,16 @@ class Graph
 
 	# replaces the given edge by a sequence of an edge, a node and another edge. The new edges inherit the annotations of the replaced edge.
 	# @param edge [Edge] the edge to be replaced
-	# @param attrs [Hash] the annotations for the new node
-	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def insert_node(edge, attrs, layer, log_step = nil)
-		new_node = add_anno_node(
-			:attr => attrs,
-			:layers => layer,
-			:sentence => edge.end.sentence,
-			:log => log_step
-		)
+	# @param h [{:attr => Hash, :layers => AnnoLayer or Array, :sentence => Node, :log => Step}]
+	def insert_node(edge, h = {})
+		new_node = add_anno_node(h)
 		add_anno_edge(
 			{
 				:start => edge.start,
 				:end => new_node,
 				:raw => true,
 				:layers => edge.layers,
-				:log => log_step
+				:log => h[:log]
 			}.merge(edge.attr.to_h)
 		)
 		add_anno_edge(
@@ -280,10 +274,10 @@ class Graph
 				:end => edge.end,
 				:raw => true,
 				:layers => edge.layers,
-				:log => log_step
+				:log => h[:log]
 			}.merge(edge.attr.to_h)
 		)
-		edge.delete(:log => log_step)
+		edge.delete(:log => h[:log])
 	end
 
 	# deletes a node and connects its outgoing edges to its parents or its ingoing edges to its children
