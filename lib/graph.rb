@@ -219,23 +219,21 @@ class Graph
 
 	# creates a new annotation node as parent node for the given nodes
 	# @param nodes [Array] the nodes that will be connected to the new node
-	# @param node_attrs [Hash] the annotations for the new node
-	# @param edge_attrs [Hash] the annotations for the new edges
-	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def add_parent_node(nodes, node_attrs, edge_attrs, layer, log_step = nil)
+	# @param h [{:node_attr => Hash, :edge_attr => Hash, :layers => AnnoLayer or Array, :sentence => Node, :log => Step}]
+	def add_parent_node(nodes, h = {})
 		parent_node = add_anno_node(
-			:attr => node_attrs,
-			:layers => layer,
-			:sentence => nodes.first.sentence,
-			:log => log_step
+			:attr => h[:node_attr],
+			:layers => h[:layers],
+			:sentence => h[:sentence],
+			:log => h[:log]
 		)
 		nodes.each do |n|
 			add_anno_edge(
 				:start => parent_node,
 				:end => n,
-				:attr => edge_attrs,
-				:layers => layer,
-				:log => log_step
+				:attr => h[:edge_attr],
+				:layers => h[:layers],
+				:log => h[:log]
 			)
 		end
 	end
