@@ -524,7 +524,7 @@ class GraphController
 		i = identifier.scan(/\d/).join.to_i
 		{
 			'm' => @current_sections,
-			's' => @graph.sections_hierarchy(@current_sections)[i],
+			's' => @current_sections ? @graph.sections_hierarchy(@current_sections)[i] : nil,
 			'n' => @view.nodes[i],
 			'e' => @view.edges[i],
 			't' => @view.tokens[i],
@@ -577,10 +577,9 @@ class GraphController
 
 		case command
 		when 'n' # new node
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
-			sentence = if parameters[:words].include?('i')
+			sentence = if !@current_sections || parameters[:words].include?('i')
 				nil
 			elsif ref_node_reference = parameters[:all_nodes][0]
 				element_by_identifier(ref_node_reference).sentence
@@ -595,7 +594,6 @@ class GraphController
 			)
 
 		when 'e' # new edge
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			@graph.add_anno_edge(
@@ -608,7 +606,6 @@ class GraphController
 			undefined_references?(parameters[:all_nodes][0..1])
 
 		when 'a' # annotate elements
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words])
 			elements = extract_elements(parameters[:elements])
@@ -626,7 +623,6 @@ class GraphController
 			undefined_references?(parameters[:elements])
 
 		when 'd' # delete elements
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |element|
 				element.delete(:log => log_step, :join => true)
@@ -643,7 +639,6 @@ class GraphController
 			undefined_references?(parameters[:elements])
 
 		when 'p', 'g' # group under new parent node
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			nodes = extract_elements(parameters[:all_nodes])
@@ -657,7 +652,6 @@ class GraphController
 			undefined_references?(parameters[:all_nodes])
 
 		when 'c', 'h' # attach new child node
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			nodes = extract_elements(parameters[:all_nodes])
@@ -671,7 +665,6 @@ class GraphController
 			undefined_references?(parameters[:all_nodes])
 
 		when 'ni' # build node and "insert in edge"
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			extract_elements(parameters[:edges]).each do |edge|
@@ -686,7 +679,6 @@ class GraphController
 			undefined_references?(parameters[:edges])
 
 		when 'di', 'do' # remove node and connect parent/child nodes
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			extract_elements(parameters[:nodes]).each do |node|
