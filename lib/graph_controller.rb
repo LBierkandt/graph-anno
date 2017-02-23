@@ -744,7 +744,11 @@ class GraphController
 			reload_sections = true
 
 		when 's' # change sentence
-			@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
+			if parameters[:words].first == 'i'
+				@current_sections = nil
+			else
+				@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
+			end
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
