@@ -36,110 +36,14 @@ class GraphView
 
 	def generate
 		set_section_info
+
 		set_elements
 		apply_filter
+
 		create_dot_graphs
-
-		@tokens.each_with_index do |token, i|
-			options = {
-				:fontname => @ctrl.graph.conf.font,
-				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
-				:shape => :box,
-				:style => :bold,
-				:color => @ctrl.graph.conf.token_color,
-				:fontcolor => @ctrl.graph.conf.token_color
-			}
-			if @ctrl.search_result.nodes[token.id]
-				options[:color] = @ctrl.graph.conf.found_color
-				@section_info[:textline] += '<span class="found_word">' + token.token + '</span> '
-			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
-				options[:color] = @ctrl.graph.conf.filtered_color
-				options[:fontcolor]= @ctrl.graph.conf.filtered_color
-				@section_info[:textline] += '<span class="hidden_word">' + token.token + '</span> '
-			else
-				@section_info[:textline] += token.token + ' '
-			end
-			unless token.speaker
-				@token_graph.add_nodes(token, options)
-			else
-				# create token and point on timeline:
-				gv_token = @speaker_graphs[token.speaker].add_nodes(token, options)
-				gv_time  = @timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @ctrl.graph.conf.font})
-				# add ordering edge from speaker to speaker's first token
-				@viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
-				# multiple lines between token and point on timeline in order to force correct order:
-				@viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
-				@viz_graph.add_edges(gv_token, gv_time, {:arrowhead => :none, :weight => 9999})
-				@viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
-				# order points on timeline:
-				if i > 0
-					@viz_graph.add_edges('t' + @tokens[i-1].id.to_s, gv_time, {:arrowhead => :none})
-				else
-					@viz_graph.add_edges(@gv_anchor, gv_time, {:style => :invis})
-				end
-			end
-		end
-
-		@nodes.each_with_index do |node, i|
-			options = {
-				:fontname => @ctrl.graph.conf.font,
-				:color => @ctrl.graph.conf.default_color,
-				:shape => :box,
-				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
-			}
-			actual_layer_graph = nil
-			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
-				options[:color] = @ctrl.graph.conf.filtered_color
-			else
-				if l = node.layer_or_combination
-					options[:color] = l.color
-					actual_layer_graph = @layer_graphs[l]
-				end
-			end
-			options[:fontcolor] = options[:color]
-			if @ctrl.search_result.nodes[node.id]
-				options[:color] = @ctrl.graph.conf.found_color
-				options[:penwidth] = 2
-			end
-			options[:style] = 'dashed' if !node.sentence
-			@viz_graph.add_nodes(node, options)
-			actual_layer_graph.add_nodes(node) if actual_layer_graph
-		end
-
-		@edges.each_with_index do |edge, i|
-			label = HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal)
-			options = {
-				:fontname => @ctrl.graph.conf.font,
-				:color => @ctrl.graph.conf.default_color,
-				:weight => @ctrl.graph.conf.edge_weight,
-				:constraint => true
-			}.merge(
-				@ctrl.graph.conf.xlabel ? {:xlabel => label} : {:label => label}
-			)
-			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
-				options[:color] = @ctrl.graph.conf.filtered_color
-			else
-				if l = edge.layer_or_combination
-					options[:color] = l.color
-					if l.weight == 0
-						options[:constraint] = false
-					else
-						options[:weight] = l.weight
-						options[:constraint] = true
-					end
-				end
-			end
-			options[:fontcolor] = options[:color]
-			if @ctrl.search_result.edges[edge.id]
-				options[:color] = @ctrl.graph.conf.found_color
-				options[:penwidth] = 2
-			end
-			@viz_graph.add_edges(edge.start, edge.end, options)
-		end
-
-		@order_edges.each do |edge|
-			@viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
-		end
+		create_tokens
+		create_nodes
+		create_edges
 
 		return @section_info.merge(:dot => @viz_graph)
 	end
@@ -213,6 +117,113 @@ class GraphView
 			@timeline_graph = @viz_graph.subgraph(:rank => :same)
 			@gv_anchor = @timeline_graph.add_nodes('anchor', {:style => :invis})
 			@viz_graph.add_edges(gv_speaker_nodes[-1], @gv_anchor, {:style => :invis})
+		end
+	end
+
+	def create_tokens
+		@tokens.each_with_index do |token, i|
+			options = {
+				:fontname => @ctrl.graph.conf.font,
+				:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
+				:shape => :box,
+				:style => :bold,
+				:color => @ctrl.graph.conf.token_color,
+				:fontcolor => @ctrl.graph.conf.token_color
+			}
+			if @ctrl.search_result.nodes[token.id]
+				options[:color] = @ctrl.graph.conf.found_color
+				@section_info[:textline] += '<span class="found_word">' + token.token + '</span> '
+			elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
+				options[:color] = @ctrl.graph.conf.filtered_color
+				options[:fontcolor]= @ctrl.graph.conf.filtered_color
+				@section_info[:textline] += '<span class="hidden_word">' + token.token + '</span> '
+			else
+				@section_info[:textline] += token.token + ' '
+			end
+			unless token.speaker
+				@token_graph.add_nodes(token, options)
+			else
+				# create token and point on timeline:
+				gv_token = @speaker_graphs[token.speaker].add_nodes(token, options)
+				gv_time  = @timeline_graph.add_nodes('t' + token.id.to_s, {:shape => 'plaintext', :label => "#{token.start}\n#{token.end}", :fontname => @ctrl.graph.conf.font})
+				# add ordering edge from speaker to speaker's first token
+				@viz_graph.add_edges('s' + token.speaker.id.to_s, gv_token, {:style => :invis}) if i == 0
+				# multiple lines between token and point on timeline in order to force correct order:
+				@viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
+				@viz_graph.add_edges(gv_token, gv_time, {:arrowhead => :none, :weight => 9999})
+				@viz_graph.add_edges(gv_token, gv_time, {:weight => 9999, :style => :invis})
+				# order points on timeline:
+				if i > 0
+					@viz_graph.add_edges('t' + @tokens[i-1].id.to_s, gv_time, {:arrowhead => :none})
+				else
+					@viz_graph.add_edges(@gv_anchor, gv_time, {:style => :invis})
+				end
+			end
+		end
+	end
+
+	def create_nodes
+		@nodes.each_with_index do |node, i|
+			options = {
+				:fontname => @ctrl.graph.conf.font,
+				:color => @ctrl.graph.conf.default_color,
+				:shape => :box,
+				:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
+			}
+			actual_layer_graph = nil
+			if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
+				options[:color] = @ctrl.graph.conf.filtered_color
+			else
+				if l = node.layer_or_combination
+					options[:color] = l.color
+					actual_layer_graph = @layer_graphs[l]
+				end
+			end
+			options[:fontcolor] = options[:color]
+			if @ctrl.search_result.nodes[node.id]
+				options[:color] = @ctrl.graph.conf.found_color
+				options[:penwidth] = 2
+			end
+			options[:style] = 'dashed' if !node.sentence
+			@viz_graph.add_nodes(node, options)
+			actual_layer_graph.add_nodes(node) if actual_layer_graph
+		end
+	end
+
+	def create_edges
+		@edges.each_with_index do |edge, i|
+			label = HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal)
+			options = {
+				:fontname => @ctrl.graph.conf.font,
+				:color => @ctrl.graph.conf.default_color,
+				:weight => @ctrl.graph.conf.edge_weight,
+				:constraint => true
+			}.merge(
+				@ctrl.graph.conf.xlabel ? {:xlabel => label} : {:label => label}
+			)
+			if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
+				options[:color] = @ctrl.graph.conf.filtered_color
+			else
+				if l = edge.layer_or_combination
+					options[:color] = l.color
+					if l.weight == 0
+						options[:constraint] = false
+					else
+						options[:weight] = l.weight
+						options[:constraint] = true
+					end
+				end
+			end
+			options[:fontcolor] = options[:color]
+			if @ctrl.search_result.edges[edge.id]
+				options[:color] = @ctrl.graph.conf.found_color
+				options[:penwidth] = 2
+			end
+			@viz_graph.add_edges(edge.start, edge.end, options)
+		end
+
+		@order_edges.each do |edge|
+			@viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 	end
 
