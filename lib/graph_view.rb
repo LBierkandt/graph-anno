@@ -83,7 +83,7 @@ class GraphView
 				@section_info[:meta] = build_label(@ctrl.current_sections.first)
 			end
 		else
-			@section_info[:textline] = 'Independent nodes'
+			@section_info[:textline] = '<em>Independent nodes</em>'
 		end
 	end
 
