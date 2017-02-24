@@ -55,8 +55,9 @@ class GraphView
 		if @ctrl.current_sections
 			@tokens = @ctrl.current_sections.map(&:sentence_tokens).flatten
 			sentence_nodes = @ctrl.current_sections.map(&:nodes).flatten
-			all_edges = sentence_nodes.map{|n| n.in + n.out}.flatten.uniq
-			all_nodes = all_edges.map{|e| [e.start, e.end]}.flatten.uniq
+			sentence_edges = sentence_nodes.map{|n| n.in + n.out}.flatten.uniq
+			all_nodes = sentence_edges.map{|e| [e.start, e.end]}.flatten.uniq
+			all_edges = (all_nodes.map{|n| n.in}.flatten & all_nodes.map{|n| n.out}.flatten).uniq
 			@nodes = all_nodes.of_type('a')
 			@edges = all_edges.of_type('a')
 			@order_edges = all_edges.of_type('o')
