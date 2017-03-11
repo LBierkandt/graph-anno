@@ -5,4 +5,4 @@
 			- color = l.color
 		%li{:style => "color: #{color};"}
 			%span.ref= "i#{i}"
-			= n.attr.output.map{|k, v| "#{k}: #{v}"}.join('; ')
+			= ([n.cat] + n.attr.output.except('cat').map{|k, v| "#{k}: #{v}"}).compact.join(', ')
