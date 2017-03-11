@@ -525,7 +525,7 @@ class GraphController
 		{
 			'm' => @current_sections,
 			's' => @current_sections ? @graph.sections_hierarchy(@current_sections)[i] : nil,
-			'n' => @view.nodes[i],
+			'n' => @view.dependent_nodes[i],
 			'e' => @view.edges[i],
 			't' => @view.tokens[i],
 			'i' => @view.i_nodes[i],
@@ -1002,7 +1002,14 @@ class GraphController
 		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
 		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
 		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
-		refs   = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} + @view.nodes.map.with_index{|n, i| "n#{i}"} + @view.edges.map.with_index{|e, i| "e#{i}"} : []
+		refs   = if @preferences[:ref]
+				@view.tokens.map.with_index{|t, i| "t#{i}"} +
+					@view.dependent_nodes.map.with_index{|n, i| "n#{i}"} +
+					@view.edges.map.with_index{|e, i| "e#{i}"} +
+					@view.i_nodes.map.with_index{|e, i| "i#{i}"}
+			else
+				[]
+			end
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
 		arefs  = @preferences[:ref] ? refs + srefs : []
 		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []

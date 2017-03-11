@@ -21,13 +21,14 @@ require 'htmlentities.rb'
 require_relative 'dot_graph.rb'
 
 class GraphView
-	attr_reader :tokens, :nodes, :edges, :i_nodes
+	attr_reader :tokens, :edges, :dependent_nodes, :independent_nodes, :i_nodes
 	attr_accessor :filter, :show_refs
 
 	def initialize(controller)
 		@ctrl = controller
 		@tokens = []
-		@nodes = []
+		@dependent_nodes = []
+		@independent_nodes = []
 		@edges = []
 		@i_nodes = []
 		@filter = {:mode => 'unfilter'}
@@ -58,12 +59,15 @@ class GraphView
 			sentence_edges = sentence_nodes.map{|n| n.in + n.out}.flatten.uniq
 			all_nodes = sentence_edges.map{|e| [e.start, e.end]}.flatten.uniq
 			all_edges = (all_nodes.map{|n| n.in}.flatten & all_nodes.map{|n| n.out}.flatten).uniq
-			@nodes = all_nodes.of_type('a')
+			a_nodes = all_nodes.of_type('a')
+			@dependent_nodes = a_nodes - @i_nodes
+			@independent_nodes = a_nodes & @i_nodes
 			@edges = all_edges.of_type('a')
 			@order_edges = all_edges.of_type('o')
 		else
 			@tokens = []
-			@nodes = @i_nodes
+			@dependent_nodes = []
+			@independent_nodes = @i_nodes
 			@edges = (@i_nodes.map{|n| n.in}.flatten & @i_nodes.map{|n| n.out}.flatten).uniq
 			@order_edges = []
 		end
@@ -71,7 +75,8 @@ class GraphView
 
 	def apply_filter
 		if @filter[:mode] == 'filter'
-			@nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
+			@dependent_nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
+			@independent_nodes.select!{|n| @filter[:show] == n.fulfil?(@filter[:cond])}
 			@edges.select!{|e| @filter[:show] == e.fulfil?(@filter[:cond])}
 		end
 	end
@@ -164,7 +169,7 @@ class GraphView
 	end
 
 	def create_nodes
-		@nodes.each_with_index do |node, i|
+		(@dependent_nodes + @independent_nodes).each_with_index do |node, i|
 			options = {
 				:fontname => @ctrl.graph.conf.font,
 				:color => @ctrl.graph.conf.default_color,
@@ -253,7 +258,13 @@ class GraphView
 						label += "#{key}: #{value}\n"
 					end
 				end
-				label += "n#{i}" if i
+				if i
+					if index = @i_nodes.index(e)
+						label += "i#{index}"
+					else
+						label += "n#{i}"
+					end
+				end
 			end
 		elsif e.is_a?(Edge)
 			display_attr.each do |key,value|
