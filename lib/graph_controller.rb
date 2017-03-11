@@ -898,7 +898,7 @@ class GraphController
 
 	def sentence_set?
 		return true if @current_sections
-		raise 'Create a sentence first!'
+		raise 'This command may only be issued inside a sentence!'
 	end
 
 	def reset_current_sections
