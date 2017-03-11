@@ -46,8 +46,11 @@ class GraphView
 		@tokens.each_with_index do |token, i|
 			create_token(token, i)
 		end
-		(@dependent_nodes + @independent_nodes).each_with_index do |node, i|
-			create_node(node, i)
+		@dependent_nodes.each_with_index do |node, i|
+			create_node(node, i, 'n')
+		end
+		@independent_nodes.each do |node|
+			create_node(node, @i_nodes.index(node), 'i')
 		end
 		@edges.each_with_index do |edge, i|
 			create_edge(edge, i)
@@ -139,7 +142,7 @@ class GraphView
 	def create_token(token, i)
 		options = {
 			:fontname => @ctrl.graph.conf.font,
-			:label => HTMLEntities.new.encode(build_label(token, @show_refs ? i : nil), :hexadecimal),
+			:label => HTMLEntities.new.encode(build_label(token, @show_refs ? "t#{i}" : nil), :hexadecimal),
 			:shape => :box,
 			:style => :bold,
 			:color => @ctrl.graph.conf.token_color,
@@ -176,12 +179,12 @@ class GraphView
 		end
 	end
 
-	def create_node(node, i)
+	def create_node(node, i, letter)
 		options = {
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:shape => :box,
-			:label => HTMLEntities.new.encode(build_label(node, @show_refs ? i : nil), :hexadecimal),
+			:label => HTMLEntities.new.encode(build_label(node, @show_refs ? "#{letter}#{i}" : nil), :hexadecimal),
 		}
 		actual_layer_graph = nil
 		if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
@@ -203,7 +206,7 @@ class GraphView
 	end
 
 	def create_edge(edge, i)
-		label = HTMLEntities.new.encode(build_label(edge, @show_refs ? i : nil), :hexadecimal)
+		label = HTMLEntities.new.encode(build_label(edge, @show_refs ? "e#{i}" : nil), :hexadecimal)
 		options = {
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
@@ -233,7 +236,7 @@ class GraphView
 		@viz_graph.add_edges(edge.start, edge.end, options)
 	end
 
-	def build_label(e, i = nil)
+	def build_label(e, ref = nil)
 		label = ''
 		display_attr = e.attr.output
 		if e.is_a?(Node)
@@ -248,7 +251,7 @@ class GraphView
 						label += "#{key}: #{value}\n"
 					end
 				end
-				label += "t#{i}" if i
+				label += ref if ref
 			else # normaler Knoten
 				display_attr.each do |key,value|
 					case key
@@ -258,13 +261,7 @@ class GraphView
 						label += "#{key}: #{value}\n"
 					end
 				end
-				if i
-					if index = @i_nodes.index(e)
-						label += "i#{index}"
-					else
-						label += "n#{i}"
-					end
-				end
+				label += ref if ref
 			end
 		elsif e.is_a?(Edge)
 			display_attr.each do |key,value|
@@ -275,7 +272,7 @@ class GraphView
 					label += "#{key}: #{value}\n"
 				end
 			end
-			label += "e#{i}" if i
+			label += ref if ref
 		end
 		return label
 	end
