@@ -691,9 +691,9 @@ class GraphController
 			log_step = @log.add_step(:command => @command_line)
 			extract_elements(parameters[:nodes]).each do |node|
 				if command == 'sa'
-					@graph.add_sect_edge(:start => @current_sections.first.sentence_nodes.first, :end => node)
+					@graph.add_sect_edge(:start => @current_sections.first.sentence_nodes.first, :end => node) if !node.sentence
 				else
-					node.in.of_type('s').first.delete(:log => log_step)
+					node.in.of_type('s').each{|e| e.delete(:log => log_step)}
 				end
 			end
 			undefined_references?(parameters[:nodes])
