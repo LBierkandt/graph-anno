@@ -82,8 +82,8 @@ class GraphController
 			@cmd_error_messages << e.message
 			value = {}
 		end
-		return value.to_json if value[:no_redraw]
-		return section_settings_and_graph(value[:reload_sections])
+		response = value[:no_redraw] ? value : section_settings_and_graph(value[:reload_sections])
+		return response
 			.merge(
 				:graph_file => @graph.path.to_s,
 				:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
