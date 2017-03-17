@@ -498,7 +498,7 @@ function setMedia(media) {
 	if (media === undefined) return;
 	var $video = $('#media video');
 	if (media === null) $video.removeAttr('src').load();
-	else $video.removeAttr('src').attr('src', 'media');
+	else $video.removeAttr('src').attr('src', 'media?' + new Date().getTime());
 }
 function playMedia(data) {
 	var $video = $('#media video');
