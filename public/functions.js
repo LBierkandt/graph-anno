@@ -89,6 +89,17 @@ function taste(e) {
 			Sectioning.selection(mapping2[e.which]);
 		}
 	}
+	else if (e.ctrlKey) {
+		var mapping = {
+			121: function(){
+				Box.instances.media.toggleAndSave();
+			},
+		}
+		if (e.which in mapping) {
+			e.preventDefault();
+			mapping[e.which]();
+		}
+	}
 	else {
 		var mapping = {
 			112: function(){
@@ -128,9 +139,6 @@ function taste(e) {
 			},
 			120: function(){
 				Box.instances.sectioning.toggleAndSave();
-			},
-			121: function(){
-				Box.instances.media.toggleAndSave();
 			},
 		};
 		if (e.which in mapping) {
