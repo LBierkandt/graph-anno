@@ -2,32 +2,29 @@
 
 GraphAnno is a browser-based and command line-operated tool for creating, editing and querying graph-based linguistic annotations.
 
-GraphAnno needs: Ruby (optional on Windows) and a Browser.
+GraphAnno needs: Ruby (not required on Windows) and a Browser (GraphAnno has been developed with Firefox, but Chrome should work, too).
+
 
 ## Installation
 
 Download the ZIP file and extract it to a directory of your choice (or clone the GraphAnno repository).
 
-Then, in order to run GraphAnno you need:
+Then, depending on your system:
 
-1. Ruby (you can do without on Windows)
-  * (http://www.ruby-lang.org/; GraphAnno has been developed with version 2.0; but 1.9 should work, too)
+* On Windows: simply use the binary file `main.exe` located in GraphAnno’s main directory, or follow the following instructions if you want to use the Ruby version.
 
-    install needed Rubygems with bundler
-    1. navigate to the GraphAnno main directory
-    2. run `gem install bundler` if you haven't installed bundler already
-    3. run `bundle install`
+* On Linux or OS X: install the needed Rubygems:
 
-  * For Windows there is a compiled version of the program for which you don't need Ruby.
+	1. navigate to the GraphAnno main directory,
 
-2. A browser (GraphAnno has been developed with Firefox, but Chrome should work, too)
+	2. run `gem install bundler` if you haven't installed Bundler already,
 
-(A note: you don’t need Graphviz anymore – it is now included in GraphAnno as a Javascript version.)
+	3. run `bundle install` if you have installed compilation tools (this is usually the case on Linux systems) or `bundle install --without=compile` if you haven’t. (In the latter case you won’t be able to use the media playback feature.)
 
 
 ### Running the program
 
-1. start `main.rb` in the GraphAnno main directory (`bundle exec ruby main.rb`); or on Windows (if you prefer) `main.exe`
+1. start `main.rb` in the GraphAnno main directory with the command `bundle exec ruby main.rb`; or on Windows `main.exe`
 
 2. navigate to the following address in your browser: `http://localhost:4567/`
 
@@ -49,7 +46,7 @@ You start with an empty work space, so the first thing to do is to create a sent
 ```
 ns example_1
 ```
-The sentence is created and you have moved to it, which you see by looking at the sentence dropdown.
+The sentence is created and you have moved to it, which you see by looking at the navigation window (toggle it with F9).
 
 Now enter the sentence you want to annotate with the command `t` for tokenize:
 ```
