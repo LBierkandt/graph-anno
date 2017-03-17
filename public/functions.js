@@ -89,6 +89,17 @@ function taste(e) {
 			Sectioning.selection(mapping2[e.which]);
 		}
 	}
+	else if (e.ctrlKey) {
+		var mapping = {
+			121: function(){
+				Box.instances.media.toggleAndSave();
+			},
+		}
+		if (e.which in mapping) {
+			e.preventDefault();
+			mapping[e.which]();
+		}
+	}
 	else {
 		var mapping = {
 			112: function(){
@@ -486,6 +497,23 @@ function disable_import_form_fields(type) {
 		$('input[name="language"]').removeAttr('disabled');
 	}
 }
+function setMedia(media) {
+	if (media === undefined) return;
+	var $video = $('#media video');
+	if (media === null) $video.removeAttr('src').load();
+	else $video.removeAttr('src').attr('src', 'media?' + new Date().getTime());
+}
+function playMedia(data) {
+	var $video = $('#media video');
+	if (data.start != undefined) $video[0].currentTime = data.start;
+	if (data.end != undefined) $video.on('timeupdate', function(){
+		if (this.currentTime >= data.end) {
+			$(this).off('timeupdate');
+			this.pause();
+		}
+	});
+	$video[0].play();
+}
 function focusCommandLine() {
 	$('#txtcmd').focus().select();
 }
@@ -502,6 +530,7 @@ function handleResponse(data) {
 	}
 	if (data.messages != undefined && data.messages.length > 0) alert(data.messages.join("\n"));
 	if (data.command == 'load') Log.load();
+	if (data.command == 'play') playMedia(data);
 	if (data.graph_file != undefined) $('#active_file').html('file: ' + data.graph_file);
 	if (data.current_annotator != undefined) $('#current_annotator').html('annotator: ' + data.current_annotator);
 	if (data.textline != undefined) $('#textline').html(data.textline);
@@ -512,5 +541,6 @@ function handleResponse(data) {
 	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
 	if (data.preferences != undefined) window.preferences = data.preferences;
 	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
+	setMedia(data.media);
 	Autocomplete.setData(data.autocomplete);
 }

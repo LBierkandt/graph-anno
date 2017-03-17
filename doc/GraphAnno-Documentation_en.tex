@@ -128,13 +128,17 @@ GraphAnno is a Ruby program and thus needs an installation of Ruby (version 2.0 
 \noindent
 Installation:
 \begin{enumerate}
-	\item Download the ZIP file \url{https://github.com/LBierkandt/graph-anno/archive/master.zip} and extract it to a directory of your choice (or clone the GraphAnno repository if you like to use Git).
-	\item Install the needed libraries (Rubygems):
-		\begin{enumerate}
-			\item navigate to the GraphAnno main directory,
-			\item run \code{gem install bundler} if you haven't installed bundler already,
-			\item run \code{bundle install}
-		\end{enumerate}
+	\item Download the ZIP file \url{https://github.com/LBierkandt/graph-anno/archive/master.zip} and extract it to a directory of your choice (or clone the GraphAnno repository if you use Git).
+	\item Depending on your system:
+		\begin{itemize}
+			\item On Windows: simply use the binary file \code{main.exe} located in GraphAnno’s main directory, or follow the following instructions if you want to use the Ruby version.
+			\item On Linux or OS X: install the needed libraries (Rubygems):
+				\begin{enumerate}
+					\item navigate to the GraphAnno main directory,
+					\item run \code{gem install bundler} if you haven't installed Bundler already,
+					\item run \code{bundle install} if you have installed compilation tools (this is usually the case on Linux systems) or \code{bundle install --without=compile} if you haven’t. (In the latter case you won’t be able to use the media playback feature.)
+				\end{enumerate}
+		\end{itemize}
 \end{enumerate}
 
 \noindent
@@ -145,7 +149,7 @@ Starting GraphAnno:
 \end{enumerate}
 
 \noindent
-To stop the program, press ctrl + C in the console where it is running.
+To stop the program, press ctrl + C in the terminal where it is running.
 
 
 
@@ -487,6 +491,12 @@ But beware! the change history is linear, i.e., if you issue an annotation comma
 
 You can also navigate the history using the \code{undo} and \code{redo} commands – see Section \ref{befehl-undo}.
 
+\subsubsection{Media}\label{window-media}
+
+For corpora with an associated media file, the media window offers an audio/video player.
+The window is toggled with Ctrl + F10.
+You can operate the player with the mouse, but you can also play specific chunks of the media (i.e. corresponding to a given span of tokens) using the \code{play} command (see \ref{befehl-play}).
+
 
 \subsection{Keyboard shortcuts}\label{shortcuts}
 
@@ -522,6 +532,7 @@ The following is a table of the available shortcuts:
 			F7 & show/hide search window\\
 			F8 & show/hide change log window\\
 			F9 & show/hide navigation window\\
+			Ctrl + F10 & show/hide media window\\
 		\bottomrule
 	\end{tabular*}
 \end{center}
@@ -689,6 +700,13 @@ Next to the input line no file will be indicated anymore.
 \subsubsection{Go to sentence/section: \texttt{s}}\label{befehl-s}
 
 In order to navigate to a sentence or section (or multiple of them), you may use (alternatively to \hyperref[shortcuts]{keyboard shortcuts} or the \hyperref[window-navigation]{navigation window}) the command \code{s}, followed by the name(s) of the sentence(s) or section(s) you want to change to.
+
+
+\subsubsection{Play associated media: \texttt{play}}\label{befehl-play}
+
+If you are working with a corpus that has associated audio or video, the command \code{play} serves for playing specific chunks of the media.
+The command without any parameter plays the whole current view; when you provide one token reference, it play from the given token to the end of the current view; if you provide two tokens, it plays from the first to the second one.
+The media window where you can see the video and operate the player manually opens with Ctrl + F10.
 
 
 \subsubsection{Save image: \texttt{image}}

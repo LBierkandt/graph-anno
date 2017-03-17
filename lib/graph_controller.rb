@@ -75,21 +75,24 @@ class GraphController
 		@cmd_error_messages = []
 		puts 'Processing command: "' + @sinatra.params[:txtcmd] + '"'
 		set_cmd_cookies
+		old_media = @graph.media
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
 		rescue StandardError => e
 			@cmd_error_messages << e.message
 			value = {}
 		end
-		return value.to_json if value[:modal]
-		return section_settings_and_graph(value[:reload_sections]).merge(
-			:graph_file => @graph.path.to_s,
-			:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
-			:command => value[:command],
-			:i_nodes => @sinatra.haml(:i_nodes, :locals => {:controller => self}),
-			:windows => @windows,
-			:messages => @cmd_error_messages
-		).to_json
+		response = value[:no_redraw] ? value : section_settings_and_graph(value[:reload_sections])
+		return response
+			.merge(
+				:graph_file => @graph.path.to_s,
+				:current_annotator => @graph.current_annotator ? @graph.current_annotator.name : '',
+				:command => value[:command],
+				:windows => @windows,
+				:messages => @cmd_error_messages
+			)
+			.merge(@graph.media != old_media ? {:media => @graph.media} : {})
+			.to_json
 	end
 
 	def change_sentence
@@ -447,6 +450,10 @@ class GraphController
 		}.compact.to_json
 	end
 
+	def media
+		@sinatra.send_file(@graph.media)
+	end
+
 	def documentation(filename)
 		@sinatra.send_file('doc/' + filename)
 	end
@@ -468,6 +475,7 @@ class GraphController
 		@view.generate.merge(
 			:autocomplete => autocomplete_data,
 			:preferences => @preferences,
+			:i_nodes => @sinatra.haml(:i_nodes, :locals => {:controller => self}),
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
 		).merge(
@@ -879,15 +887,24 @@ class GraphController
 			when 'annotators'
 				@graph.import_annotators(name)
 			when 'toolbox'
-				return {:modal => 'import', :type => 'toolbox'}
+				return {:no_redraw => true, :modal => 'import', :type => 'toolbox'}
 			when 'text'
-				return {:modal => 'import', :type => 'text'}
+				return {:no_redraw => true, :modal => 'import', :type => 'text'}
 			else
 				raise "Unknown import type"
 			end
 
+		when 'play'
+			undefined_references?(parameters[:tokens])
+			val = {:no_redraw => true, :command => command}
+			first_token = !parameters[:tokens].empty? ? element_by_identifier(parameters[:tokens].first) : @view.tokens.first
+			last_token = parameters[:tokens].length > 1 ? element_by_identifier(parameters[:tokens].last) : @view.tokens.last
+			val[:start] = first_token.start
+			val[:end] = last_token.end
+			return val
+
 		when 'config', 'tagset', 'metadata', 'makros', 'speakers', 'annotators', 'file', 'pref'
-			return {:modal => command}
+			return {:no_redraw => true, :modal => command}
 
 		when ''
 		else
@@ -990,6 +1007,7 @@ class GraphController
 			:image => nil,
 			# :export => nil,
 			:import => nil,
+			:play => :tokens,
 			:config => nil,
 			:tagset => nil,
 			:makros => nil,
@@ -1002,8 +1020,9 @@ class GraphController
 		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
 		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
 		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
+		tokens = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} : []
 		refs   = if @preferences[:ref]
-				@view.tokens.map.with_index{|t, i| "t#{i}"} +
+				tokens +
 					@view.dependent_nodes.map.with_index{|n, i| "n#{i}"} +
 					@view.edges.map.with_index{|e, i| "e#{i}"} +
 					@view.i_nodes.map.with_index{|e, i| "i#{i}"}
@@ -1018,6 +1037,7 @@ class GraphController
 		{
 			:anno => tagset + makros + layers + refs,
 			:aanno => tagset + makros + layers + arefs,
+			:tokens => tokens,
 			:ref => refs,
 			:layer => layers + refs,
 			:sect => sects,
