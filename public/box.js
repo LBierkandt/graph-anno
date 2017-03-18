@@ -2,20 +2,12 @@ var Box = (function () {
 	$(window).on('load', function(){
 		// init boxes
 		$('.box').each(function(){
-			new Box($(this));
+			this.box = new Box($(this));
 			$(this).draggable({handle: '.handle', stack: '.box', stop: Box.saveState});
 		});
 		// draggables on top when clicked
 		$('.box').on('mouseup', function(){
-			var $box = $(this);
-			if(!$box.hasClass('ui-draggable-dragging')){
-				var zIndexList = $('.box').map(function(){return $(this).zIndex()}).get();
-				var highestZIndex = Math.max.apply(null, zIndexList);
-				if($box.zIndex() < highestZIndex){
-					$box.zIndex(highestZIndex + 1);
-					Box.saveState();
-				}
-			}
+			this.box.toFront(true);
 		});
 		// close button
 		$('.handle').html('<div class="close"></div>')
@@ -70,7 +62,19 @@ var Box = (function () {
 
 	Box.prototype.toggleAndSave = function(state) {
 		this.$element.toggle(state);
+		if (this.$element.css('display') == 'block') this.toFront(false);
 		Box.saveState();
+	}
+
+	Box.prototype.toFront = function(save) {
+		if(!this.$element.hasClass('ui-draggable-dragging')){
+			var zIndexList = $('.box').map(function(){return $(this).zIndex()}).get();
+			var highestZIndex = Math.max.apply(null, zIndexList);
+			if(this.$element.zIndex() < highestZIndex){
+				this.$element.zIndex(highestZIndex + 1);
+				if (save) Box.saveState();
+			}
+		}
 	}
 
 	return Box;
