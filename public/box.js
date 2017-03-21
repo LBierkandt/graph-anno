@@ -62,12 +62,22 @@ var Box = (function () {
 		for (var i in attributes) {
 			this.$element.css(i, attributes[i]);
 		}
+		this.setButton();
 	}
 
 	Box.prototype.toggleAndSave = function(state) {
 		this.$element.toggle(state);
 		if (this.$element.css('display') == 'block') this.toFront(false);
+		this.setButton();
 		Box.saveState();
+	}
+
+	Box.prototype.setButton = function() {
+		if (this.$element.css('display') == 'block') {
+			$('#box-button-bar button[data-box=' + this.id + ']').addClass('active');
+		} else {
+			$('#box-button-bar button[data-box=' + this.id + ']').removeClass('active');
+		}
 	}
 
 	Box.prototype.toFront = function(save) {
