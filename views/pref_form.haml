@@ -7,6 +7,14 @@
     %table
       %tbody
         %tr
+          %th{:colspan => 3} Menu
+        %tr
+          %td
+            %input#box_button_bar{:name => 'box_button_bar', :type => 'checkbox', :value => true, :checked => preferences[:box_button_bar]}
+          %td{:colspan => 2}
+            %label{:for =>'box_button_bar'}
+              show window button bar
+        %tr
           %th{:colspan => 3} Autocomplete
         %tr
           %td
