@@ -97,6 +97,14 @@ table {
       color: white;
       background-color: #003090; }
 
+#box-button-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; }
+
 #sectioning {
   display: block;
   width: 20%;

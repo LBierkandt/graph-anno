@@ -16,6 +16,10 @@ var Box = (function () {
 			Box.saveState();
 			$('#txtcmd').focus().select();
 		});
+		// button bar
+		$(document).on('click', 'button[data-box]', function(){
+			Box.instances[$(this).attr('data-box')].toggleAndSave();
+		})
 	});
 
 	Box.instances = {};
