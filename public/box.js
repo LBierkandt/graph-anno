@@ -10,7 +10,7 @@ var Box = (function () {
 			this.box.toFront(true);
 		});
 		// close button
-		$('.handle').html('<div class="close"></div>')
+		$('.handle').append('<div class="close"></div>')
 		$(document).on('click', '.close', function(){
 			$(this).closest('.box').hide();
 			Box.saveState();
