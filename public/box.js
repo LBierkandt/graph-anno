@@ -74,9 +74,9 @@ var Box = (function () {
 
 	Box.prototype.setButton = function() {
 		if (this.$element.css('display') == 'block') {
-			$('#box-button-bar button[data-box=' + this.id + ']').addClass('active');
+			$('#button-bar button[data-box=' + this.id + ']').addClass('active');
 		} else {
-			$('#box-button-bar button[data-box=' + this.id + ']').removeClass('active');
+			$('#button-bar button[data-box=' + this.id + ']').removeClass('active');
 		}
 	}
 

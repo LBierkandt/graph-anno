@@ -97,16 +97,16 @@ table {
       color: white;
       background-color: #003090; }
 
-#box-button-bar {
+#button-bar {
   position: absolute;
   left: 0;
   top: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch; }
-  #box-button-bar button.active {
     background: #dddddd;
     color: black; }
+  #button-bar button.active {
 
 #sectioning {
   display: block;

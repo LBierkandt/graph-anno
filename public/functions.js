@@ -513,7 +513,7 @@ function playMedia(data) {
 }
 function setPreferences(preferences) {
 	window.preferences = preferences;
-	$('#box-button-bar').toggle(preferences.box_button_bar);
+	$('#button-bar').toggle(preferences.button_bar);
 }
 function focusCommandLine() {
 	$('#txtcmd').focus().select();
