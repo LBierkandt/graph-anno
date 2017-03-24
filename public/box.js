@@ -10,12 +10,16 @@ var Box = (function () {
 			this.box.toFront(true);
 		});
 		// close button
-		$('.handle').html('<div class="close"></div>')
+		$('.handle').append('<div class="close"></div>')
 		$(document).on('click', '.close', function(){
 			$(this).closest('.box').hide();
 			Box.saveState();
 			$('#txtcmd').focus().select();
 		});
+		// button bar
+		$(document).on('click', 'button[data-box]', function(){
+			Box.instances[$(this).attr('data-box')].toggleAndSave();
+		})
 	});
 
 	Box.instances = {};
@@ -58,12 +62,22 @@ var Box = (function () {
 		for (var i in attributes) {
 			this.$element.css(i, attributes[i]);
 		}
+		this.setButton();
 	}
 
 	Box.prototype.toggleAndSave = function(state) {
 		this.$element.toggle(state);
 		if (this.$element.css('display') == 'block') this.toFront(false);
+		this.setButton();
 		Box.saveState();
+	}
+
+	Box.prototype.setButton = function() {
+		if (this.$element.css('display') == 'block') {
+			$('#button-bar button[data-box=' + this.id + ']').addClass('active');
+		} else {
+			$('#button-bar button[data-box=' + this.id + ']').removeClass('active');
+		}
 	}
 
 	Box.prototype.toFront = function(save) {

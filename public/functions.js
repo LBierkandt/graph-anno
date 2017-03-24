@@ -400,7 +400,7 @@ function sendModal(type) {
 		data: $('#modal-form').serialize()
 	})
 	.done(function(data) {
-		if (data.preferences != undefined) window.preferences = data.preferences;
+		if (data.preferences != undefined) setPreferences(data.preferences);
 		if (!data || data.errors != undefined) $('#modal-warning').html(data.errors).show();
 		else {
 			Autocomplete.setData(data.autocomplete);
@@ -511,6 +511,10 @@ function playMedia(data) {
 	});
 	$video[0].play();
 }
+function setPreferences(preferences) {
+	window.preferences = preferences;
+	$('#button-bar').toggle(preferences.button_bar);
+}
 function focusCommandLine() {
 	$('#txtcmd').focus().select();
 }
@@ -535,7 +539,7 @@ function handleResponse(data) {
 	if (data.sections != undefined) Sectioning.setList(data.sections);
 	if (data.update_sections != undefined) Sectioning.updateList(data.update_sections);
 	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
-	if (data.preferences != undefined) window.preferences = data.preferences;
+	if (data.preferences != undefined) setPreferences(data.preferences);
 	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
 	setMedia(data.media);
 	Autocomplete.setData(data.autocomplete);

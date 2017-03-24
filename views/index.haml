@@ -32,12 +32,20 @@
         #documentation
           %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
 
+    #button-bar
+      %button{data: {box: 'help'}} Help
+      %button{data: {box: 'filter'}} Filter
+      %button{data: {box: 'search'}} Search
+      %button{data: {box: 'log'}} Log
+      %button{data: {box: 'sectioning'}} Nav
+      %button{data: {box: 'media'}} Media
+
     #sectioning.box{ :'min-height' => 45, :'min-width' => 50 }
-      .handle
+      .handle Nav
       .content
 
     #search.box{ :'min-height' => 141, :'min-width' => 310 }
-      .handle
+      .handle Search
       %form{ :action => "/search", :method => "post", :name => "search" }
         .textarea-container
           %textarea{ :cols => "50", :rows => "20", :name => "query", :id => "query" }
@@ -52,7 +60,7 @@
             = controller.search_result.text
 
     #filter.box{ :'min-height' => 131, :'min-width' => 220 }
-      .handle
+      .handle Filter
       %form{ :action => "/filter", :method => "post", :name => "filter" }
         .textarea-container
           %textarea{ :cols => "50", :rows => "4", :name => "filterfield", :id => "filterfield" }
@@ -74,17 +82,17 @@
                 %input{ :id => 'display all', :type => "button", :value => "Display all", :onclick => "sendFilter('display all')", :style => "width:100%", :class => request.cookies['traw_filter_mode'].to_s == 'display all' ? 'selected_filter_mode' : '' }
 
     #log.box{ :'min-height' => 90, :'min-width' => 400 }
-      .handle
+      .handle Log
       .content
         = haml :log_table, :locals => {:log => controller.log}
 
     #media.box{ :'min-height' => 53, :'min-width' => 200 }
-      .handle
+      .handle Media
       .content
         %video{ :src => controller.graph.media ? 'media' : nil, :controls => true }
 
     #help.box{ :'min-height' => 45, :'min-width' => 120 }
-      .handle
+      .handle Help
       .content
         %h3 Key commands
         %ul
