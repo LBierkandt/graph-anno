@@ -22,6 +22,9 @@ window.onload = function() {
 	$(document).on('change', '.pref #autocompletion', function(){
 		disableInputs($(this), 'input.autocompletion');
 	});
+	$(document).on('change', '.pref #autosave', function(){
+		disableInputs($(this), 'input.autosave');
+	});
 
 	// autocomplete
 	Autocomplete.init('#txtcmd');

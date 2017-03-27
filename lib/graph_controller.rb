@@ -279,8 +279,22 @@ class GraphController
 	end
 
 	def save_pref
-		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref, :annotator, :button_bar].each do |property|
+		[
+			:autocompletion,
+			:command,
+			:file,
+			:sect,
+			:anno,
+			:makro,
+			:ref,
+			:annotator,
+			:button_bar,
+			:autosave,
+		].each do |property|
 			@preferences[property] = !!@sinatra.params[property.to_s]
+		end
+		[:autosave_interval].each do |property|
+			@preferences[property] = @sinatra.params[property.to_s].to_i
 		end
 		File.open('conf/preferences.yml', 'w'){|f| f.write(@preferences.to_yaml)}
 		return {
