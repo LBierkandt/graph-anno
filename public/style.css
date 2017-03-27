@@ -79,9 +79,17 @@ table {
     margin-bottom: 0;
     position: relative; }
   #cmddiv #active_file, #cmddiv #current_annotator {
+    position: relative;
     background-color: white;
     padding: 0 0.5em;
     display: inline-block; }
+    #cmddiv #active_file .alert, #cmddiv #current_annotator .alert {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: white;
+      text-align: center;
+      font-weight: bold; }
   #cmddiv #documentation {
     float: right; }
 
