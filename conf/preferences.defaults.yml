@@ -8,3 +8,5 @@
 :ref: false
 :annotator: false
 :button_bar: true
+:autosave: false
+:autosave_interval: 5

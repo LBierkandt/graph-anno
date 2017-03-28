@@ -30,6 +30,21 @@
             %td
               %label{:for => key}
                 = text
+        %tr
+          %th{:colspan => 3} Autosave
+        %tr
+          %td
+            %input#autosave{:name => 'autosave', :type => 'checkbox', :value => true, :checked => preferences[:autosave]}
+          %td{:colspan => 2}
+            %label{:for =>'autosave'}
+              save current corpus file automatically every n minutes
+        %tr
+          %td
+          %td
+            %input#autosave_interval.autosave{:name => 'autosave_interval', :type => 'number', :value => preferences[:autosave_interval], :min => '1', :step => '1', :disabled => !preferences[:autosave]}
+          %td
+            %label{:for =>'autosave_interval'}
+              autosave interval in minutes
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }
