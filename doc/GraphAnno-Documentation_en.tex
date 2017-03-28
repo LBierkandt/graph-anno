@@ -484,7 +484,7 @@ Enter a search query and export commands that refer to the IDs from the search q
 \subsubsection{Log}\label{window-log}
 
 GraphAnno records the change history of an annotation session (or of the whole corpus; you can configure this in the file settings, see \ref{filesettings}).
-The commands recorded include those commands that create or delete nodes or edges, as well as creating and deleting of sentences and sections, but not work space-related commands such as \code{append} or \code{clear} and not annotation by query (cf. Section \ref{window-search} and \ref{query-annotation}).
+The commands recorded include those commands that create or delete nodes or edges, as well as creating and deleting of sentences and sections, but not work space-related commands such as \code{append} or \code{clear}.
 
 You can see this change history in the log window (toggled with F8), where the command executed, the time it was issued and, if you use the multi-annotator feature (see \ref{annotatoren}), the annotator are displayed.
 You can jump to points in history by clicking the corresponding line in the log window.
@@ -1463,7 +1463,7 @@ Because of the other using context you have take account of some changes:
 	\item Instead of the node and edge references in the form of \code{n7}, \code{t8} or \code{e13} you use the IDs defined in your search query (in the form of \code{@s1} or the like).
 	\item There is no annotation layer set. You should use a layer switch in your first annotation command (if needed).
 	\item When using the command \code{n}, it is obligatory to specify a node that determines the sentence the new node will belong to.
-	\item As the IDs can stand for single elements as well as for sets of elements, you have to note some particularities: For the command \code{e} you have to give exactly two IDs; if these are single element IDs, a single edge will be created; if they are one single element IDs and one set ID or two set IDs, an edge will be created for each of the node combinations from the two IDs. For the tokenizing commands \code{tb} and \code{ta} the first or last token of the set, respectively, will be used if you give a set IDs. In all other commands you can give an arbitrary number of set IDs or single element IDs. All given elements then will be treated as \textit{one} set of elements.
+	\item As the IDs can stand for single elements as well as for sets of elements, you have to note some particularities: For the command \code{e} you have to give exactly two IDs; if these are single element IDs, a single edge will be created; if they are one single element IDs and one set ID or two set IDs, an edge will be created for each of the node combinations from the two IDs. For the tokenizing commands \code{tb} and \code{ta} the first or last token of the set, respectively, will be used if you give a set ID. In all other commands you can give an arbitrary number of set IDs or single element IDs. All given elements then will be treated as \textit{one} set of elements.
 	\item When specifying attributes, you can use the elements found in your search. For this purpose, write the value string in double quotes and interpolate a part of the string in Ruby code (in which you can use your IDs) wrapped in braces with a prepended hash sign (as you also do in plain Ruby). As an example, a search/annotation combination that annotates all nodes of category S with their dominated text (terminated with a full stop) could look like this:
 	\begin{lstlisting}[gobble=8]
 		node @s cat:S
