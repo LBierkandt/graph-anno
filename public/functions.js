@@ -22,6 +22,9 @@ window.onload = function() {
 	$(document).on('change', '.pref #autocompletion', function(){
 		disableInputs($(this), 'input.autocompletion');
 	});
+	$(document).on('change', '.pref #autosave', function(){
+		disableInputs($(this), 'input.autosave');
+	});
 
 	// autocomplete
 	Autocomplete.init('#txtcmd');
@@ -312,7 +315,7 @@ function disableInputs($master, selector) {
 	else
 		$(selector).attr('disabled', '');
 }
-function postRequest(path, params, callback) {
+function postRequest(path, params, callback, silent) {
 	$.post(path, params, null, 'json')
 	.done(function(data) {
 		switch (data.modal) {
@@ -325,6 +328,7 @@ function postRequest(path, params, callback) {
 				openModal(data.modal);
 				return;
 		}
+		if (silent) {callback(); return};
 		$('#txtcmd').val(getCookie('traw_cmd'));
 		updateView(data);
 		Log.update();
@@ -514,9 +518,19 @@ function playMedia(data) {
 	});
 	$video[0].play();
 }
-function setPreferences(preferences) {
-	window.preferences = preferences;
+function setPreferences(pref) {
+	window.preferences = pref;
 	$('#button-bar').toggle(preferences.button_bar);
+	if (window.autosaveInterval) clearInterval(autosaveInterval);
+	if (preferences.autosave) {
+		autosaveInterval = setInterval(function(){
+			$alert = $('<span class="alert">saving...</span>');
+			$('#active_file').append($alert);
+			postRequest('/handle_commandline', {txtcmd: 'save'}, function(){
+				$alert.detach();
+			}, true);
+		}, preferences.autosave_interval * 60 * 1000);
+	}
 }
 function focusCommandLine() {
 	$('#txtcmd').focus().select();

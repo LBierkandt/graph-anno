@@ -441,7 +441,7 @@ module GraphSearch
 		end
 	end
 
-	def teilgraph_annotieren(found, command_string)
+	def teilgraph_annotieren(found, command_string, log_step = nil)
 		search_result_preserved = true
 		commands = parse_query(command_string)[:all].select{|c| @@annotation_commands.include?(c[:operator])}
 		found.tg.each do |tg|
@@ -461,15 +461,16 @@ module GraphSearch
 				case command[:operator]
 				when 'a'
 					elements.each do |el|
-						el.annotate(allowed_attributes(raw_attrs, :element => el))
-						el.set_layer(layer) if layer
+						el.annotate(allowed_attributes(raw_attrs, :element => el), log_step)
+						el.set_layer(layer, log_step) if layer
 					end
 				when 'n'
 					if ref_node = nodes.first
 						add_anno_node(
 							:attr => attrs,
 							:layers => layer,
-							:sentence => ref_node.sentence
+							:sentence => ref_node.sentence,
+							:log => log_step
 						)
 					end
 				when 'e'
@@ -482,7 +483,8 @@ module GraphSearch
 							:start => start_node,
 							:end => end_node,
 							:attr => attrs,
-							:layers => layer
+							:layers => layer,
+							:log => log_step
 						)
 					end
 				when 'p', 'g'
@@ -491,7 +493,8 @@ module GraphSearch
 							nodes,
 							:node_attr => attrs,
 							:sentence => command[:words].include?('i') ? nil : nodes.first.sentence,
-							:layers => layer
+							:layers => layer,
+							:log => log_step
 						)
 					end
 				when 'c', 'h'
@@ -500,12 +503,13 @@ module GraphSearch
 							nodes,
 							:node_attr => attrs,
 							:sentence => command[:words].include?('i') ? nil : nodes.first.sentence,
-							:layers => layer
+							:layers => layer,
+							:log => log_step
 						)
 					end
 				when 'd'
 					elements.each do |el|
-						el.delete(:join => true) if el
+						el.delete(:join => true, :log => log_step) if el
 						search_result_preserved = false
 					end
 				when 'ni'
@@ -514,21 +518,22 @@ module GraphSearch
 							e,
 							:attr => attrs,
 							:sentence => command[:words].include?('i') ? nil : e.end.sentence,
-							:layers => layer
+							:layers => layer,
+							:log => log_step
 						)
 						search_result_preserved = false
 					end
 				when 'di', 'do'
 					nodes.each do |n|
-						delete_and_join(n, command[:operator] == 'di' ? :in : :out)
+						delete_and_join(n, command[:operator] == 'di' ? :in : :out, log_step)
 						search_result_preserved = false
 					end
 				when 'tb', 'ti'
-					build_tokens(command[:words][1..-1], :next_token => nodes.of_type('t').first)
+					build_tokens(command[:words][1..-1], :next_token => nodes.of_type('t').first, :log => log_step)
 				when 'ta'
-					build_tokens(command[:words][1..-1], :last_token => nodes.of_type('t').last)
+					build_tokens(command[:words][1..-1], :last_token => nodes.of_type('t').last, :log => log_step)
 				when 'l'
-					elements.each{|el| el.set_layer(layer)} if layer
+					elements.each{|el| el.set_layer(layer, log_step)} if layer
 				end
 			end #command
 		end # tg
