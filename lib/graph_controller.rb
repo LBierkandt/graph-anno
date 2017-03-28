@@ -36,7 +36,11 @@ class GraphController
 		@view = GraphView.new(self)
 		@search_result = SearchResult.new
 		@windows = {}
-		@preferences = File::open('conf/preferences.yml'){|f| YAML::load(f)}
+		@preferences = YAML.load_file('conf/preferences.defaults.yml').merge begin
+			YAML.load_file('conf/preferences.yml')
+		rescue
+			{}
+		end
 	end
 
 	def root
@@ -275,10 +279,10 @@ class GraphController
 	end
 
 	def save_pref
-		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref, :annotator].each do |property|
+		[:autocompletion, :command, :file, :sect, :anno, :makro, :ref, :annotator, :button_bar].each do |property|
 			@preferences[property] = !!@sinatra.params[property.to_s]
 		end
-		File::open('conf/preferences.yml', 'w'){|f| f.write(YAML::dump(@preferences))}
+		File.open('conf/preferences.yml', 'w'){|f| f.write(@preferences.to_yaml)}
 		return {
 			:preferences => @preferences,
 			:autocomplete => autocomplete_data,
