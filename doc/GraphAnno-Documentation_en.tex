@@ -642,10 +642,14 @@ The command \code{file} opens a window, in which you can specify the settings fo
 \subsection{Program preferences}\label{preferences}
 
 For settings that aren’t related to a corpus but to the program, there is the preferences window, opened by the command \code{pref}.
+These preferences are saved in a local file.
+There are the following settings:
 
-In the settings you can enable or disable the window button bar (cf. \ref{windows}) and customize the command line autocomplete feature (cf. \ref{commandline}).
-You may activate the autocomplete feature and then choose which kinds of entities (commands, file names, sentence names, annotations, makros etc.) you want to get suggestions for.
-Note that the autocomplete feature is useless if you don’t choose things that should be suggested.
+\begin{itemize}
+	\item \textit{Menu}: You can enable or disable the window button bar (cf. \ref{windows}) 
+	\item \textit{Autocomplete}: You may activate the autocomplete feature (cf. \ref{commandline}) and then choose which kinds of entities (commands, file names, sentence names, annotations, makros etc.) you want to get suggestions for. Note that the autocomplete feature is useless if you don’t choose things that should be suggested.
+	\item \textit{Autosave}: If you enable this option, your current corpus file is saved at intervals of a length you may specify (in minutes). This option has no effect when your current workspace is not related to a file (you see this from the indication next to the input line).
+\end{itemize}
 
 
 
