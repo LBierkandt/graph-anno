@@ -501,19 +501,8 @@ class GraphController
 		)
 	end
 
-	def extract_attributes(parameters, h = {})
-		allowed_attributes(
-			makros_to_attributes(parameters[:words]).merge(parameters[:attributes]),
-			h
-		)
-	end
-
-	def allowed_attributes(attr, h = {})
-		allowed_attr = @graph.allowed_attributes(attr, h)
-		if (forbidden = attr.select{|k, v| v}.keys - allowed_attr.keys) != []
-			@cmd_error_messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
-		end
-		return allowed_attr
+	def extract_attributes(parameters)
+		attributes = makros_to_attributes(parameters[:words]).merge(parameters[:attributes])
 	end
 
 	def makros_to_attributes(words)
@@ -642,8 +631,8 @@ class GraphController
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
 				anno_elements.each do |e|
-					e.annotate(extract_attributes(parameters, :element => e), log_step)
 					e.set_layer(layer, log_step) if layer
+					e.annotate(extract_attributes(parameters), log_step)
 				end
 			end
 			undefined_references?(parameters[:elements])
@@ -909,6 +898,7 @@ class GraphController
 		else
 			raise "Unknown command \"#{command}\""
 		end
+		@cmd_error_messages += @graph.fetch_messages
 		return {:command => command, :reload_sections => reload_sections}
 	end
 

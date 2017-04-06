@@ -50,6 +50,7 @@ class Graph
 		@anno_makros = {}
 		@file_settings = {}
 		@media = nil
+		@messages = []
 		set_makros
 		GC.start
 	end
@@ -95,7 +96,9 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_anno_node(h)
+		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 'a'))
+		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -108,7 +111,9 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_token_node(h)
+		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 't'))
+		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -167,7 +172,9 @@ class Graph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_anno_edge(h)
+		attributes = h.delete(:attr) unless h[:raw]
 		e = add_edge(h.merge(:type => 'a'))
+		e.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
 		h[:log].add_change(:action => :create, :element => e) if h[:log]
 		return e
 	end
@@ -707,9 +714,19 @@ class Graph
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
 	def allowed_attributes(attr, h = {})
-		@tagset.allowed_attributes(attr, h)
+		allowed_attr = @tagset.allowed_attributes(attr, h)
+		if (forbidden = attr.compact.keys - allowed_attr.keys) != []
+			@messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
+		end
+		return allowed_attr
 	end
 
+	# get the graph's messages and clear them
+	def fetch_messages
+		msg = @messages.uniq
+		@messages = []
+		return msg
+	end
 
 	# set the current annotator by id or name
 	# @param attr [Hash] a hash with the key :id or :name
