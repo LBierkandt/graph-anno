@@ -415,9 +415,10 @@ class GraphController
 			return {:search_result => error_message_html(e.message)}.to_json
 		end
 		@search_result.reset unless search_result_preserved
+		message = @search_result.text + '<br>' + error_message_html(@graph.fetch_messages * "\n")
 		return @view.generate.merge(
 			:sections => set_sections,
-			:search_result => @search_result.text,
+			:search_result => message,
 			:sections_changed => false
 		).to_json
 	end
@@ -510,7 +511,8 @@ class GraphController
 	end
 
 	def error_message_html(message)
-		 '<span class="error_message">' + message.gsub("\n", '<br/>') + '</span>'
+		return '' if message == ''
+		'<span class="error_message">' + message.gsub("\n", '<br>') + '</span>'
 	end
 
 	def sectioning_info(node)

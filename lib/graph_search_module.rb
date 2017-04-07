@@ -530,7 +530,6 @@ module GraphSearch
 				end
 			end #command
 		end # tg
-		@messages = []
 		return search_result_preserved
 	end
 
