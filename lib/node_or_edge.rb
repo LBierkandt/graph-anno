@@ -63,7 +63,7 @@ class NodeOrEdge
 	def annotate(attributes, log_step = nil)
 		attributes ||= {}
 		effective_attr = if @type == 'a' || @type == 't'
-			@graph.allowed_attributes(attributes, :element => self)
+			@graph.allowed_attributes(attributes, self)
 		else
 			attributes
 		end

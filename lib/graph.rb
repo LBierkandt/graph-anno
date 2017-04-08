@@ -713,8 +713,8 @@ class Graph
 	# filter a hash of attributes to be annotated; let only attributes pass that are allowed
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
-	def allowed_attributes(attr, h = {})
-		allowed_attr = @tagset.allowed_attributes(attr, h)
+	def allowed_attributes(attr, element)
+		allowed_attr = @tagset.allowed_attributes(attr, element)
 		if (forbidden = attr.compact.keys - allowed_attr.keys) != []
 			@messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
 		end
