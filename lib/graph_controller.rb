@@ -265,8 +265,8 @@ class GraphController
 
 	def save_tagset
 		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
-		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
-		@graph.tagset = Tagset.new(tagset_hash)
+		tagset_array = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
+		@graph.tagset = Tagset.new(@graph, tagset_array)
 		return {:autocomplete => autocomplete_data}.to_json
 	end
 

@@ -44,7 +44,7 @@ class Graph
 		@multifile = nil
 		@conf = GraphConf.new
 		@info = {}
-		@tagset = Tagset.new
+		@tagset = Tagset.new(self)
 		@annotators = []
 		@current_annotator = nil
 		@anno_makros = {}

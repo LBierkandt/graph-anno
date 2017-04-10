@@ -20,18 +20,19 @@
 class Tagset < Array
 	attr_reader :for_autocomplete
 
-	def initialize(a = [])
-		a.to_a.each do |rule|
-			self << TagsetRule.new(rule['key'], rule['values']) if rule['key'].strip != ''
+	def initialize(graph, a = [])
+		a.to_a.each do |rule_hash|
+			self << TagsetRule.new(rule_hash, graph)
 		end
 		@for_autocomplete = to_autocomplete
 	end
 
 	def allowed_attributes(attr, element)
 		return attr.clone if self.empty?
+		applicable_rules = self.select{|rule| element.fulfil?(rule.parsed_context)}
 		attr.select do |key, value|
 			value.nil? or
-				self.any?{|rule| rule.key == key and rule.allowes?(value)} or
+				applicable_rules.any?{|rule| rule.allowes?(key, value)} or
 				(element.is_a?(Node) && element.type == 't' && key == 'token')
 		end
 	end
@@ -52,15 +53,17 @@ class Tagset < Array
 end
 
 class TagsetRule
-	attr_accessor :key, :values
+	attr_accessor :key, :values, :context, :parsed_context
 
-	def initialize(key, values)
-		@key = key.strip
-		@values = values.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+	def initialize(h, graph)
+		@key = h['key'].strip
+		@values = h['values'].lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+		@context = h['context'].to_s
+		@parsed_context = graph.parse_attributes(@context)[:op]
 	end
 
 	def to_h
-		{:key => @key, :values => values_string}
+		{:key => @key, :values => values_string, :context => @context}
 	end
 
 	def to_autocomplete
@@ -86,8 +89,10 @@ class TagsetRule
 		end * ' '
 	end
 
-	def allowes?(value)
-		return true if value.nil? || @values == []
+	def allowes?(key, value)
+		return true if @key.empty?
+		return false unless @key == key
+		return true if @values == []
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
