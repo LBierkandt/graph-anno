@@ -1,5 +1,7 @@
 %tr{:no => i}
   %td
+    %input{:name => "contexts[#{i}]", :type => 'text', :value => defined?(context) ? context : ''}
+  %td
     %input{:name => "keys[#{i}]", :type => 'text', :value => defined?(key) ? key : ''}
   %td
     %textarea{:name => "values[#{i}]"}

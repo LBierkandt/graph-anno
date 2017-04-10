@@ -4,20 +4,18 @@
     %table
       %tbody
         %tr
-          %th{ :colspan => 2 } Tagset
+          %th{ :colspan => 3 } Tagset
         %tr
+          %th Context
           %th Key
           %th Value
-        - if graph.tagset.empty?
-          = haml :tagset_form_row, :locals => {:i => 0}
-        - else
-          - graph.tagset.each_with_index do |rule, i|
-            = haml :tagset_form_row, :locals => {:i => i, :key => rule.key, :value => rule.values_string}
+        - graph.tagset.each_with_index do |rule, i|
+          = haml :tagset_form_row, :locals => {:i => i, :key => rule.key, :value => rule.values_string, :context => rule.context}
       %tbody
         %tr
-          %td{:colspan => 2}
+          %td{:colspan => 3}
             %button{:onclick => 'newFormSegment("tagset_form_row", ".tagset"); return false;'}
-              Add new key-values pair
+              Add new tagset rule
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }
