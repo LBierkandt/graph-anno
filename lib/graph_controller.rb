@@ -964,16 +964,16 @@ class GraphController
 
 	def autocomplete_data
 		commands = {
-			:a => :aanno,
-			:n => :anno,
-			:e => :anno,
-			:p => :anno,
-			:g => :anno,
-			:c => :anno,
-			:h => :anno,
-			:ni => :anno,
-			:di => :anno,
-			:do => :anno,
+			:a => :anno,
+			:n => :nodes_anno,
+			:e => :nodes_anno,
+			:p => :nodes_anno,
+			:g => :nodes_anno,
+			:c => :nodes_anno,
+			:h => :nodes_anno,
+			:ni => :edges_anno,
+			:di => :nodes,
+			:do => :nodes,
 			:d => :ref,
 			:t => nil,
 			:tb => nil,
@@ -1014,15 +1014,19 @@ class GraphController
 		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
 		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
 		tokens = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} : []
-		refs   = @preferences[:ref] ? tokens + @view.nodes.map.with_index{|n, i| "n#{i}"} + @view.edges.map.with_index{|e, i| "e#{i}"} : []
+		nodes  = @preferences[:ref] ? @view.nodes.map.with_index{|n, i| "n#{i}"} : []
+		edges  = @preferences[:ref] ? @view.edges.map.with_index{|e, i| "e#{i}"} : []
+		refs   = @preferences[:ref] ? tokens + nodes + edges : []
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
 		arefs  = @preferences[:ref] ? refs + srefs : []
 		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
 		antors = @graph.annotators.map(&:name)
 		cmnds  = @preferences[:command] ? commands.keys : []
 		{
-			:anno => tagset + makros + layers + refs,
-			:aanno => tagset + makros + layers + arefs,
+			:anno => tagset + makros + layers + arefs,
+			:nodes_anno => tagset + makros + layers + nodes + tokens,
+			:edges_anno => tagset + makros + layers + edges,
+			:nodes => nodes,
 			:tokens => tokens,
 			:ref => refs,
 			:layer => layers + refs,
