@@ -21,9 +21,15 @@ class Tagset < Array
 	attr_reader :for_autocomplete
 
 	def initialize(graph, a = [])
+		errors = []
 		a.to_a.each do |rule_hash|
-			self << TagsetRule.new(rule_hash, graph)
+			begin
+				self << TagsetRule.new(rule_hash, graph)
+			rescue RuntimeError => e
+				errors << e.message
+			end
 		end
+		raise errors.join("\n") unless errors.empty?
 		@for_autocomplete = to_autocomplete
 	end
 
@@ -56,10 +62,20 @@ class TagsetRule
 	attr_accessor :key, :values, :context, :parsed_context
 
 	def initialize(h, graph)
-		@key = h['key'].strip
-		@values = h['values'].lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+		errors = []
 		@context = h['context'].to_s
-		@parsed_context = graph.parse_attributes(@context)[:op]
+		begin
+			@parsed_context = graph.parse_attributes(@context)[:op]
+		rescue RuntimeError
+			errors << "Invalid context: \"#{@context}\""
+		end
+		@key = h['key'].strip
+		begin
+			@values = h['values'].lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+		rescue RuntimeError
+			errors << "Invalid values: \"#{h['values']}\""
+		end
+		raise errors.join("\n") unless errors.empty?
 	end
 
 	def to_h

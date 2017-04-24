@@ -268,7 +268,12 @@ class GraphController
 		tagset_array = params['contexts'].values.zip(params['keys'].values, params['values'].values).map do |a|
 			{'context' => a[0], 'key' => a[1], 'values' => a[2]}
 		end
-		@graph.tagset = Tagset.new(@graph, tagset_array)
+		begin
+			new_tagset = Tagset.new(@graph, tagset_array)
+		rescue RuntimeError => e
+			return {:errors => e.message.gsub("\n", '<br>')}.to_json
+		end
+		@graph.tagset = new_tagset
 		return {:autocomplete => autocomplete_data}.to_json
 	end
 
