@@ -269,9 +269,9 @@ class GraphController
 			{'context' => a[0], 'key' => a[1], 'values' => a[2]}
 		end
 		begin
-			new_tagset = Tagset.new(@graph, tagset_array)
+			new_tagset = Tagset.new(@graph, tagset_array, :error_format => :json)
 		rescue RuntimeError => e
-			return {:errors => e.message.gsub("\n", '<br>')}.to_json
+			return {:errors => e.message}.to_json
 		end
 		@graph.tagset = new_tagset
 		return {:autocomplete => autocomplete_data}.to_json

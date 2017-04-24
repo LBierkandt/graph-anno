@@ -367,10 +367,10 @@ function openModal(type) {
 	}
 }
 function newFormSegment(partial, selector) {
-	var i = parseInt($(selector + ' tbody:first-child tr:last-child').attr('no')) + 1;
+	var i = parseInt($(selector + ' [no]').last().attr('no')) + 1;
 	$.get('/new_form_segment/' + i, {partial: partial})
 	.done(function(data) {
-		$(selector + ' tbody:first-child tr:last-child').after(data);
+		$(selector + ' [no]').last().after(data);
 	});
 }
 function removeElement(selector, element) {
@@ -405,7 +405,15 @@ function sendModal(type) {
 	})
 	.done(function(data) {
 		if (data.preferences != undefined) setPreferences(data.preferences);
-		if (!data || data.errors != undefined) $('#modal-warning').html(data.errors).show();
+		if (!data || data.errors != undefined) {
+			if (type == 'tagset') {
+				var errors = JSON.parse(data.errors);
+				$('tr.error_message td').html('');
+				for (var i in errors) $('[no=' + i + '] td.error_message').html(errors[i]);
+			} else {
+				$('#modal-warning').html(data.errors).show();
+			}
+		}
 		else {
 			Autocomplete.setData(data.autocomplete);
 			closeModal();

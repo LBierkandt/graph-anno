@@ -322,7 +322,13 @@ table {
 .metadata td, .tagset td, .makros td, .speakers td, .annotators td {
   vertical-align: top; }
   .metadata td:first-child, .tagset td:first-child, .makros td:first-child, .speakers td:first-child, .annotators td:first-child {
-    width: 8em; }
+    width: 8em;
+    min-width: 8em; }
+  .metadata td.key, .tagset td.key, .makros td.key, .speakers td.key, .annotators td.key {
+    width: 6em;
+    min-width: 6em; }
+  .metadata td.context, .tagset td.context, .makros td.context, .speakers td.context, .annotators td.context {
+    width: 25%; }
   .metadata td.expand, .tagset td.expand, .makros td.expand, .speakers td.expand, .annotators td.expand {
     width: 100%; }
   .metadata td textarea, .tagset td textarea, .makros td textarea, .speakers td textarea, .annotators td textarea {

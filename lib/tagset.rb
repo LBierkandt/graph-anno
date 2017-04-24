@@ -20,16 +20,19 @@
 class Tagset < Array
 	attr_reader :for_autocomplete
 
-	def initialize(graph, a = [])
-		errors = []
-		a.to_a.each do |rule_hash|
+	def initialize(graph, a = [], h = {})
+		errors = {}
+		a.to_a.each_with_index do |rule_hash, i|
 			begin
 				self << TagsetRule.new(rule_hash, graph)
 			rescue RuntimeError => e
-				errors << e.message
+				errors[i] = e.message
 			end
 		end
-		raise errors.join("\n") unless errors.empty?
+		unless errors.empty?
+			raise errors.to_json if h[:error_format] == :json
+			raise errors.values.join("\n")
+		end
 		@for_autocomplete = to_autocomplete
 	end
 
@@ -75,7 +78,7 @@ class TagsetRule
 		rescue RuntimeError
 			errors << "Invalid values: \"#{h['values']}\""
 		end
-		raise errors.join("\n") unless errors.empty?
+		raise errors.join(';') unless errors.empty?
 	end
 
 	def to_h
