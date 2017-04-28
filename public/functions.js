@@ -197,7 +197,7 @@ function updateView(data) {
 	try {
 		var svgElement = new DOMParser().parseFromString(Viz(data.dot, 'svg'), 'image/svg+xml');
 	} catch(e) {
-		alert('An error occurred while generating the graph. Try reloading your browser window; if that doesn’t help, try the edge label compatibility mode (see config window)');
+		alert('An error occurred while generating the graph. Try reloading your browser window or restarting your browser; if that doesn’t help, try the edge label compatibility mode (see config window)');
 		return;
 	}
 	// get new dimensions
