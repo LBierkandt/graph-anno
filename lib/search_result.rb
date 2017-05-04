@@ -48,7 +48,7 @@ class SearchResult
 
 	def sections
 		(@nodes.values + @edges.values.map{|e| e.end})
-			.uniq.compact.map(&:sentence)
+			.uniq.compact.map(&:sentence).compact
 			.map{|s| [s] + s.ancestor_sections}.flatten.uniq
 	end
 end

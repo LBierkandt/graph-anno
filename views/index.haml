@@ -44,6 +44,11 @@
       .handle Nav
       .content
 
+    #independent.box{ :'min-height' => 45, :'min-width' => 50 }
+      .handle
+      .content
+        = haml :i_nodes, :locals => {:controller => controller}
+
     #search.box{ :'min-height' => 141, :'min-width' => 310 }
       .handle Search
       %form{ :action => "/search", :method => "post", :name => "search" }

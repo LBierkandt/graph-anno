@@ -1,0 +1,8 @@
+%ul
+	- controller.view.i_nodes.each_with_index do |n, i|
+		- color = controller.graph.conf.default_color
+		- if l = n.layer_or_combination
+			- color = l.color
+		%li{:style => "color: #{color};"}
+			%span.ref= "i#{i}"
+			= ([n.cat] + n.attr.output.except('cat').map{|k, v| "#{k}: #{v}"}).compact.join(', ')
