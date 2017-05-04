@@ -165,14 +165,14 @@ The former section is probably helpful for every user in order to grasp the conc
 
 \subsection{Graph model}\label{graph-model}
 
-As already said, GraphAnno represents all data in a graph, consisting of differend types of nodes and edges.
+As already said, GraphAnno represents all data in a graph, consisting of different types of nodes and edges.
 The most important types – those that are also displayed as a graph to the user – are \textit{token nodes}, \textit{annotation nodes} and \textit{annotation edges}.
 These elements are directly created by the user and represent the linguistic data and annotation.
 They may be annoted with \textit{attributes} (see below).
 
 The data in GraphAnno is partitioned into \textit{sentences} (without any theoretical implication, i.e., just user-defined chunks of language data), which may be, in turn, recursively grouped into sections.
 Sentences are represented by \textit{sentence nodes}.
-These are connected to their token nodes and annotation nodes via \textit{sentence edges}.
+These are connected to their token nodes and annotation nodes via \textit{sentence edges} (there are, however, also sentence-independent nodes).
 Sections are represented by \textit{section nodes} and connected to the sections or sentences they contain via \textit{section edges}.
 As sentences and sections are subject to certain constraints – e.g., they must be arranged hierarchically –  they are created via special commands, that also take care of creating the required edges.
 Sentence and section nodes may also be annotated with attributes.
@@ -492,6 +492,14 @@ But beware! the change history is linear, i.e., if you issue an annotation comma
 
 You can also navigate the history using the \code{undo} and \code{redo} commands – see Section \ref{befehl-undo}.
 
+\subsubsection{Independent nodes}\label{window-independent}
+
+Sentence-independent nodes are only displayed in the graph view if directly connected to a sentence-bound node (otherwise, the view could become crowded very quickly).
+For viewing the existing independent nodes and their element references (needed for referencing them in annotation commands) you have the independent nodes window, that is toggled with the F10 key.
+This window shows a list of all sentence-independent nodes with their element reference (composed of the letter \code{i} and a number) and their annotations.
+
+Neither the independent nodes window nor the regular sentence view shows connections between independent nodes; in order to see these you may have a look at the independent nodes graph view (command \code{s i}, cf. also \ref{befehl-s}).
+
 \subsubsection{Media}\label{window-media}
 
 For corpora with an associated media file, the media window offers an audio/video player.
@@ -533,6 +541,7 @@ The following is a table of the available shortcuts:
 			F7 & show/hide search window\\
 			F8 & show/hide change log window\\
 			F9 & show/hide navigation window\\
+			F10 & show/hide independent nodes window\\
 			Ctrl + F10 & show/hide media window\\
 		\bottomrule
 	\end{tabular*}
@@ -556,7 +565,7 @@ This leads to a poorer graph layout (more collisions) but avoids graph rendering
 
 In the section \textit{layers}, you can configure the layers of the graph.
 The \textit{name} is an arbitrary label for the layer, that will be shown in the dropdown field for the layer selection.
-The \textit{shortcut} is an identifier that is used for representing the layers of elements internally (cf. Section \ref{serialization-format}), for setting the layers of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and for matching elements of specific layers in searches; this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n}, \code{e} or \code{s} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
+The \textit{shortcut} is an identifier that is used for representing the layers of elements internally (cf. Section \ref{serialization-format}), for setting the layers of elements (cf. Section \ref{befehl-n} or \ref{befehl-l}) and for matching elements of specific layers in searches; this shortcut may only consist of alphanumeric characters and underscores and must not have the same structure as element references (i.e., \code{t}, \code{n}, \code{i}, \code{e} or \code{s} followed by a number, or  \code{m}; cf. Section \ref{befehl-a}).
 \textit{Color} means the color that is used for displaying the elements of the layer; \textit{edge weight} is the weight of the layer’s edges.
 The higher this value (integer values), the shorter the rendering algorithm will try to make the edges.
 When you create two layers, one with a high edge weight and one with a low edge weight, the graph will be rendered such that the graph of the first layer is as compact as possible; the elements of the second layer will be placed in a way that they distort the first layer only to a low degree.
@@ -706,6 +715,10 @@ Next to the input line no file will be indicated anymore.
 \subsubsection{Go to sentence/section: \texttt{s}}\label{befehl-s}
 
 In order to navigate to a sentence or section (or multiple of them), you may use (alternatively to \hyperref[shortcuts]{keyboard shortcuts} or the \hyperref[window-navigation]{navigation window}) the command \code{s}, followed by the name(s) of the sentence(s) or section(s) you want to change to.
+
+There is one special use of this command: when typing \code{i} instead of a sentence name, you are directed to the graph view of sentence-independent nodes.
+This view shows all sentence-independent nodes of your corpus, together with the edges existing between them.
+In order to go back to the regular sentence view, just use the navigation key commands (cf. \ref{shortcuts}), the navigation window (cf. \ref{window-navigation}) or the command \code{s} with a sentence name.
 
 
 \subsubsection{Play associated media: \texttt{play}}\label{befehl-play}
@@ -860,6 +873,7 @@ If you want to create a node without layer affiliation, you have to set the curr
 
 Per default, the new node will belong to the first of the current sentences.
 You may, however, provide in your command a node to whose sentence the new node should belong instead.
+If you want to create a sentence-independent node, use the keyword \code{i} in your command.
 
 \paragraph*{Command \code{n} in modified BNF:}
 ~
@@ -868,10 +882,11 @@ command_n            =   "n " n_parameters
 n_parameters         =   n_parameters " " n_parameters
                          attributes
                          node_reference
+                         layer_shortcut
+                         "i"
 attributes           =   attributes " " attributes
                          attribute
                          annotation_shortcut
-                         layer_shortcut
 attribute            =   key string
 key                  =   string ":"
 string               =   character_not_special+
@@ -881,8 +896,10 @@ annotation_shortcut  =   alnum+
 layer_shortcut       =   alnum+
 node_reference       =   anno_node_reference
                          token_node_reference
-anno_node_reference  =   "n" number
 token_node_reference =   "t" number
+anno_node_reference  =   dependent_node_ref | independent_node_ref
+dependent_node_ref   =   "n" number
+independent_node_ref =   "i" number
 \end{lstlisting}
 
 
@@ -898,6 +915,7 @@ command_e       =   "e " e_parameters
 e_parameters    =   e_parameters " " e_parameters
                     node_reference
                     attributes
+                    layer_shortcut
 \end{lstlisting}
 
 
@@ -905,7 +923,7 @@ e_parameters    =   e_parameters " " e_parameters
 
 The command for annotation elements is \code{a}, followed by the elements to be annotated and the attributes with which they are to be annotated (all given elements will be annotated with all given attributes; also layer shortcuts can be used).
 The order of the elements and attributes is free.
-You can also annotate sequences of elements of the same type (i.e., \code{n}, \code{e} or \code{t}) by entering the first and the last element joined by two dots.
+You can also annotate sequences of elements of the same type (i.e., \code{n}, \code{i}, \code{t} or \code{e}) by entering the first and the last element joined by two dots.
 E.g., when you enter \code{t3..t7}, all tokens from \code{t3} to \code{t7} will be annotated (you may enter the sequence also in the inverse order, i.e., \code{t7..t3}).
 
 At the same time you can use the command \code{a} for deleting attributes.
@@ -922,6 +940,7 @@ a_parameters           =   a_parameters " " a_parameters
                            element_reference
                            section_node_reference
                            attributes
+                           layer_shortcut
                            key
 element_reference      =   node_reference
                            edge_reference
@@ -976,7 +995,7 @@ d_parameters    =   d_parameters " " d_parameters
 The grouping command \code{g} or \code{p} creates a new parent node for the given nodes.
 I.e., the command creates a new node and edges that connect the new nodes to the nodes to be grouped.
 The parameters of this command are the nodes to be grouped and the attributes the newly created node is to bear.
-The newly created node will belong to the sentence of the node given first in your command; apart from that, the order of nodes and attributes is irrelevant.
+The newly created node will belong to the sentence of the node given first in your command (or will be independent if you use \code{i} in your command); apart from that, the order of nodes and attributes is irrelevant.
 Like with the command \code{n}, a layer can be specified.
 
 \paragraph*{Command \code{g}/\code{p} in modified BNF:}
@@ -987,6 +1006,8 @@ g_parameters        =   g_parameters " " g_parameters
                         node_reference
                         node_sequence
                         attributes
+                        layer_shortcut
+                        "i"
 \end{lstlisting}
 
 
@@ -1003,6 +1024,7 @@ h_parameters        =   h_parameters " " h_parameters
                         node_sequence
                         attributes
                         layer_shortcut
+                        "i"
 \end{lstlisting}
 
 
@@ -1012,7 +1034,8 @@ The command \code{ni} (\textit{node insert}) allows you to insert a new node int
 As parameters you specify the edge and the attributes for the new node.
 A new node will be created, and the given edge will be replaced by two edges with the same annotations, that connect the start node of the original edge with the new node and the new node with the end node of the original edge.
 
-If you specify more than one edge, a new node will be inserted into each of them
+If you specify more than one edge, a new node will be inserted into each of them.
+The new node will belong to the sentence of the edge’s end node (or none of you add the keyword \code{i}).
 
 \paragraph*{Command \code{ni} in modified BNF:}
 ~
@@ -1021,10 +1044,12 @@ command_ni          =   "ni " ni_parameters
 ni_parameters       =   ni_parameters " " ni_parameters
                         edge_reference
                         attributes
+                        layer_shortcut
+                        "i"
 \end{lstlisting}
 
 
-\subsubsection{Delete node but preserve connections: \texttt{di} und \texttt{do}}
+\subsubsection{Delete node but preserve connections: \texttt{di} and \texttt{do}}
 
 If you want to delete a node but preserve the connections between parent node(s) and child node(s) of the deleted node, you can use the commands \code{di} or \code{do}.
 These commands delete the specified node and connect each child node to each mother node (this makes sense particularly in a tree-like structure where there is one parent node and many child nodes).
@@ -1035,6 +1060,19 @@ These commands delete the specified node and connect each child node to each mot
 \begin{lstlisting}
 command_di_do       =   "di " anno_node_reference+
                         "do " anno_node_reference+
+\end{lstlisting}
+
+
+\subsection{Attach to/detach from sentence: \texttt{sa} and \texttt{sd}}
+
+The command \code{sa}, followed by one or more independent node references, attaches these nodes to the current sentence (or the first of the current sentences).
+The command \code{sd}, in turn, detaches the given nodes from their sentence and makes them independent nodes.
+
+\paragraph*{Commands \code{sa} and \code{sd} in modified BNF:}
+~
+\begin{lstlisting}
+command_sa          =   "sa " independent_node_ref+
+command_sd          =   "sd " dependent_node_ref+
 \end{lstlisting}
 
 
