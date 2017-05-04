@@ -143,6 +143,9 @@ function taste(e) {
 			120: function(){
 				Box.instances.sectioning.toggleAndSave();
 			},
+			121: function(){
+				Box.instances.independent.toggleAndSave();
+			},
 		};
 		if (e.which in mapping) {
 			e.preventDefault();
@@ -194,7 +197,7 @@ function updateView(data) {
 	try {
 		var svgElement = new DOMParser().parseFromString(Viz(data.dot, 'svg'), 'image/svg+xml');
 	} catch(e) {
-		alert('An error occurred while generating the graph. Try reloading your browser window; if that doesn’t help, try the edge label compatibility mode (see config window)');
+		alert('An error occurred while generating the graph. Try reloading your browser window or restarting your browser; if that doesn’t help, try the edge label compatibility mode (see config window)');
 		return;
 	}
 	// get new dimensions
@@ -558,6 +561,7 @@ function handleResponse(data) {
 	if (data.current_annotator != undefined) $('#current_annotator').html('annotator: ' + data.current_annotator);
 	if (data.textline != undefined) $('#textline').html(data.textline);
 	if (data.meta != undefined) $('#meta').html(data.meta);
+	if (data.i_nodes != undefined) $('#independent .content').html(data.i_nodes);
 	if (data.sections != undefined) Sectioning.setList(data.sections);
 	if (data.update_sections != undefined) Sectioning.updateList(data.update_sections);
 	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);

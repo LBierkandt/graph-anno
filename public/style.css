@@ -1,3 +1,4 @@
+@charset "UTF-8";
 * {
   font-family: sans-serif; }
 
@@ -124,7 +125,7 @@ table {
 #sectioning {
   display: block;
   width: 20%;
-  height: 40%; }
+  height: 50%; }
   #sectioning .content ul {
     position: absolute;
     padding-left: 0; }
@@ -173,6 +174,22 @@ table {
     width: 60%; }
   #log .user, #log .time {
     width: 20%; }
+
+#independent {
+  width: 20%;
+  height: 50%; }
+  #independent ul {
+    padding-left: 0; }
+  #independent li {
+    margin: 2px;
+    padding: 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    background-color: #eeeeee; }
+    #independent li .ref {
+      font-weight: bold; }
+      #independent li .ref:after {
+        content: " –"; }
 
 #filter {
   width: 30%;

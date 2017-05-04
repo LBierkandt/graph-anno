@@ -132,11 +132,11 @@ class String
 			elsif m = str.match(r[:rstring])
 				h[:words] << m[0]
 			elsif m = str.match(r[:bsequence])
-				if mm = str.match(/^([ent])(\d+)\.\.\1(\d+)/)
+				if mm = str.match(/^([enti])(\d+)\.\.\1(\d+)/)
 					([mm[2].to_i, mm[3].to_i].min..[mm[2].to_i, mm[3].to_i].max).each do |n|
 						h[:elements] << mm[1] + n.to_s
 						case str[0]
-						when 'n'
+						when 'n', 'i'
 							h[:nodes] << mm[1] + n.to_s
 							h[:all_nodes] << mm[1] + n.to_s
 						when 't'
@@ -163,12 +163,12 @@ class String
 			elsif m = str.match(r[:bstring])
 				word = m[0]
 				h[:words] << word
-				if word.match(/^(([ents]\d+)|m)$/)
+				if word.match(/^(([entis]\d+)|m)$/)
 					h[:elements] << word
 					case word[0]
 					when 'm', 's'
 						h[:sections] << word
-					when 'n'
+					when 'n', 'i'
 						h[:nodes] << word
 						h[:all_nodes] << word
 					when 't'

@@ -24,7 +24,7 @@ require_relative 'search_result.rb'
 
 class GraphController
 	attr_writer :sinatra
-	attr_reader :graph, :log, :search_result, :current_sections
+	attr_reader :graph, :log, :search_result, :current_sections, :view
 
 	def initialize
 		@graph = Graph.new
@@ -502,6 +502,7 @@ class GraphController
 		@view.generate.merge(
 			:autocomplete => autocomplete_data,
 			:preferences => @preferences,
+			:i_nodes => @sinatra.haml(:i_nodes, :locals => {:controller => self}),
 			:current_sections => @current_sections ? current_section_ids : nil,
 			:sections_changed => (@current_sections && @sinatra.params[:sections] && @sinatra.params[:sections] == current_section_ids) ? false : true
 		).merge(
@@ -548,10 +549,11 @@ class GraphController
 		i = identifier.scan(/\d/).join.to_i
 		{
 			'm' => @current_sections,
-			's' => @graph.sections_hierarchy(@current_sections)[i],
-			'n' => @view.nodes[i],
+			's' => @current_sections ? @graph.sections_hierarchy(@current_sections)[i] : nil,
+			'n' => @view.dependent_nodes[i],
 			'e' => @view.edges[i],
 			't' => @view.tokens[i],
+			'i' => @view.i_nodes[i],
 		}[identifier[0]]
 	end
 
@@ -600,10 +602,11 @@ class GraphController
 
 		case command
 		when 'n' # new node
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
-			sentence = if ref_node_reference = parameters[:all_nodes][0]
+			sentence = if !@current_sections || parameters[:words].include?('i')
+				nil
+			elsif ref_node_reference = parameters[:all_nodes][0]
 				element_by_identifier(ref_node_reference).sentence
 			else
 				@current_sections.first.sentence_nodes.first
@@ -616,7 +619,6 @@ class GraphController
 			)
 
 		when 'e' # new edge
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			@graph.add_anno_edge(
@@ -629,7 +631,6 @@ class GraphController
 			undefined_references?(parameters[:all_nodes][0..1])
 
 		when 'a' # annotate elements
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words])
 			elements = extract_elements(parameters[:elements])
@@ -647,7 +648,6 @@ class GraphController
 			undefined_references?(parameters[:elements])
 
 		when 'd' # delete elements
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |element|
 				element.delete(:log => log_step, :join => true)
@@ -664,46 +664,62 @@ class GraphController
 			undefined_references?(parameters[:elements])
 
 		when 'p', 'g' # group under new parent node
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
+			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_parent_node(
-				extract_elements(parameters[:all_nodes]),
-				extract_attributes(parameters),
-				{},
-				layer,
-				log_step
+				nodes,
+				:node_attr => extract_attributes(parameters),
+				:layers => layer,
+				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
+				:log => log_step
 			)
 			undefined_references?(parameters[:all_nodes])
 
 		when 'c', 'h' # attach new child node
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
+			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_child_node(
-				extract_elements(parameters[:all_nodes]),
-				extract_attributes(parameters),
-				{},
-				layer,
-				log_step
+				nodes,
+				:node_attr => extract_attributes(parameters),
+				:layers => layer,
+				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
+				:log => log_step
 			)
 			undefined_references?(parameters[:all_nodes])
 
 		when 'ni' # build node and "insert in edge"
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			extract_elements(parameters[:edges]).each do |edge|
-				@graph.insert_node(edge, extract_attributes(parameters), layer, log_step)
+				@graph.insert_node(
+					edge,
+					:attr => extract_attributes(parameters),
+					:layers => layer,
+					:sentence => parameters[:words].include?('i') ? nil : edge.end.sentence,
+					:log => log_step
+				)
 			end
 			undefined_references?(parameters[:edges])
 
 		when 'di', 'do' # remove node and connect parent/child nodes
-			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			layer = set_new_layer(parameters[:words]) || layer
 			extract_elements(parameters[:nodes]).each do |node|
 				@graph.delete_and_join(node, command == 'di' ? :in : :out, log_step)
+			end
+			undefined_references?(parameters[:nodes])
+
+		when 'sa', 'sd' # attach/detach nodes to from sentence
+			sentence_set?
+			log_step = @log.add_step(:command => @command_line)
+			extract_elements(parameters[:nodes]).each do |node|
+				if command == 'sa'
+					@graph.add_sect_edge(:start => @current_sections.first.sentence_nodes.first, :end => node) if !node.sentence
+				else
+					node.in.of_type('s').each{|e| e.delete(:log => log_step)}
+				end
 			end
 			undefined_references?(parameters[:nodes])
 
@@ -745,7 +761,11 @@ class GraphController
 			reload_sections = true
 
 		when 's' # change sentence
-			@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
+			if parameters[:words].first == 'i'
+				@current_sections = nil
+			else
+				@current_sections = chosen_sections(parameters[:words], parameters[:name_sequences], false)
+			end
 
 		when 'user', 'annotator'
 			@log.user = @graph.set_annotator(:name => parameters[:string])
@@ -913,7 +933,7 @@ class GraphController
 
 	def sentence_set?
 		return true if @current_sections
-		raise 'Create a sentence first!'
+		raise 'This command may only be issued inside a sentence!'
 	end
 
 	def reset_current_sections
@@ -1019,7 +1039,12 @@ class GraphController
 		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
 		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
 		tokens = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} : []
-		nodes  = @preferences[:ref] ? @view.nodes.map.with_index{|n, i| "n#{i}"} : []
+		nodes  = if @preferences[:ref]
+				@view.dependent_nodes.map.with_index{|n, i| "n#{i}"} +
+				@view.i_nodes.map.with_index{|n, i| "i#{i}"}
+			else
+				[]
+			end
 		edges  = @preferences[:ref] ? @view.edges.map.with_index{|e, i| "e#{i}"} : []
 		refs   = @preferences[:ref] ? tokens + nodes + edges : []
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []

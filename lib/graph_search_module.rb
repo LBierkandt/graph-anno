@@ -490,20 +490,20 @@ module GraphSearch
 					unless nodes.empty?
 						add_parent_node(
 							nodes,
-							attrs,
-							{},
-							layer,
-							log_step
+							:node_attr => attrs,
+							:sentence => command[:words].include?('i') ? nil : nodes.first.sentence,
+							:layers => layer,
+							:log => log_step
 						)
 					end
 				when 'c', 'h'
 					unless nodes.empty?
 						add_child_node(
 							nodes,
-							attrs,
-							{},
-							layer,
-							log_step
+							:node_attr => attrs,
+							:sentence => command[:words].include?('i') ? nil : nodes.first.sentence,
+							:layers => layer,
+							:log => log_step
 						)
 					end
 				when 'd'
@@ -513,7 +513,13 @@ module GraphSearch
 					end
 				when 'ni'
 					elements.select{|e| e.is_a?(Edge)}.each do |e|
-						insert_node(e, attrs, layer, log_step)
+						insert_node(
+							e,
+							:attr => attrs,
+							:sentence => command[:words].include?('i') ? nil : e.end.sentence,
+							:layers => layer,
+							:log => log_step
+						)
 						search_result_preserved = false
 					end
 				when 'di', 'do'

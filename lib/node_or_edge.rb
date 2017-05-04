@@ -155,6 +155,12 @@ class NodeOrEdge
 			else
 				return false
 			end
+		when 'i'
+			if self.is_a?(Node)
+				return !sentence
+			else
+				return true
+			end
 		when 'start'
 			if self.is_a?(Edge) && !@start.fulfil?(bedingung[:cond])
 				return false
