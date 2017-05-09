@@ -999,6 +999,8 @@ class GraphController
 			:ni => :edges_anno,
 			:di => :nodes,
 			:do => :nodes,
+			:sa => :inodes,
+			:sd => :nnodes,
 			:d => :ref,
 			:t => nil,
 			:tb => nil,
@@ -1039,12 +1041,9 @@ class GraphController
 		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
 		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
 		tokens = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} : []
-		nodes  = if @preferences[:ref]
-				@view.dependent_nodes.map.with_index{|n, i| "n#{i}"} +
-				@view.i_nodes.map.with_index{|n, i| "i#{i}"}
-			else
-				[]
-			end
+		nnodes = @preferences[:ref] ? @view.dependent_nodes.map.with_index{|n, i| "n#{i}"} : []
+		inodes = @preferences[:ref] ? @view.i_nodes.map.with_index{|n, i| "i#{i}"} : []
+		nodes  = nnodes + inodes
 		edges  = @preferences[:ref] ? @view.edges.map.with_index{|e, i| "e#{i}"} : []
 		refs   = @preferences[:ref] ? tokens + nodes + edges : []
 		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
@@ -1057,6 +1056,8 @@ class GraphController
 			:nodes_anno => tagset + makros + layers + nodes + tokens,
 			:edges_anno => tagset + makros + layers + edges,
 			:nodes => nodes,
+			:nnodes => nnodes,
+			:inodes => inodes,
 			:tokens => tokens,
 			:ref => refs,
 			:layer => layers + refs,
