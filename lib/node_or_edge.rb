@@ -173,6 +173,10 @@ class NodeOrEdge
 			else
 				return true
 			end
+		when 'node'
+			return self.is_a?(Node)
+		when 'edge'
+			return self.is_a?(Edge)
 		else
 			return true
 		end

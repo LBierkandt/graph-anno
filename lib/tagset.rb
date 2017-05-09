@@ -68,7 +68,7 @@ class TagsetRule
 		errors = []
 		@context = h['context'].to_s
 		begin
-			@parsed_context = graph.parse_attributes(@context)[:op]
+			@parsed_context = graph.parse_attributes(@context, true)[:op]
 		rescue RuntimeError
 			errors << "Invalid context: \"#{@context}\""
 		end

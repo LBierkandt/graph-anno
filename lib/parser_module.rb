@@ -219,14 +219,15 @@ module Parser
 		end
 	end
 
-	def parse_attributes(obj)
-		return parse_attributes(obj.lex_ql) if obj.is_a?(String)
+	def parse_attributes(obj, for_context = false)
+		return parse_attributes(obj.lex_ql, for_context) if obj.is_a?(String)
 		op = {}
 		terms = []
 		i = 0
 		while tok = obj[i]
 			case tok[:cl]
 			when :key
+				raise 'No annotations as context allowed' if for_context
 				p = parse_attribute(obj[i..-1])
 				terms << p[:op]
 				i += p[:length] - 1
@@ -234,11 +235,17 @@ module Parser
 				raise "Undefined string \"#{tok[:str]}\""
 			when :bstring
 				p = parse_element(obj[i..-1])
-				if ['in', 'out', 'start', 'end', 'link', 'quant', 'token', 'i'].include?(p[:op][:operator])
+				keywords = if for_context
+					  ['token', 'node', 'edge', 'i']
+					else
+					  ['in', 'out', 'start', 'end', 'link', 'quant', 'token', 'node', 'edge', 'i']
+					end
+				if keywords.include?(p[:op][:operator])
 					terms << p[:op]
 				elsif @conf.layers_and_combinations.map(&:shortcut).include?(tok[:str])
 					terms << {:operator => 'layer', :layers => @conf.layer_by_shortcut[tok[:str]].layers}
 				elsif @makros.map{|m| m[:name]}.include?(tok[:str])
+					raise 'No makros as context allowed' if for_context
 					m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
 					terms << m[:op]
 				else #Fehler!
