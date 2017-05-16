@@ -100,6 +100,10 @@ var Autocomplete = (function(){
 				$.getJSON('/get_file_list/', {input: input.word}).done(function(suggestions){
 					showSuggestions(input, suggestions);
 				});
+			} else if (input.suggestionSet.match(/anno$/) && window.preferences.anno) {
+				$.getJSON('/get_tagset_suggestions/', input).done(function(suggestions){
+					showSuggestions(input, suggestions);
+				});
 			} else {
 				if (!input.suggestionSet) return;
 				var suggestionData = data[input.suggestionSet];

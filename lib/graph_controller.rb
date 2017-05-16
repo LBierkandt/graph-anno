@@ -477,6 +477,16 @@ class GraphController
 		}.compact.to_json
 	end
 
+	def get_tagset_suggestions
+		input = @sinatra.params[:word]
+		suggestion_set = @sinatra.params[:suggestionSet]
+		(
+			@graph.tagset.for_autocomplete + autocomplete_data[suggestion_set.to_sym]
+		).select do |suggestion|
+			suggestion.start_with?(input)
+		end.to_json
+	end
+
 	def media
 		@sinatra.send_file(@graph.media)
 	end
@@ -1037,7 +1047,6 @@ class GraphController
 			:pref => nil,
 			:'' => :command
 		}
-		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
 		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
 		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
 		tokens = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} : []
@@ -1052,9 +1061,9 @@ class GraphController
 		antors = @graph.annotators.map(&:name)
 		cmnds  = @preferences[:command] ? commands.keys : []
 		{
-			:anno => tagset + makros + layers + arefs,
-			:nodes_anno => tagset + makros + layers + nodes + tokens,
-			:edges_anno => tagset + makros + layers + edges,
+			:anno => makros + layers + arefs,
+			:nodes_anno => makros + layers + nodes + tokens,
+			:edges_anno => makros + layers + edges,
 			:nodes => nodes,
 			:nnodes => nnodes,
 			:inodes => inodes,
