@@ -416,9 +416,7 @@ function sendModal(type) {
 			} else {
 				$('#modal-warning').html(data.errors).show();
 			}
-		}
-		else {
-			Autocomplete.setData(data.autocomplete);
+		} else {
 			closeModal();
 		}
 	});
@@ -568,5 +566,4 @@ function handleResponse(data) {
 	if (data.preferences != undefined) setPreferences(data.preferences);
 	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
 	setMedia(data.media);
-	Autocomplete.setData(data.autocomplete);
 }

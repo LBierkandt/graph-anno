@@ -105,7 +105,6 @@ class GraphController
 	def change_sentence
 		set_section(@sinatra.params[:sentence])
 		return @view.generate.merge(
-			:autocomplete => autocomplete_data,
 			:sections_changed => true
 		).to_json
 	end
@@ -277,7 +276,7 @@ class GraphController
 			return {:errors => e.message}.to_json
 		end
 		@graph.tagset = new_tagset
-		return {:autocomplete => autocomplete_data}.to_json
+		return true.to_json
 	end
 
 	def save_file
@@ -309,7 +308,6 @@ class GraphController
 		File.open('conf/preferences.yml', 'w'){|f| f.write(@preferences.to_yaml)}
 		return {
 			:preferences => @preferences,
-			:autocomplete => autocomplete_data,
 		}.to_json
 	end
 
@@ -488,7 +486,6 @@ class GraphController
 
 	def section_settings_and_graph(reload_sections = true)
 		@view.generate.merge(
-			:autocomplete => autocomplete_data,
 			:preferences => @preferences,
 			:i_nodes => @sinatra.haml(:i_nodes, :locals => {:controller => self}),
 			:current_sections => @current_sections ? current_section_ids : nil,

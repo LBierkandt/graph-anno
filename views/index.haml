@@ -13,6 +13,8 @@
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/box.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/autocomplete.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
+    :javascript
+      window.autocompleteCommands = #{Autocomplete.commands.to_json}
 
   %body
     #graph

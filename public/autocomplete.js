@@ -3,13 +3,12 @@ var Autocomplete = (function(){
 	var $list = null;
 	var value = '';
 	var noInput = false;
-	var data = {};
 
 	var parseInput = function() {
 		var cursorPosition = $element[0].selectionDirection == 'backward' ? $element[0].selectionStart : $element[0].selectionEnd;
 		var string = $element.val();
 		var command = string.match(/^\s*\S+\s/) ? string.match(/^\s*(\S+)/)[1] : '';
-		var suggestionSet = data.commands[command];
+		var suggestionSet = window.autocompleteCommands[command];
 		var before = string.slice(0, cursorPosition).match(suggestionSet == 'file' ? /^(.*(\s|^))(\S*)$/ : /^(.*(\.\.|\s|^))(\S*)$/);
 		var after = string.slice(cursorPosition).match(/^\s*(.*)$/);
 		var word = string.slice(cursorPosition).match(/^(\s|$)/) ? before[3] : '';
@@ -96,22 +95,10 @@ var Autocomplete = (function(){
 		if (noInput) {noInput = false; return;}
 		var input = parseInput();
 		if (input.word.length > 0) {
-			if (input.suggestionSet == 'file' && window.preferences.file) {
-				$.getJSON('/get_file_list/', {input: input.word}).done(function(suggestions){
-					showSuggestions(input, suggestions);
-				});
-			} else if (input.suggestionSet.match(/anno$/) && window.preferences.anno) {
-				$.getJSON('/get_tagset_suggestions/', input).done(function(suggestions){
-					showSuggestions(input, suggestions);
-				});
-			} else {
-				if (!input.suggestionSet) return;
-				var suggestionData = data[input.suggestionSet];
-				var suggestions = suggestionData.filter(function(suggestion){
-					return (suggestion.slice(0, input.word.length) == input.word);
-				});
+			if (!input.suggestionSet) return;
+			$.getJSON('/get_autocomplete_suggestions/', input).done(function(suggestions){
 				showSuggestions(input, suggestions);
-			}
+			});
 		} else {
 			disable();
 		}
@@ -135,9 +122,6 @@ var Autocomplete = (function(){
 			$list = $('<div id="autocomplete"></div>').appendTo($element.parent());
 			$element.on('keydown', saveValue);
 			$element.on('keyup', handleInput);
-		},
-		setData: function(newData) {
-			if (newData) data = newData;
 		},
 		disable: disable,
 	}
