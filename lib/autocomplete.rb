@@ -109,7 +109,14 @@ module Autocomplete
 	end
 
 	def tagset_suggestions(params)
-		@graph.tagset.for_autocomplete
+		if params[:suggestionSet] == 'anno'
+			parameters = params[:before].parse_parameters
+			@graph.tagset.for_autocomplete(
+				extract_elements(parameters[:elements])
+			)
+		else
+			@graph.tagset.for_autocomplete
+		end
 	end
 
 	def file_suggestions(input)
