@@ -109,13 +109,23 @@ module Autocomplete
 	end
 
 	def tagset_suggestions(params)
+		parameters = params[:before].parse_parameters
 		if params[:suggestionSet] == 'anno'
-			parameters = params[:before].parse_parameters
 			@graph.tagset.for_autocomplete(
 				extract_elements(parameters[:elements])
 			)
 		else
-			@graph.tagset.for_autocomplete
+			layers = if layer_shortcut = get_layer_shortcut(parameters[:words])
+				@graph.conf.layer_by_shortcut[layer_shortcut]
+			else
+				@graph.conf.layer_by_shortcut[params[:layer]]
+			end
+			element = if params[:command] == 'e'
+				@graph.create_phantom_edge(:type => 'a', :layers => layers)
+			else
+				@graph.create_phantom_node(:type => 'a', :layers => layers)
+			end
+			@graph.tagset.for_autocomplete([element])
 		end
 	end
 

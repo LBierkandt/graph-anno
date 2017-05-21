@@ -220,6 +220,20 @@ class Graph
 		add_edge(edge.to_h.except(:id).merge(:raw => true))
 	end
 
+	# creates a new node but doesn't add it to self so the graph doesn't know it
+	# @param h [{:type => String, :attr => Hash}] :attr is optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically	# @return [Node] the new node
+	# @return [Node] the new node
+	def create_phantom_node(h)
+		Node.new(h.merge(:graph => self))
+	end
+
+	# creates a new edge but doesn't add it to self so the graph doesn't know it
+	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash}] :attr is optional
+	# @return [Edge] the new edge
+	def create_phantom_edge(h)
+		Edge.new(h.merge(:graph => self, :phantom => true))
+	end
+
 	# creates a new annotation node as parent node for the given nodes
 	# @param nodes [Array] the nodes that will be connected to the new node
 	# @param h [{:node_attr => Hash, :edge_attr => Hash, :layers => AnnoLayer or Array, :sentence => Node, :log => Step}]

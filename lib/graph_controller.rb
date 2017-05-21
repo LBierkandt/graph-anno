@@ -936,11 +936,15 @@ class GraphController
 	end
 
 	def set_new_layer(words)
-		if new_layer_shortcut = words.select{|w| @graph.conf.layer_by_shortcut.keys.include?(w)}.last
+		if new_layer_shortcut = get_layer_shortcut(words)
 			layer = @graph.conf.layer_by_shortcut[new_layer_shortcut]
 			set_cookie('traw_layer', layer.shortcut)
 			return layer
 		end
+	end
+
+	def get_layer_shortcut(words)
+		words.select{|w| @graph.conf.layer_by_shortcut.keys.include?(w)}.last
 	end
 
 	def set_found_sections

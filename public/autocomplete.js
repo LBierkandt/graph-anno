@@ -16,11 +16,13 @@ var Autocomplete = (function(){
 		var wordParts = word.match(sep) ? word.match('^(.*' + sep + ')([^'+ sep + ']*)$') : [null, '', word];
 		return {
 			before: before[1],
+			command: command,
 			word: word,
 			retain: wordParts[1],
 			replace: wordParts[2],
 			after: after[1],
 			suggestionSet: suggestionSet,
+			layer: document.cmd.layer.value,
 		};
 	}
 	var setList = function(words) {
