@@ -141,6 +141,7 @@ class GraphView
 
 	def create_token(token, i)
 		options = {
+			:id => "node#{token.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:label => HTMLEntities.new.encode(build_label(token, @show_refs ? "t#{i}" : nil), :hexadecimal),
 			:shape => :box,
@@ -181,6 +182,7 @@ class GraphView
 
 	def create_node(node, i, letter)
 		options = {
+			:id => "node#{node.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:shape => :box,
@@ -208,6 +210,7 @@ class GraphView
 	def create_edge(edge, i)
 		label = HTMLEntities.new.encode(build_label(edge, @show_refs ? "e#{i}" : nil), :hexadecimal)
 		options = {
+			:id => "edge#{edge.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:weight => @ctrl.graph.conf.edge_weight,
