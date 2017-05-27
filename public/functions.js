@@ -184,35 +184,41 @@ function verschiebeBild(richtung) {
 }
 function jumpToFragment(direction) {
 	if (!window.foundFragments || window.foundFragments.length < 1) return;
+	window.foundFragments.sort(function(a, b){
+		return getPosition(a).centerX - getPosition(b).centerX;
+	});
 	// find previous/next graph fragment
 	if (direction == 'prev') {
 		window.currentFragmentIndex = Math.max(window.currentFragmentIndex - 1, 0);
 	} else {
 		window.currentFragmentIndex = Math.min(window.currentFragmentIndex + 1, window.foundFragments.length - 1);
 	}
-	var currentFragmentElements = window.foundFragments[window.currentFragmentIndex].map(function(id){
+	// center graph fragment
+	var position = getPosition(window.foundFragments[window.currentFragmentIndex])
+	var $div = $('#graph');
+	$div.scrollLeft(position.centerX + $div.scrollLeft() - $div.width() / 2);
+	$div.scrollTop(position.centerY + $div.scrollTop() - $div.height() / 2);
+}
+function getPosition(fragment) {
+	var position = {};
+	var fragmentElements = fragment.map(function(id){
 		return $('g#' + id);
 	});
-	// get position
-	var left = Math.min.apply(null, currentFragmentElements.map(function($element){
+	position.left = Math.min.apply(null, fragmentElements.map(function($element){
 		return $element[0].getBoundingClientRect().left;
 	}));
-	var top = Math.min.apply(null, currentFragmentElements.map(function($element){
+	position.top = Math.min.apply(null, fragmentElements.map(function($element){
 		return $element[0].getBoundingClientRect().top;
 	}));
-	var right = Math.max.apply(null, currentFragmentElements.map(function($element){
+	position.right = Math.max.apply(null, fragmentElements.map(function($element){
 		return $element[0].getBoundingClientRect().right;
 	}));
-	var bottom = Math.max.apply(null, currentFragmentElements.map(function($element){
+	position.bottom = Math.max.apply(null, fragmentElements.map(function($element){
 		return $element[0].getBoundingClientRect().bottom;
 	}));
-	// center graph fragment
-	var $div = $('#graph');
-	var $svg = $div.find('svg');
-	var centerX = (right + left) / 2 + $div.scrollLeft();
-	var centerY = (bottom + top) / 2 + $div.scrollTop();
-	$div.scrollLeft(centerX - $div.width() / 2);
-	$div.scrollTop(centerY - $div.height() / 2);
+	position.centerX = (position.right + position.left) / 2;
+	position.centerY = (position.bottom + position.top) / 2;
+	return position;
 }
 function updateView(data) {
 	data = data || {};
