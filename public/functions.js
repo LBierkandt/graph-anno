@@ -68,6 +68,8 @@ function taste(e) {
 			case 187:
 			case 107: aendereBildgroesze('+'); e.preventDefault(); break;
 			case  48: graphEinpassen(); e.preventDefault(); break;
+			case  80: jumpToFragment('prev'); e.preventDefault(); break;
+			case  78: jumpToFragment('next'); e.preventDefault(); break;
 		}
 	}
 	else if (e.altKey) {
@@ -179,6 +181,38 @@ function verschiebeBild(richtung) {
 		case 'r': div.scrollLeft += 50; break;
 		case 'u': div.scrollTop  += 50; break;
 	}
+}
+function jumpToFragment(direction) {
+	if (!window.foundFragments || window.foundFragments.length < 1) return;
+	// find previous/next graph fragment
+	if (direction == 'prev') {
+		window.currentFragmentIndex = Math.max(window.currentFragmentIndex - 1, 0);
+	} else {
+		window.currentFragmentIndex = Math.min(window.currentFragmentIndex + 1, window.foundFragments.length - 1);
+	}
+	var currentFragmentElements = window.foundFragments[window.currentFragmentIndex].map(function(id){
+		return $('g#' + id);
+	});
+	// get position
+	var left = Math.min.apply(null, currentFragmentElements.map(function($element){
+		return $element[0].getBoundingClientRect().left;
+	}));
+	var top = Math.min.apply(null, currentFragmentElements.map(function($element){
+		return $element[0].getBoundingClientRect().top;
+	}));
+	var right = Math.max.apply(null, currentFragmentElements.map(function($element){
+		return $element[0].getBoundingClientRect().right;
+	}));
+	var bottom = Math.max.apply(null, currentFragmentElements.map(function($element){
+		return $element[0].getBoundingClientRect().bottom;
+	}));
+	// center graph fragment
+	var $div = $('#graph');
+	var $svg = $div.find('svg');
+	var centerX = (right + left) / 2 + $div.scrollLeft();
+	var centerY = (bottom + top) / 2 + $div.scrollTop();
+	$div.scrollLeft(centerX - $div.width() / 2);
+	$div.scrollTop(centerY - $div.height() / 2);
 }
 function updateView(data) {
 	data = data || {};
@@ -559,6 +593,7 @@ function handleResponse(data) {
 	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
 	if (data.preferences != undefined) setPreferences(data.preferences);
 	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
+	if (data.found_fragments != undefined) {window.foundFragments = data.found_fragments; window.currentFragmentIndex = -1;}
 	setMedia(data.media);
 	Autocomplete.setData(data.autocomplete);
 }
