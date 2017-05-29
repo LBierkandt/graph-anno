@@ -203,8 +203,13 @@ var Sectioning = (function () {
 		getCurrent: function () {
 			return current;
 		},
-		changeSentence: function () {
-			postRequest('/change_sentence', {sentence: current});
+		changeSentence: function (target) {
+			if (target == 'prevMatch') {
+				var callback = function(){jumpToFragment('prev')};
+			} else if (target == 'nextMatch') {
+				var callback = function(){jumpToFragment('next')};
+			}
+			postRequest('/change_sentence', {sentence: current}, callback);
 		},
 		navigateSentences: function (target) {
 			var newIndizes = currentIndizes;
@@ -236,7 +241,7 @@ var Sectioning = (function () {
 			}
 			if (JSON.stringify(newIndizes) != JSON.stringify(currentIndizes)) {
 				Sectioning.setCurrentIndizes(currentLevel, newIndizes);
-				Sectioning.changeSentence()
+				Sectioning.changeSentence(target)
 			}
 		},
 	}
