@@ -29,47 +29,34 @@ window.onload = function() {
 	// autocomplete
 	Autocomplete.init('#txtcmd');
 }
-window.onresize = graphdivEinpassen;
 
 function loadGraph() {
 	$.ajax({
 		url: '/draw_graph',
 		dataType: 'json'
-	}).done(updateView);
-}
-function graphdivEinpassen() {
-	$('#graph').height(window.innerHeight - $('#bottom').height());
-}
-function graphEinpassen() {
-	var $div = $('#graph');
-	var $svg = $div.find('svg');
-	var outerHeight = $div.height() - 20;
-	var newHeight = Math.min(outerHeight, $svg.height());
-	$svg.width($svg.width() / $svg.height() * newHeight);
-	$svg.height(newHeight);
-	$svg.css('top', outerHeight - $svg.height());
+	}).done(handleResponse);
 }
 function taste(e) {
 	var ctrlShift = e.ctrlKey && e.shiftKey;
 	if (ctrlShift) {
 		switch (e.which) {
-			case  33: verschiebeBild('oo'); e.preventDefault(); break;
-			case  34: verschiebeBild('uu'); e.preventDefault(); break;
-			case  35: verschiebeBild('e'); e.preventDefault(); break;
-			case  36: verschiebeBild('a'); e.preventDefault(); break;
-			case  37: verschiebeBild('l'); e.preventDefault(); break;
-			case  38: verschiebeBild('o'); e.preventDefault(); break;
-			case  39: verschiebeBild('r'); e.preventDefault(); break;
-			case  40: verschiebeBild('u'); e.preventDefault(); break;
+			case  33: GraphDisplay.moveGraph('oo'); e.preventDefault(); break;
+			case  34: GraphDisplay.moveGraph('uu'); e.preventDefault(); break;
+			case  35: GraphDisplay.moveGraph('e'); e.preventDefault(); break;
+			case  36: GraphDisplay.moveGraph('a'); e.preventDefault(); break;
+			case  37: GraphDisplay.moveGraph('l'); e.preventDefault(); break;
+			case  38: GraphDisplay.moveGraph('o'); e.preventDefault(); break;
+			case  39: GraphDisplay.moveGraph('r'); e.preventDefault(); break;
+			case  40: GraphDisplay.moveGraph('u'); e.preventDefault(); break;
 			case 173:
 			case 189:
-			case 109: aendereBildgroesze('-'); e.preventDefault(); break;
+			case 109: GraphDisplay.scaleGraph('-'); e.preventDefault(); break;
 			case 171:
 			case 187:
-			case 107: aendereBildgroesze('+'); e.preventDefault(); break;
-			case  48: graphEinpassen(); e.preventDefault(); break;
-			case  80: jumpToFragment('prev'); e.preventDefault(); break;
-			case  78: jumpToFragment('next'); e.preventDefault(); break;
+			case 107: GraphDisplay.scaleGraph('+'); e.preventDefault(); break;
+			case  48: GraphDisplay.fitGraph(); e.preventDefault(); break;
+			case  80: GraphDisplay.jumpToFragment('prev'); e.preventDefault(); break;
+			case  78: GraphDisplay.jumpToFragment('next'); e.preventDefault(); break;
 		}
 	}
 	else if (e.altKey) {
@@ -124,10 +111,10 @@ function taste(e) {
 					textline.style.display = 'block';
 					if (meta.innerHTML != '') meta.style.display = 'none'; else meta.style.display = 'block';
 				}
-				graphdivEinpassen();
+				GraphDisplay.fitGraphdiv();
 			},
 			115: function(){
-				$.getJSON('/toggle_refs').done(updateView);
+				$.getJSON('/toggle_refs').done(handleResponse);
 			},
 			117: function(){
 				Box.instances.filter.toggleAndSave();
@@ -155,118 +142,10 @@ function taste(e) {
 		}
 	}
 }
-function aendereBildgroesze(richtung) {
-	var $div = $('#graph');
-	var $svg = $div.find('svg');
-	var xmitte = $div.scrollLeft() + $div.width() / 2;
-	var ymitte = $div.scrollTop() + $div.height() / 2;
-	var faktor = 1;
-	if (richtung == '+') {faktor = 1.25}
-	else if (richtung == '-') {faktor = 0.8}
-	$svg.width($svg.width() * faktor);
-	$svg.height($svg.height() * faktor);
-	$div.scrollLeft(xmitte * faktor - $div.width() / 2);
-	$div.scrollTop(ymitte * faktor - $div.height() / 2);
-	tieToBottom($svg, $div);
-}
-function verschiebeBild(richtung) {
-	var div = document.getElementById('graph');
-	switch (richtung) {
-		case 'oo': div.scrollTop = 0; break;
-		case 'uu': div.scrollTop = 999999; break;
-		case 'a': div.scrollLeft = 0; break;
-		case 'e': div.scrollLeft = 999999; break;
-		case 'l': div.scrollLeft -= 50; break;
-		case 'o': div.scrollTop  -= 50; break;
-		case 'r': div.scrollLeft += 50; break;
-		case 'u': div.scrollTop  += 50; break;
-	}
-}
-function jumpToFragment(direction) {
-	if (!window.foundFragments || window.foundFragments.length < 1) return;
-	window.foundFragments.sort(function(a, b){
-		return getPosition(a).centerX - getPosition(b).centerX;
-	});
-	// find previous/next graph fragment
-	if (direction == 'prev') {
-		window.currentFragmentIndex = Math.max(window.currentFragmentIndex - 1, 0);
-	} else {
-		window.currentFragmentIndex = Math.min(window.currentFragmentIndex + 1, window.foundFragments.length - 1);
-	}
-	// center graph fragment
-	var position = getPosition(window.foundFragments[window.currentFragmentIndex])
-	var $div = $('#graph');
-	$div.scrollLeft(position.centerX + $div.scrollLeft() - $div.width() / 2);
-	$div.scrollTop(position.centerY + $div.scrollTop() - $div.height() / 2);
-}
-function getPosition(fragment) {
-	var position = {};
-	var fragmentElements = fragment.map(function(id){
-		return $('g#' + id);
-	});
-	position.left = Math.min.apply(null, fragmentElements.map(function($element){
-		return $element[0].getBoundingClientRect().left;
-	}));
-	position.top = Math.min.apply(null, fragmentElements.map(function($element){
-		return $element[0].getBoundingClientRect().top;
-	}));
-	position.right = Math.max.apply(null, fragmentElements.map(function($element){
-		return $element[0].getBoundingClientRect().right;
-	}));
-	position.bottom = Math.max.apply(null, fragmentElements.map(function($element){
-		return $element[0].getBoundingClientRect().bottom;
-	}));
-	position.centerX = (position.right + position.left) / 2;
-	position.centerY = (position.bottom + position.top) / 2;
-	return position;
-}
-function updateView(data) {
-	data = data || {};
-	updateLayerOptions();
-	handleResponse(data);
-	graphdivEinpassen();
-	if (!data.dot) return;
-	// get old dimensions
-	var $div = $('#graph');
-	var oldImageSize = {
-		width: $div.find('svg').width() || 1,
-		height: $div.find('svg').height() || 1,
-	};
-	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
-	// create svg
-	try {
-		var svgElement = new DOMParser().parseFromString(Viz(data.dot, 'svg'), 'image/svg+xml');
-	} catch(e) {
-		alert('An error occurred while generating the graph. Try reloading your browser window or restarting your browser; if that doesn’t help, try the edge label compatibility mode (see config window)');
-		return;
-	}
-	// get new dimensions
-	var newSvgSize = {
-		width: parseInt(svgElement.documentElement.getAttribute('width')),
-		height: parseInt(svgElement.documentElement.getAttribute('height')),
-	};
-	// insert svg
-	$div.empty().append(svgElement.documentElement);
-	var $svg = $div.find('svg');
-	// scale svg
-	if (data.sections_changed) {
-		$svg.width(newSvgSize.width);
-		$svg.height(newSvgSize.height);
-		graphEinpassen();
-	} else {
-		$svg.width(newSvgSize.width * oldImageSize.width / originalSvgSize.width);
-		$svg.height(newSvgSize.height * oldImageSize.height / originalSvgSize.height);
-		if ($div.scrollTop() == 0) tieToBottom($svg, $div);
-	}
-	originalSvgSize = newSvgSize;
-}
-function tieToBottom($svg, $div) {
-	$svg.css('top', Math.max(($div.height()-20) - $svg.height(), 0));
-}
 function sendCmd() {
 	var txtcmd = document.cmd.txtcmd.value.trim();
 	if (txtcmd.indexOf('image ') == 0) {
-		saveImage(txtcmd.replace(/\s+/g, ' ').split(' ')[1]);
+		GraphDisplay.saveImage(txtcmd.replace(/\s+/g, ' ').split(' ')[1]);
 		return;
 	}
 	postRequest('/handle_commandline', {
@@ -274,39 +153,6 @@ function sendCmd() {
 		layer: document.cmd.layer.value,
 		sections: Sectioning.getCurrent(),
 	});
-}
-function saveImage(format) {
-	var width = parseInt($('#graph svg').attr('width'));
-	var height = parseInt($('#graph svg').attr('height'));
-	var url = 'data:image/svg+xml;base64,' +
-		window.btoa(unescape(encodeURIComponent(
-			[
-				'<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
-				'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
-				$('#graph').html(),
-			].join("\n")
-		)));
-	if (format == 'svg') {
-		downloadFile(url, format);
-	} else if (format == 'png') {
-		var image = new Image();
-		image.src = url;
-		image.onload = function() {
-			if (window.canvas == undefined) canvas = document.createElement('canvas');
-			canvas.width = width;
-			canvas.height = height;
-			canvas.getContext('2d').drawImage(image, 0, 0, width, height);
-			downloadFile(canvas.toDataURL('image/png'), format);
-		}
-		return;
-	}
-}
-function downloadFile(url, format) {
-	var link = $('<a></a>').appendTo($('body'));
-	link.attr('href', url).attr('download', 'image.' + format)
-		.css('display', 'none')
-		.get(0).click();
-	link.remove();
 }
 function sendFilter(mode) {
 	postRequest('/set_filter', {filter: document.filter.filterfield.value, mode: mode}, focusFilterField);
@@ -370,7 +216,7 @@ function postRequest(path, params, callback, silent) {
 		}
 		if (silent) {callback(); return};
 		$('#txtcmd').val(getCookie('traw_cmd'));
-		updateView(data);
+		handleResponse(data);
 		Log.update();
 		if (callback) callback();
 		else focusCommandLine();
@@ -459,11 +305,6 @@ function closeModal() {
 	$('#modal-background').hide();
 	focusCommandLine();
 	window.onkeydown = taste;
-}
-function updateLayerOptions() {
-	$('#layer').load('/layer_options', function(){
-		setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
-	});
 }
 function configKeys(e) {
 	if (e.which == 27 || e.which == 119) {
@@ -582,6 +423,9 @@ function focusFilterField() {
 	$('#filterfield').focus()
 }
 function handleResponse(data) {
+	$('#layer').load('/layer_options', function(){
+		setSelectedIndex(document.getElementById('layer'), getCookie('traw_layer'));
+	});
 	if (data.windows != undefined) {
 		for (var id in data.windows) Box.instances[id].restoreState(data.windows);
 		Box.saveState();
@@ -599,7 +443,8 @@ function handleResponse(data) {
 	if (data.current_sections != undefined) Sectioning.setCurrent(data.current_sections);
 	if (data.preferences != undefined) setPreferences(data.preferences);
 	if (data.search_result != undefined) $('#searchresult').html(data.search_result);
-	if (data.found_fragments != undefined) {window.foundFragments = data.found_fragments; window.currentFragmentIndex = -1;}
+	if (data.found_fragments != undefined) GraphDisplay.setFoundFragments(data.found_fragments);
 	setMedia(data.media);
 	Autocomplete.setData(data.autocomplete);
+	GraphDisplay.updateView(data);
 }

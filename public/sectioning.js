@@ -205,9 +205,9 @@ var Sectioning = (function () {
 		},
 		changeSentence: function (target) {
 			if (target == 'prevMatch') {
-				var callback = function(){jumpToFragment('prev')};
+				var callback = function(){GraphDisplay.jumpToFragment('prev')};
 			} else if (target == 'nextMatch') {
-				var callback = function(){jumpToFragment('next')};
+				var callback = function(){GraphDisplay.jumpToFragment('next')};
 			}
 			postRequest('/change_sentence', {sentence: current}, callback);
 		},
