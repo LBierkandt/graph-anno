@@ -321,6 +321,8 @@ table {
   width: 100%; }
 #modal-form.import input[type='text'] {
   width: 30em; }
+#modal-form [no="-1"] {
+  display: none; }
 
 #modal-submit {
   clear: both;
