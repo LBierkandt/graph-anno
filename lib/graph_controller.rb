@@ -268,8 +268,9 @@ class GraphController
 	def save_tagset
 		params = {'contexts'=> {}, 'keys' => {}, 'values' => {}}.merge(@sinatra.params)
 		tagset_array = params['contexts'].values.zip(params['keys'].values, params['values'].values).map do |a|
-			{'context' => a[0], 'key' => a[1], 'values' => a[2]}
+			{'context' => a[0].strip, 'key' => a[1].strip, 'values' => a[2].strip}
 		end
+		tagset_array.reject!{|rule| rule['context'].empty? && rule['key'].empty? && rule['values'].empty?}
 		begin
 			new_tagset = Tagset.new(@graph, tagset_array, :error_format => :json)
 		rescue RuntimeError => e
