@@ -23,16 +23,11 @@ class Node < NodeOrEdge
 	# initializes node
 	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
 	def initialize(h)
-		@graph = h[:graph]
-		@id = h[:id]
+		super
 		@in = []
 		@out = []
-		@type = h[:type]
-		@layers = h[:layers].is_a?(AnnoLayer) ? h[:layers].layers : h[:layers] || []
-		@attr = Attributes.new(h.merge(:host => self))
 		@start= h[:start]
 		@end  = h[:end]
-		@custom = h[:custom]
 		@graph.node_index[@type][@id] = self
 	end
 

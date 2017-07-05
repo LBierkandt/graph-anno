@@ -21,6 +21,16 @@ class NodeOrEdge
 	attr_reader :graph
 	attr_accessor :attr, :type, :layers
 
+	# common tasks for element initialization
+	def initialize(h)
+		@graph = h[:graph]
+		@id = h[:id]
+		@type = h[:type]
+		@custom = h[:custom]
+		@layers = h[:layers].is_a?(AnnoLayer) ? h[:layers].layers : h[:layers] || []
+		@attr = Attributes.new(h.merge(:host => self))
+	end
+
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)
