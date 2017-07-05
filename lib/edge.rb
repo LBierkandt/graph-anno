@@ -37,8 +37,8 @@ class Edge < NodeOrEdge
 		else
 			@end = @graph.nodes[h[:end]]
 		end
-		@attr = Attributes.new(h.merge(:host => self))
 		@layers = h[:layers].is_a?(AnnoLayer) ? h[:layers].layers : h[:layers] || []
+		@attr = Attributes.new(h.merge(:host => self))
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
