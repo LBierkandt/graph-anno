@@ -379,7 +379,7 @@ class Graph
 					:log => log_step
 				)
 			end
-			if parent = section_nodes.select{|n| n.comprise_section?(section_node)}[0]
+			if parent = section_nodes.find{|n| n.comprise_section?(section_node)}
 				add_part_edge(
 					:start => parent,
 					:end => section_node,
@@ -505,7 +505,7 @@ class Graph
 				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
 			end
 		end
-		first_new_sentence_node = @node_index['s'].values.select{|n| !s_nodes.include?(n)}[0].ordered_sister_nodes.first
+		first_new_sentence_node = @node_index['s'].values.find{|n| !s_nodes.include?(n)}.ordered_sister_nodes.first
 		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
 		@conf.merge!(other.conf)
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
@@ -743,7 +743,7 @@ class Graph
 	# @param attr [Hash] a hash with the key :id or :name
 	# @return [Annotator] the annotator with the given id or name
 	def get_annotator(h)
-		@annotators.select{|a| h.all?{|k, v| a.send(k).to_s == v.to_s}}[0]
+		@annotators.find{|a| h.all?{|k, v| a.send(k).to_s == v.to_s}}
 	end
 
 	# delete the given annotators and all their annotations

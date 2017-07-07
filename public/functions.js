@@ -1,3 +1,20 @@
+// Copyright © 2014-2017 Lennart Bierkandt <post@lennartbierkandt.de>
+//
+// This file is part of GraphAnno.
+//
+// GraphAnno is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// GraphAnno is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
+
 window.onload = function() {
 	loadGraph();
 
@@ -195,7 +212,7 @@ function updateView(data) {
 	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
 	// create svg
 	try {
-		var svgElement = new DOMParser().parseFromString(Viz(data.dot, 'svg'), 'image/svg+xml');
+		var svgElement = new DOMParser().parseFromString(Viz(data.dot, {format: 'svg'}), 'image/svg+xml');
 	} catch(e) {
 		alert('An error occurred while generating the graph. Try reloading your browser window or restarting your browser; if that doesn’t help, try the edge label compatibility mode (see config window)');
 		return;
