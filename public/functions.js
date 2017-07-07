@@ -195,7 +195,7 @@ function updateView(data) {
 	if (window.originalSvgSize == undefined) originalSvgSize = oldImageSize;
 	// create svg
 	try {
-		var svgElement = new DOMParser().parseFromString(Viz(data.dot, 'svg'), 'image/svg+xml');
+		var svgElement = new DOMParser().parseFromString(Viz(data.dot, {format: 'svg'}), 'image/svg+xml');
 	} catch(e) {
 		alert('An error occurred while generating the graph. Try reloading your browser window or restarting your browser; if that doesn’t help, try the edge label compatibility mode (see config window)');
 		return;
