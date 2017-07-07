@@ -842,7 +842,7 @@ class GraphController
 			end
 			@windows.merge!(data['windows'].to_h) if @graph.file_settings[:save_windows]
 			sentence_nodes = @graph.sentence_nodes
-			@current_sections = [sentence_nodes.select{|n| n.name == @current_sections.first.name}[0]] if @current_sections
+			@current_sections = [sentence_nodes.find{|n| n.name == @current_sections.first.name}] if @current_sections
 			@current_sections = [sentence_nodes.first] unless @current_sections
 			reload_sections = true
 

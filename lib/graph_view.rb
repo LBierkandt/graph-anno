@@ -68,9 +68,9 @@ class GraphView
 		@i_nodes = @ctrl.graph.node_index['a'].values.select{|n| !n.sentence}
 		if @ctrl.current_sections
 			@tokens = @ctrl.current_sections.map(&:sentence_tokens).flatten
-			sentence_nodes = @ctrl.current_sections.map(&:nodes).flatten
-			sentence_edges = sentence_nodes.map{|n| n.in + n.out}.flatten.uniq
-			all_nodes = sentence_edges.map{|e| [e.start, e.end]}.flatten.uniq
+			nodes_of_sentences = @ctrl.current_sections.map(&:nodes).flatten
+			edges_of_sentences = nodes_of_sentences.map{|n| n.in + n.out}.flatten.uniq
+			all_nodes = edges_of_sentences.map{|e| [e.start, e.end]}.flatten.uniq.of_type('a', 't')
 			all_edges = (all_nodes.map{|n| n.in}.flatten & all_nodes.map{|n| n.out}.flatten).uniq
 			a_nodes = all_nodes.of_type('a')
 			@dependent_nodes = a_nodes - @i_nodes
