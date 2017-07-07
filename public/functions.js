@@ -72,6 +72,10 @@ function taste(e) {
 			case 187:
 			case 107: GraphDisplay.scaleGraph('+'); e.preventDefault(); break;
 			case  48: GraphDisplay.fitGraph(); e.preventDefault(); break;
+		}
+	}
+	else if (e.altKey && e.shiftKey) {
+		switch (e.which) {
 			case  80: GraphDisplay.jumpToFragment('prev'); e.preventDefault(); break;
 			case  78: GraphDisplay.jumpToFragment('next'); e.preventDefault(); break;
 		}
