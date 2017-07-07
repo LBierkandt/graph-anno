@@ -252,7 +252,7 @@ class Node < NodeOrEdge
 	# @return [Node] the preceding node
 	def node_before(&block)
 		block ||= lambda{|n| true}
-		parent_nodes{|e| e.type == 'o'}.select(&block)[0]
+		parent_nodes{|e| e.type == 'o'}.find(&block)
 	end
 
 	# returns the node following self if self is ordered via order edges, else nil
@@ -260,7 +260,7 @@ class Node < NodeOrEdge
 	# @return [Node] the following node
 	def node_after(&block)
 		block ||= lambda{|n| true}
-		child_nodes{|e| e.type == 'o'}.select(&block)[0]
+		child_nodes{|e| e.type == 'o'}.find(&block)
 	end
 
 	# returns a list of the nodes that are connected to self via links that match a given structure
