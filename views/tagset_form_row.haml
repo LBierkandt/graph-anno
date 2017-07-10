@@ -1,9 +1,13 @@
-%tr{:no => i}
-  %td
-    %input{:name => "keys[#{i}]", :type => 'text', :value => defined?(key) ? key : ''}
-  %td
-    %textarea{:name => "values[#{i}]"}
-      = defined?(value) ? value : ''
-  %td
-    .button{:onclick => 'removeElement("tr", this);'}
-      delete
+%tbody{:no => i}
+  %tr
+    %td.error_message{:colspan => 4}
+  %tr
+    %td.context
+      %input{:name => "contexts[#{i}]", :type => 'text', :value => defined?(context) ? context : ''}
+    %td.key
+      %input{:name => "keys[#{i}]", :type => 'text', :value => defined?(key) ? key : ''}
+    %td.expand
+      %input{:name => "values[#{i}]", :type => 'text', :value => defined?(value) ? value : ''}
+    %td
+      .button{:onclick => 'removeElement("tbody", this);'}
+        delete

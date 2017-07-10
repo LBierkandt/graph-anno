@@ -61,8 +61,14 @@ class NodeOrEdge
 	# @param attributes [Hash] the attributes to be added to self's annotations
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def annotate(attributes, log_step = nil)
-		log_step.add_change(:action => :update, :element => self, :attr => attributes) if log_step
-		@attr.annotate_with(attributes).remove_empty!
+		attributes ||= {}
+		effective_attr = if @type == 'a' || @type == 't'
+			@graph.allowed_attributes(attributes, self)
+		else
+			attributes
+		end
+		log_step.add_change(:action => :update, :element => self, :attr => effective_attr) if log_step
+		@attr.annotate_with(effective_attr).remove_empty!
 	end
 
 	# set self's layer array
@@ -167,6 +173,10 @@ class NodeOrEdge
 			else
 				return true
 			end
+		when 'node'
+			return self.is_a?(Node)
+		when 'edge'
+			return self.is_a?(Edge)
 		else
 			return true
 		end

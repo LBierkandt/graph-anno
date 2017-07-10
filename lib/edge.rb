@@ -43,6 +43,7 @@ class Edge < NodeOrEdge
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
 			@end.in << self
+		elsif h[:phantom] # no start and end required if creating a phantom edge
 		else
 			raise 'edge needs start and end node'
 		end

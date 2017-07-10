@@ -315,11 +315,11 @@ module GraphSearch
 		grenzknoten = []
 		tokens_to_be_searched.each do |tok|
 			unless tok.node_before
-				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'})
+				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'}, :raw => true)
 				add_order_edge(:start => grenzknoten.last, :end => tok)
 			end
 			unless tok.node_after
-				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'})
+				grenzknoten << add_token_node(:attr => {'cat' => 'boundary', 'level' => 's'}, :raw => true)
 				add_order_edge(:start => tok, :end => grenzknoten.last)
 			end
 		end
@@ -448,8 +448,7 @@ module GraphSearch
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands except 'a')
-				raw_attrs = interpolate(command[:attributes], tg)
-				attrs = allowed_attributes(raw_attrs)
+				attrs = interpolate(command[:attributes], tg)
 				# set layer (same for all commands)
 				if layer_shortcut = command[:words].select{|l| conf.layer_by_shortcut.keys.include?(l)}.last
 					layer = conf.layer_by_shortcut[layer_shortcut]
@@ -461,8 +460,8 @@ module GraphSearch
 				case command[:operator]
 				when 'a'
 					elements.each do |el|
-						el.annotate(allowed_attributes(raw_attrs, :element => el), log_step)
 						el.set_layer(layer, log_step) if layer
+						el.annotate(attrs, log_step)
 					end
 				when 'n'
 					if ref_node = nodes.first
