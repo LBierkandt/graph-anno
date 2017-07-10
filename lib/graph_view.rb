@@ -59,7 +59,7 @@ class GraphView
 			@viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 
-		return @section_info.merge(:dot => @viz_graph)
+		return @section_info.merge(:dot => @viz_graph, :found_fragments => found_fragments)
 	end
 
 	private
@@ -68,9 +68,9 @@ class GraphView
 		@i_nodes = @ctrl.graph.node_index['a'].values.select{|n| !n.sentence}
 		if @ctrl.current_sections
 			@tokens = @ctrl.current_sections.map(&:sentence_tokens).flatten
-			sentence_nodes = @ctrl.current_sections.map(&:nodes).flatten
-			sentence_edges = sentence_nodes.map{|n| n.in + n.out}.flatten.uniq
-			all_nodes = sentence_edges.map{|e| [e.start, e.end]}.flatten.uniq
+			nodes_of_sentences = @ctrl.current_sections.map(&:nodes).flatten
+			edges_of_sentences = nodes_of_sentences.map{|n| n.in + n.out}.flatten.uniq
+			all_nodes = edges_of_sentences.map{|e| [e.start, e.end]}.flatten.uniq.of_type('a', 't')
 			all_edges = (all_nodes.map{|n| n.in}.flatten & all_nodes.map{|n| n.out}.flatten).uniq
 			a_nodes = all_nodes.of_type('a')
 			@dependent_nodes = a_nodes - @i_nodes
@@ -102,6 +102,16 @@ class GraphView
 			end
 		else
 			@section_info[:textline] = '<em>Independent nodes</em>'
+		end
+	end
+
+	def found_fragments
+		elements = @tokens + @dependent_nodes + @independent_nodes + @edges
+		fragments = elements.map do |el|
+			@ctrl.search_result.fragment_mapping[el]
+		end.compact.uniq.flatten
+		fragments.map do |fragment|
+			fragment.nodes.map{|n| "node#{n.id}"} + fragment.edges.map{|e| "edge#{e.id}"}
 		end
 	end
 
@@ -141,6 +151,7 @@ class GraphView
 
 	def create_token(token, i)
 		options = {
+			:id => "node#{token.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:label => HTMLEntities.new.encode(build_label(token, @show_refs ? "t#{i}" : nil), :hexadecimal),
 			:shape => :box,
@@ -181,6 +192,7 @@ class GraphView
 
 	def create_node(node, i, letter)
 		options = {
+			:id => "node#{node.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:shape => :box,
@@ -208,6 +220,7 @@ class GraphView
 	def create_edge(edge, i)
 		label = HTMLEntities.new.encode(build_label(edge, @show_refs ? "e#{i}" : nil), :hexadecimal)
 		options = {
+			:id => "edge#{edge.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:weight => @ctrl.graph.conf.edge_weight,

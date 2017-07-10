@@ -1,3 +1,20 @@
+// Copyright © 2014-2017 Lennart Bierkandt <post@lennartbierkandt.de>
+//
+// This file is part of GraphAnno.
+//
+// GraphAnno is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// GraphAnno is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
+
 var Sectioning = (function () {
 	var list = [];
 	var index = {};
@@ -203,8 +220,13 @@ var Sectioning = (function () {
 		getCurrent: function () {
 			return current;
 		},
-		changeSentence: function () {
-			postRequest('/change_sentence', {sentence: current});
+		changeSentence: function (target) {
+			if (target == 'prevMatch') {
+				var callback = function(){GraphDisplay.jumpToFragment('prev')};
+			} else if (target == 'nextMatch') {
+				var callback = function(){GraphDisplay.jumpToFragment('next')};
+			}
+			postRequest('/change_sentence', {sentence: current}, callback);
 		},
 		navigateSentences: function (target) {
 			var newIndizes = currentIndizes;
@@ -236,7 +258,7 @@ var Sectioning = (function () {
 			}
 			if (JSON.stringify(newIndizes) != JSON.stringify(currentIndizes)) {
 				Sectioning.setCurrentIndizes(currentLevel, newIndizes);
-				Sectioning.changeSentence()
+				Sectioning.changeSentence(target)
 			}
 		},
 	}
