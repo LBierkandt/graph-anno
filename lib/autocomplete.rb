@@ -94,7 +94,7 @@ module Autocomplete
 			:clear => nil,
 			:s => :sect,
 			:image => nil,
-			# :export => nil,
+			:export => nil,
 			:import => nil,
 			:play => :tokens,
 			:config => nil,
