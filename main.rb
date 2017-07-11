@@ -20,21 +20,13 @@
 require 'sinatra.rb'
 require 'haml.rb'
 require 'fileutils.rb'
+require 'json.rb'
+require 'yaml.rb'
 require 'rexml/document.rb'
 
 require './lib/extensions.rb'
-require './lib/node_or_edge.rb'
-require './lib/node.rb'
-require './lib/edge.rb'
-require './lib/graph.rb'
-require './lib/annotator.rb'
-require './lib/attributes.rb'
-require './lib/graph_conf.rb'
-require './lib/tagset.rb'
-require './lib/toolbox_module.rb'
-require './lib/paula_exporter.rb'
-require './lib/salt_exporter.rb'
-require './lib/graph_controller.rb'
+require './lib/model.rb'
+require './lib/controller.rb'
 
 controller = GraphController.new
 

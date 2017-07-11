@@ -74,7 +74,7 @@ class TagsetRule
 		end
 		@key = h['key'].strip
 		begin
-			@values = h['values'].lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+			@values = graph.lex_ql(h['values']).select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
 		rescue RuntimeError
 			errors << "Invalid values: \"#{h['values']}\""
 		end

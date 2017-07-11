@@ -17,13 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative 'graph_persistence_module.rb'
-require_relative 'graph_search_module.rb'
-require_relative 'nlp.rb'
-
 class Graph
 	include GraphSearch
 	include GraphPersistence
+	include ToolboxImporter
+	include PaulaExporter
+	include SaltExporter
 
 	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros

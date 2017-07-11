@@ -17,12 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'yaml.rb'
-require_relative 'log.rb'
-require_relative 'graph_view.rb'
-require_relative 'search_result.rb'
-require_relative 'autocomplete.rb'
-
 class GraphController
 	include Autocomplete
 

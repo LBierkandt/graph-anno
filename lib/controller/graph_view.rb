@@ -18,7 +18,6 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'htmlentities.rb'
-require_relative 'dot_graph.rb'
 
 class GraphView
 	attr_reader :tokens, :edges, :dependent_nodes, :independent_nodes, :i_nodes
