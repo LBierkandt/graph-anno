@@ -584,19 +584,29 @@ Note that changes in the layers window do not affect existing nodes and edges!
 That means, e.g., that if you change the shortcut of a layer, the elements formerly belonging to this layer don’t belong to it anymore (but now have a non-meaningful shortcut in their layers list).
 
 
-\subsection{Permitted annotations / tagset}\label{erlaubteannotationen}
+\subsection{Tagset (permitted annotations)}\label{erlaubteannotationen}
 
 In the window opened by the command \code{tagset}, you can specify which annotations are permitted for the nodes and edges of the graph, i.e., you can define the graph-specific tagset.
-Only the keys and values defined here are permitted for the annotation of elements, illicit input is answered with an error message.
-Already existing annotations are not affected by changes of the permitted keys and values.
-The \code{token} annotation on token nodes – i.e., changing the token text – is always permitted.
 
-If you do not specify any keys and values, all annotations are permitted.
-If you specify keys, only these keys are allowed for annotations.
-If you leave the value field for a key empty, then all values are permitted for this key.
-If you want to restrict the possible values for a key, you may enter these into the value field of the key in question, separated by spaces.
+If there are no tagset rules defined, all annotations are possible.
+But if you have defined at least one tagset rule, only those annotations are allowed that are explicitly permitted by one of your rules, and illicit annotation attempts will be answered with an error message.
+Already existing annotations, however, are not affected by changing the rules.
+As a special case, the \code{token} annotation on token nodes – i.e., changing the token text – is always possible.
 
-The notation of the values is subject to the same rules as in the query language (cf. Section \ref{node}, p.\,\pageref{zeichenketten}):
+Tagset rules consist of three components: context, key and values.
+
+The \textit{context} restricts the scope of a rule; i.e., the rule only applies to those elements that match its context definition.
+The context definition is basically an \textit{element description} of the query language (cf. Section \ref{elementbeschreibung}), but only a subset may be used for context definitions:
+You may only use the keywords \code{token}, \code{node}, \code{edge}, \code{i} and the layer shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}), and combine them with logical operators (\code{!}, \code{\&}, \code{|} and parentheses).
+If you leave the context input field empty, the rule applies to all elements.
+
+The \textit{key} is the annotation key that will be permitted by the rule.
+Write the key without quotes, even if it contains special characters.
+If you leave this input field empty, all annotations are allowed for the given context.
+
+The \textit{values} restrict the permitted annotation values for the given key.
+Enter the values separated by spaces.
+The notation of the single values is subject to the same rules as in the query language (cf. Section \ref{elementbeschreibung}, p.\,\pageref{zeichenketten}):
 Simple values are entered without further markup; if a value contains special characters (see p.\,\pageref{zeichenketten}) it has to be enclosed in double quotes (\code{\quo...\quo}).
 Additionally – just like in the query language (p.\,\pageref{zeichenketten}) – you may use regular expressions, which are enclosed in slashes (\code{/.../}).
 In this case the regular expressions are anchored, i.e. an annotation value has to match the whole regular expression in order to be permitted.
