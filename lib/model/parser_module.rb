@@ -17,9 +17,35 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class String
-	def lex_ql
-		str = self.strip
+module Parser
+	@@query_operators = [
+		'node',
+		'nodes',
+		'edge',
+		'link',
+		'text',
+		'meta',
+		'cond',
+		'def',
+		'sort',
+		'col',
+	]
+	@@annotation_commands = [
+		'a',
+		'n',
+		'e',
+		'p', 'g',
+		'c', 'h',
+		'd',
+		'ni',
+		'di', 'do',
+		'tb', 'ta', 'ti',
+		'l',
+	]
+	@@keywords = @@query_operators + @@annotation_commands
+
+	def lex_ql(string)
+		str = string.strip
 		rueck = []
 		operators = ['&', '|', '!', '(', ')', ' ']
 		control_characters = [
@@ -84,34 +110,6 @@ class String
 
 		return rueck
 	end
-end
-
-module Parser
-	@@query_operators = [
-		'node',
-		'nodes',
-		'edge',
-		'link',
-		'text',
-		'meta',
-		'cond',
-		'def',
-		'sort',
-		'col',
-	]
-	@@annotation_commands = [
-		'a',
-		'n',
-		'e',
-		'p', 'g',
-		'c', 'h',
-		'd',
-		'ni',
-		'di', 'do',
-		'tb', 'ta', 'ti',
-		'l',
-	]
-	@@keywords = @@query_operators + @@annotation_commands
 
 	def parse_query(string, makros = @makros)
 		ops = {:all => []}
@@ -142,7 +140,7 @@ module Parser
 			elsif @@annotation_commands.include?(p[0])
 				return {:operator => p[0]}.merge(p[1..-1].join(' ').parse_parameters)
 			else
-				return parse_line(obj.lex_ql, makros)
+				return parse_line(lex_ql(obj), makros)
 			end
 		else
 			return nil if obj.length == 0
@@ -219,14 +217,15 @@ module Parser
 		end
 	end
 
-	def parse_attributes(obj)
-		return parse_attributes(obj.lex_ql) if obj.is_a?(String)
+	def parse_attributes(obj, for_context = false)
+		return parse_attributes(lex_ql(obj), for_context) if obj.is_a?(String)
 		op = {}
 		terms = []
 		i = 0
 		while tok = obj[i]
 			case tok[:cl]
 			when :key
+				raise 'No annotations as context allowed' if for_context
 				p = parse_attribute(obj[i..-1])
 				terms << p[:op]
 				i += p[:length] - 1
@@ -234,11 +233,17 @@ module Parser
 				raise "Undefined string \"#{tok[:str]}\""
 			when :bstring
 				p = parse_element(obj[i..-1])
-				if ['in', 'out', 'start', 'end', 'link', 'quant', 'token', 'i'].include?(p[:op][:operator])
+				keywords = if for_context
+					  ['token', 'node', 'edge', 'i']
+					else
+					  ['in', 'out', 'start', 'end', 'link', 'quant', 'token', 'node', 'edge', 'i']
+					end
+				if keywords.include?(p[:op][:operator])
 					terms << p[:op]
 				elsif @conf.layers_and_combinations.map(&:shortcut).include?(tok[:str])
 					terms << {:operator => 'layer', :layers => @conf.layer_by_shortcut[tok[:str]].layers}
 				elsif @makros.map{|m| m[:name]}.include?(tok[:str])
+					raise 'No makros as context allowed' if for_context
 					m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])
 					terms << m[:op]
 				else #Fehler!
@@ -270,7 +275,7 @@ module Parser
 	end
 
 	def parse_attribute(obj)
-		return parse_attribute(obj.lex_ql) if obj.is_a?(String)
+		return parse_attribute(lex_ql(obj)) if obj.is_a?(String)
 		key = obj[0][:str]
 		i = 0
 		op = {:operator => 'attr', :key => key}
@@ -354,7 +359,7 @@ module Parser
 	end
 
 	def parse_link(obj)
-		return parse_link(obj.lex_ql) if obj.is_a?(String)
+		return parse_link(lex_ql(obj)) if obj.is_a?(String)
 		op = {}
 		terms = []
 		ids = []
@@ -396,7 +401,7 @@ module Parser
 	end
 
 	def parse_text_search(obj)
-		return parse_text_search(obj.lex_ql) if obj.is_a?(String)
+		return parse_text_search(lex_ql(obj)) if obj.is_a?(String)
 		op = {}
 		terms = []
 		ids = []

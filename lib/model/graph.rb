@@ -17,13 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative 'graph_persistence_module.rb'
-require_relative 'graph_search_module.rb'
-require_relative 'nlp.rb'
-
 class Graph
 	include GraphSearch
 	include GraphPersistence
+	include ToolboxImporter
+	include PaulaExporter
+	include SaltExporter
 
 	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
@@ -44,12 +43,13 @@ class Graph
 		@multifile = nil
 		@conf = GraphConf.new
 		@info = {}
-		@tagset = Tagset.new
+		@tagset = Tagset.new(self)
 		@annotators = []
 		@current_annotator = nil
 		@anno_makros = {}
 		@file_settings = {}
 		@media = nil
+		@messages = []
 		set_makros
 		GC.start
 	end
@@ -95,7 +95,9 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_anno_node(h)
+		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 'a'))
+		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -108,7 +110,9 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_token_node(h)
+		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 't'))
+		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -167,7 +171,9 @@ class Graph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_anno_edge(h)
+		attributes = h.delete(:attr) unless h[:raw]
 		e = add_edge(h.merge(:type => 'a'))
+		e.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
 		h[:log].add_change(:action => :create, :element => e) if h[:log]
 		return e
 	end
@@ -211,6 +217,20 @@ class Graph
 	# @return [Edge] the new edge
 	def add_cloned_edge(edge)
 		add_edge(edge.to_h.except(:id).merge(:raw => true))
+	end
+
+	# creates a new node but doesn't add it to self so the graph doesn't know it
+	# @param h [{:type => String, :attr => Hash}] :attr is optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically	# @return [Node] the new node
+	# @return [Node] the new node
+	def create_phantom_node(h)
+		Node.new(h.merge(:graph => self))
+	end
+
+	# creates a new edge but doesn't add it to self so the graph doesn't know it
+	# @param h [{:type => String, :start => Node, :end => Node, :attr => Hash}] :attr is optional
+	# @return [Edge] the new edge
+	def create_phantom_edge(h)
+		Edge.new(h.merge(:graph => self, :phantom => true))
 	end
 
 	# creates a new annotation node as parent node for the given nodes
@@ -696,10 +716,20 @@ class Graph
 	# filter a hash of attributes to be annotated; let only attributes pass that are allowed
 	# @param attr [Hash] the attributes to be annotated
 	# @return [Hash] the allowed attributes
-	def allowed_attributes(attr, h = {})
-		@tagset.allowed_attributes(attr, h)
+	def allowed_attributes(attr, element)
+		allowed_attr = @tagset.allowed_attributes(attr, element)
+		if (forbidden = attr.compact.keys - allowed_attr.keys) != []
+			@messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
+		end
+		return allowed_attr
 	end
 
+	# get the graph's messages and clear them
+	def fetch_messages
+		msg = @messages.uniq
+		@messages = []
+		return msg
+	end
 
 	# set the current annotator by id or name
 	# @param attr [Hash] a hash with the key :id or :name

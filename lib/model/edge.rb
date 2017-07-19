@@ -23,10 +23,7 @@ class Edge < NodeOrEdge
 	# initializes edge, registering it with start and end node
 	# @param h [{:graph => Graph, :id => String, :start => Node or String, :end => Node or String, :attr => Hash}]
 	def initialize(h)
-		@graph = h[:graph]
-		@id = h[:id]
-		@type = h[:type]
-		@custom  = h[:custom]
+		super
 		if h[:start].is_a?(Node)
 			@start = h[:start]
 		else
@@ -37,12 +34,11 @@ class Edge < NodeOrEdge
 		else
 			@end = @graph.nodes[h[:end]]
 		end
-		@attr = Attributes.new(h.merge(:host => self))
-		@layers = h[:layers].is_a?(AnnoLayer) ? h[:layers].layers : h[:layers] || []
 		if @start && @end
 			# register in start and end node as outgoing or ingoing edge, respectively
 			@start.out << self
 			@end.in << self
+		elsif h[:phantom] # no start and end required if creating a phantom edge
 		else
 			raise 'edge needs start and end node'
 		end

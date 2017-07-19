@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Graph
+module ToolboxImporter
 	def toolbox_einlesen(file, korpusformat)
 		# korpusformat:
 		# [[marker_0, ..., marker_n], ..., [marker_0, ..., marker_p]]

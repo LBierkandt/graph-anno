@@ -8,11 +8,14 @@
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/jquery-ui.min.js' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/caret-position.js' }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => '/viz-lite-1.8.0.js', :async => '' }
+    %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/graph-display.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/sectioning.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/log.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/box.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/autocomplete.js" }
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
+    :javascript
+      window.autocompleteCommands = #{Autocomplete.commands.to_json}
 
   %body
     #graph

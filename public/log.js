@@ -20,7 +20,7 @@ var Log = (function () {
 		$.post('/go_to_step/' + $(this).attr('index'), {sentence: Sectioning.getCurrent()}, null, 'json')
 		.done(function(data){
 			Log.update();
-			updateView(data);
+			handleResponse(data);
 		});
 	}
 

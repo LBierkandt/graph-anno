@@ -17,13 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Graph
-
+module SaltExporter
 	def export_saltxml(textname)
 		pfad = 'exports/salt/' + textname
 		FileUtils.mkdir_p(pfad + '/corpus')
 
-		@nodes.values.each{|k| k.salt_init}
+		@salt_attr = Hash.new{|h, k| h[k] = {}}
 
 		graphpfad = 'salt:/corpus/corpus_document/corpus_document_graph'
 
@@ -37,9 +36,9 @@ class Graph
 		tokens = sentence_nodes.map{|s| s.sentence_tokens}.flatten
 		korpusstring = ''
 		tokens.each do |tok|
-			tok.salt_attr['start'] = korpusstring.length.to_s
+			@salt_attr[tok.id][:start] = korpusstring.length.to_s
 			korpusstring += tok.token
-			tok.salt_attr['end'] = korpusstring.length.to_s
+			@salt_attr[tok.id][:end] = korpusstring.length.to_s
 			korpusstring += ' '
 		end
 		korpusstring.strip!
@@ -59,14 +58,14 @@ class Graph
 		# Tokens
 		tokens.each_with_index do |tok, index|
 			saltxml += saltXML_knoten_schreiben(tok, :token, index, graphpfad)
-			tok.salt_attr['index'] = knotenzaehler.to_s
+			@salt_attr[tok.id][:index] = knotenzaehler.to_s
 			knotenzaehler += 1
 		end
 
 		# andere Knoten
 		@nodes.values.select{|k| !k.token}.each_with_index do |knot, index|
 			saltxml += saltXML_knoten_schreiben(knot, :knoten, index, graphpfad)
-			knot.salt_attr['index'] = knotenzaehler.to_s
+			@salt_attr[knot.id][:index] = knotenzaehler.to_s
 			knotenzaehler += 1
 		end
 
@@ -74,22 +73,21 @@ class Graph
 		saetzegraph = Graph.new
 		self.sentence_nodes.each_with_index do |sentence, index|
 			knot = saetzegraph.add_sect_node(:attr => {'sentenceid' => sentence.name})
-			knot.salt_init
 			saltxml += saltXML_knoten_schreiben(knot, :satz, index, graphpfad)
-			knot.salt_attr['index'] = knotenzaehler.to_s
+			@salt_attr[knot.id][:index] = knotenzaehler.to_s
 			knotenzaehler += 1
 		end
 
 
 		# Tokenverankerung
 		tokens.each do |tok|
-			name = 'sTextRel' + tok.salt_attr['nummer']
-			saltxml += %q{  <edges xsi:type="sDocumentStructure:STextualRelation" source="//@nodes.}+tok.salt_attr['index']+%q{" target="//@nodes.0">
+			name = 'sTextRel' + @salt_attr[tok.id][:nummer]
+			saltxml += %q{  <edges xsi:type="sDocumentStructure:STextualRelation" source="//@nodes.}+@salt_attr[tok.id][:index]+%q{" target="//@nodes.0">
     <labels xsi:type="saltCore:SFeature" sentence="salt" name="SNAME" valueString="}+name+%q{"/>
-    <labels xsi:type="saltCore:SFeature" sentence="saltCommon" name="SSTART" valueString="}+tok.salt_attr['start']+%q{">
+    <labels xsi:type="saltCore:SFeature" sentence="saltCommon" name="SSTART" valueString="}+@salt_attr[tok.id][:start]+%q{">
       <labels name="SVAL_TYPE" valueString="SNUMERIC"/>
     </labels>
-    <labels xsi:type="saltCore:SFeature" sentence="saltCommon" name="SEND" valueString="}+tok.salt_attr['end']+%q{">
+    <labels xsi:type="saltCore:SFeature" sentence="saltCommon" name="SEND" valueString="}+@salt_attr[tok.id][:end]+%q{">
       <labels name="SVAL_TYPE" valueString="SNUMERIC"/>
     </labels>
     <labels xsi:type="saltCore:SElementId" sentence="graph" name="id" valueString="}+graphpfad+'#'+name+%q{"/>
@@ -103,7 +101,7 @@ class Graph
 			tokens = satz.sentence_tokens
 			tokens.each do |tok|
 				name = 'spanningRel' + satzrelzaehler.to_s
-				saltxml += '  <edges xsi:type="sDocumentStructure:SSpanningRelation" source="//@nodes.'+satz.salt_attr['index']+'" target="//@nodes.'+tok.salt_attr['index']+'">'+"\n"
+				saltxml += '  <edges xsi:type="sDocumentStructure:SSpanningRelation" source="//@nodes.'+@salt_attr[satz.id][:index]+'" target="//@nodes.'+@salt_attr[tok.id][:index]+'">'+"\n"
 				# Labels
 				saltxml += '    <labels xsi:type="saltCore:SFeature" sentence="salt" name="SNAME" valueString="'+name+'"/>'+"\n"
 				saltxml += '    <labels xsi:type="saltCore:SElementId" sentence="graph" name="id" valueString="'+graphpfad+'#'+name+'"/>'+"\n"
@@ -122,7 +120,7 @@ class Graph
 			end
 			# start und end als Position in der Knoten-Liste
 			name = 'edge' + (index+1).to_s
-			saltxml += '  <edges xsi:type="sDocumentStructure:'+kantentyp+'" source="//@nodes.'+kante.start.salt_attr['index']+'" target="//@nodes.'+kante.end.salt_attr['index']+'">'+"\n"
+			saltxml += '  <edges xsi:type="sDocumentStructure:'+kantentyp+'" source="//@nodes.'+@salt_attr[kante.start.id][:index]+'" target="//@nodes.'+@salt_attr[kante.start.id][:index]+'">'+"\n"
 			# Labels
 			saltxml += '    <labels xsi:type="saltCore:SFeature" sentence="salt" name="SNAME" valueString="'+name+'"/>'+"\n"
 			saltxml += '    <labels xsi:type="saltCore:SElementId" sentence="graph" name="id" valueString="'+graphpfad+'#'+name+'"/>'+"\n"
@@ -176,16 +174,16 @@ class Graph
 	def saltXML_knoten_schreiben(knot, knotentyp, index, graphpfad)
 		saltxml = ''
 
-		knot.salt_attr['nummer'] = (index+1).to_s
+		@salt_attr[knot.id][:nummer] = (index+1).to_s
 		if knotentyp == :token
 			knotentyp = 'SToken'
-			knotenname = 'sTok' + knot.salt_attr['nummer']
+			knotenname = 'sTok' + @salt_attr[knot.id][:nummer]
 		elsif knotentyp == :knoten
 			knotentyp = 'SStructure'
-			knotenname = 'sStruc' + knot.salt_attr['nummer']
+			knotenname = 'sStruc' + @salt_attr[knot.id][:nummer]
 		elsif knotentyp == :satz
 			knotentyp = 'SSpan'
-			knotenname = 'sSpan' + knot.salt_attr['nummer']
+			knotenname = 'sSpan' + @salt_attr[knot.id][:nummer]
 		end
 		saltxml += '  <nodes xsi:type="sDocumentStructure:'+knotentyp+'">'+"\n"
 		# Labels
@@ -210,11 +208,4 @@ class Graph
 		return saltxml
 	end
 
-end
-
-class Node
-	attr_accessor :salt_attr
-	def salt_init
-		@salt_attr = {}
-	end
 end

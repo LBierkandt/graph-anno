@@ -332,6 +332,8 @@ table
     width: 100%
   &.import input[type='text']
     width: 30em
+  [no="-1"]
+    display: none
 
 #modal-submit
   clear: both
@@ -352,6 +354,12 @@ table
     vertical-align: top
     &:first-child
       width: 8em
+      min-width: 8em
+    &.key
+      width: 6em
+      min-width: 6em
+    &.context
+      width: 25%
     &.expand
       width: 100%
     textarea

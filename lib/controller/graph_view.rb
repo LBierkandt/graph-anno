@@ -18,7 +18,6 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 require 'htmlentities.rb'
-require_relative 'dot_graph.rb'
 
 class GraphView
 	attr_reader :tokens, :edges, :dependent_nodes, :independent_nodes, :i_nodes
@@ -59,7 +58,7 @@ class GraphView
 			@viz_graph.add_edges(edge.start, edge.end, :style => :invis, :weight => 100)
 		end
 
-		return @section_info.merge(:dot => @viz_graph)
+		return @section_info.merge(:dot => @viz_graph, :found_fragments => found_fragments)
 	end
 
 	private
@@ -105,6 +104,16 @@ class GraphView
 		end
 	end
 
+	def found_fragments
+		elements = @tokens + @dependent_nodes + @independent_nodes + @edges
+		fragments = elements.map do |el|
+			@ctrl.search_result.fragment_mapping[el]
+		end.compact.uniq.flatten
+		fragments.map do |fragment|
+			fragment.nodes.map{|n| "node#{n.id}"} + fragment.edges.map{|e| "edge#{e.id}"}
+		end
+	end
+
 	def create_dot_graphs
 		graph_options = {
 			:type => :digraph,
@@ -141,6 +150,7 @@ class GraphView
 
 	def create_token(token, i)
 		options = {
+			:id => "node#{token.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:label => HTMLEntities.new.encode(build_label(token, @show_refs ? "t#{i}" : nil), :hexadecimal),
 			:shape => :box,
@@ -181,6 +191,7 @@ class GraphView
 
 	def create_node(node, i, letter)
 		options = {
+			:id => "node#{node.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:shape => :box,
@@ -208,6 +219,7 @@ class GraphView
 	def create_edge(edge, i)
 		label = HTMLEntities.new.encode(build_label(edge, @show_refs ? "e#{i}" : nil), :hexadecimal)
 		options = {
+			:id => "edge#{edge.id}",
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:weight => @ctrl.graph.conf.edge_weight,

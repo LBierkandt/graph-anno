@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'json.rb'
 require 'pathname.rb'
 
 module GraphPersistence
@@ -202,7 +201,7 @@ module GraphPersistence
 	# @param name [String] The name of the file
 	def import_tagset(name)
 		File.open("exports/tagset/#{name}.tagset.json", 'r:utf-8') do |f|
-			@tagset = Tagset.new(JSON.parse(f.read))
+			@tagset = Tagset.new(self, JSON.parse(f.read))
 		end
 	end
 
@@ -244,7 +243,7 @@ module GraphPersistence
  		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		@anno_makros = data['anno_makros'] || {}
 		@info = data['info'] || {}
-		@tagset = Tagset.new(data['allowed_anno'] || data['tagset'])
+		@tagset = Tagset.new(self, data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
 		@media = data['media'] ? (@path.dirname + data['media']).expand_path : nil
 		@conf = GraphConf.new(data['conf'])

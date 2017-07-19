@@ -17,8 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-class Graph
-
+module PaulaExporter
 	def export_paula(corpus_name, doc_name = nil)
 		# einzuführender Parameter: syntaktische Kanten als dominierend ansehen?
 

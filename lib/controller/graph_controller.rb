@@ -17,12 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'yaml.rb'
-require_relative 'log.rb'
-require_relative 'graph_view.rb'
-require_relative 'search_result.rb'
-
 class GraphController
+	include Autocomplete
+
 	attr_writer :sinatra
 	attr_reader :graph, :log, :search_result, :current_sections, :view
 
@@ -102,7 +99,6 @@ class GraphController
 	def change_sentence
 		set_section(@sinatra.params[:sentence])
 		return @view.generate.merge(
-			:autocomplete => autocomplete_data,
 			:sections_changed => true
 		).to_json
 	end
@@ -264,10 +260,18 @@ class GraphController
 	end
 
 	def save_tagset
-		params = {'keys' => {}, 'values' => {}}.merge(@sinatra.params)
-		tagset_hash = params['keys'].values.zip(params['values'].values).map{|a| {'key' => a[0], 'values' => a[1]}}
-		@graph.tagset = Tagset.new(tagset_hash)
-		return {:autocomplete => autocomplete_data}.to_json
+		params = {'contexts'=> {}, 'keys' => {}, 'values' => {}}.merge(@sinatra.params)
+		tagset_array = params['contexts'].values.zip(params['keys'].values, params['values'].values).map do |a|
+			{'context' => a[0].strip, 'key' => a[1].strip, 'values' => a[2].strip}
+		end
+		tagset_array.reject!{|rule| rule['context'].empty? && rule['key'].empty? && rule['values'].empty?}
+		begin
+			new_tagset = Tagset.new(@graph, tagset_array, :error_format => :json)
+		rescue RuntimeError => e
+			return {:errors => e.message}.to_json
+		end
+		@graph.tagset = new_tagset
+		return true.to_json
 	end
 
 	def save_file
@@ -299,7 +303,6 @@ class GraphController
 		File.open('conf/preferences.yml', 'w'){|f| f.write(@preferences.to_yaml)}
 		return {
 			:preferences => @preferences,
-			:autocomplete => autocomplete_data,
 		}.to_json
 	end
 
@@ -415,9 +418,10 @@ class GraphController
 			return {:search_result => error_message_html(e.message)}.to_json
 		end
 		@search_result.reset unless search_result_preserved
+		message = @search_result.text + '<br>' + error_message_html(@graph.fetch_messages * "\n")
 		return @view.generate.merge(
 			:sections => set_sections,
-			:search_result => @search_result.text,
+			:search_result => message,
 			:sections_changed => false
 		).to_json
 	end
@@ -454,21 +458,6 @@ class GraphController
 		true
 	end
 
-	def get_file_list
-		input = @sinatra.params[:input]
-		relative = input[0] != '/'
-		Dir.glob("#{'data/' if relative}#{input}*").map{|file|
-			if File.directory?(file)
-				file.sub!(/^data\//, '') if relative
-				# strip path and add trailing slash
-				file.sub(/^.*\/([^\/]+)$/, '\1') + '/'
-			else
-				# exclude non-json and log files, strip path
-				(file.match(/\.json$/) && !file.match(/\.log\.json$/)) ? file.sub(/^(.+\/)?([^\/]+)$/, '\2') : nil
-			end
-		}.compact.to_json
-	end
-
 	def media
 		@sinatra.send_file(@graph.media)
 	end
@@ -492,7 +481,6 @@ class GraphController
 
 	def section_settings_and_graph(reload_sections = true)
 		@view.generate.merge(
-			:autocomplete => autocomplete_data,
 			:preferences => @preferences,
 			:i_nodes => @sinatra.haml(:i_nodes, :locals => {:controller => self}),
 			:current_sections => @current_sections ? current_section_ids : nil,
@@ -502,19 +490,8 @@ class GraphController
 		)
 	end
 
-	def extract_attributes(parameters, h = {})
-		allowed_attributes(
-			makros_to_attributes(parameters[:words]).merge(parameters[:attributes]),
-			h
-		)
-	end
-
-	def allowed_attributes(attr, h = {})
-		allowed_attr = @graph.allowed_attributes(attr, h)
-		if (forbidden = attr.select{|k, v| v}.keys - allowed_attr.keys) != []
-			@cmd_error_messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
-		end
-		return allowed_attr
+	def extract_attributes(parameters)
+		attributes = makros_to_attributes(parameters[:words]).merge(parameters[:attributes])
 	end
 
 	def makros_to_attributes(words)
@@ -522,7 +499,8 @@ class GraphController
 	end
 
 	def error_message_html(message)
-		 '<span class="error_message">' + message.gsub("\n", '<br/>') + '</span>'
+		return '' if message == ''
+		'<span class="error_message">' + message.gsub("\n", '<br>') + '</span>'
 	end
 
 	def sectioning_info(node)
@@ -643,8 +621,8 @@ class GraphController
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
 				anno_elements.each do |e|
-					e.annotate(extract_attributes(parameters, :element => e), log_step)
 					e.set_layer(layer, log_step) if layer
+					e.annotate(extract_attributes(parameters), log_step)
 				end
 			end
 			undefined_references?(parameters[:elements])
@@ -929,6 +907,7 @@ class GraphController
 		else
 			raise "Unknown command \"#{command}\""
 		end
+		@cmd_error_messages += @graph.fetch_messages
 		return {:command => command, :reload_sections => reload_sections}
 	end
 
@@ -952,11 +931,15 @@ class GraphController
 	end
 
 	def set_new_layer(words)
-		if new_layer_shortcut = words.select{|w| @graph.conf.layer_by_shortcut.keys.include?(w)}.last
+		if new_layer_shortcut = get_layer_shortcut(words)
 			layer = @graph.conf.layer_by_shortcut[new_layer_shortcut]
 			set_cookie('traw_layer', layer.shortcut)
 			return layer
 		end
+	end
+
+	def get_layer_shortcut(words)
+		words.select{|w| @graph.conf.layer_by_shortcut.keys.include?(w)}.last
 	end
 
 	def set_found_sections
@@ -986,87 +969,6 @@ class GraphController
 
 	def file_path(input)
 		(input[0] == '/' ? '' : 'data/') + input + (input.match(/\.json$/) ? '' : '.json')
-	end
-
-	def autocomplete_data
-		commands = {
-			:a => :anno,
-			:n => :nodes_anno,
-			:e => :nodes_anno,
-			:p => :nodes_anno,
-			:g => :nodes_anno,
-			:c => :nodes_anno,
-			:h => :nodes_anno,
-			:ni => :edges_anno,
-			:di => :nodes,
-			:do => :nodes,
-			:sa => :inodes,
-			:sd => :nnodes,
-			:d => :ref,
-			:t => nil,
-			:tb => nil,
-			:ta => nil,
-			:undo => nil,
-			:z => nil,
-			:redo => nil,
-			:y => nil,
-			:l => :layer,
-			:annotator => :annotator,
-			:user => :annotator,
-			:ns => nil,
-			:'s-new' => :sect,
-			:'s-rem' => :sect,
-			:'s-add' => :sect,
-			:'s-det' => :sect,
-			:'s-del' => :sect,
-			:load => :file,
-			:add => :file,
-			:append => :file,
-			:save => nil,
-			:clear => nil,
-			:s => :sect,
-			:image => nil,
-			# :export => nil,
-			:import => nil,
-			:play => :tokens,
-			:config => nil,
-			:tagset => nil,
-			:makros => nil,
-			:metadata => nil,
-			:annotators => nil,
-			:file => nil,
-			:pref => nil,
-			:'' => :command
-		}
-		tagset = @preferences[:anno] ? @graph.tagset.for_autocomplete : []
-		makros = @preferences[:makro] ? @graph.anno_makros.keys : []
-		layers = @preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
-		tokens = @preferences[:ref] ? @view.tokens.map.with_index{|t, i| "t#{i}"} : []
-		nnodes = @preferences[:ref] ? @view.dependent_nodes.map.with_index{|n, i| "n#{i}"} : []
-		inodes = @preferences[:ref] ? @view.i_nodes.map.with_index{|n, i| "i#{i}"} : []
-		nodes  = nnodes + inodes
-		edges  = @preferences[:ref] ? @view.edges.map.with_index{|e, i| "e#{i}"} : []
-		refs   = @preferences[:ref] ? tokens + nodes + edges : []
-		srefs  = (sections = @graph.sections_hierarchy(@current_sections)) ? sections.map.with_index{|s, i| "s#{i}"} : []
-		arefs  = @preferences[:ref] ? refs + srefs : []
-		sects  = @preferences[:sect] ? @graph.section_nodes.map(&:name).compact : []
-		antors = @graph.annotators.map(&:name)
-		cmnds  = @preferences[:command] ? commands.keys : []
-		{
-			:anno => tagset + makros + layers + arefs,
-			:nodes_anno => tagset + makros + layers + nodes + tokens,
-			:edges_anno => tagset + makros + layers + edges,
-			:nodes => nodes,
-			:nnodes => nnodes,
-			:inodes => inodes,
-			:tokens => tokens,
-			:ref => refs,
-			:layer => layers + refs,
-			:sect => sects,
-			:annotator => antors,
-			:command => cmnds,
-			:commands => commands,
-		}
 	end
 
 	def validate_config(data)

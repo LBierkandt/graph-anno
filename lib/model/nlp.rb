@@ -21,7 +21,6 @@ require "unicode_utils/uppercase_char_q.rb"
 require "unicode_utils/lowercase_char_q.rb"
 require "unicode_utils/downcase.rb"
 require "set.rb"
-require 'yaml.rb'
 
 require "punkt-segmenter/frequency_distribution.rb"
 require "punkt-segmenter/punkt.rb"

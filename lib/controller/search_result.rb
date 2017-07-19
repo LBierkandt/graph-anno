@@ -18,7 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class SearchResult
-	attr_reader :valid, :tg, :nodes, :edges, :text
+	attr_reader :valid, :tg, :nodes, :edges, :text, :fragment_mapping
 	alias_method :valid?, :valid
 
 	def initialize
@@ -31,6 +31,7 @@ class SearchResult
 		@nodes = {}
 		@edges = {}
 		@text = ''
+		@fragment_mapping = {}
 	end
 
 	def set(results)
@@ -39,6 +40,14 @@ class SearchResult
 		@nodes = Hash[@tg.map(&:nodes).flatten.uniq.map{|n| [n.id, n]}]
 		@edges = Hash[@tg.map(&:edges).flatten.uniq.map{|e| [e.id, e]}]
 		@text = "#{@tg.length} matches"
+		@fragment_mapping = @tg
+			.map do |tg|
+				(tg.nodes + tg.edges).map{|el| [el, tg]}
+			end.flatten(1)
+			.reduce(Hash.new{|h, k| h[k] = []}) do |h, pair|
+				h[pair.first] << pair.last
+				h
+			end
 	end
 
 	def error(message)

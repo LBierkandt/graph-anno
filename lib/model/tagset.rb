@@ -18,21 +18,28 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Tagset < Array
-	attr_reader :for_autocomplete
-
-	def initialize(a = [])
-		a.to_a.each do |rule|
-			self << TagsetRule.new(rule['key'], rule['values']) if rule['key'].strip != ''
+	def initialize(graph, a = [], h = {})
+		errors = {}
+		a.to_a.each_with_index do |rule_hash, i|
+			begin
+				self << TagsetRule.new(rule_hash, graph)
+			rescue RuntimeError => e
+				errors[i] = e.message
+			end
 		end
-		@for_autocomplete = to_autocomplete
+		unless errors.empty?
+			raise errors.to_json if h[:error_format] == :json
+			raise errors.values.join("\n")
+		end
 	end
 
-	def allowed_attributes(attr, h = {})
+	def allowed_attributes(attr, element)
 		return attr.clone if self.empty?
+		applicable_rules = self.select{|rule| element.fulfil?(rule.parsed_context)}
 		attr.select do |key, value|
 			value.nil? or
-				self.any?{|rule| rule.key == key and rule.allowes?(value)} or
-				(h[:element].is_a?(Node) && h[:element].type == 't' && key == 'token')
+				applicable_rules.any?{|rule| rule.allowes?(key, value)} or
+				(element.is_a?(Node) && element.type == 't' && key == 'token')
 		end
 	end
 
@@ -44,26 +51,41 @@ class Tagset < Array
 		self.to_a.to_json(*a)
 	end
 
-	private
-
-	def to_autocomplete
-		self.map{|rule| rule.to_autocomplete}.flatten
+	def for_autocomplete(elements = nil)
+		applicable_rules = if elements
+			select{|rule| elements.all?{|el| el.fulfil?(rule.parsed_context)}}
+		else
+			self
+		end
+		applicable_rules.map{|rule| rule.for_autocomplete}.flatten
 	end
 end
 
 class TagsetRule
-	attr_accessor :key, :values
+	attr_accessor :key, :values, :context, :parsed_context
 
-	def initialize(key, values)
-		@key = key.strip
-		@values = values.lex_ql.select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+	def initialize(h, graph)
+		errors = []
+		@context = h['context'].to_s
+		begin
+			@parsed_context = graph.parse_attributes(@context, true)[:op]
+		rescue RuntimeError
+			errors << "Invalid context: \"#{@context}\""
+		end
+		@key = h['key'].strip
+		begin
+			@values = graph.lex_ql(h['values']).select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+		rescue RuntimeError
+			errors << "Invalid values: \"#{h['values']}\""
+		end
+		raise errors.join(';') unless errors.empty?
 	end
 
 	def to_h
-		{:key => @key, :values => values_string}
+		{:key => @key, :values => values_string, :context => @context}
 	end
 
-	def to_autocomplete
+	def for_autocomplete
 		@values.map do |tok|
 			if tok[:cl] == :bstring
 				"#{@key}:#{tok[:str]}"
@@ -86,8 +108,10 @@ class TagsetRule
 		end * ' '
 	end
 
-	def allowes?(value)
-		return true if value.nil? || @values == []
+	def allowes?(key, value)
+		return true if @key.empty?
+		return false unless @key == key
+		return true if @values == []
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
