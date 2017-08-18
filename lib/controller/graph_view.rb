@@ -249,43 +249,32 @@ class GraphView
 	end
 
 	def build_label(e, ref = nil)
-		label = ''
 		display_attr = e.attr.output
 		if e.is_a?(Node)
 			if e.type == 's' || e.type == 'p'
-				label += display_attr.map{|key, value| "#{key}: #{value}<br/>"}.join
+				return element_label(display_attr).join('<br>')
 			elsif e.type == 't'
-				display_attr.each do |key, value|
-					case key
-					when 'token'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-					end
-				end
-				label += ref if ref
+				label = element_label(display_attr, 'token')
 			else # normaler Knoten
-				display_attr.each do |key,value|
-					case key
-					when 'cat'
-						label = "#{value}\n#{label}"
-					else
-						label += "#{key}: #{value}\n"
-					end
-				end
-				label += ref if ref
+				label = element_label(display_attr, 'cat')
 			end
 		elsif e.is_a?(Edge)
-			display_attr.each do |key,value|
-				case key
-				when 'cat'
-					label = "#{value}\n#{label}"
-				else
-					label += "#{key}: #{value}\n"
-				end
-			end
-			label += ref if ref
+			label = element_label(display_attr, 'cat')
 		end
-		return label
+		label << ref if ref
+		return label.join("\n")
+	end
+
+	def element_label(attr, privileged = nil)
+		label = []
+		attr.each do |key, value|
+			case key
+			when privileged
+				label.unshift(value)
+			else
+				label << "#{key}: #{value}"
+			end
+		end
+		label
 	end
 end
