@@ -612,7 +612,7 @@ class GraphController
 
 		when 'a' # annotate elements
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words])
+			layer = get_layer_shortcut(parameters[:words])
 			elements = extract_elements(parameters[:elements])
 			# sentence and section nodes may be annotated with arbitrary key-value pairs
 			elements.of_type('s', 'p').each do |element|
@@ -621,7 +621,6 @@ class GraphController
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
 				anno_elements.each do |e|
-					e.set_layer(layer, log_step) if layer
 					e.annotate(extract_attributes(parameters), log_step)
 				end
 			end
