@@ -24,8 +24,8 @@ class Attributes
 		@host = h[:host]
 		if h[:raw]
 			# set directly
-			@attr = attr.clone
-			@private_attr = Hash[private_attr.map {|k, v| [@host.graph.get_annotator(:id => k), v] }]
+			@attr = expand(attr.clone)
+			@private_attr = Hash[private_attr.map {|k, v| [@host.graph.get_annotator(:id => k), expand(v)] }]
 		else
 			# set via key-distinguishing function
 			@attr = {}
@@ -127,8 +127,35 @@ class Attributes
 
 	def to_h
 		h = {}
-		h.merge!(:attr => @attr.clone) unless @attr.empty?
-		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.id, attr.clone] }]) unless @private_attr.empty?
+		h.merge!(:attr => compress(@attr)) unless @attr.empty?
+		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.id, compress(attr)] }]) unless @private_attr.empty?
 		h
+	end
+
+	private
+
+	def expand(h)
+		h.map_hash do |k, v|
+			case v
+			when String
+				if @host.layers.empty?
+					{nil => v}
+				else
+					Hash[@host.layers.map{|l| [l, v]}]
+				end
+			when Hash
+				v
+			end
+		end
+	end
+
+	def compress(h)
+		h.map_hash do |k, h|
+			if h.values.uniq.length == 1 && h.keys.compact.sort == @host.layers.sort
+				h.values.first
+			else
+				h
+			end
+		end
 	end
 end

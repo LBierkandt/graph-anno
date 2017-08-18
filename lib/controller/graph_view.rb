@@ -248,33 +248,41 @@ class GraphView
 		@viz_graph.add_edges(edge.start, edge.end, options)
 	end
 
-	def build_label(e, ref = nil)
-		display_attr = e.attr.output
-		if e.is_a?(Node)
-			if e.type == 's' || e.type == 'p'
-				return element_label(display_attr).join('<br>')
-			elsif e.type == 't'
-				label = element_label(display_attr, 'token')
+	def build_label(element, ref = nil)
+		if element.is_a?(Node)
+			if element.type == 's' || element.type == 'p'
+				return element_label(element).join('<br>')
+			elsif element.type == 't'
+				label = element_label(element, 'token')
 			else # normaler Knoten
-				label = element_label(display_attr, 'cat')
+				label = element_label(element, 'cat')
 			end
-		elsif e.is_a?(Edge)
-			label = element_label(display_attr, 'cat')
+		elsif element.is_a?(Edge)
+			label = element_label(element, 'cat')
 		end
 		label << ref if ref
 		return label.join("\n")
 	end
 
-	def element_label(attr, privileged = nil)
+	def element_label(element, privileged = nil)
 		label = []
-		attr.each do |key, value|
+		element.attr.output.each do |key, value|
 			case key
 			when privileged
-				label.unshift(value)
+				label = map_layers(element, value) + label
 			else
-				label << "#{key}: #{value}"
+				label += map_layers(element, value, key)
 			end
 		end
 		label
+	end
+
+	def map_layers(element, value, key = nil)
+		grouped_annotations = value.group_by{|k, v| v}.map_hash{|k, v| v.map{|a| a.first}}
+		if key
+			grouped_annotations.map{|v, l| "<#{l}>#{key}: #{v}"}
+		else
+			grouped_annotations.map{|v, l| "<#{l}>#{v}"}
+		end
 	end
 end

@@ -79,9 +79,9 @@ class GraphController
 		old_media = @graph.media
 		begin
 			value = execute_command(@sinatra.params[:txtcmd], @sinatra.params[:layer])
-		rescue StandardError => e
-			@cmd_error_messages << e.message
-			value = {}
+		# rescue StandardError => e
+		# 	@cmd_error_messages << e.message
+		# 	value = {}
 		end
 		response = value[:no_redraw] ? value : section_settings_and_graph(value[:reload_sections])
 		return response
