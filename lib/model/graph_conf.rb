@@ -22,25 +22,37 @@ class GraphConf
 
 	def initialize(h = {})
 		h ||= {}
-		default = File::open('conf/display.yml'){|f| YAML::load(f)}
-		default.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+		@default = File::open('conf/display.yml'){|f| YAML::load(f)}
+		@default.merge!(File::open('conf/layers.yml'){|f| YAML::load(f)})
+		update(h)
+	end
 
-		@font = h['font'] || default['font']
-		@default_color = h['default_color'] || default['default_color']
-		@token_color = h['token_color'] || default['token_color']
-		@found_color = h['found_color'] || default['found_color']
-		@filtered_color = h['filtered_color'] || default['filtered_color']
-		@edge_weight = h['edge_weight'] || default['edge_weight']
-		@xlabel = h['xlabel'] || default['xlabel']
-		if h['layers']
-			@layers = h['layers'].map{|l| AnnoLayer.new(l)}
-		else
-			@layers = default['layers'].map{|l| AnnoLayer.new(l)}
+	def update(h = {})
+		@font = h['font'] || @default['font']
+		@default_color = h['default_color'] || @default['default_color']
+		@token_color = h['token_color'] || @default['token_color']
+		@found_color = h['found_color'] || @default['found_color']
+		@filtered_color = h['filtered_color'] || @default['filtered_color']
+		@edge_weight = h['edge_weight'] ? h['edge_weight'].to_i : @default['edge_weight']
+		@xlabel = h['xlabel'] || @default['xlabel']
+		@layers ||= []
+		@combinations ||= []
+
+		layer_hashes = h['layers'] || @default['layers']
+		@layers = layer_hashes.map do |layer_hash|
+			if layer = layer_by_shortcut[layer_hash['shortcut']]
+				layer.update(layer_hash)
+			else
+				AnnoLayer.new(layer_hash.merge(:conf => self))
+			end
 		end
-		if h['combinations']
-			@combinations = h['combinations'].map{|c| AnnoLayer.new(c)}
-		else
-			@combinations = default['combinations'].map{|c| AnnoLayer.new(c)}
+		combination_hashes = h['combinations'] || @default['combinations']
+		@combinations = combination_hashes.map do |combination_hash|
+			if combination = layer_by_shortcut[combination_hash['shortcut']]
+				combination.update(combination_hash)
+			else
+				AnnoLayer.new(combination_hash.merge(:conf => self))
+			end
 		end
 	end
 
@@ -96,23 +108,33 @@ class AnnoLayer
 	attr_accessor :name, :shortcut, :layers, :color, :weight
 
 	def initialize(h = {})
+		@conf = h[:conf]
+		update(h)
+	end
+
+	def update(h = {})
 		@name = h['name'] || ''
 		@shortcut = h['shortcut'] || ''
-		@layers = h['layers'] || [h['shortcut']]
+		@layers = h['layers'] ? h['layers'].map{|shortcut| @conf.layer_by_shortcut[shortcut]} : [self]
 		@attr = h['attr'] # keep in the json in order to stay able to update format of part files
 		@color = h['color'] || '#000000'
-		@weight = h['weight'] || '1'
-		@graph = h['graph'] || nil
+		@weight = h['weight'] ? h['weight'].to_i : 1
+		self
 	end
 
 	def to_h
 		{
 			:name => @name,
 			:shortcut => @shortcut,
-			:layers => @layers == [@shortcut] ? nil : @layers,
+			:layers => @layers == [self] ? nil : @layers.map(&:shortcut),
 			:attr => @attr, # keep in the json in order to stay able to update format of part files
 			:color => @color,
 			:weight => @weight
 		}.compact
+	end
+
+	# provides the to_json method needed by the JSON gem
+	def to_json(*a)
+		@shortcut.to_json(*a)
 	end
 end

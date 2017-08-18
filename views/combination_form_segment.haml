@@ -9,7 +9,7 @@
       %label{:for => "combinations[#{i}[layers]]"} Layers
     %td
       - layers.each_with_index do |layer, ii|
-        - if combination.layers.include?(layer.shortcut)
+        - if combination.layers.include?(layer)
           %input{ :name => "combinations[#{i}[layers[#{ii}]]]", :type => 'checkbox', :value => layer.shortcut, :checked => 'checked' }
         - else
           %input{ :name => "combinations[#{i}[layers[#{ii}]]]", :type => 'checkbox', :value => layer.shortcut }

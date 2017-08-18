@@ -27,7 +27,7 @@ class NodeOrEdge
 		@id = h[:id]
 		@type = h[:type]
 		@custom = h[:custom]
-		@layers = h[:layers].is_a?(AnnoLayer) ? h[:layers].layers : h[:layers] || []
+		set_layer(h[:layers])
 		@attr = Attributes.new(h.merge(:host => self))
 	end
 
@@ -85,7 +85,14 @@ class NodeOrEdge
 	# @param attributes [AnnoLayer] the new layer or layer combination
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def set_layer(layer, log_step = nil)
-		layers_array = layer ? layer.layers : []
+		layers_array = case layer
+		when AnnoLayer
+			layer.layers
+		when Array
+			layer.map{|l| l.is_a?(AnnoLayer) ? l : @graph.conf.layer_by_shortcut[l]}
+		else
+			[]
+		end
 		log_step.add_change(:action => :update, :element => self, :layers => layers_array) if log_step
 		@layers = layers_array
 	end

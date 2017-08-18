@@ -164,29 +164,21 @@ class GraphController
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
 			@sinatra.params['combinations'] = @sinatra.params['combinations'] || {}
-			@graph.conf = GraphConf.new(
+			@graph.conf.update(
 				@sinatra.params['general'].inject({}) do |h, (k, v)|
 					k == 'edge_weight' ? h[k] = v.to_i : h[k] = v
 					h
 				end
-			)
-			@graph.conf.layers = @sinatra.params['layers'].values.map do |layer|
-				AnnoLayer.new(layer.map_hash{|k, v| k == 'weight' ? v.to_i : v})
-			end
-			@graph.conf.combinations = @sinatra.params['combinations'].values.map do |combination|
-				combination['layers'] = combination['layers'] || {}
-				AnnoLayer.new(
-					combination.map_hash do |k, v|
-						if k == 'weight'
-							v.to_i
-						elsif k == 'layers'
-							v.values
-						else
-							v
+				.merge('layers' => @sinatra.params['layers'].values)
+				.merge('combinations' =>
+					@sinatra.params['combinations'].values.map do |combination|
+						combination['layers'] = combination['layers'] || {}
+						combination.map_hash do |k, v|
+							k == 'layers' ? v.values : v
 						end
 					end
 				)
-			end
+			)
 		end
 		return result.to_json
 	end
@@ -320,7 +312,7 @@ class GraphController
 		@sinatra.haml(
 			:combination_form_segment,
 			:locals => {
-				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
+				:combination => AnnoLayer.new(:attr => [], :conf => @graph.conf),
 				:i => i,
 				:layers => @graph.conf.layers
 			}
