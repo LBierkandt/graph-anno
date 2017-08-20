@@ -8,7 +8,7 @@
     %td
       %label{:for => "layers[#{i}[shortcut]]"} Shortcut
     %td
-      %input{ :name => "layers[#{i}[shortcut]]", :type => 'text', :value => layer.shortcut, :onchange => 'setLayerAttributes(this);' }
+      %input{ :name => "layers[#{i}[shortcut]]", :type => 'text', :value => layer.shortcut, :readonly => !layer.shortcut.empty?, :onchange => 'setLayerAttributes(this);' }
   %tr
     %td
       %label{:for => "layers[#{i}[color]]"} Color
