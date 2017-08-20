@@ -32,6 +32,7 @@ class GraphView
 		@i_nodes = []
 		@filter = {:mode => 'unfilter'}
 		@show_refs = true
+		@html_encoder = HTMLEntities.new
 	end
 
 	def generate
@@ -152,7 +153,7 @@ class GraphView
 		options = {
 			:id => "node#{token.id}",
 			:fontname => @ctrl.graph.conf.font,
-			:label => HTMLEntities.new.encode(build_label(token, @show_refs ? "t#{i}" : nil), :hexadecimal),
+			:label => build_label(token, @show_refs ? "t#{i}" : nil),
 			:shape => :box,
 			:style => :bold,
 			:color => @ctrl.graph.conf.token_color,
@@ -195,7 +196,7 @@ class GraphView
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:shape => :box,
-			:label => HTMLEntities.new.encode(build_label(node, @show_refs ? "#{letter}#{i}" : nil), :hexadecimal),
+			:label => build_label(node, @show_refs ? "#{letter}#{i}" : nil),
 		}
 		actual_layer_graph = nil
 		if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
@@ -217,7 +218,7 @@ class GraphView
 	end
 
 	def create_edge(edge, i)
-		label = HTMLEntities.new.encode(build_label(edge, @show_refs ? "e#{i}" : nil), :hexadecimal)
+		label = build_label(edge, @show_refs ? "e#{i}" : nil)
 		options = {
 			:id => "edge#{edge.id}",
 			:fontname => @ctrl.graph.conf.font,
@@ -261,28 +262,37 @@ class GraphView
 			label = element_label(element, 'cat')
 		end
 		label << ref if ref
-		return label.join("\n")
+		return label.join('<br/>')
 	end
 
 	def element_label(element, privileged = nil)
 		label = []
-		element.attr.output.each do |key, value|
+		element.attr.grouped_output.each do |key, value_layer_map|
 			case key
 			when privileged
-				label = map_layers(element, value) + label
+				label = map_layers(value_layer_map) + label
 			else
-				label += map_layers(element, value, key)
+				label += map_layers(value_layer_map, key)
 			end
 		end
 		label
 	end
 
-	def map_layers(element, value, key = nil)
-		grouped_annotations = value.group_by{|k, v| v}.map_hash{|k, v| v.map{|a| a.first}}
-		if key
-			grouped_annotations.map{|v, l| "<#{l}>#{key}: #{v}"}
-		else
-			grouped_annotations.map{|v, l| "<#{l}>#{v}"}
+	def map_layers(value_layer_map, key = nil)
+		value_layer_map.map do |value, layers|
+			label = @html_encoder.encode(key ? "#{key}: #{value}" : value, :hexadecimal)
+			label += ' ' * (label.length / 4) # compensate for poor centering of html labels
+			if l = layer_or_combination(layers)
+				label = "<font color=\"#{l.color}\">#{label}</font>"
+			end
+			label
 		end
+	end
+
+	def layer_or_combination(layers)
+		@ctrl.graph.conf.layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
+			return l if l.layers - layers == []
+		end
+		return nil
 	end
 end

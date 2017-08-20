@@ -55,6 +55,13 @@ class Attributes
 		end
 	end
 
+	# returns a hash like {key => {value => [layers], ...}, ...}
+	def grouped_output
+		output.map_hash do |key, layer_value_map|
+			layer_value_map.group_by{|l, v| v}.map_hash{|k, v| v.map{|a| a.first}}
+		end
+	end
+
 	def [](key)
 		output[key]
 	end
@@ -144,7 +151,7 @@ class Attributes
 					Hash[@host.layers.map{|l| [l, v]}]
 				end
 			when Hash
-				v
+				Hash[v.map{|k, v| [@host.graph.conf.layer_by_shortcut[k], v]}]
 			end
 		end
 	end

@@ -57,7 +57,13 @@ class DotGraph
 	private
 
 	def options_string(h, sep = ',')
-		h.map{|k, v| "#{k}=\"#{v}\"#{sep}"}.join
+		h.map do |k, v|
+			if k == :label
+				"#{k}=<#{v}>#{sep}"
+			else
+				"#{k}=\"#{v}\"#{sep}"
+			end
+		end.join
 	end
 
 	def get_id(source)
