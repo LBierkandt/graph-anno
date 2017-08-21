@@ -1,7 +1,7 @@
 %ul
 	- controller.view.i_nodes.each_with_index do |n, i|
 		- color = controller.graph.conf.default_color
-		- if l = n.layer_or_combination
+		- if l = controller.graph.conf.display_layer(n.layers)
 			- color = l.color
 		%li{:style => "color: #{color};"}
 			%span.ref= "i#{i}"

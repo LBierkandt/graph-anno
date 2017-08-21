@@ -98,6 +98,15 @@ class GraphConf
 		Hash[layers_and_combinations.map{|l| [l.shortcut, l]}]
 	end
 
+	# returns the layer or layer combination that should be used for the display of the given layers list
+	# @return [AnnoLayer]
+	def display_layer(layer_list)
+		layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
+			return l if layer_list and l.layers - layer_list == []
+		end
+		return nil
+	end
+
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)

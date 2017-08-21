@@ -97,15 +97,6 @@ class NodeOrEdge
 		@layers = layers_array
 	end
 
-	# returns the layer or layer combination that should be used for the display of self (i.e. the most specific one)
-	# @return [AnnoLayer]
-	def layer_or_combination
-		@graph.conf.layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
-			return l if @layers and l.layers - @layers == []
-		end
-		return nil
-	end
-
 	# whether self fulfils a given condition; returns numeral values for some condition types
 	# @param bedingung [Hash] a condition hash
 	# @param inherited [Hash] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false

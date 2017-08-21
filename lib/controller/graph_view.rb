@@ -202,7 +202,7 @@ class GraphView
 		if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
 			options[:color] = @ctrl.graph.conf.filtered_color
 		else
-			if l = node.layer_or_combination
+			if l = @ctrl.graph.conf.display_layer(node.layers)
 				options[:color] = l.color
 				actual_layer_graph = @layer_graphs[l]
 			end
@@ -231,7 +231,7 @@ class GraphView
 		if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
 			options[:color] = @ctrl.graph.conf.filtered_color
 		else
-			if l = edge.layer_or_combination
+			if l = @ctrl.graph.conf.display_layer(edge.layers)
 				options[:color] = l.color
 				if l.weight == 0
 					options[:constraint] = false
@@ -282,17 +282,10 @@ class GraphView
 		value_layer_map.map do |value, layers|
 			label = @html_encoder.encode(key ? "#{key}: #{value}" : value, :hexadecimal)
 			label += ' ' * (label.length / 4) # compensate for poor centering of html labels
-			if l = layer_or_combination(layers)
+			if l = @ctrl.graph.conf.display_layer(layers)
 				label = "<font color=\"#{l.color}\">#{label}</font>"
 			end
 			label
 		end
-	end
-
-	def layer_or_combination(layers)
-		@ctrl.graph.conf.layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
-			return l if l.layers - layers == []
-		end
-		return nil
 	end
 end
