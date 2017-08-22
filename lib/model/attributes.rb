@@ -62,20 +62,36 @@ class Attributes
 		end
 	end
 
-	def [](key)
-		output[key]
+	def [](key, layer = nil)
+		if layer
+			output[key][layer]
+		else
+			if result_array = grouped_output[key].find{|value, layers| host_layers?(layers)}
+				result_array.first
+			else
+				nil
+			end
+		end
 	end
 
-	def []=(key, value)
-		if @host.graph.current_annotator
-			if neutral?(key)
-				@attr[key] = value
-			else
-				@private_attr[@host.graph.current_annotator] ||= {}
-				@private_attr[@host.graph.current_annotator][key] = value
-			end
+	# setter for attributes, excepting either `attr[key] = value` or `attr[key, layer] = value`
+	# where the former sets the annotation for all layers of the host element
+	def []=(key, layer_or_value, value_or_layer = nil)
+		value, layer = if value_or_layer
+			[value_or_layer, layer_or_value]
 		else
-			@attr[key] = value
+			[layer_or_value, nil]
+		end
+		hash = if @host.graph.current_annotator && !neutral?(key)
+			@private_attr[@host.graph.current_annotator] ||= {}
+		else
+			@attr
+		end
+		if layer
+			raise 'Annotations are restricted to the layers of their host element' unless @host.layers.include?(layer)
+			(hash[key] ||= {})[layer] = value
+		else
+			hash[key] = expand_value(value)
 		end
 	end
 
@@ -145,11 +161,7 @@ class Attributes
 		h.map_hash do |k, v|
 			case v
 			when String
-				if @host.layers.empty?
-					{nil => v}
-				else
-					Hash[@host.layers.map{|l| [l, v]}]
-				end
+				expand_value(v)
 			when Hash
 				Hash[v.map{|k, v| [@host.graph.conf.layer_by_shortcut[k], v]}]
 			end
@@ -158,11 +170,23 @@ class Attributes
 
 	def compress(h)
 		h.map_hash do |k, h|
-			if h.values.uniq.length == 1 && h.keys.compact.sort == @host.layers.sort
+			if h.values.uniq.length == 1 && host_layers?(h.keys)
 				h.values.first
 			else
 				h
 			end
 		end
+	end
+
+	def expand_value(value)
+		if @host.layers.empty?
+			{nil => value}
+		else
+			Hash[@host.layers.map{|layer| [layer, value]}]
+		end
+	end
+
+	def host_layers?(layers)
+		(@host.layers - layers).empty?
 	end
 end

@@ -329,12 +329,12 @@ class Node < NodeOrEdge
 
 	# @return [String] self's text
 	def token
-		@attr['token'][nil]
+		@attr['token']
 	end
 
 	# @param arg [String] new self's text
 	def token=(arg)
-		@attr['token'][nil] = arg
+		@attr['token'] = arg
 	end
 
 	# @return [Integer] position of self in ordered list of own sentence's tokens
