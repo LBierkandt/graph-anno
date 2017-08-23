@@ -50,7 +50,7 @@ module Autocomplete
 			command_suggestions
 		end
 		data.select do |suggestion|
-			suggestion.start_with?(input)
+			suggestion.to_s.start_with?(input)
 		end.to_json
 	end
 
