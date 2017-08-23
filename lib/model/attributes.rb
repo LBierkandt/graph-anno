@@ -99,7 +99,8 @@ class Attributes
 		output.merge(hash)
 	end
 
-	def annotate_with(hash)
+	def annotate_with(raw_hash)
+		hash = expand(raw_hash)
 		if @host.graph.current_annotator
 			@private_attr[@host.graph.current_annotator] ||= {}
 			@attr.merge!(hash.select{|k, v| neutral?(k)})
