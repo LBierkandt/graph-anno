@@ -243,10 +243,10 @@ module GraphPersistence
  		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		@anno_makros = data['anno_makros'] || {}
 		@info = data['info'] || {}
+		@conf = GraphConf.new(data['conf'])
 		@tagset = Tagset.new(self, data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
 		@media = data['media'] ? (@path.dirname + data['media']).expand_path : nil
-		@conf = GraphConf.new(data['conf'])
 		set_makros(data['search_makros'] || [])
 	end
 

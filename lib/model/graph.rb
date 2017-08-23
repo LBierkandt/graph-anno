@@ -41,8 +41,8 @@ class Graph
 		@node_index = Hash.new{|h, k| h[k] = {}}
 		@path = nil
 		@multifile = nil
-		@conf = GraphConf.new
 		@info = {}
+		@conf = GraphConf.new
 		@tagset = Tagset.new(self)
 		@annotators = []
 		@current_annotator = nil
