@@ -121,6 +121,7 @@ class String
 		r[:bsequence] = r[:bstring] + '\.\.' + r[:bstring]
 		r[:sequence] = r[:string] + '\.\.' + r[:string]
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
+		r[:layer_attribute] = r[:bstring] + ':' + r[:attribute]
 		r[:id] = '@' + '[_[:alnum:]]+'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
 
@@ -154,6 +155,11 @@ class String
 					m[2] ? m[2].gsub('\"', '"') : m[1],
 					m[8] ? m[8].gsub('\"', '"') : m[7],
 				]
+			elsif m = str.match(r[:layer_attribute])
+				layer = m[1]
+				key = m[4] ? m[4].gsub('\"', '"') : m[3]
+				val = m[10] ? m[10].gsub('\"', '"') : m[9]
+				h[:attributes][key] = {layer => val}
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
 				val = m[8] ? m[8].gsub('\"', '"') : m[7]
