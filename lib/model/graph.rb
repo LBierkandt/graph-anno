@@ -95,9 +95,8 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_anno_node(h)
-		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 'a'))
-		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
+		n.annotate(h[:anno])
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -110,9 +109,8 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_token_node(h)
-		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 't'))
-		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
+		n.annotate(h[:anno])
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -171,9 +169,8 @@ class Graph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_anno_edge(h)
-		attributes = h.delete(:attr) unless h[:raw]
 		e = add_edge(h.merge(:type => 'a'))
-		e.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
+		e.annotate(h[:anno])
 		h[:log].add_change(:action => :create, :element => e) if h[:log]
 		return e
 	end
@@ -238,7 +235,7 @@ class Graph
 	# @param h [{:node_attr => Hash, :edge_attr => Hash, :layers => AnnoLayer or Array, :sentence => Node, :log => Step}]
 	def add_parent_node(nodes, h = {})
 		parent_node = add_anno_node(
-			:attr => h[:node_attr],
+			:anno => h[:node_anno],
 			:layers => h[:layers],
 			:sentence => h[:sentence],
 			:log => h[:log]
@@ -247,7 +244,7 @@ class Graph
 			add_anno_edge(
 				:start => parent_node,
 				:end => n,
-				:attr => h[:edge_attr],
+				:anno => h[:edge_anno],
 				:layers => h[:layers],
 				:log => h[:log]
 			)
@@ -259,7 +256,7 @@ class Graph
 	# @param h [{:node_attr => Hash, :edge_attr => Hash, :layers => AnnoLayer or Array, :sentence => Node, :log => Step}]
 	def add_child_node(nodes, h = {})
 		child_node = add_anno_node(
-			:attr => h[:node_attr],
+			:anno => h[:node_anno],
 			:layers => h[:layers],
 			:sentence => h[:sentence],
 			:log => h[:log]
@@ -268,7 +265,7 @@ class Graph
 			add_anno_edge(
 				:start => n,
 				:end => child_node,
-				:attr => h[:edge_attr],
+				:anno => h[:edge_anno],
 				:layers => h[:layers],
 				:log => h[:log]
 			)

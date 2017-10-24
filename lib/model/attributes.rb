@@ -100,7 +100,7 @@ class Attributes
 	end
 
 	def annotate_with(annotations)
-		hash = expand(hashify(annotations))
+		hash = expand(annotations.is_a?(Hash) ? annotations : hashify(annotations))
 		if @host.graph.current_annotator
 			@private_attr[@host.graph.current_annotator] ||= {}
 			@attr.deep_merge!(hash.select{|k, v| neutral?(k)})

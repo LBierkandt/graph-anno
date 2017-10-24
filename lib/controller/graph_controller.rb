@@ -588,7 +588,7 @@ class GraphController
 				@current_sections.first.sentence_nodes.first
 			end
 			@graph.add_anno_node(
-				:attr => extract_attributes(parameters),
+				:anno => extract_attributes(parameters),
 				:layers => layer,
 				:sentence => sentence,
 				:log => log_step
@@ -600,7 +600,7 @@ class GraphController
 			@graph.add_anno_edge(
 				:start => element_by_identifier(parameters[:all_nodes][0]),
 				:end => element_by_identifier(parameters[:all_nodes][1]),
-				:attr => extract_attributes(parameters),
+				:anno => extract_attributes(parameters),
 				:layers => layer,
 				:log => log_step
 			)
@@ -644,7 +644,7 @@ class GraphController
 			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_parent_node(
 				nodes,
-				:node_attr => extract_attributes(parameters),
+				:node_anno => extract_attributes(parameters),
 				:layers => layer,
 				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
 				:log => log_step
@@ -657,7 +657,7 @@ class GraphController
 			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_child_node(
 				nodes,
-				:node_attr => extract_attributes(parameters),
+				:node_anno => extract_attributes(parameters),
 				:layers => layer,
 				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
 				:log => log_step
@@ -670,7 +670,7 @@ class GraphController
 			extract_elements(parameters[:edges]).each do |edge|
 				@graph.insert_node(
 					edge,
-					:attr => extract_attributes(parameters),
+					:anno => extract_attributes(parameters),
 					:layers => layer,
 					:sentence => parameters[:words].include?('i') ? nil : edge.end.sentence,
 					:log => log_step
