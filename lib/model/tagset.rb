@@ -42,13 +42,16 @@ class Tagset < Array
 		end
 	end
 
-	def allowed_attributes(attr, element)
-		return attr.clone if self.empty?
-		applicable_rules = self.select{|rule| element.fulfil?(rule.parsed_context)}
-		attr.select do |key, value|
-			value.nil? or
-				applicable_rules.any?{|rule| rule.allowes?(key, value)} or
-				(element.is_a?(Node) && element.type == 't' && key == 'token')
+	def allowed_annotations(annotations, element)
+		return annotations if self.empty?
+		if @element_context
+			applicable_rules = self.select{|rule| element.fulfil?(rule.parsed_context)}
+			annotations.select do |annotation|
+				annotation[:value].nil? or
+					applicable_rules.any?{|rule| rule.allowes?(annotation)} or
+					(element.is_a?(Node) && element.type == 't' && key == 'token')
+			end
+		else
 		end
 	end
 
@@ -120,16 +123,16 @@ class TagsetRule
 		end * ' '
 	end
 
-	def allowes?(key, value)
+	def allowes?(annotation)
 		return true if @key.empty?
-		return false unless @key == key
+		return false unless @key == annotation[:key]
 		return true if @values == []
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
-				value == rule[:str]
+				annotation[:value] == rule[:str]
 			when :regex
-				value.match('^' + rule[:str] + '$')
+				annotation[:value].match('^' + rule[:str] + '$')
 			end
 		end
 	end

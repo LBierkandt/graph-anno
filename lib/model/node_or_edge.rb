@@ -67,18 +67,14 @@ class NodeOrEdge
 		@attr.private[annotator] || {}
 	end
 
-	# annotate self with the given attributes
-	# @param attributes [Hash] the attributes to be added to self's annotations
+	# annotate self with the given annotations after validating them
+	# @param annotations [Array] the annotations as an Array of Hashes in the form {:layer => ..., :key => ..., :value => ...}
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def annotate(attributes, log_step = nil)
-		attributes ||= {}
-		effective_attr = if @type == 'a' || @type == 't'
-			@graph.allowed_attributes(attributes, self)
-		else
-			attributes
-		end
-		log_step.add_change(:action => :update, :element => self, :attr => effective_attr) if log_step
-		@attr.annotate_with(effective_attr).remove_empty!
+	def annotate(annotations, log_step = nil)
+		annotations ||= []
+		effective_annotations = @graph.allowed_annotations(annotations, self)
+		log_step.add_change(:action => :update, :element => self, :attr => effective_annotations) if log_step
+		@attr.annotate_with(effective_annotations).remove_empty!
 	end
 
 	# set self's layer array

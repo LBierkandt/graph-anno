@@ -487,11 +487,11 @@ class GraphController
 	end
 
 	def extract_attributes(parameters)
-		attributes = makros_to_attributes(parameters[:words]).merge(parameters[:attributes])
+		attributes = makros_to_attributes(parameters[:words]) + parameters[:attributes]
 	end
 
 	def makros_to_attributes(words)
-		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}
+		(words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}).map{|k, v| {:key => k, :value => v}}
 	end
 
 	def error_message_html(message)

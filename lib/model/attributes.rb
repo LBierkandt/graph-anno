@@ -66,7 +66,7 @@ class Attributes
 		if layer
 			output[key][layer]
 		else
-			if result_array = grouped_output[key].find{|value, layers| host_layers?(layers)}
+			if grouped_output[key] && result_array = grouped_output[key].find{|value, layers| host_layers?(layers)}
 				result_array.first
 			else
 				nil
@@ -99,14 +99,14 @@ class Attributes
 		output.merge(hash)
 	end
 
-	def annotate_with(raw_hash)
-		hash = expand(raw_hash)
+	def annotate_with(annotations)
+		hash = expand(hashify(annotations))
 		if @host.graph.current_annotator
 			@private_attr[@host.graph.current_annotator] ||= {}
-			@attr.merge!(hash.select{|k, v| neutral?(k)})
-			@private_attr[@host.graph.current_annotator].merge!(hash.reject{|k, v| neutral?(k)})
+			@attr.deep_merge!(hash.select{|k, v| neutral?(k)})
+			@private_attr[@host.graph.current_annotator].deep_merge!(hash.reject{|k, v| neutral?(k)})
 		else
-			@attr.merge!(hash)
+			@attr.deep_merge!(hash)
 		end
 		self
 	end
@@ -174,7 +174,7 @@ class Attributes
 			if h.values.uniq.length == 1 && host_layers?(h.keys)
 				h.values.first
 			else
-				h
+				Hash[h.map{|layer, value| [layer.shortcut, value]}]
 			end
 		end
 	end
@@ -185,6 +185,26 @@ class Attributes
 		else
 			Hash[@host.layers.map{|layer| [layer, value]}]
 		end
+	end
+
+	def hashify(annotations)
+		raw_hash = Hash.new{|h, k| h[k] = {}}
+		annotations.each do |a|
+			if a[:layer]
+				@host.graph.conf.layer_by_shortcut[a[:layer]].layers.map(&:shortcut).each do |shortcut|
+					raw_hash[a[:key]][shortcut] = a[:value]
+				end
+			else
+				if @host.layers.empty?
+					raw_hash[a[:key]] = a[:value]
+				else
+					@host.layers.map(&:shortcut).each do |shortcut|
+						raw_hash[a[:key]][shortcut] = a[:value]
+					end
+				end
+			end
+		end
+		raw_hash
 	end
 
 	def host_layers?(layers)

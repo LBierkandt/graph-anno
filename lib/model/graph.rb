@@ -713,15 +713,25 @@ class Graph
 		end
 	end
 
-	# filter a hash of attributes to be annotated; let only attributes pass that are allowed
-	# @param attr [Hash] the attributes to be annotated
-	# @return [Hash] the allowed attributes
-	def allowed_attributes(attr, element)
-		allowed_attr = @tagset.allowed_attributes(attr, element)
-		if (forbidden = attr.compact.keys - allowed_attr.keys) != []
-			@messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
+	# filter an array of (potential) annotations; let only annotations pass that are allowed
+	# @param attr [Array] the annotations to be used
+	# @return [Array] the allowed annotations
+	def allowed_annotations(annotations, element)
+		# validate the layer shortcuts
+		allowed = annotations.select{|a| !a[:layer] || @conf.layer_by_shortcut[a[:layer]]}
+		# allow only annotations on element's layers
+		allowed.select!{|a| !a[:layer] || (@conf.expand_shortcut(a[:layer]) - element.layers.map(&:shortcut)).empty?}
+		# check against tagset
+		if element.type == 'a' || element.type == 't'
+			allowed = @tagset.allowed_annotations(allowed, element)
 		end
-		return allowed_attr
+		# inform about invalid annotations
+		unless (invalid = annotations - allowed).empty?
+			@messages << 'Illicit annotation: ' + invalid.map do |annotation|
+				(annotation[:layer] ? annotation[:layer] + ':' : '') + annotation[:key] + ':' + annotation[:value]
+			end.join(' ')
+		end
+		allowed
 	end
 
 	# get the graph's messages and clear them

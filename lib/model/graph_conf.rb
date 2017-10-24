@@ -98,6 +98,14 @@ class GraphConf
 		Hash[layers_and_combinations.map{|l| [l.shortcut, l]}]
 	end
 
+	def expand_shortcut(shortcut)
+		if layer = layer_by_shortcut[shortcut]
+			layer.layers.map(&:shortcut)
+		else
+			[]
+		end
+	end
+
 	# returns the layer or layer combination that should be used for the display of the given layers list
 	# @return [AnnoLayer]
 	def display_layer(layer_list)
