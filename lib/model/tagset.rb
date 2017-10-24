@@ -18,9 +18,18 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Tagset < Array
-	def initialize(graph, a = [], h = {})
+	attr_accessor :element_context
+
+	def initialize(graph, data = {}, h = {})
 		errors = {}
-		a.to_a.each_with_index do |rule_hash, i|
+		if data.is_a?(Array)
+			rule_list = data
+			@element_context = true
+		else
+			rule_list = data['rules'].to_a
+			@element_context = !!data['element_context']
+		end
+		rule_list.each_with_index do |rule_hash, i|
 			begin
 				self << TagsetRule.new(rule_hash, graph)
 			rescue RuntimeError => e
@@ -43,12 +52,15 @@ class Tagset < Array
 		end
 	end
 
-	def to_a
-		self.map(&:to_h)
+	def to_h
+		{
+			:rules => self.map(&:to_h),
+			:element_context => @element_context,
+		}
 	end
 
 	def to_json(*a)
-		self.to_a.to_json(*a)
+		self.to_h.to_json(*a)
 	end
 
 	def for_autocomplete(elements = nil)

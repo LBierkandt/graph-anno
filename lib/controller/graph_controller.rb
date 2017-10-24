@@ -258,7 +258,11 @@ class GraphController
 		end
 		tagset_array.reject!{|rule| rule['context'].empty? && rule['key'].empty? && rule['values'].empty?}
 		begin
-			new_tagset = Tagset.new(@graph, tagset_array, :error_format => :json)
+			new_tagset = Tagset.new(
+				@graph,
+				{'rules' => tagset_array, 'element_context' => @sinatra.params['element_context']},
+				:error_format => :json
+			)
 		rescue RuntimeError => e
 			return {:errors => e.message}.to_json
 		end

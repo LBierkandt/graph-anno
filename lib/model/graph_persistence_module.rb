@@ -244,7 +244,7 @@ module GraphPersistence
 		@anno_makros = data['anno_makros'] || {}
 		@info = data['info'] || {}
 		@conf = GraphConf.new(data['conf'])
-		@tagset = Tagset.new(self, data['allowed_anno'] || data['tagset'])
+		@tagset = Tagset.new(self, data['tagset'] || data['allowed_anno'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
 		@media = data['media'] ? (@path.dirname + data['media']).expand_path : nil
 		set_makros(data['search_makros'] || [])
