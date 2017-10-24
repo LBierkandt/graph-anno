@@ -319,6 +319,8 @@ table {
   -moz-box-sizing: border-box; }
 #modal-form input[type="text"], #modal-form textarea {
   width: 100%; }
+#modal-form input[readonly], #modal-form input[disabled] {
+  background: #dddddd; }
 #modal-form.import input[type='text'] {
   width: 30em; }
 #modal-form [no="-1"] {
