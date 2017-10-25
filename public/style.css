@@ -352,9 +352,6 @@ table {
     width: 25%; }
   .metadata td.expand, .tagset td.expand, .makros td.expand, .speakers td.expand, .annotators td.expand {
     width: 100%; }
-  .metadata td.compress, .tagset td.compress, .makros td.compress, .speakers td.compress, .annotators td.compress {
-    width: auto;
-    min-width: 0; }
   .metadata td textarea, .tagset td textarea, .makros td textarea, .speakers td textarea, .annotators td textarea {
     height: 5em; }
 
