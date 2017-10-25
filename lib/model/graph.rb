@@ -714,16 +714,25 @@ class Graph
 	# @param attr [Array] the annotations to be used
 	# @return [Array] the allowed annotations
 	def allowed_annotations(annotations, element)
-		# validate the layer shortcuts
-		allowed = annotations.select{|a| !a[:layer] || @conf.layer_by_shortcut[a[:layer]]}
+		# add indices for tracking invalid annotations
+		annotations.each_with_index{|a, i| a[:id] = i}
 		# allow only annotations on element's layers
-		allowed.select!{|a| !a[:layer] || (@conf.expand_shortcut(a[:layer]) - element.layers.map(&:shortcut)).empty?}
-		# check against tagset
+		allowed = annotations.select do |a|
+			!a[:layer] ||
+				@conf.layer_by_shortcut[a[:layer]] &&
+				(@conf.expand_shortcut(a[:layer]) - element.layers.map(&:shortcut)).empty?
+		end
 		if element.type == 'a' || element.type == 't'
+			# expand layerless rules
+			allowed.map! do |a|
+				(a[:layer] || element.layers.empty?) ? a : element.layers.map{|l| a.merge(:layer => l.shortcut)}
+			end.flatten!
+			# check against tagset
 			allowed = @tagset.allowed_annotations(allowed, element)
 		end
 		# inform about invalid annotations
-		unless (invalid = annotations - allowed).empty?
+		invalid = (annotations.map{|a| a[:id]} - allowed.map{|a| a[:id]}).map{|id| annotations.find{|a| a[:id] == id}}
+		unless invalid.empty?
 			@messages << 'Illicit annotation: ' + invalid.map do |annotation|
 				(annotation[:layer] ? annotation[:layer] + ':' : '') + annotation[:key] + ':' + annotation[:value]
 			end.join(' ')

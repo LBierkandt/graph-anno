@@ -8,10 +8,11 @@
         %tr
           %th Context
           %th Key
+          %th Layers
           %th Values
         %tbody{:no => -1}
         - graph.tagset.each_with_index do |rule, i|
-          = haml :tagset_form_row, :locals => {:i => i, :key => rule.key, :value => rule.values_string, :context => rule.context}
+          = haml :tagset_form_row, :locals => {:i => i, :key => rule.key, :value => rule.values_string, :layer => rule.layer, :context => rule.context}
       %tbody
         %tr
           %td{:colspan => 3}

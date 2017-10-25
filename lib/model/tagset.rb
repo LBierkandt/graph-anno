@@ -35,14 +35,11 @@ class Tagset < Array
 
 	def allowed_annotations(annotations, element)
 		return annotations if self.empty?
-		if @element_context
-			applicable_rules = self.select{|rule| element.fulfil?(rule.parsed_context)}
-			annotations.select do |annotation|
-				annotation[:value].nil? or
-					applicable_rules.any?{|rule| rule.allowes?(annotation)} or
-					(element.is_a?(Node) && element.type == 't' && key == 'token')
-			end
-		else
+		applicable_rules = self.select{|rule| element.fulfil?(rule.parsed_context)}
+		annotations.select do |annotation|
+			annotation[:value].nil? or
+				applicable_rules.any?{|rule| rule.allowes?(annotation)} or
+				(element.is_a?(Node) && element.type == 't' && annotation[:key] == 'token')
 		end
 	end
 
@@ -65,19 +62,23 @@ class Tagset < Array
 end
 
 class TagsetRule
-	attr_accessor :key, :values, :context, :parsed_context
+	attr_accessor :key, :values, :context, :parsed_context, :layer
 
 	def initialize(h, graph)
 		errors = []
+		@graph = graph
 		@context = h['context'].to_s
 		begin
-			@parsed_context = graph.parse_attributes(@context, true)[:op]
+			@parsed_context = @graph.parse_attributes(@context, true)[:op]
 		rescue RuntimeError
 			errors << "Invalid context: \"#{@context}\""
 		end
 		@key = h['key'].strip
+		@layer = h['layer']
+		layer = @layer.to_s.parse_parameters[:words].find{|w| @graph.conf.layer_by_shortcut[w]}
+		@layer_shortcuts = layer ? @graph.conf.layer_by_shortcut[layer].layers.map(&:shortcut) : nil
 		begin
-			@values = graph.lex_ql(h['values']).select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+			@values = @graph.lex_ql(h['values']).select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
 		rescue RuntimeError
 			errors << "Invalid values: \"#{h['values']}\""
 		end
@@ -85,7 +86,7 @@ class TagsetRule
 	end
 
 	def to_h
-		{:key => @key, :values => values_string, :context => @context}
+		{:key => @key, :values => values_string, :context => @context, :layer => @layer}
 	end
 
 	def for_autocomplete
@@ -115,6 +116,10 @@ class TagsetRule
 		return true if @key.empty?
 		return false unless @key == annotation[:key]
 		return true if @values == []
+		if annotation[:layer] && @layer_shortcuts &&
+			 !(@graph.conf.expand_shortcut(annotation[:layer]) - @layer_shortcuts).empty?
+			return false
+		end
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
