@@ -112,11 +112,9 @@ class Attributes
 	end
 
 	def remove_empty!
+		remove_empty_values(@attr)
 		if @host.graph.current_annotator
-			@attr.keep_if{|k, v| v}
-			@private_attr[@host.graph.current_annotator].keep_if{|k, v| v}
-		else
-			@attr.keep_if{|k, v| v}
+			remove_empty_values(@private_attr[@host.graph.current_annotator])
 		end
 		self
 	end
@@ -157,6 +155,11 @@ class Attributes
 	end
 
 	private
+
+	def remove_empty_values(attr)
+		attr.each{|k, v| v.keep_if{|layer, value| value}}
+		attr.keep_if{|k, v| v && !v.empty?}
+	end
 
 	def expand(h)
 		h.map_hash do |k, v|
