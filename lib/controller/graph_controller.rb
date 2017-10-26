@@ -486,12 +486,12 @@ class GraphController
 		)
 	end
 
-	def extract_attributes(parameters)
-		attributes = makros_to_attributes(parameters[:words]) + parameters[:attributes]
+	def extract_annotations(parameters)
+		makros_to_annotations(parameters[:words]) + parameters[:attributes]
 	end
 
-	def makros_to_attributes(words)
-		(words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}).map{|k, v| {:key => k, :value => v}}
+	def makros_to_annotations(words)
+		(words.map{|word| @graph.anno_makros[word]}.compact || []).flatten
 	end
 
 	def error_message_html(message)
@@ -588,7 +588,7 @@ class GraphController
 				@current_sections.first.sentence_nodes.first
 			end
 			@graph.add_anno_node(
-				:anno => extract_attributes(parameters),
+				:anno => extract_annotations(parameters),
 				:layers => layer,
 				:sentence => sentence,
 				:log => log_step
@@ -600,7 +600,7 @@ class GraphController
 			@graph.add_anno_edge(
 				:start => element_by_identifier(parameters[:all_nodes][0]),
 				:end => element_by_identifier(parameters[:all_nodes][1]),
-				:anno => extract_attributes(parameters),
+				:anno => extract_annotations(parameters),
 				:layers => layer,
 				:log => log_step
 			)
@@ -617,7 +617,7 @@ class GraphController
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
 				anno_elements.each do |e|
-					e.annotate(extract_attributes(parameters), log_step)
+					e.annotate(extract_annotations(parameters), log_step)
 				end
 			end
 			undefined_references?(parameters[:elements])
@@ -644,7 +644,7 @@ class GraphController
 			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_parent_node(
 				nodes,
-				:node_anno => extract_attributes(parameters),
+				:node_anno => extract_annotations(parameters),
 				:layers => layer,
 				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
 				:log => log_step
@@ -657,7 +657,7 @@ class GraphController
 			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_child_node(
 				nodes,
-				:node_anno => extract_attributes(parameters),
+				:node_anno => extract_annotations(parameters),
 				:layers => layer,
 				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
 				:log => log_step
@@ -670,7 +670,7 @@ class GraphController
 			extract_elements(parameters[:edges]).each do |edge|
 				@graph.insert_node(
 					edge,
-					:anno => extract_attributes(parameters),
+					:anno => extract_annotations(parameters),
 					:layers => layer,
 					:sentence => parameters[:words].include?('i') ? nil : edge.end.sentence,
 					:log => log_step

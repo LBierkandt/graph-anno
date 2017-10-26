@@ -732,11 +732,8 @@ class Graph
 		end
 		# inform about invalid annotations
 		invalid = (annotations.map{|a| a[:id]} - allowed.map{|a| a[:id]}).map{|id| annotations.find{|a| a[:id] == id}}
-		unless invalid.empty?
-			@messages << 'Illicit annotation: ' + invalid.map do |annotation|
-				(annotation[:layer] ? annotation[:layer] + ':' : '') + annotation[:key] + ':' + annotation[:value]
-			end.join(' ')
-		end
+		@messages << "Illicit annotation: #{Graph.annotations_to_s(invalid)}" unless invalid.empty?
+		# return allowed annotations
 		allowed
 	end
 
@@ -785,5 +782,11 @@ class Graph
 		@multifile[:order_edges] = @multifile[:sentence_index].map{|f, list|
 			list.last.out.of_type('o').first
 		}.compact
+	end
+
+	def self.annotations_to_s(annotations)
+		annotations.map do |a|
+			"#{a[:layer] ? "#{a[:layer]}:" : ''}#{a[:key]}:#{a[:value]}"
+		end.join(' ')
 	end
 end

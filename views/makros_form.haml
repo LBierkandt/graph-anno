@@ -12,7 +12,7 @@
           = haml :makros_form_anno_row, :locals => {:i => 0}
         - else
           - graph.anno_makros.keys.each_with_index do |key, i|
-            = haml :makros_form_anno_row, :locals => {:i => i, :key => key, :value => graph.anno_makros[key].map{|k, v| "#{k}:#{v}"} * ' '}
+            = haml :makros_form_anno_row, :locals => {:i => i, :key => key, :value => Graph.annotations_to_s(graph.anno_makros[key])}
       %tbody
         %tr
           %td{:colspan => 2}
