@@ -6,4 +6,4 @@
     %textarea{:name => "attributes[#{i}]"}
       - if defined?(speaker)
         - speaker.attr.output.each do |k, v|
-          = "#{k}:#{v}&#10;"
+          = "#{k}:#{v[nil]}&#10;"

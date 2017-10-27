@@ -19,12 +19,12 @@
 
 class Attributes
 	def initialize(h)
-		attr = h[:attr] || {}
-		private_attr = h[:private_attr] || {}
 		@host = h[:host]
+		attr = h[:attr].is_a?(Array) ? hashify(h[:attr]) : (h[:attr] || {})
+		private_attr = h[:private_attr].is_a?(Array) ? hashify(h[:private_attr]) : (h[:private_attr] || {})
 		if h[:raw]
 			# set directly
-			@attr = expand(attr.clone)
+			@attr = expand(attr)
 			@private_attr = Hash[private_attr.map {|k, v| [@host.graph.get_annotator(:id => k), expand(v)] }]
 		else
 			# set via key-distinguishing function
@@ -167,7 +167,7 @@ class Attributes
 			when String
 				expand_value(v)
 			when Hash
-				Hash[v.map{|k, v| [@host.graph.conf.layer_by_shortcut[k], v]}]
+				Hash[v.map{|layer, value| [layer.is_a?(String) ? @host.graph.conf.layer_by_shortcut[layer] : layer, value]}]
 			end
 		end
 	end

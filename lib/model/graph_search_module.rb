@@ -447,7 +447,7 @@ module GraphSearch
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands except 'a')
-				annotations = interpolate(command[:attributes], tg)
+				annotations = interpolate(command[:annotations], tg)
 				# set layer (same for all commands)
 				if layer_shortcut = command[:words].select{|l| conf.layer_by_shortcut.keys.include?(l)}.last
 					layer = conf.layer_by_shortcut[layer_shortcut]

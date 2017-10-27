@@ -193,11 +193,11 @@ class GraphController
 
 	def save_speakers
 		@sinatra.params['ids'].each do |i, id|
-			attributes = @sinatra.params['attributes'][i].parse_parameters[:attributes]
+			annotations = @sinatra.params['attributes'][i].parse_parameters[:annotations]
 			if id != ''
-				@graph.nodes[id].attr = Attributes.new(:host => @graph.nodes[id], :raw => true, :attr => attributes)
+				@graph.nodes[id.to_i].attr = Attributes.new(:host => @graph.nodes[id.to_i], :raw => true, :attr => annotations)
 			else
-				@graph.add_speaker_node(:attr => attributes)
+				@graph.add_speaker_node(:attr => annotations)
 			end
 		end
 		return true.to_json
@@ -237,7 +237,7 @@ class GraphController
 		begin
 			@graph.anno_makros = Hash[
 				params['anno']['keys'].map{|i, key|
-					[key.strip, params['anno']['values'][i].parse_parameters[:attributes]] unless key.empty?
+					[key.strip, params['anno']['values'][i].parse_parameters[:annotations]] unless key.empty?
 				}.compact
 			]
 			@graph.set_makros(
@@ -487,7 +487,7 @@ class GraphController
 	end
 
 	def extract_annotations(parameters)
-		makros_to_annotations(parameters[:words]) + parameters[:attributes]
+		makros_to_annotations(parameters[:words]) + parameters[:annotations]
 	end
 
 	def makros_to_annotations(words)
@@ -612,7 +612,7 @@ class GraphController
 			elements = extract_elements(parameters[:elements])
 			# sentence and section nodes may be annotated with arbitrary key-value pairs
 			elements.of_type('s', 'p').each do |element|
-				element.annotate(parameters[:attributes], log_step)
+				element.annotate(parameters[:annotations], log_step)
 			end
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
@@ -750,7 +750,7 @@ class GraphController
 			raise 'Please specify the sections to be grouped!' if section_nodes.empty?
 			log_step = @log.add_step(:command => @command_line)
 			new_section = @graph.build_section(section_nodes, log_step)
-			new_section.annotate(parameters[:attributes], log_step)
+			new_section.annotate(parameters[:annotations], log_step)
 			reload_sections = true
 
 		when 's-rem' # remove section nodes without deleting descendant nodes

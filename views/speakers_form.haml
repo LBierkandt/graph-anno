@@ -12,7 +12,7 @@
           = haml :speakers_form_row, :locals => {:i => 0}
         - else
           - graph.speaker_nodes.each_with_index do |speaker, i|
-            = haml :speakers_form_row, :locals => {:i => 0, :speaker => speaker}
+            = haml :speakers_form_row, :locals => {:i => i, :speaker => speaker}
       //%tbody
       //  %tr
       //    %td{:colspan => 2}

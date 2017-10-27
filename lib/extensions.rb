@@ -101,7 +101,7 @@ class String
 		str = self.strip
 		h = {
 			:string => str,
-			:attributes => [],
+			:annotations => [],
 			:elements => [],
 			:words => [],
 			:all_nodes => [],
@@ -162,11 +162,11 @@ class String
 				layer = m[1]
 				key = m[4] ? m[4].gsub('\"', '"') : m[3]
 				val = m[10] ? m[10].gsub('\"', '"') : m[9]
-				h[:attributes] << {:layer => layer, :key => key, :value => val}
+				h[:annotations] << {:layer => layer, :key => key, :value => val}
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
 				val = m[8] ? m[8].gsub('\"', '"') : m[7]
-				h[:attributes] << {:key => key, :value => val}
+				h[:annotations] << {:key => key, :value => val}
 			elsif m = str.match(r[:qstring])
 				h[:words] << m[1].gsub('\"', '"')
 			elsif m = str.match(r[:bstring])

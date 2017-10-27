@@ -682,7 +682,9 @@ class Graph
 		when 'regex'
 			sentences = text.split(options['sentences']['sep'])
 			parameters = options['tokens']['anno'].parse_parameters
-			annotation = parameters[:attributes].map_hash{|k, v| v.match(/^\$\d+$/) ? v.match(/^\$(\d+)$/)[1].to_i - 1 : v}
+			annotation = parameters[:annotations].map do |a|
+				a.merge(:value => a[:value].match(/^\$\d+$/) ? a[:value].match(/^\$(\d+)$/)[1].to_i - 1 : a[:value])
+			end
 		when 'punkt'
 			sentences = NLP.segment(text, options['language'])
 		end
@@ -699,8 +701,8 @@ class Graph
 				words = s.scan(options['tokens']['regex'])
 				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
-					annotation.each do |k, v|
-						t[k] = (v.is_a?(Fixnum)) ? words[i][v] : v
+					annotation.each do |a|
+						t[a[:key]] = (a[:value].is_a?(Fixnum)) ? words[i][a[:value]] : a[:value]
 					end
 				end
 			when 'punkt'
