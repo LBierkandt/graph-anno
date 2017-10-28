@@ -119,6 +119,14 @@ class Attributes
 		self
 	end
 
+	def keep_layers(layers)
+		return self unless layers
+		([@attr] + @private_attr.values).each do |attr|
+			attr.each{|key, v| v.keep_if{|layer, value| layers.include?(layer)}}
+		end
+		self
+	end
+
 	def reject(&block)
 		output.reject(&block)
 	end

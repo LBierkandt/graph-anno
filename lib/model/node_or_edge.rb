@@ -89,8 +89,9 @@ class NodeOrEdge
 		else
 			[]
 		end
-		log_step.add_change(:action => :update, :element => self, :layers => layers_array) if log_step
+		log_step.add_change(:action => :update, :element => self, :layers => layers_array, :attr => {}) if log_step
 		@layers = layers_array
+		@attr.keep_layers(@layers) if @attr
 	end
 
 	# whether self fulfils a given condition; returns numeral values for some condition types
