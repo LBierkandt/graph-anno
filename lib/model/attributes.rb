@@ -64,7 +64,7 @@ class Attributes
 
 	def [](key, layer = nil)
 		if layer
-			output[key][layer]
+			output[key] ? output[key][@host.graph.conf.layer_by_shortcut[layer]] : nil
 		else
 			if grouped_output[key] && result_array = grouped_output[key].find{|value, layers| host_layers?(layers)}
 				result_array.first
@@ -76,9 +76,9 @@ class Attributes
 
 	# setter for attributes, excepting either `attr[key] = value` or `attr[key, layer] = value`
 	# where the former sets the annotation for all layers of the host element
-	def []=(key, layer_or_value, value_or_layer = nil)
-		value, layer = if value_or_layer
-			[value_or_layer, layer_or_value]
+	def []=(key, layer_or_value, value = nil)
+		value, layer = if value
+			[value, layer_or_value]
 		else
 			[layer_or_value, nil]
 		end

@@ -36,14 +36,18 @@ class NodeOrEdge
 		self.to_h.to_json(*a)
 	end
 
-	# alternative getter for @attr hash
-	def [](key)
-		@attr[key]
+	# alternative getter for @attr
+	def [](key, layer = nil)
+		@attr[key, layer]
 	end
 
-	# alternative setter for @attr hash
-	def []=(key, value)
-		@attr[key] = value
+	# alternative setter for @attr, excepting either `attr[key] = value` or `attr[key, layer] = value`
+	def []=(key, layer_or_value, value = nil)
+		if value
+			@attr[key, layer_or_value] = value
+		else
+			@attr[key] = layer_or_value
+		end
 	end
 
 	# @return [String] self's cat attribute
