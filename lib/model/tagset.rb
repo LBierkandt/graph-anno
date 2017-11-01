@@ -53,7 +53,12 @@ class Tagset < Array
 
 	def for_autocomplete(elements = nil)
 		applicable_rules = if elements
-			select{|rule| elements.all?{|el| el.fulfil?(rule.parsed_context)}}
+			select do |rule|
+				elements.all? do |el|
+					el.fulfil?(rule.parsed_context) &&
+						(rule.layer_shortcuts ? (rule.layer_shortcuts - el.layers.map{|l| l.shortcut}).empty? : true)
+				end
+			end
 		else
 			self
 		end
@@ -62,7 +67,7 @@ class Tagset < Array
 end
 
 class TagsetRule
-	attr_accessor :key, :values, :context, :parsed_context, :layer
+	attr_accessor :key, :values, :context, :parsed_context, :layer, :layer_shortcuts
 
 	def initialize(h, graph)
 		errors = []
@@ -91,12 +96,17 @@ class TagsetRule
 
 	def for_autocomplete
 		@values.map do |tok|
-			if tok[:cl] == :bstring
+			base = if tok[:cl] == :bstring
 				"#{@key}:#{tok[:str]}"
 			elsif tok[:cl] == :qstring
 				"#{@key}:\"#{tok[:str]}\""
 			end
-		end.compact
+			if base && !@layer.to_s.empty?
+				[base, "#{@layer}:#{base}"]
+			else
+				base
+			end
+		end.compact.flatten
 	end
 
 	def values_string
