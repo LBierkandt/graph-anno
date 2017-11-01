@@ -608,7 +608,6 @@ class GraphController
 
 		when 'a' # annotate elements
 			log_step = @log.add_step(:command => @command_line)
-			layer = get_layer_shortcut(parameters[:words])
 			elements = extract_elements(parameters[:elements])
 			# sentence and section nodes may be annotated with arbitrary key-value pairs
 			elements.of_type('s', 'p').each do |element|

@@ -459,7 +459,6 @@ module GraphSearch
 				case command[:operator]
 				when 'a'
 					elements.each do |el|
-						el.set_layer(layer, log_step) if layer
 						el.annotate(annotations, log_step)
 					end
 				when 'n'
