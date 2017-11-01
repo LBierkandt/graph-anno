@@ -162,7 +162,7 @@ class GraphView
 		if @ctrl.search_result.nodes[token.id]
 			options[:color] = @ctrl.graph.conf.found_color
 			@section_info[:textline] += '<span class="found_word">' + token.token + '</span> '
-		elsif @filter[:mode] == 'hide' and @filter[:show] != token.fulfil?(@filter[:cond])
+		elsif hidden?(token)
 			options[:color] = @ctrl.graph.conf.filtered_color
 			options[:fontcolor]= @ctrl.graph.conf.filtered_color
 			@section_info[:textline] += '<span class="hidden_word">' + token.token + '</span> '
@@ -199,7 +199,7 @@ class GraphView
 			:label => build_label(node, @show_refs ? "#{letter}#{i}" : nil),
 		}
 		actual_layer_graph = nil
-		if @filter[:mode] == 'hide' and @filter[:show] != node.fulfil?(@filter[:cond])
+		if hidden?(node)
 			options[:color] = @ctrl.graph.conf.filtered_color
 		else
 			if l = @ctrl.graph.conf.display_layer(node.layers)
@@ -228,7 +228,7 @@ class GraphView
 		}.merge(
 			@ctrl.graph.conf.xlabel ? {:xlabel => label} : {:label => label}
 		)
-		if @filter[:mode] == 'hide' and @filter[:show] != edge.fulfil?(@filter[:cond])
+		if hidden?(edge)
 			options[:color] = @ctrl.graph.conf.filtered_color
 		else
 			if l = @ctrl.graph.conf.display_layer(edge.layers)
@@ -270,22 +270,26 @@ class GraphView
 		element.attr.grouped_output.each do |key, value_layer_map|
 			case key
 			when privileged
-				label = map_layers(value_layer_map) + label
+				label = map_layers(element, value_layer_map) + label
 			else
-				label += map_layers(value_layer_map, key)
+				label += map_layers(element, value_layer_map, key)
 			end
 		end
 		label
 	end
 
-	def map_layers(value_layer_map, key = nil)
+	def map_layers(element, value_layer_map, key = nil)
 		value_layer_map.map do |value, layers|
 			label = @html_encoder.encode(key ? "#{key}: #{value}" : value, :hexadecimal)
 			label += ' ' * (label.length / 4) # compensate for poor centering of html labels
 			if l = @ctrl.graph.conf.display_layer(layers)
-				label = "<font color=\"#{l.color}\">#{label}</font>"
+				label = "<font color=\"#{hidden?(element) ? @ctrl.graph.conf.filtered_color : l.color}\">#{label}</font>"
 			end
 			label
 		end
+	end
+
+	def hidden?(element)
+		@filter[:mode] == 'hide' && @filter[:show] != element.fulfil?(@filter[:cond])
 	end
 end
