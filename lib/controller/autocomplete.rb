@@ -148,7 +148,7 @@ module Autocomplete
 	end
 
 	def layer_suggestions
-		@preferences[:makro] ? @graph.conf.layers_by_shortcut.keys : []
+		@preferences[:makro] ? @graph.conf.layer_by_shortcut.keys : []
 	end
 
 	def token_suggestions
