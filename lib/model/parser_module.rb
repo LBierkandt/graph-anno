@@ -276,9 +276,12 @@ module Parser
 
 	def parse_attribute(obj)
 		return parse_attribute(lex_ql(obj)) if obj.is_a?(String)
-		key = obj[0][:str]
-		i = 0
-		op = {:operator => 'attr', :key => key}
+		layer, key, i = if obj[1][:cl] == :key
+			[obj[0][:str], obj[1][:str], 2]
+		else
+			[nil, obj[0][:str], 1]
+		end
+		op = {:operator => 'attr', :key => key, :layer => layer}
 		values = []
 		value_expected = true
 		while tok = obj[i]
@@ -309,7 +312,7 @@ module Parser
 			op = {
 				:operator => 'or',
 				:arg => [
-					{:operator => 'attr', :key => key}.merge(values.pop),
+					{:operator => 'attr', :key => key, :layer => layer}.merge(values.pop),
 					old_op
 				]
 			}

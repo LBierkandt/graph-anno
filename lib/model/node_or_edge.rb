@@ -100,7 +100,7 @@ class NodeOrEdge
 
 	# whether self fulfils a given condition; returns numeral values for some condition types
 	# @param bedingung [Hash] a condition hash
-	# @param inherited [Hash] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false
+	# @param inherited [Boolean] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false
 	# @return [Boolean, Integer] true if self matches the given condition; number of connections for condition types 'in', 'out' and 'link'
 	def fulfil?(bedingung, inherited = false)
 		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.is_a?(String)
@@ -108,21 +108,21 @@ class NodeOrEdge
 		satzzeichen = '.,;:?!"'
 		case bedingung[:operator]
 		when 'attr'
-			knotenwert = inherited && is_a?(Node) ? inherited_attributes[bedingung[:key]] : @attr[bedingung[:key]]
-			wert = bedingung[:value]
-			return true unless knotenwert || wert
-			return false unless knotenwert && wert
+			element_value = (inherited && is_a?(Node) ? inherited_attributes : @attr)[bedingung[:key], bedingung[:layer]]
+			value = bedingung[:value]
+			return true unless element_value || value
+			return false unless element_value && value
 			case bedingung[:method]
 			when 'plain'
-				return true if knotenwert == wert
+				return true if element_value == value
 			when 'insens'
 				if bedingung[:key] == 'token'
-					return true if UnicodeUtils.downcase(knotenwert.xstrip(satzzeichen)) == UnicodeUtils.downcase(wert)
+					return true if UnicodeUtils.downcase(element_value.xstrip(satzzeichen)) == UnicodeUtils.downcase(value)
 				else
-					return true if UnicodeUtils.downcase(knotenwert) == UnicodeUtils.downcase(wert)
+					return true if UnicodeUtils.downcase(element_value) == UnicodeUtils.downcase(value)
 				end
 			when 'regex'
-				return true if knotenwert.match(wert)
+				return true if element_value.match(value)
 			end
 			return false
 		when 'layer'
