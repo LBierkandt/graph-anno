@@ -20,7 +20,7 @@
 require 'pathname.rb'
 
 module GraphPersistence
-	GRAPH_FORMAT_VERSION = 10
+	GRAPH_FORMAT_VERSION = 11
 	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
