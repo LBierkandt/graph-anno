@@ -164,29 +164,21 @@ class GraphController
 		if (result = validate_config(@sinatra.params)) == true
 			@sinatra.params['layers'] = @sinatra.params['layers'] || {}
 			@sinatra.params['combinations'] = @sinatra.params['combinations'] || {}
-			@graph.conf = GraphConf.new(
+			@graph.conf.update(
 				@sinatra.params['general'].inject({}) do |h, (k, v)|
 					k == 'edge_weight' ? h[k] = v.to_i : h[k] = v
 					h
 				end
-			)
-			@graph.conf.layers = @sinatra.params['layers'].values.map do |layer|
-				AnnoLayer.new(layer.map_hash{|k, v| k == 'weight' ? v.to_i : v})
-			end
-			@graph.conf.combinations = @sinatra.params['combinations'].values.map do |combination|
-				combination['layers'] = combination['layers'] || {}
-				AnnoLayer.new(
-					combination.map_hash do |k, v|
-						if k == 'weight'
-							v.to_i
-						elsif k == 'layers'
-							v.values
-						else
-							v
+				.merge('layers' => @sinatra.params['layers'].values)
+				.merge('combinations' =>
+					@sinatra.params['combinations'].values.map do |combination|
+						combination['layers'] = combination['layers'] || {}
+						combination.map_hash do |k, v|
+							k == 'layers' ? v.values : v
 						end
 					end
 				)
-			end
+			)
 		end
 		return result.to_json
 	end
@@ -201,11 +193,11 @@ class GraphController
 
 	def save_speakers
 		@sinatra.params['ids'].each do |i, id|
-			attributes = @sinatra.params['attributes'][i].parse_parameters[:attributes]
+			annotations = @sinatra.params['attributes'][i].parse_parameters[:annotations]
 			if id != ''
-				@graph.nodes[id].attr = Attributes.new(:host => @graph.nodes[id], :raw => true, :attr => attributes)
+				@graph.nodes[id.to_i].attr = Attributes.new(:host => @graph.nodes[id.to_i], :raw => true, :attr => annotations)
 			else
-				@graph.add_speaker_node(:attr => attributes)
+				@graph.add_speaker_node(:attr => annotations)
 			end
 		end
 		return true.to_json
@@ -245,7 +237,7 @@ class GraphController
 		begin
 			@graph.anno_makros = Hash[
 				params['anno']['keys'].map{|i, key|
-					[key.strip, params['anno']['values'][i].parse_parameters[:attributes]] unless key.empty?
+					[key.strip, params['anno']['values'][i].parse_parameters[:annotations]] unless key.empty?
 				}.compact
 			]
 			@graph.set_makros(
@@ -260,11 +252,15 @@ class GraphController
 	end
 
 	def save_tagset
-		params = {'contexts'=> {}, 'keys' => {}, 'values' => {}}.merge(@sinatra.params)
-		tagset_array = params['contexts'].values.zip(params['keys'].values, params['values'].values).map do |a|
-			{'context' => a[0].strip, 'key' => a[1].strip, 'values' => a[2].strip}
+		params = {'contexts'=> {}, 'keys' => {}, 'layer' => {}, 'values' => {}}.merge(@sinatra.params)
+		tagset_array = params['contexts'].values.zip(
+			params['keys'].values,
+			params['layer'].values,
+			params['values'].values
+		).map do |a|
+			{'context' => a[0].strip, 'key' => a[1].strip, 'layer' => a[2].strip, 'values' => a[3].strip}
 		end
-		tagset_array.reject!{|rule| rule['context'].empty? && rule['key'].empty? && rule['values'].empty?}
+		tagset_array.reject!{|rule| (rule['context'] + rule['key'] + rule['layer'] + rule['values']).empty?}
 		begin
 			new_tagset = Tagset.new(@graph, tagset_array, :error_format => :json)
 		rescue RuntimeError => e
@@ -320,7 +316,7 @@ class GraphController
 		@sinatra.haml(
 			:combination_form_segment,
 			:locals => {
-				:combination => AnnoLayer.new(:attr => [], :graph => @graph),
+				:combination => AnnoLayer.new(:attr => [], :conf => @graph.conf),
 				:i => i,
 				:layers => @graph.conf.layers
 			}
@@ -490,12 +486,12 @@ class GraphController
 		)
 	end
 
-	def extract_attributes(parameters)
-		attributes = makros_to_attributes(parameters[:words]).merge(parameters[:attributes])
+	def extract_annotations(parameters)
+		makros_to_annotations(parameters[:words]) + parameters[:annotations]
 	end
 
-	def makros_to_attributes(words)
-		words.map{|word| @graph.anno_makros[word]}.compact.reduce(:merge) || {}
+	def makros_to_annotations(words)
+		(words.map{|word| @graph.anno_makros[word]}.compact || []).flatten
 	end
 
 	def error_message_html(message)
@@ -592,7 +588,7 @@ class GraphController
 				@current_sections.first.sentence_nodes.first
 			end
 			@graph.add_anno_node(
-				:attr => extract_attributes(parameters),
+				:anno => extract_annotations(parameters),
 				:layers => layer,
 				:sentence => sentence,
 				:log => log_step
@@ -604,7 +600,7 @@ class GraphController
 			@graph.add_anno_edge(
 				:start => element_by_identifier(parameters[:all_nodes][0]),
 				:end => element_by_identifier(parameters[:all_nodes][1]),
-				:attr => extract_attributes(parameters),
+				:anno => extract_annotations(parameters),
 				:layers => layer,
 				:log => log_step
 			)
@@ -612,17 +608,15 @@ class GraphController
 
 		when 'a' # annotate elements
 			log_step = @log.add_step(:command => @command_line)
-			layer = set_new_layer(parameters[:words])
 			elements = extract_elements(parameters[:elements])
 			# sentence and section nodes may be annotated with arbitrary key-value pairs
 			elements.of_type('s', 'p').each do |element|
-				element.annotate(parameters[:attributes], log_step)
+				element.annotate(parameters[:annotations], log_step)
 			end
 			# annotation of annotation nodes and edges and token nodes is restricted by tagset
 			unless (anno_elements = elements.of_type('a', 't')).empty?
 				anno_elements.each do |e|
-					e.set_layer(layer, log_step) if layer
-					e.annotate(extract_attributes(parameters), log_step)
+					e.annotate(extract_annotations(parameters), log_step)
 				end
 			end
 			undefined_references?(parameters[:elements])
@@ -649,7 +643,7 @@ class GraphController
 			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_parent_node(
 				nodes,
-				:node_attr => extract_attributes(parameters),
+				:node_anno => extract_annotations(parameters),
 				:layers => layer,
 				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
 				:log => log_step
@@ -662,7 +656,7 @@ class GraphController
 			nodes = extract_elements(parameters[:all_nodes])
 			@graph.add_child_node(
 				nodes,
-				:node_attr => extract_attributes(parameters),
+				:node_anno => extract_annotations(parameters),
 				:layers => layer,
 				:sentence => parameters[:words].include?('i') ? nil : nodes.first.sentence,
 				:log => log_step
@@ -675,7 +669,7 @@ class GraphController
 			extract_elements(parameters[:edges]).each do |edge|
 				@graph.insert_node(
 					edge,
-					:attr => extract_attributes(parameters),
+					:anno => extract_annotations(parameters),
 					:layers => layer,
 					:sentence => parameters[:words].include?('i') ? nil : edge.end.sentence,
 					:log => log_step
@@ -755,7 +749,7 @@ class GraphController
 			raise 'Please specify the sections to be grouped!' if section_nodes.empty?
 			log_step = @log.add_step(:command => @command_line)
 			new_section = @graph.build_section(section_nodes, log_step)
-			new_section.annotate(parameters[:attributes], log_step)
+			new_section.annotate(parameters[:annotations], log_step)
 			reload_sections = true
 
 		when 's-rem' # remove section nodes without deleting descendant nodes

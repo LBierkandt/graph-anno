@@ -447,7 +447,7 @@ module GraphSearch
 			layer = nil
 			commands.each do |command|
 				# set attributes (same for all commands except 'a')
-				attrs = interpolate(command[:attributes], tg)
+				annotations = interpolate(command[:annotations], tg)
 				# set layer (same for all commands)
 				if layer_shortcut = command[:words].select{|l| conf.layer_by_shortcut.keys.include?(l)}.last
 					layer = conf.layer_by_shortcut[layer_shortcut]
@@ -459,13 +459,12 @@ module GraphSearch
 				case command[:operator]
 				when 'a'
 					elements.each do |el|
-						el.set_layer(layer, log_step) if layer
-						el.annotate(attrs, log_step)
+						el.annotate(annotations, log_step)
 					end
 				when 'n'
 					if ref_node = nodes.first
 						add_anno_node(
-							:attr => attrs,
+							:anno => annotations,
 							:layers => layer,
 							:sentence => ref_node.sentence,
 							:log => log_step
@@ -480,7 +479,7 @@ module GraphSearch
 						add_anno_edge(
 							:start => start_node,
 							:end => end_node,
-							:attr => attrs,
+							:anno => annotations,
 							:layers => layer,
 							:log => log_step
 						)
@@ -489,7 +488,7 @@ module GraphSearch
 					unless nodes.empty?
 						add_parent_node(
 							nodes,
-							:node_attr => attrs,
+							:node_anno => annotations,
 							:sentence => command[:words].include?('i') ? nil : nodes.first.sentence,
 							:layers => layer,
 							:log => log_step
@@ -499,7 +498,7 @@ module GraphSearch
 					unless nodes.empty?
 						add_child_node(
 							nodes,
-							:node_attr => attrs,
+							:node_anno => annotations,
 							:sentence => command[:words].include?('i') ? nil : nodes.first.sentence,
 							:layers => layer,
 							:log => log_step
@@ -514,7 +513,7 @@ module GraphSearch
 					elements.select{|e| e.is_a?(Edge)}.each do |e|
 						insert_node(
 							e,
-							:attr => attrs,
+							:anno => annotations,
 							:sentence => command[:words].include?('i') ? nil : e.end.sentence,
 							:layers => layer,
 							:log => log_step
@@ -538,15 +537,16 @@ module GraphSearch
 		return search_result_preserved
 	end
 
-	def interpolate(attributes, tg)
-		attributes.map_hash do |k, v|
+	def interpolate(annotations, tg)
+		annotations.map do |annotation|
 			begin
-				v ? tg.execute("\"#{v}\"") : nil
+				annotation[:value] = tg.execute("\"#{annotation[:value]}\"") if annotation[:value]
+				annotation
 			rescue NoMethodError => e
 				match = e.message.match(/undefined method `(\w+)' for .+:(\w+)/)
-				raise "Undefined method '#{match[1]}' for #{match[2]} in string:\n\"#{v}\""
+				raise "Undefined method '#{match[1]}' for #{match[2]} in string:\n\"#{annotation[:value]}\""
 			rescue StandardError => e
-				raise "#{e.message} in string:\n\"#{v}\""
+				raise "#{e.message} in string:\n\"#{annotation[:value]}\""
 			rescue SyntaxError => e
 				raise clean_syntax_error_message(:message => e.message)
 			end

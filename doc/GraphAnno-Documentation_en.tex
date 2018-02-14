@@ -593,7 +593,7 @@ But if you have defined at least one tagset rule, only those annotations are all
 Already existing annotations, however, are not affected by changing the rules.
 As a special case, the \code{token} annotation on token nodes – i.e., changing the token text – is always possible.
 
-Tagset rules consist of three components: context, key and values.
+Tagset rules consist of four components: context, key, layer and values.
 
 The \textit{context} restricts the scope of a rule; i.e., the rule only applies to those elements that match its context definition.
 The context definition is basically an \textit{element description} of the query language (cf. Section \ref{elementbeschreibung}), but only a subset may be used for context definitions:
@@ -603,6 +603,10 @@ If you leave the context input field empty, the rule applies to all elements.
 The \textit{key} is the annotation key that will be permitted by the rule.
 Write the key without quotes, even if it contains special characters.
 If you leave this input field empty, all annotations are allowed for the given context.
+
+In the \textit{layer} field you may add the shortcut for a layer or layer combination.
+This will restrict the annotations that are permitted by the rule to the given layer(s).
+To reduce confusion: layers you mention in the context field refer to the element’s layers, the layer(s) in the layer field refer to the layer(s) of the annotation. 
 
 The \textit{values} restrict the permitted annotation values for the given key.
 Enter the values separated by spaces.
@@ -869,13 +873,14 @@ If you provide section or sentence names as arguments, these sections/sentences 
 GraphAnno’s annotation commands are designed to be entered quickly, so their syntax is rather compact:
 they consist of a short command (often one letter only) and are followed by parameters seperated by spaces.
 
-The commands require to be in a sentence, i.e., you have to create a sentence first (using the command \code{ns}, see \ref{befehl-ns}) if the work space is empty.
-
 
 \subsubsection{New node: \texttt{n}}\label{befehl-n}
 
-The command for creating a new node is \code{n}, followed by the attributes the new node is to bear as key-value pairs in the format \code{key:value}.
-Key and value can be given either as simple string (if it doesn’t contain any of the special characters used in the annotation language: \code{␣:\quo\#})\footnote{The symbol \code{\mbox{\,␣\,}} stands for the space.}) or as string in double quotes (\code{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \code{\quo...\textbackslash\quo...\quo}).
+The command for creating a new node is \code{n}, followed by the attributes the new node should have and optionally the layer(s) it should belong to.
+
+The attributes can be either simple key-value pairs in the format \code{key:value} – which will add the annotation to all levels of the new node – or a combination of layer shortcut, key and value in the format \code{layer:key:value} – which will add the annotation only for the given layer (or layer combination) of the new node.
+
+Key and value can be given either as bare string (if it doesn’t contain any of the special characters used in the annotation language: \code{␣:\quo\#})\footnote{The symbol \code{\mbox{\,␣\,}} stands for the space.}) or as string in double quotes (\code{\quo...\quo}), that may contain any character (double quotes themselves have to be excaped with a backslash: \code{\quo...\textbackslash\quo...\quo}). The layer shortcut is always a bare string.
 
 You can also use a shortcut from previously defined annotation makros (see Section \ref{annotationsmakros}).
 When you additionally enter attributes with keys present in the makro, these override the annotations defined in the makro.
@@ -901,7 +906,7 @@ n_parameters         =   n_parameters " " n_parameters
 attributes           =   attributes " " attributes
                          attribute
                          annotation_shortcut
-attribute            =   key string
+attribute            =   (layer_shortcut ":")? key string
 key                  =   string ":"
 string               =   character_not_special+
                          """ character* """
@@ -920,7 +925,7 @@ independent_node_ref =   "i" number
 \subsubsection{New edge: \texttt{e}}
 
 The command for creating a new edge is \code{e}, followed by start and end node of the edge to be created and the attributes it is to bear (you may give nodes and attributes in arbitrary order; if you accidently provide more than two nodes, the first two nodes will be considered).
-Like with \code{n}, the specification of a layer is possible.
+Like with \code{n}, you may also specify the layer(s) of the new edge.
 
 \paragraph*{Command \code{e} in modified BNF:}
 ~
@@ -935,13 +940,18 @@ e_parameters    =   e_parameters " " e_parameters
 
 \subsubsection{Annotate: \texttt{a}}\label{befehl-a}
 
-The command for annotation elements is \code{a}, followed by the elements to be annotated and the attributes with which they are to be annotated (all given elements will be annotated with all given attributes; also layer shortcuts can be used).
-The order of the elements and attributes is free.
+The command for annotating elements is \code{a}, followed by the elements to be annotated and the attributes with which they are to be annotated (all given elements will be annotated with all given attributes – if the tagset allows it, see below).
+The order of elements and attributes is free.
+
 You can also annotate sequences of elements of the same type (i.e., \code{n}, \code{i}, \code{t} or \code{e}) by entering the first and the last element joined by two dots.
 E.g., when you enter \code{t3..t7}, all tokens from \code{t3} to \code{t7} will be annotated (you may enter the sequence also in the inverse order, i.e., \code{t7..t3}).
 
-At the same time you can use the command \code{a} for deleting attributes.
-In order to do so, enter the key to be deleted with colon, but without value.
+If the given annotations are not allowed for one of the given elements by the corpus’ tagset (cf. \ref{erlaubteannotationen}) you will receive a warning, but the allowed annotations will be applied nevertheless.
+If the tagset restricts the permitted layer(s) for an annotation and you don’t specify the layer, the annotation will only be added for the permitted layer(s).
+
+The command \code{a} serves also for deleting annotations.
+In order to do so, enter the key (or layer key combination) to be deleted with a colon, but without value.
+You can add and delete annotation in the same command.
 
 The command \code{a} also serves for annotating sentences and sections.
 The sentence and section nodes are referenced like \code{s0}, \code{s1} etc., where \code{s0} stands for the current sentence(s), \code{s1} for the parent section(s) of the current sentence(s), \code{s2} for the parent(s) of the parent section(s) and so on.
@@ -954,7 +964,6 @@ a_parameters           =   a_parameters " " a_parameters
                            element_reference
                            section_node_reference
                            attributes
-                           layer_shortcut
                            key
 element_reference      =   node_reference
                            edge_reference
@@ -976,6 +985,9 @@ edge_sequence          =   edge_reference ".." edge_reference
 The command \code{l} sets the layer or layer combination of the given elements and switches to the specified layer/combination for the following operations.
 As arguments, specify the elements to be affected and the layer shortcut as defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}).
 If you don’t provide a layer shortcut, the elements are set to belonging to no layer at all, and the current layer is set to \textit{none}.
+
+For layers the given elements are removed from, the annotations will be removed as well.
+For layers the given elements are added to, there won’t be any annotations initially.
 
 You may also use the command as a simple layer switch (as an alternative to the select field) by giving only the layer shortcut (or none) without any elements.
 
@@ -1153,12 +1165,15 @@ Of the following sections, the first one explains how a to-be-matched element is
 An \textit{element description} is the part of a query clause that defines which properties an element (node or edge) must have in order to be matched by a query.
 Such an element description defines which conditions the attributes and layers of an element should match and, additionally, it may specify conditions on ingoing and outgoing edges (for nodes) as well as conditions on start and end nodes (for edges).\\
 
-The description of the attributes is composed of key-value pairs of the form \code{key:value}, that are joined by the logical operators \code{!} for \textit{not}, \code{\&} for \textit{and} and \code{|} for \textit{or} (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
-As a shortcut for disjunctions of key-value pairs with the same key, you may use a key-value pair description of the form \code{key:value1|value2|...|valueN}.
+The description of the attributes of the elements to be matched is composed of key-value pairs in the form \code{key:value} or triples of layer shortcut, key and value in the form \code{layer:key:value}. 
+These attribute descriptions are joined by the logical operators \code{!} for \textit{not}, \code{\&} for \textit{and} and \code{|} for \textit{or} (precedence: \code{!} > \code{\&} > \code{|}) as well as (round) parentheses.
+As a shortcut for disjunctions of attribute descriptions with the same key (and layer), you may use an attribute description of the form \code{key:value1|value2|...|valueN} (or \code{layer:key:value1|value2|...|valueN}, respectively).
 
-The key of a key-value pair can be given as a simple string if it does not contain any of the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}), else it has to be given in double quotes (\code{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}).
+Attribute descriptions with a layer shortcut match elements that bear the given key-value annotation on the given layer(s); attribute descriptions without a layer shortcut match only elements that bear the given annotation on \textit{all} their layers.
 
-\phantomsection\label{zeichenketten}The values of the key-value pairs are strings, that can be given in three different formats.
+The key of an attribute description can be given as a bare string if it does not contain any of the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}), else it has to be given in double quotes (\code{{\quo}xyz\quo}) and can then contain any character (double quotes have to be escaped with a backslash: \code{\textbackslash\quo}). The layer shortcut must always be a bare string.
+
+\phantomsection\label{zeichenketten}The values of the attribute descriptions are strings, that can be given in three different formats.
 The first format is a simple, unmarked string that may contain all characters except the control characters of the query language (\code{␣():!\&\quo/?+*\{\}@\#\textasciicircum}).
 These strings will be matched case-insensitively.
 The second format is a string in double quotes (\code{{\quo}xyz\quo}).
@@ -1168,15 +1183,15 @@ A regular expression has to be written in slashes (\code{/x.z/}) and has to conf
 The regular expressions are not anchored; i.e., for anchoring a regular expression to the start or end of a string you have to use \code{\textasciicircum} or \code{\$}, respectively.
 You can find an arbitrary string using an empty regular expression (i.e. \code{//}).
 
-If you omit a value string, those elements are matched that bear no annotation at all for the given key. So, e.g., \code{tns:} matches all elements without a tns annotation, \code{!tns:} matches all elements with a tns annotation, \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation.\\
+If you omit a value string, those elements are matched that bear no annotation at all for the given key (and layer). So, e.g., \code{tns:} matches all elements without a tns annotation, \code{s:tns:} matches all elements without a tns annotation on the s layer, \code{!tns:} matches all elements with a tns annotation (on any layer), \code{tns:|prs} matches all elements with the tns annotation prs or no tns annotation (on all layers).\\
 
 For matching the layer of an element, you use the shortcut defined for that layer (cf. Section \ref{ebenenkonfiguration}).
-Layer shortcuts can be combined using logical operators just like key-value pairs.
+Layer shortcuts can be combined using logical operators just like attribute descriptions.
 So, if you want to find elements with a specific layer combination you may of course use the respective layer shortcuts joined by \code{\&}, but also the shortcut for that combination.
 
 Token nodes are matched by using the keyword \code{token}.\\
 
-\phantomsection\label{quantifiers}For nodes, the element description may, in addition to key-value pairs and layer shortcuts, contain criteria for ingoing and outgoing edges.
+\phantomsection\label{quantifiers}For nodes, the element description may, in addition to attribute descriptions and layer shortcuts, contain criteria for ingoing and outgoing edges.
 These criteria are composed of the keyword \code{in} or \code{out}, an optional element description in parentheses and an optional quantifier.
 The operators \code{in} or \code{out} find all ingoing or outgoing edges, respectively, that match the given element description.
 The quantifier specifies how many edges matching the given description have to be present; its syntax is familiar from regular expressions:
@@ -1191,15 +1206,15 @@ The rules for quantifiers used together with the \code{link} operator are the sa
 
 The operators \code{in}, \code{out} and \code{link} are meaningless if used on the description of an edge; they always match with a count of 1 when used on edges.\\
 
-For edges, the element description may contain, additionally to the key-value pairs, properties of the start or end node, specified with the keyword \code{start} or \code{end}, respectively, followed by the node description in parentheses.
+For edges, the element description may contain, additionally to attribute descriptions and layer shortcuts, properties of the start or end node, specified with the keyword \code{start} or \code{end}, respectively, followed by the node description in parentheses.
 
 The operators \code{start} and \code{end} are meaningless in node descriptions; they always match when used on nodes.
 
 \paragraph*{The element description in modified BNF:}
 ~
 \begin{lstlisting}
-element_description = element_description" & " element_description
-                      element_description" | " element_description
+element_description = element_description " & " element_description
+                      element_description " | " element_description
                       "!" element_description
                       "(" element_description ")"
                       attribute
@@ -1207,7 +1222,9 @@ element_description = element_description" & " element_description
                       edge_criterion
                       node_criterion
                       "token"
-attribute           = string ":" attribute_value ("|" attribute_value)*
+attribute           = (layer_shortcut ":")? key attribute_value ("|" attribute_value)*
+layer_shortcut      = alnum+
+key                 = string ":"
 attribute_value     = char_except_control_char+
                       """ character* """
                       "/" regular_expression "/"
@@ -1444,7 +1461,9 @@ The clause is composed of the keyword \code{cond} and the condition in Ruby code
 The nodes and node sets are referenced with the IDs used in the other clauses of the query.
 When using IDs, note that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
-In the condition, you may access the attributes of elements using square brackets like this: \code{['key']}; for the attributes \code{token} and \code{cat} you can use as a shortcut the accessor methods \code{.token} and \code{.cat}.
+In the condition, you may access the attributes of elements using square brackets like this: \code{['key', 'layer\_shortcut']} (where \code{layer\_shortcut} mustn’t be a layer combination) or this: \code{['key']}.
+The first variant gives you the value for the given key on the given layer; the second variant gives you the value for the given key if it has the same value on all layers or \code{nil} if it hasn’t.
+For the attributes \code{token} and \code{cat} you can use as a shortcut the accessor methods \code{.token} and \code{.cat}.
 The layer(s) of an element are accessed via the method \code{.layers}; this method returns an array of the shortcuts of the layers the element belongs to.
 Via the method \code{.sentence} you can access the sentence node the element belongs to.
 When using attribute values, bear in mind that these are always strings; you may cast them to numbers with \code{.to\_i} or \code{.to\_f} for integers or floating point numbers, respectively.

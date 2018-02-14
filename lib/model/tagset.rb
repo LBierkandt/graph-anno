@@ -33,13 +33,13 @@ class Tagset < Array
 		end
 	end
 
-	def allowed_attributes(attr, element)
-		return attr.clone if self.empty?
+	def allowed_annotations(annotations, element)
+		return annotations if self.empty?
 		applicable_rules = self.select{|rule| element.fulfil?(rule.parsed_context)}
-		attr.select do |key, value|
-			value.nil? or
-				applicable_rules.any?{|rule| rule.allowes?(key, value)} or
-				(element.is_a?(Node) && element.type == 't' && key == 'token')
+		annotations.select do |annotation|
+			annotation[:value].nil? or
+				applicable_rules.any?{|rule| rule.allowes?(annotation)} or
+				(element.is_a?(Node) && element.type == 't' && annotation[:key] == 'token')
 		end
 	end
 
@@ -53,7 +53,12 @@ class Tagset < Array
 
 	def for_autocomplete(elements = nil)
 		applicable_rules = if elements
-			select{|rule| elements.all?{|el| el.fulfil?(rule.parsed_context)}}
+			select do |rule|
+				elements.all? do |el|
+					el.fulfil?(rule.parsed_context) &&
+						(rule.layer_shortcuts ? (rule.layer_shortcuts - el.layers.map{|l| l.shortcut}).empty? : true)
+				end
+			end
 		else
 			self
 		end
@@ -62,19 +67,23 @@ class Tagset < Array
 end
 
 class TagsetRule
-	attr_accessor :key, :values, :context, :parsed_context
+	attr_accessor :key, :values, :context, :parsed_context, :layer, :layer_shortcuts
 
 	def initialize(h, graph)
 		errors = []
+		@graph = graph
 		@context = h['context'].to_s
 		begin
-			@parsed_context = graph.parse_attributes(@context, true)[:op]
+			@parsed_context = @graph.parse_attributes(@context, true)[:op]
 		rescue RuntimeError
 			errors << "Invalid context: \"#{@context}\""
 		end
 		@key = h['key'].strip
+		@layer = h['layer']
+		layer = @layer.to_s.parse_parameters[:words].find{|w| @graph.conf.layer_by_shortcut[w]}
+		@layer_shortcuts = layer ? @graph.conf.layer_by_shortcut[layer].layers.map(&:shortcut) : nil
 		begin
-			@values = graph.lex_ql(h['values']).select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
+			@values = @graph.lex_ql(h['values']).select{|tok| [:bstring, :qstring, :regex].include?(tok[:cl])}
 		rescue RuntimeError
 			errors << "Invalid values: \"#{h['values']}\""
 		end
@@ -82,17 +91,22 @@ class TagsetRule
 	end
 
 	def to_h
-		{:key => @key, :values => values_string, :context => @context}
+		{:key => @key, :values => values_string, :context => @context, :layer => @layer}
 	end
 
 	def for_autocomplete
 		@values.map do |tok|
-			if tok[:cl] == :bstring
+			base = if tok[:cl] == :bstring
 				"#{@key}:#{tok[:str]}"
 			elsif tok[:cl] == :qstring
 				"#{@key}:\"#{tok[:str]}\""
 			end
-		end.compact
+			if base && !@layer.to_s.empty?
+				[base, "#{@layer}:#{base}"]
+			else
+				base
+			end
+		end.compact.flatten
 	end
 
 	def values_string
@@ -108,16 +122,20 @@ class TagsetRule
 		end * ' '
 	end
 
-	def allowes?(key, value)
+	def allowes?(annotation)
 		return true if @key.empty?
-		return false unless @key == key
+		return false unless @key == annotation[:key]
 		return true if @values == []
+		if annotation[:layer] && @layer_shortcuts &&
+			 !(@graph.conf.expand_shortcut(annotation[:layer]) - @layer_shortcuts).empty?
+			return false
+		end
 		@values.any? do |rule|
 			case rule[:cl]
 			when :bstring, :qstring
-				value == rule[:str]
+				annotation[:value] == rule[:str]
 			when :regex
-				value.match('^' + rule[:str] + '$')
+				annotation[:value].match('^' + rule[:str] + '$')
 			end
 		end
 	end

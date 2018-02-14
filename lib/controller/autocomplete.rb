@@ -24,7 +24,7 @@ module Autocomplete
 		when :file
 			file_suggestions(input)
 		when :anno
-			tagset_suggestions(@sinatra.params) + makro_suggestions + layer_suggestions + aref_suggestions
+			tagset_suggestions(@sinatra.params) + makro_suggestions + aref_suggestions
 		when :nodes_anno
 			tagset_suggestions(@sinatra.params) + makro_suggestions + layer_suggestions +
 				nnode_suggestions + inode_suggestions + token_suggestions

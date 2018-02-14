@@ -19,13 +19,13 @@
 
 class Attributes
 	def initialize(h)
-		attr = h[:attr] || {}
-		private_attr = h[:private_attr] || {}
 		@host = h[:host]
+		attr = h[:attr].is_a?(Array) ? hashify(h[:attr]) : (h[:attr] || {})
+		private_attr = h[:private_attr].is_a?(Array) ? hashify(h[:private_attr]) : (h[:private_attr] || {})
 		if h[:raw]
 			# set directly
-			@attr = attr.clone
-			@private_attr = Hash[private_attr.map {|k, v| [@host.graph.get_annotator(:id => k), v] }]
+			@attr = expand(attr)
+			@private_attr = Hash[private_attr.map {|k, v| [@host.graph.get_annotator(:id => k), expand(v)] }]
 		else
 			# set via key-distinguishing function
 			@attr = {}
@@ -55,20 +55,43 @@ class Attributes
 		end
 	end
 
-	def [](key)
-		output[key]
+	# returns a hash like {key => {value => [layers], ...}, ...}
+	def grouped_output
+		output.map_hash do |key, layer_value_map|
+			layer_value_map.group_by{|l, v| v}.map_hash{|k, v| v.map{|a| a.first}}
+		end
 	end
 
-	def []=(key, value)
-		if @host.graph.current_annotator
-			if neutral?(key)
-				@attr[key] = value
-			else
-				@private_attr[@host.graph.current_annotator] ||= {}
-				@private_attr[@host.graph.current_annotator][key] = value
-			end
+	def [](key, layer = nil)
+		if layer
+			output[key] ? output[key][@host.graph.conf.layer_by_shortcut[layer]] : nil
 		else
-			@attr[key] = value
+			if grouped_output[key] && result_array = grouped_output[key].find{|value, layers| host_layers?(layers)}
+				result_array.first
+			else
+				nil
+			end
+		end
+	end
+
+	# setter for attributes, excepting either `attr[key] = value` or `attr[key, layer] = value`
+	# where the former sets the annotation for all layers of the host element
+	def []=(key, layer_or_value, value = nil)
+		value, layer = if value
+			[value, layer_or_value]
+		else
+			[layer_or_value, nil]
+		end
+		hash = if @host.graph.current_annotator && !neutral?(key)
+			@private_attr[@host.graph.current_annotator] ||= {}
+		else
+			@attr
+		end
+		if layer
+			raise 'Annotations are restricted to the layers of their host element' unless @host.layers.include?(layer)
+			(hash[key] ||= {})[layer] = value
+		else
+			hash[key] = expand_value(value)
 		end
 	end
 
@@ -76,23 +99,30 @@ class Attributes
 		output.merge(hash)
 	end
 
-	def annotate_with(hash)
+	def annotate_with(annotations)
+		hash = expand(annotations.is_a?(Hash) ? annotations : hashify(annotations))
 		if @host.graph.current_annotator
 			@private_attr[@host.graph.current_annotator] ||= {}
-			@attr.merge!(hash.select{|k, v| neutral?(k)})
-			@private_attr[@host.graph.current_annotator].merge!(hash.reject{|k, v| neutral?(k)})
+			@attr.deep_merge!(hash.select{|k, v| neutral?(k)})
+			@private_attr[@host.graph.current_annotator].deep_merge!(hash.reject{|k, v| neutral?(k)})
 		else
-			@attr.merge!(hash)
+			@attr.deep_merge!(hash)
 		end
 		self
 	end
 
 	def remove_empty!
+		remove_empty_values(@attr)
 		if @host.graph.current_annotator
-			@attr.keep_if{|k, v| v}
-			@private_attr[@host.graph.current_annotator].keep_if{|k, v| v}
-		else
-			@attr.keep_if{|k, v| v}
+			remove_empty_values(@private_attr[@host.graph.current_annotator])
+		end
+		self
+	end
+
+	def keep_layers(layers)
+		return self unless layers
+		([@attr] + @private_attr.values).each do |attr|
+			attr.each{|key, v| v.keep_if{|layer, value| layers.include?(layer)}}
 		end
 		self
 	end
@@ -127,8 +157,68 @@ class Attributes
 
 	def to_h
 		h = {}
-		h.merge!(:attr => @attr.clone) unless @attr.empty?
-		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.id, attr.clone] }]) unless @private_attr.empty?
+		h.merge!(:attr => compress(@attr)) unless @attr.empty?
+		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.id, compress(attr)] }]) unless @private_attr.empty?
 		h
+	end
+
+	private
+
+	def remove_empty_values(attr)
+		attr.each{|k, v| v.keep_if{|layer, value| value}}
+		attr.keep_if{|k, v| v && !v.empty?}
+	end
+
+	def expand(h)
+		h.map_hash do |k, v|
+			case v
+			when String
+				expand_value(v)
+			when Hash
+				Hash[v.map{|layer, value| [layer.is_a?(String) ? @host.graph.conf.layer_by_shortcut[layer] : layer, value]}]
+			end
+		end
+	end
+
+	def compress(h)
+		h.map_hash do |k, h|
+			if h.values.uniq.length == 1 && host_layers?(h.keys)
+				h.values.first
+			else
+				Hash[h.map{|layer, value| [layer.shortcut, value]}]
+			end
+		end
+	end
+
+	def expand_value(value)
+		if @host.layers.empty?
+			{nil => value}
+		else
+			Hash[@host.layers.map{|layer| [layer, value]}]
+		end
+	end
+
+	def hashify(annotations)
+		raw_hash = Hash.new{|h, k| h[k] = {}}
+		annotations.each do |a|
+			if a[:layer]
+				@host.graph.conf.layer_by_shortcut[a[:layer]].layers.map(&:shortcut).each do |shortcut|
+					raw_hash[a[:key]][shortcut] = a[:value]
+				end
+			else
+				if @host.layers.empty?
+					raw_hash[a[:key]] = a[:value]
+				else
+					@host.layers.map(&:shortcut).each do |shortcut|
+						raw_hash[a[:key]][shortcut] = a[:value]
+					end
+				end
+			end
+		end
+		raw_hash
+	end
+
+	def host_layers?(layers)
+		(@host.layers - layers).empty?
 	end
 end

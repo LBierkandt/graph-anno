@@ -20,7 +20,7 @@
 require 'pathname.rb'
 
 module GraphPersistence
-	GRAPH_FORMAT_VERSION = 10
+	GRAPH_FORMAT_VERSION = 11
 	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
@@ -241,12 +241,18 @@ module GraphPersistence
 	def add_configuration(data)
 		@multifile[:files] = data['files'] if @multifile
  		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
-		@anno_makros = data['anno_makros'] || {}
+		@anno_makros = (data['anno_makros'] || {}).map_hash do |key, annotations|
+			if annotations.is_a?(Hash) # old format before introduction of layer-specific annotations
+				annotations.map{|key, value| {:key => key, :value => value}}
+			else
+				annotations.map(&:symbolize_keys)
+			end
+		end
 		@info = data['info'] || {}
+		@conf = GraphConf.new(data['conf'])
 		@tagset = Tagset.new(self, data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
 		@media = data['media'] ? (@path.dirname + data['media']).expand_path : nil
-		@conf = GraphConf.new(data['conf'])
 		set_makros(data['search_makros'] || [])
 	end
 

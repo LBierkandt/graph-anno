@@ -27,7 +27,7 @@ class NodeOrEdge
 		@id = h[:id]
 		@type = h[:type]
 		@custom = h[:custom]
-		@layers = h[:layers].is_a?(AnnoLayer) ? h[:layers].layers : h[:layers] || []
+		set_layer(h[:layers])
 		@attr = Attributes.new(h.merge(:host => self))
 	end
 
@@ -36,14 +36,18 @@ class NodeOrEdge
 		self.to_h.to_json(*a)
 	end
 
-	# alternative getter for @attr hash
-	def [](key)
-		@attr[key]
+	# alternative getter for @attr
+	def [](key, layer = nil)
+		@attr[key, layer]
 	end
 
-	# alternative setter for @attr hash
-	def []=(key, value)
-		@attr[key] = value
+	# alternative setter for @attr, excepting either `attr[key] = value` or `attr[key, layer] = value`
+	def []=(key, layer_or_value, value = nil)
+		if value
+			@attr[key, layer_or_value] = value
+		else
+			@attr[key] = layer_or_value
+		end
 	end
 
 	# @return [String] self's cat attribute
@@ -67,41 +71,36 @@ class NodeOrEdge
 		@attr.private[annotator] || {}
 	end
 
-	# annotate self with the given attributes
-	# @param attributes [Hash] the attributes to be added to self's annotations
+	# annotate self with the given annotations after validating them
+	# @param annotations [Array] the annotations as an Array of Hashes in the form {:layer => ..., :key => ..., :value => ...}
 	# @param log_step [Step] optionally a log step to which the changes will be logged
-	def annotate(attributes, log_step = nil)
-		attributes ||= {}
-		effective_attr = if @type == 'a' || @type == 't'
-			@graph.allowed_attributes(attributes, self)
-		else
-			attributes
-		end
-		log_step.add_change(:action => :update, :element => self, :attr => effective_attr) if log_step
-		@attr.annotate_with(effective_attr).remove_empty!
+	def annotate(annotations, log_step = nil)
+		annotations ||= []
+		effective_annotations = @graph.allowed_annotations(annotations, self)
+		log_step.add_change(:action => :update, :element => self, :attr => effective_annotations) if log_step
+		@attr.annotate_with(effective_annotations).remove_empty!
 	end
 
 	# set self's layer array
 	# @param attributes [AnnoLayer] the new layer or layer combination
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def set_layer(layer, log_step = nil)
-		layers_array = layer ? layer.layers : []
-		log_step.add_change(:action => :update, :element => self, :layers => layers_array) if log_step
-		@layers = layers_array
-	end
-
-	# returns the layer or layer combination that should be used for the display of self (i.e. the most specific one)
-	# @return [AnnoLayer]
-	def layer_or_combination
-		@graph.conf.layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
-			return l if @layers and l.layers - @layers == []
+		layers_array = case layer
+		when AnnoLayer
+			layer.layers
+		when Array
+			layer.map{|l| l.is_a?(AnnoLayer) ? l : @graph.conf.layer_by_shortcut[l]}
+		else
+			[]
 		end
-		return nil
+		log_step.add_change(:action => :update, :element => self, :layers => layers_array, :attr => {}) if log_step
+		@layers = layers_array
+		@attr.keep_layers(@layers) if @attr
 	end
 
 	# whether self fulfils a given condition; returns numeral values for some condition types
 	# @param bedingung [Hash] a condition hash
-	# @param inherited [Hash] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false
+	# @param inherited [Boolean] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false
 	# @return [Boolean, Integer] true if self matches the given condition; number of connections for condition types 'in', 'out' and 'link'
 	def fulfil?(bedingung, inherited = false)
 		bedingung = @graph.parse_attributes(bedingung)[:op] if bedingung.is_a?(String)
@@ -109,21 +108,21 @@ class NodeOrEdge
 		satzzeichen = '.,;:?!"'
 		case bedingung[:operator]
 		when 'attr'
-			knotenwert = inherited && is_a?(Node) ? inherited_attributes[bedingung[:key]] : @attr[bedingung[:key]]
-			wert = bedingung[:value]
-			return true unless knotenwert || wert
-			return false unless knotenwert && wert
+			element_value = (inherited && is_a?(Node) ? inherited_attributes : @attr)[bedingung[:key], bedingung[:layer]]
+			value = bedingung[:value]
+			return true unless element_value || value
+			return false unless element_value && value
 			case bedingung[:method]
 			when 'plain'
-				return true if knotenwert == wert
+				return true if element_value == value
 			when 'insens'
 				if bedingung[:key] == 'token'
-					return true if UnicodeUtils.downcase(knotenwert.xstrip(satzzeichen)) == UnicodeUtils.downcase(wert)
+					return true if UnicodeUtils.downcase(element_value.xstrip(satzzeichen)) == UnicodeUtils.downcase(value)
 				else
-					return true if UnicodeUtils.downcase(knotenwert) == UnicodeUtils.downcase(wert)
+					return true if UnicodeUtils.downcase(element_value) == UnicodeUtils.downcase(value)
 				end
 			when 'regex'
-				return true if knotenwert.match(wert)
+				return true if element_value.match(value)
 			end
 			return false
 		when 'layer'

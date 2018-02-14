@@ -41,8 +41,8 @@ class Graph
 		@node_index = Hash.new{|h, k| h[k] = {}}
 		@path = nil
 		@multifile = nil
-		@conf = GraphConf.new
 		@info = {}
+		@conf = GraphConf.new
 		@tagset = Tagset.new(self)
 		@annotators = []
 		@current_annotator = nil
@@ -95,9 +95,8 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_anno_node(h)
-		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 'a'))
-		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
+		n.annotate(h[:anno])
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -110,9 +109,8 @@ class Graph
 	# @param h [{:attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Node] the new node
 	def add_token_node(h)
-		attributes = h.delete(:attr) unless h[:raw]
 		n = add_node(h.merge(:type => 't'))
-		n.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
+		n.annotate(h[:anno])
 		e = add_sect_edge(:start => h[:sentence], :end => n) if h[:sentence]
 		if h[:log]
 			h[:log].add_change(:action => :create, :element => n)
@@ -171,9 +169,8 @@ class Graph
 	# @param h [{:start => Node, :end => Node, :attr => Hash, :id => String}] :attr and :id are optional; the id should only be used for reading in serialized graphs, otherwise the ids are cared for automatically
 	# @return [Edge] the new edge
 	def add_anno_edge(h)
-		attributes = h.delete(:attr) unless h[:raw]
 		e = add_edge(h.merge(:type => 'a'))
-		e.annotate(attributes) unless h[:raw] # don't log annotation, only creation of full element (below)
+		e.annotate(h[:anno])
 		h[:log].add_change(:action => :create, :element => e) if h[:log]
 		return e
 	end
@@ -238,7 +235,7 @@ class Graph
 	# @param h [{:node_attr => Hash, :edge_attr => Hash, :layers => AnnoLayer or Array, :sentence => Node, :log => Step}]
 	def add_parent_node(nodes, h = {})
 		parent_node = add_anno_node(
-			:attr => h[:node_attr],
+			:anno => h[:node_anno],
 			:layers => h[:layers],
 			:sentence => h[:sentence],
 			:log => h[:log]
@@ -247,7 +244,7 @@ class Graph
 			add_anno_edge(
 				:start => parent_node,
 				:end => n,
-				:attr => h[:edge_attr],
+				:anno => h[:edge_anno],
 				:layers => h[:layers],
 				:log => h[:log]
 			)
@@ -259,7 +256,7 @@ class Graph
 	# @param h [{:node_attr => Hash, :edge_attr => Hash, :layers => AnnoLayer or Array, :sentence => Node, :log => Step}]
 	def add_child_node(nodes, h = {})
 		child_node = add_anno_node(
-			:attr => h[:node_attr],
+			:anno => h[:node_anno],
 			:layers => h[:layers],
 			:sentence => h[:sentence],
 			:log => h[:log]
@@ -268,7 +265,7 @@ class Graph
 			add_anno_edge(
 				:start => n,
 				:end => child_node,
-				:attr => h[:edge_attr],
+				:anno => h[:edge_anno],
 				:layers => h[:layers],
 				:log => h[:log]
 			)
@@ -685,7 +682,9 @@ class Graph
 		when 'regex'
 			sentences = text.split(options['sentences']['sep'])
 			parameters = options['tokens']['anno'].parse_parameters
-			annotation = parameters[:attributes].map_hash{|k, v| v.match(/^\$\d+$/) ? v.match(/^\$(\d+)$/)[1].to_i - 1 : v}
+			annotation = parameters[:annotations].map do |a|
+				a.merge(:value => a[:value].match(/^\$\d+$/) ? a[:value].match(/^\$(\d+)$/)[1].to_i - 1 : a[:value])
+			end
 		when 'punkt'
 			sentences = NLP.segment(text, options['language'])
 		end
@@ -702,8 +701,8 @@ class Graph
 				words = s.scan(options['tokens']['regex'])
 				tokens = build_tokens([''] * words.length, :sentence => sentence_node)
 				tokens.each_with_index do |t, i|
-					annotation.each do |k, v|
-						t[k] = (v.is_a?(Fixnum)) ? words[i][v] : v
+					annotation.each do |a|
+						t[a[:key]] = (a[:value].is_a?(Fixnum)) ? words[i][a[:value]] : a[:value]
 					end
 				end
 			when 'punkt'
@@ -713,15 +712,31 @@ class Graph
 		end
 	end
 
-	# filter a hash of attributes to be annotated; let only attributes pass that are allowed
-	# @param attr [Hash] the attributes to be annotated
-	# @return [Hash] the allowed attributes
-	def allowed_attributes(attr, element)
-		allowed_attr = @tagset.allowed_attributes(attr, element)
-		if (forbidden = attr.compact.keys - allowed_attr.keys) != []
-			@messages << "Illicit annotation: #{forbidden.map{|k| k+':'+attr[k]} * ' '}"
+	# filter an array of (potential) annotations; let only annotations pass that are allowed
+	# @param attr [Array] the annotations to be used
+	# @return [Array] the allowed annotations
+	def allowed_annotations(annotations, element)
+		# add indices for tracking invalid annotations
+		annotations.each_with_index{|a, i| a[:id] = i}
+		# allow only annotations on element's layers
+		allowed = annotations.select do |a|
+			!a[:layer] ||
+				@conf.layer_by_shortcut[a[:layer]] &&
+				(@conf.expand_shortcut(a[:layer]) - element.layers.map(&:shortcut)).empty?
 		end
-		return allowed_attr
+		if element.type == 'a' || element.type == 't'
+			# expand layerless rules
+			allowed.map! do |a|
+				(a[:layer] || element.layers.empty?) ? a : element.layers.map{|l| a.merge(:layer => l.shortcut)}
+			end.flatten!
+			# check against tagset
+			allowed = @tagset.allowed_annotations(allowed, element)
+		end
+		# inform about invalid annotations
+		invalid = (annotations.map{|a| a[:id]} - allowed.map{|a| a[:id]}).map{|id| annotations.find{|a| a[:id] == id}}
+		@messages << "Illicit annotation: #{Graph.annotations_to_s(invalid)}" unless invalid.empty?
+		# return allowed annotations
+		allowed
 	end
 
 	# get the graph's messages and clear them
@@ -769,5 +784,11 @@ class Graph
 		@multifile[:order_edges] = @multifile[:sentence_index].map{|f, list|
 			list.last.out.of_type('o').first
 		}.compact
+	end
+
+	def self.annotations_to_s(annotations)
+		annotations.map do |a|
+			"#{a[:layer] ? "#{a[:layer]}:" : ''}#{a[:key]}:#{a[:value]}"
+		end.join(' ')
 	end
 end

@@ -80,16 +80,19 @@ class Hash
 	# returns a new hash with self and other_hash merged recursively
 	# @return [Hash] the new Hash
 	def deep_merge(other_hash)
-		new_hash = self.clone
+		dup.deep_merge!(other_hash)
+	end
+
+	def deep_merge!(other_hash)
 		other_hash.each do |k, v|
-			tv = new_hash[k]
+			tv = self[k]
 			if tv.is_a?(Hash) && v.is_a?(Hash)
-				new_hash[k] = tv.deep_merge(v)
+				self[k] = tv.deep_merge(v)
 			else
-				new_hash[k] = v
+				self[k] = v
 			end
 		end
-		return new_hash
+		return self
 	end
 end
 
@@ -98,7 +101,7 @@ class String
 		str = self.strip
 		h = {
 			:string => str,
-			:attributes => {},
+			:annotations => [],
 			:elements => [],
 			:words => [],
 			:all_nodes => [],
@@ -121,6 +124,7 @@ class String
 		r[:bsequence] = r[:bstring] + '\.\.' + r[:bstring]
 		r[:sequence] = r[:string] + '\.\.' + r[:string]
 		r[:attribute] = r[:string] + ':' + r[:string] + '?'
+		r[:layer_attribute] = r[:bstring] + ':' + r[:attribute]
 		r[:id] = '@' + '[_[:alnum:]]+'
 		r.keys.each{|k| r[k] = Regexp.new('^' + r[k])}
 
@@ -154,10 +158,15 @@ class String
 					m[2] ? m[2].gsub('\"', '"') : m[1],
 					m[8] ? m[8].gsub('\"', '"') : m[7],
 				]
+			elsif m = str.match(r[:layer_attribute])
+				layer = m[1]
+				key = m[4] ? m[4].gsub('\"', '"') : m[3]
+				val = m[10] ? m[10].gsub('\"', '"') : m[9]
+				h[:annotations] << {:layer => layer, :key => key, :value => val}
 			elsif m = str.match(r[:attribute])
 				key = m[2] ? m[2].gsub('\"', '"') : m[1]
 				val = m[8] ? m[8].gsub('\"', '"') : m[7]
-				h[:attributes][key] = val
+				h[:annotations] << {:key => key, :value => val}
 			elsif m = str.match(r[:qstring])
 				h[:words] << m[1].gsub('\"', '"')
 			elsif m = str.match(r[:bstring])
