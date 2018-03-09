@@ -624,9 +624,11 @@ class GraphController
 		when 'd' # delete elements
 			log_step = @log.add_step(:command => @command_line)
 			extract_elements(parameters[:all_nodes] + parameters[:edges]).each do |element|
+				next if element.type == 't' && @graph.text
 				element.delete(:log => log_step, :join => true)
 			end
 			undefined_references?(parameters[:elements])
+			@cmd_error_messages << 'You cannot delete tokens in a standoff corpus!' if @graph.text && !parameters[:tokens].empty?
 
 		when 'l' # set current layer and layer of elements
 			log_step = @log.add_step(:command => @command_line)
@@ -699,6 +701,7 @@ class GraphController
 
 		when 'ns' # create and append new sentence(s)
 			raise 'Please specify a name!' if parameters[:words] == []
+			standoff_mode?
 			log_step = @log.add_step(:command => @command_line)
 			current_sentence = @current_sections ? @current_sections.last.sentence_nodes.last : nil
 			new_nodes = @graph.insert_sentences(current_sentence, parameters[:words], log_step)
@@ -706,11 +709,13 @@ class GraphController
 			reload_sections = true
 
 		when 't' # build tokens and append them
+			standoff_mode?
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			@graph.build_tokens(parameters[:words], :sentence => @current_sections.last, :log => log_step)
 
 		when 'tb', 'ti' # build tokens and insert them before given token
+			standoff_mode?
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			undefined_references?(parameters[:tokens][0..0])
@@ -718,6 +723,7 @@ class GraphController
 			@graph.build_tokens(parameters[:words][1..-1], :next_token => node, :log => log_step)
 
 		when 'ta' # build tokens and insert them after given token
+			standoff_mode?
 			sentence_set?
 			log_step = @log.add_step(:command => @command_line)
 			undefined_references?(parameters[:tokens][0..0])
@@ -779,6 +785,7 @@ class GraphController
 			reload_sections = true
 
 		when 's-del', 'del' # delete section(s)
+			standoff_mode?
 			sections = chosen_sections(parameters[:words], parameters[:name_sequences])
 			log_step = @log.add_step(:command => @command_line)
 			# change to next section
@@ -908,6 +915,11 @@ class GraphController
 	def sentence_set?
 		return true if @current_sections
 		raise 'This command may only be issued inside a sentence!'
+	end
+
+	def standoff_mode?
+		return unless @graph.text
+		raise 'This command cannot be used in a standoff corpus!'
 	end
 
 	def reset_current_sections

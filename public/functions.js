@@ -457,7 +457,6 @@ function handleResponse(data) {
 		for (var id in data.windows) Box.instances[id].restoreState(data.windows);
 		Box.saveState();
 	}
-	if (data.messages != undefined && data.messages.length > 0) alert(data.messages.join("\n"));
 	if (data.command == 'load') Log.load();
 	if (data.command == 'play') playMedia(data);
 	if (data.graph_file != undefined) $('#active_file').html('file: ' + data.graph_file);
@@ -473,4 +472,5 @@ function handleResponse(data) {
 	if (data.found_fragments != undefined) GraphDisplay.setFoundFragments(data.found_fragments);
 	setMedia(data.media);
 	GraphDisplay.updateView(data);
+	if (data.messages != undefined && data.messages.length > 0) alert(data.messages.join("\n"));
 }
