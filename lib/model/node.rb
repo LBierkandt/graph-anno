@@ -18,7 +18,7 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Node < NodeOrEdge
-	attr_accessor :id, :in, :out, :start, :end
+	attr_accessor :id, :in, :out, :start, :end, :first, :last
 
 	# initializes node
 	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
@@ -28,6 +28,8 @@ class Node < NodeOrEdge
 		@out = []
 		@start= h[:start]
 		@end  = h[:end]
+		@first = h[:first]
+		@last = h[:last]
 		@graph.node_index[@type][@id] = self
 	end
 
@@ -42,6 +44,8 @@ class Node < NodeOrEdge
 			:type   => @type,
 			:start  => @start,
 			:end    => @end,
+			:first  => @first,
+			:last   => @last,
 			:custom => @custom,
 			:layers => @layers.empty? ? nil : @layers,
 		}.merge(@attr.to_h).compact

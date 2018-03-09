@@ -52,6 +52,10 @@ class Attributes
 			)
 		else
 			@attr
+		end.tap do |out|
+			if @host.type == 't' && @host.graph.text && @host.first && @host.last
+				out.merge!('token' => expand_value(@host.graph.text[@host.first..@host.last]))
+			end
 		end
 	end
 

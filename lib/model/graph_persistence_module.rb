@@ -40,6 +40,7 @@ module GraphPersistence
 			:annotators => @annotators,
 			:file_settings => @file_settings,
 			:media => relative_path(@media),
+			:text_file => relative_path(@text_file),
 		}.merge(additional).compact
 	end
 
@@ -253,6 +254,8 @@ module GraphPersistence
 		@tagset = Tagset.new(self, data['allowed_anno'] || data['tagset'])
 		@file_settings = (data['file_settings'] || {}).symbolize_keys
 		@media = data['media'] ? (@path.dirname + data['media']).expand_path : nil
+		@text_file = data['text_file'] ? (@path.dirname + data['text_file']).expand_path : nil
+		@text = @text_file ? File.open(@text_file, 'r:UTF-8', &:read) : nil
 		set_makros(data['search_makros'] || [])
 	end
 
