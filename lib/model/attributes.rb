@@ -46,17 +46,17 @@ class Attributes
 	end
 
 	def output
-		if @host.graph.current_annotator
+		out = if @host.graph.current_annotator
 			(@private_attr[@host.graph.current_annotator] || {}).merge(
 				@attr.select{|k, v| neutral?(k)}
 			)
 		else
 			@attr
-		end.tap do |out|
-			if @host.type == 't' && @host.graph.text && @host.first && @host.last
-				out.merge!('token' => expand_value(@host.graph.text[@host.first..@host.last]))
-			end
 		end
+		if @host.type == 't' && @host.graph.text && @host.first && @host.last
+			out.merge!('token' => expand_value(@host.graph.text[@host.first..@host.last]))
+		end
+		out
 	end
 
 	# returns a hash like {key => {value => [layers], ...}, ...}
@@ -161,9 +161,9 @@ class Attributes
 
 	def to_h
 		h = {}
-		h.merge!(:attr => compress(@attr)) unless @attr.empty?
-		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.id, compress(attr)] }]) unless @private_attr.empty?
-		h
+		h.merge!(:attr => compress(@attr))
+		h.merge!(:private_attr => Hash[@private_attr.map {|annotator, attr| [annotator.id, compress(attr)] }])
+		h.select{|k, v| !v.empty?}
 	end
 
 	private
@@ -186,12 +186,14 @@ class Attributes
 
 	def compress(h)
 		h.map_hash do |k, h|
-			if h.values.uniq.length == 1 && host_layers?(h.keys)
+			if k == 'token' && @host.type == 't' && @host.graph.text && @host.first && @host.last
+				nil
+			elsif h.values.uniq.length == 1 && host_layers?(h.keys)
 				h.values.first
 			else
 				Hash[h.map{|layer, value| [layer.shortcut, value]}]
 			end
-		end
+		end.compact
 	end
 
 	def expand_value(value)
