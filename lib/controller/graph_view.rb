@@ -261,7 +261,7 @@ class GraphView
 		elsif element.is_a?(Edge)
 			label = element_label(element, 'cat')
 		end
-		label << ref if ref
+		label << ref + ' ' if ref # add identifier, compensating for poor centering of html labels
 		return label.join('<br/>')
 	end
 
@@ -280,8 +280,9 @@ class GraphView
 
 	def map_layers(element, value_layer_map, key = nil)
 		value_layer_map.map do |value, layers|
-			label = @html_encoder.encode(key ? "#{key}: #{value}" : value, :hexadecimal)
-			label += ' ' * (label.length / 4) # compensate for poor centering of html labels
+			raw_label = key ? "#{key}: #{value}" : value
+			raw_label += ' ' * (raw_label.length / 4.0).round # compensate for poor centering of html labels
+			label = @html_encoder.encode(raw_label, :hexadecimal)
 			if l = @ctrl.graph.conf.display_layer(layers)
 				label = "<font color=\"#{hidden?(element) ? @ctrl.graph.conf.filtered_color : l.color}\">#{label}</font>"
 			end
