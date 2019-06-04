@@ -113,7 +113,7 @@ var Autocomplete = (function(){
 		if (valueUnchanged()) return;
 		if (noInput) {noInput = false; return;}
 		var input = parseInput();
-		if (input.word.length > 0) {
+		if (input.word.length > 0 || input.suggestionSet == 'file') {
 			if (!input.suggestionSet) return;
 			$.getJSON('/get_autocomplete_suggestions/', input).done(function(suggestions){
 				showSuggestions(input, suggestions);
