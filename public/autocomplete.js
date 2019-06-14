@@ -52,7 +52,8 @@ var Autocomplete = (function(){
 	var insert = function() {
 		var word = $list.find('.active').text();
 		var input = parseInput();
-		var upToCursor = input.before + input.retain + word + ' ';
+		if (input.suggestionSet == 'file' && word.match(/\/$/)) var upToCursor = input.before + input.retain + word;
+		else var upToCursor = input.before + input.retain + word + ' ';
 		$element.val(upToCursor + input.after);
 		$element[0].setSelectionRange(upToCursor.length, upToCursor.length);
 		if (input.suggestionSet == 'command') handleInput();
