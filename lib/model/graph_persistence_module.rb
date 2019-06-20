@@ -71,8 +71,11 @@ module GraphPersistence
 			version = init_from_master(master_data)
 			preprocess_raw_data(data)
 			@multifile[:sentence_index][relative_path(path)] = add_elements(data)
-		else # is single-file corpus
+		else # is single-file corpus - transform it into multifile format
 			version = init_from_master(data)
+			@multifile[:files] = ['0001.json']
+			@multifile[:sentence_index] = {'0001.json' => sentence_nodes}
+			@multifile[:order_edges] = []
 		end
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
@@ -119,20 +122,19 @@ module GraphPersistence
 	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
 	def store(path, additional = {})
 		@path = Pathname.new(path)
-		unless @multifile
-			write_corpus_file(path, additional)
-		else
-			nodes_per_file = {}
-			edges_per_file = {}
-			@multifile[:sentence_index].each do |file, sentences|
-				nodes_per_file[file] = (sections_hierarchy(sentences) + sentences.map(&:nodes)).flatten
-				edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
-				write_part_file(file, nodes_per_file[file], edges_per_file[file])
-			end
-			master_nodes = @node_index['sp']
-			master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
-			write_master_file(master_nodes, master_edges, additional, path != @path)
+		if @path.basename != 'master.json'
+			@path = @path.dirname + @path.basename.to_s.chomp('.json') + 'master.json'
 		end
+		nodes_per_file = {}
+		edges_per_file = {}
+		@multifile[:sentence_index].each do |file, sentences|
+			nodes_per_file[file] = (sections_hierarchy(sentences) + sentences.map(&:nodes)).flatten
+			edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
+			write_part_file(file, nodes_per_file[file], edges_per_file[file])
+		end
+		master_nodes = @node_index['sp']
+		master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
+		write_master_file(master_nodes, master_edges, additional, path != @path)
 	end
 
 	# export corpus as SQL file for import in GraphInspect
@@ -216,7 +218,7 @@ module GraphPersistence
 	private
 
 	def init_from_master(data)
-		@multifile = {:sentence_index => {}, :order_edges => []} if data['files']
+		@multifile = {:sentence_index => {}, :order_edges => []}
 		preprocess_raw_data(data)
 		add_configuration(data)
 		add_elements(data)
