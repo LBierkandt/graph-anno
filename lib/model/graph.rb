@@ -40,7 +40,7 @@ class Graph
 		@highest_edge_id = 0
 		@node_index = Hash.new{|h, k| h[k] = {}}
 		@path = nil
-		@multifile = nil
+		reset_multifile
 		@info = {}
 		@conf = GraphConf.new
 		@tagset = Tagset.new(self)
