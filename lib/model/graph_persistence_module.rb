@@ -49,36 +49,33 @@ module GraphPersistence
 	end
 
 	# reads a graph JSON file into self, clearing self before
-	# @param path [String] path to the JSON file
+	# @param p [String] path to the JSON file
 	def read_json_file(p)
 		puts "Reading file #{p} ..."
 		self.clear
 
-		@path = path = Pathname.new(p)
-		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		if data['files'] # is master file
+		@path = file_path = Pathname.new(p)
+		data = File.open(file_path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		if data['master'] # is part file
+			@path = file_path.dirname + data['master']
+			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
+			version = init_from_master(master_data)
+			preprocess_raw_data(data)
+			@multifile[:sentence_index][relative_path(file_path)] = add_elements(data)
+		else
 			version = init_from_master(data)
-			data['files'].each do |file|
+			data['files'].to_a.each do |file|
 				last_sentence_node = sentence_nodes.last
 				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
 				preprocess_raw_data(d)
 				@multifile[:sentence_index][file] = add_elements(d)
 				@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 			end
-		elsif data['master'] # is part file
-			@path = path.dirname + data['master']
-			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
-			version = init_from_master(master_data)
-			preprocess_raw_data(data)
-			@multifile[:sentence_index][relative_path(path)] = add_elements(data)
-		else # is single-file corpus - transform it into multifile format
-			version = init_from_master(data)
-
 		end
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
 
-		puts "Read #{path}."
+		puts "Read #{file_path}."
 
 		return data
 	end
@@ -87,10 +84,10 @@ module GraphPersistence
 	# @param p [String] path to the part file
 	def add_part_file(p)
 		puts "Reading file #{p} ..."
-		path = Pathname.new(p)
-		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		file = relative_path(path)
-		raise 'File is not a part of the loaded corpus!' unless data['master'] and data['master'] == relative_path(@path, path)
+		file_path = Pathname.new(p)
+		data = File.open(file_path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		file = relative_path(file_path)
+		raise 'File is not a part of the loaded corpus!' unless data['master'] and data['master'] == relative_path(@path, file_path)
 		raise 'File is not listed as part of the loaded corpus!' unless @multifile[:files].include?(file)
 		raise 'File has been loaded already!' if @multifile[:sentence_index][file]
 		before, after = adjacent_sentence_nodes(file)
@@ -107,9 +104,9 @@ module GraphPersistence
 	# @param p [String] path to the graph file
 	def append_file(p)
 		puts "Reading file #{p} ..."
-		path = Pathname.new(p)
+		file_path = Pathname.new(p)
 		new_graph = Graph.new
-		new_graph.read_json_file(path)
+		new_graph.read_json_file(file_path)
 		@path = nil
 		reset_multifile
 		self.merge!(new_graph)
@@ -224,7 +221,7 @@ module GraphPersistence
 	private
 
 	def reset_multifile
-		@multifile = {:sentence_index => {}, :order_edges => []}
+		@multifile = {:files => [], :sentence_index => {}, :order_edges => []}
 	end
 
 	def init_from_master(data)
@@ -291,7 +288,6 @@ module GraphPersistence
 	end
 
 	def write_json_file(path, data)
-		path = Pathname.new(path)
 		puts "Writing file #{path}..."
 		FileUtils.mkdir_p(path.dirname) unless File.exist?(path.dirname)
 		json = @file_settings[:compact] ? data.to_json : JSON.pretty_generate(data, :indent => ' ', :space => '')
@@ -301,17 +297,13 @@ module GraphPersistence
 		puts "Wrote #{path}."
 	end
 
-	def write_corpus_file(path, additional)
-		write_json_file(path, self.to_h(:additional => additional))
-	end
-
 	def write_part_file(file, nodes, edges)
-		path = Pathname.new(@path.dirname + file)
+		file_path = Pathname.new(@path.dirname + file)
 		write_json_file(
-			path,
+			file_path,
 			{
 				:version => GRAPH_FORMAT_VERSION,
-				:master => relative_path(@path, path),
+				:master => relative_path(@path, file_path),
 				:nodes => nodes.map(&:to_h),
 				:edges => edges.map(&:to_h),
 			}

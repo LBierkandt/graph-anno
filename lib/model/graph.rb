@@ -340,14 +340,12 @@ class Graph
 					add_part_edge(:start => sentence_before.parent_section, :end => s, :log => log_step)
 				end
 			end
-			if @multifile
-				@multifile[:sentence_index].each do |file, file_sentences|
-					if index = file_sentences.index(sentence_before)
-						file_sentences.insert(index + 1, *new_nodes)
-					end
+			@multifile[:sentence_index].each do |file, file_sentences|
+				if index = file_sentences.index(sentence_before)
+					file_sentences.insert(index + 1, *new_nodes)
 				end
-				rebuild_multifile_order_edges_list
 			end
+			rebuild_multifile_order_edges_list
 		end
 		return new_nodes
 	end
@@ -457,7 +455,7 @@ class Graph
 				end
 			end
 			# delete the section node itself
-			if @multifile && section.type == 's'
+			if section.type == 's'
 				@multifile[:sentence_index].each{|file, list| list.delete(section)}
 			end
 			section.delete(:log => log_step)
@@ -477,10 +475,9 @@ class Graph
 	# @param sections [Array] the sections to be tested
 	# @return [Boolean]
 	def sections_in_different_files?(sections)
-		@multifile &&
-			@multifile[:sentence_index].values.none?{|file_sentences|
-				(sections.map(&:sentence_nodes).flatten - file_sentences).empty?
-			}
+		@multifile[:sentence_index].values.none?{|file_sentences|
+			(sections.map(&:sentence_nodes).flatten - file_sentences).empty?
+		}
 	end
 
 	def inspect
@@ -780,7 +777,6 @@ class Graph
 
 	# rebuild list of order edges that connect the sentences of different files
 	def rebuild_multifile_order_edges_list
-		return unless @multifile
 		@multifile[:order_edges] = @multifile[:sentence_index].map{|f, list|
 			list.last.out.of_type('o').first
 		}.compact
