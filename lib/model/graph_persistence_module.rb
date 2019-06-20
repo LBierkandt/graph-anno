@@ -24,7 +24,7 @@ module GraphPersistence
 	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
-	def to_h(h)
+	def to_h(h = {})
 		nodes = h[:nodes] || @nodes.values
 		edges = h[:edges] || @edges.values
 		additional = h[:additional] || {}
