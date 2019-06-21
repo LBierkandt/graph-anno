@@ -64,12 +64,17 @@ module GraphPersistence
 			@multifile[:sentence_index][relative_path(file_path)] = add_elements(data)
 		else
 			version = init_from_master(data)
-			data['files'].to_a.each do |file|
-				last_sentence_node = sentence_nodes.last
-				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
-				preprocess_raw_data(d)
-				@multifile[:sentence_index][file] = add_elements(d)
-				@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
+			if data['files']
+				(@multifile[:files] = data['files']).each do |file|
+					last_sentence_node = sentence_nodes.last
+					d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
+					preprocess_raw_data(d)
+					@multifile[:sentence_index][file] = add_elements(d)
+					@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
+				end
+			else
+				@multifile[:files] = ['0001.json']
+				@multifile[:sentence_index] = {'0001.json' => sentence_nodes}
 			end
 		end
 
@@ -119,13 +124,6 @@ module GraphPersistence
 		@path = Pathname.new(path)
 		if @path.basename != 'master.json'
 			@path = @path.dirname + @path.basename.to_s.chomp('.json') + 'master.json'
-		end
-		# handle newly created corpora
-		# if @multifile[:files].empty? && @multifile[:sentence_index].empty?
-		if @multifile[:files].empty? && @multifile[:sentence_index].empty?
-			@multifile[:files] = ['0001.json']
-			@multifile[:sentence_index] = {'0001.json' => sentence_nodes}
-			@multifile[:order_edges] = []
 		end
 		# assign elements to files
 		nodes_per_file = {}
@@ -220,8 +218,12 @@ module GraphPersistence
 
 	private
 
-	def reset_multifile
+	def reset_multifile(options = {})
 		@multifile = {:files => [], :sentence_index => {}, :order_edges => []}
+		if options[:default_file]
+			@multifile[:files] = ['0001.json']
+			@multifile[:sentence_index] = {'0001.json' => []}
+		end
 	end
 
 	def init_from_master(data)
@@ -248,7 +250,6 @@ module GraphPersistence
 	end
 
 	def add_configuration(data)
-		@multifile[:files] = data['files'] || []
  		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		@anno_makros = (data['anno_makros'] || {}).map_hash do |key, annotations|
 			if annotations.is_a?(Hash) # old format before introduction of layer-specific annotations

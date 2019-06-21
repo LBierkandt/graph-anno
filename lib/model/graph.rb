@@ -40,7 +40,7 @@ class Graph
 		@highest_edge_id = 0
 		@node_index = Hash.new{|h, k| h[k] = {}}
 		@path = nil
-		reset_multifile
+		reset_multifile(:default_file => true)
 		@info = {}
 		@conf = GraphConf.new
 		@tagset = Tagset.new(self)
@@ -346,6 +346,8 @@ class Graph
 				end
 			end
 			rebuild_multifile_order_edges_list
+		else
+			@multifile[:sentence_index][@multifile[:sentence_index].keys.last] += new_nodes
 		end
 		return new_nodes
 	end
