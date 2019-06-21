@@ -45,6 +45,8 @@ window.onload = function() {
 
 	// autocomplete
 	Autocomplete.init('#txtcmd');
+
+	focusCommandLine()
 }
 
 function loadGraph() {

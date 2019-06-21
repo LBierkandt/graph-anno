@@ -22,7 +22,7 @@ module Autocomplete
 		input = @sinatra.params[:word]
 		data = case @sinatra.params[:suggestionSet].to_sym
 		when :file
-			file_suggestions(input)
+			return file_suggestions(input).to_json
 		when :anno
 			tagset_suggestions(@sinatra.params) + makro_suggestions + aref_suggestions
 		when :nodes_anno
