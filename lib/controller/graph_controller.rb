@@ -962,7 +962,10 @@ class GraphController
 	end
 
 	def file_path(input)
-		(input[0] == '/' ? '' : 'data/') + input + (input.match(/\.json$/) ? '' : '.json')
+		base_path = input[0] == '/' ? '' : 'data/'
+		path = input[-1] == '/' ? input + 'master.json' : input
+		file_extension = path.match(/\.json$/) ? '' : '.json'
+		base_path + path + file_extension
 	end
 
 	def validate_config(data)
