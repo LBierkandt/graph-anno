@@ -28,7 +28,7 @@ class Node < NodeOrEdge
 		@out = []
 		@start= h[:start]
 		@end  = h[:end]
-		@graph.node_index[@type][@id] = self
+		@graph.node_index[@type][@id] = self if @id
 	end
 
 	def inspect
