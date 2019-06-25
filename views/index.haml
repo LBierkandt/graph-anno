@@ -41,6 +41,7 @@
       %button{data: {box: 'search'}} Search
       %button{data: {box: 'log'}} Log
       %button{data: {box: 'sectioning'}} Nav
+      %button{data: {box: 'independent'}} i nodes
       %button{data: {box: 'media'}} Media
 
     #sectioning.box{ :'min-height' => 45, :'min-width' => 50 }
@@ -48,7 +49,7 @@
       .content
 
     #independent.box{ :'min-height' => 45, :'min-width' => 50 }
-      .handle
+      .handle Independent nodes
       .content
         = haml :i_nodes, :locals => {:controller => controller}
 
