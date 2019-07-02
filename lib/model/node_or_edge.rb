@@ -98,6 +98,31 @@ class NodeOrEdge
 		@attr.keep_layers(@layers) if @attr
 	end
 
+	# returns a label for display of element
+	# @param filter [Hash] filter from GraphView
+	# @param ref [String] optionally a label for referencing the element in commands
+	def build_label(filter, ref = nil)
+		if is_a?(Node)
+			if type == 's' || type == 'p'
+				return element_label(filter).join('<br>')
+			elsif type == 't'
+				label = element_label(filter, 'token')
+			else # normaler Knoten
+				label = element_label(filter, 'cat')
+			end
+		elsif is_a?(Edge)
+			label = element_label(filter, 'cat')
+		end
+		label << ref if ref
+		return label.join('<br/>')
+	end
+
+	# is element hidden given the filter?
+	# @param filter [Hash] filter from GraphView
+	def hidden?(filter)
+		filter[:mode] == 'hide' && filter[:show] != fulfil?(filter[:cond])
+	end
+
 	# whether self fulfils a given condition; returns numeral values for some condition types
 	# @param bedingung [Hash] a condition hash
 	# @param inherited [Boolean] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false
@@ -188,6 +213,34 @@ class NodeOrEdge
 			return self.is_a?(Edge)
 		else
 			return true
+		end
+	end
+
+	private
+
+	# helper for #build_label
+	def element_label(filter, privileged = nil)
+		label = []
+		attr.grouped_output.each do |key, value_layer_map|
+			case key
+			when privileged
+				label = map_layers(filter, value_layer_map) + label
+			else
+				label += map_layers(filter, value_layer_map, key)
+			end
+		end
+		label
+	end
+
+	# helper for #element_label
+	def map_layers(filter, value_layer_map, key = nil)
+		value_layer_map.map do |value, layers|
+			label = @graph.html_encoder.encode(key ? "#{key}: #{value}" : value, :hexadecimal)
+			label += ' ' * (label.length / 4) # compensate for poor centering of html labels
+			if l = @graph.conf.display_layer(layers)
+				label = "<font color=\"#{hidden?(filter) ? @graph.conf.filtered_color : l.color}\">#{label}</font>"
+			end
+			label
 		end
 	end
 end

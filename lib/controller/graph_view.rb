@@ -17,8 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
-require 'htmlentities.rb'
-
 class GraphView
 	attr_reader :tokens, :edges, :dependent_nodes, :independent_nodes, :i_nodes
 	attr_accessor :filter, :show_refs
@@ -32,7 +30,6 @@ class GraphView
 		@i_nodes = []
 		@filter = {:mode => 'unfilter'}
 		@show_refs = true
-		@html_encoder = HTMLEntities.new
 	end
 
 	def generate
@@ -98,7 +95,7 @@ class GraphView
 		@section_info = {:textline => '', :meta => ''}
 		if @ctrl.current_sections
 			if @ctrl.current_sections.length == 1
-				@section_info[:meta] = build_label(@ctrl.current_sections.first)
+				@section_info[:meta] = @ctrl.current_sections.first.build_label(@filter)
 			end
 		else
 			@section_info[:textline] = '<em>Independent nodes</em>'
@@ -153,7 +150,7 @@ class GraphView
 		options = {
 			:id => "node#{token.id}",
 			:fontname => @ctrl.graph.conf.font,
-			:label => build_label(token, @show_refs ? "t#{i}" : nil),
+			:label => token.build_label(@filter, @show_refs ? "t#{i}" : nil),
 			:shape => :box,
 			:style => :bold,
 			:color => @ctrl.graph.conf.token_color,
@@ -162,7 +159,7 @@ class GraphView
 		if @ctrl.search_result.nodes[token.id]
 			options[:color] = @ctrl.graph.conf.found_color
 			@section_info[:textline] += '<span class="found_word">' + token.token + '</span> '
-		elsif hidden?(token)
+		elsif token.hidden?(@filter)
 			options[:color] = @ctrl.graph.conf.filtered_color
 			options[:fontcolor]= @ctrl.graph.conf.filtered_color
 			@section_info[:textline] += '<span class="hidden_word">' + token.token + '</span> '
@@ -196,10 +193,10 @@ class GraphView
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:shape => :box,
-			:label => build_label(node, @show_refs ? "#{letter}#{i}" : nil),
+			:label => node.build_label(@filter, @show_refs ? "#{letter}#{i}" : nil),
 		}
 		actual_layer_graph = nil
-		if hidden?(node)
+		if node.hidden?(@filter)
 			options[:color] = @ctrl.graph.conf.filtered_color
 		else
 			if l = @ctrl.graph.conf.display_layer(node.layers)
@@ -218,7 +215,7 @@ class GraphView
 	end
 
 	def create_edge(edge, i)
-		label = build_label(edge, @show_refs ? "e#{i}" : nil)
+		label = edge.build_label(@filter, @show_refs ? "e#{i}" : nil)
 		options = {
 			:id => "edge#{edge.id}",
 			:fontname => @ctrl.graph.conf.font,
@@ -228,7 +225,7 @@ class GraphView
 		}.merge(
 			@ctrl.graph.conf.xlabel ? {:xlabel => label} : {:label => label}
 		)
-		if hidden?(edge)
+		if edge.hidden?(@filter)
 			options[:color] = @ctrl.graph.conf.filtered_color
 		else
 			if l = @ctrl.graph.conf.display_layer(edge.layers)
@@ -247,49 +244,5 @@ class GraphView
 			options[:penwidth] = 2
 		end
 		@viz_graph.add_edges(edge.start, edge.end, options)
-	end
-
-	def build_label(element, ref = nil)
-		if element.is_a?(Node)
-			if element.type == 's' || element.type == 'p'
-				return element_label(element).join('<br>')
-			elsif element.type == 't'
-				label = element_label(element, 'token')
-			else # normaler Knoten
-				label = element_label(element, 'cat')
-			end
-		elsif element.is_a?(Edge)
-			label = element_label(element, 'cat')
-		end
-		label << ref if ref
-		return label.join('<br/>')
-	end
-
-	def element_label(element, privileged = nil)
-		label = []
-		element.attr.grouped_output.each do |key, value_layer_map|
-			case key
-			when privileged
-				label = map_layers(element, value_layer_map) + label
-			else
-				label += map_layers(element, value_layer_map, key)
-			end
-		end
-		label
-	end
-
-	def map_layers(element, value_layer_map, key = nil)
-		value_layer_map.map do |value, layers|
-			label = @html_encoder.encode(key ? "#{key}: #{value}" : value, :hexadecimal)
-			label += ' ' * (label.length / 4) # compensate for poor centering of html labels
-			if l = @ctrl.graph.conf.display_layer(layers)
-				label = "<font color=\"#{hidden?(element) ? @ctrl.graph.conf.filtered_color : l.color}\">#{label}</font>"
-			end
-			label
-		end
-	end
-
-	def hidden?(element)
-		@filter[:mode] == 'hide' && @filter[:show] != element.fulfil?(@filter[:cond])
 	end
 end
