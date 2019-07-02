@@ -5,15 +5,4 @@
 			- color = l.color
 		%li{:style => "color: #{color};"}
 			%span.ref= "i#{i}"
-			- grouped_output = []
-			- n.attr.grouped_output.each do |key, value_layer_map|
-				- if key == 'cat'
-					- grouped_output = [[key, value_layer_map]] + grouped_output
-				- else
-					- grouped_output << [key, value_layer_map]
-			- Hash[grouped_output].each do |key, value_layer_map|
-				- value_layer_map.each do |value, layers|
-					- color = controller.graph.conf.default_color
-					- if l = controller.graph.conf.display_layer(layers)
-						- color = l.color
-					%span{:style => "color: #{color};"}= "#{key}:#{value}"
+			= n.build_label(:mode => :list)

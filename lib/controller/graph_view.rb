@@ -95,7 +95,7 @@ class GraphView
 		@section_info = {:textline => '', :meta => ''}
 		if @ctrl.current_sections
 			if @ctrl.current_sections.length == 1
-				@section_info[:meta] = @ctrl.current_sections.first.build_label(@filter)
+				@section_info[:meta] = @ctrl.current_sections.first.build_label(:filter => @filter)
 			end
 		else
 			@section_info[:textline] = '<em>Independent nodes</em>'
@@ -150,7 +150,7 @@ class GraphView
 		options = {
 			:id => "node#{token.id}",
 			:fontname => @ctrl.graph.conf.font,
-			:label => token.build_label(@filter, @show_refs ? "t#{i}" : nil),
+			:label => token.build_label(:filter => @filter, :ref => ("t#{i}" if @show_refs)),
 			:shape => :box,
 			:style => :bold,
 			:color => @ctrl.graph.conf.token_color,
@@ -193,7 +193,7 @@ class GraphView
 			:fontname => @ctrl.graph.conf.font,
 			:color => @ctrl.graph.conf.default_color,
 			:shape => :box,
-			:label => node.build_label(@filter, @show_refs ? "#{letter}#{i}" : nil),
+			:label => node.build_label(:filter => @filter, :ref => ("#{letter}#{i}" if @show_refs)),
 		}
 		actual_layer_graph = nil
 		if node.hidden?(@filter)
@@ -215,7 +215,7 @@ class GraphView
 	end
 
 	def create_edge(edge, i)
-		label = edge.build_label(@filter, @show_refs ? "e#{i}" : nil)
+		label = edge.build_label(:filter => @filter, :ref => ("e#{i}" if @show_refs))
 		options = {
 			:id => "edge#{edge.id}",
 			:fontname => @ctrl.graph.conf.font,
