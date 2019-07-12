@@ -359,7 +359,8 @@ table {
   margin-left: 0; }
 
 .pref input[type="number"] {
-  width: 50px; }
+  width: 100px;
+  text-align: right; }
 
 .hidden_word {
   color: #888888; }

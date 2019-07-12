@@ -1,8 +1,13 @@
-%ul
-	- controller.view.i_nodes.each_with_index do |n, i|
-		- color = controller.graph.conf.default_color
-		- if l = controller.graph.conf.display_layer(n.layers)
-			- color = l.color
-		%li{:style => "color: #{color};"}
-			%span.ref= "i#{i}"
-			= n.build_label(:mode => :list)
+- if controller.view.i_nodes.length <= controller.preferences[:i_nodes_max]
+	%ul
+		- controller.view.i_nodes.each_with_index do |n, i|
+			- color = controller.graph.conf.default_color
+			- if l = controller.graph.conf.display_layer(n.layers)
+				- color = l.color
+			%li{:style => "color: #{color};"}
+				%span.ref= "i#{i}"
+				= n.build_label(:mode => :list)
+- else
+	%div{:style => 'padding: 5px'}
+		= controller.view.i_nodes.length
+		nodes – too many to be displayed
