@@ -112,9 +112,7 @@ module GraphPersistence
 		file_path = Pathname.new(p)
 		new_graph = Graph.new
 		new_graph.read_json_file(file_path)
-		@path = nil
-		reset_multifile
-		self.merge!(new_graph)
+		self.append!(new_graph)
 	end
 
 	# serializes self in one ore multiple JSON file(s)

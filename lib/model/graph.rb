@@ -24,7 +24,7 @@ class Graph
 	include PaulaExporter
 	include SaltExporter
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media, :multifile
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -486,22 +486,30 @@ class Graph
 		'Graph'
 	end
 
-	# merges another graph into self
-	# @param other [Graph] the graph to be merged
-	def merge!(other)
+	# append another graph to self
+	# @param other [Graph] the graph to be appended
+	def append!(other)
 		s_nodes = sentence_nodes
 		last_old_sentence_node = s_nodes.last
 		new_nodes = {}
+		node_map = {}
+		edge_map = {}
 		other.nodes.each do |id,n|
 			new_nodes[id] = add_node(n.to_h.merge(:id => nil))
+			node_map[n] = new_nodes[id]
 		end
 		other.edges.each do |id,e|
 			if new_nodes[e.start.id] and new_nodes[e.end.id]
-				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
+				edge_map[e] = add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
 			end
 		end
 		first_new_sentence_node = @node_index['s'].values.find{|n| !s_nodes.include?(n)}.ordered_sister_nodes.first
-		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
+		@multifile[:order_edges] << add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
+		@multifile[:order_edges] += other.multifile[:order_edges].map{|e| edge_map[e]}
+		other.multifile[:sentence_index].each do |file, sentence_nodes|
+			@multifile[:sentence_index][file] = sentence_nodes.map{|n| node_map[n]}
+		end
+		@multifile[:files] += other.multifile[:files]
 		@conf.merge!(other.conf)
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
 	end

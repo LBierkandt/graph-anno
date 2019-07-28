@@ -70,7 +70,7 @@ class GraphConf
 			end
 		end
 		other.combinations.each do |combination|
-			unless @combinations.map{|c| c.layers.sort}.include?(combination.layers.sort)
+			unless @combinations.map{|c| c.layers.map(&:shortcut)}.include?(combination.layers.map(&:shortcut))
 				@combinations << combination
 			end
 		end
@@ -118,40 +118,5 @@ class GraphConf
 	# provides the to_json method needed by the JSON gem
 	def to_json(*a)
 		self.to_h.to_json(*a)
-	end
-end
-
-class AnnoLayer
-	attr_accessor :name, :shortcut, :layers, :color, :weight
-
-	def initialize(h = {})
-		@conf = h[:conf]
-		update(h)
-	end
-
-	def update(h = {})
-		@name = h['name'] || ''
-		@shortcut = h['shortcut'] || ''
-		@layers = h['layers'] ? h['layers'].map{|shortcut| @conf.layer_by_shortcut[shortcut]} : [self]
-		@attr = h['attr'] # keep in the json in order to stay able to update format of part files
-		@color = h['color'] || '#000000'
-		@weight = h['weight'] ? h['weight'].to_i : 1
-		self
-	end
-
-	def to_h
-		{
-			:name => @name,
-			:shortcut => @shortcut,
-			:layers => @layers == [self] ? nil : @layers.map(&:shortcut),
-			:attr => @attr, # keep in the json in order to stay able to update format of part files
-			:color => @color,
-			:weight => @weight
-		}.compact
-	end
-
-	# provides the to_json method needed by the JSON gem
-	def to_json(*a)
-		@shortcut.to_json(*a)
 	end
 end
