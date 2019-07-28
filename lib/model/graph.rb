@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
+require 'htmlentities.rb'
+
 class Graph
 	include GraphSearch
 	include GraphPersistence
@@ -24,11 +26,12 @@ class Graph
 	include PaulaExporter
 	include SaltExporter
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media, :html_encoder
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
 	def initialize
+		@html_encoder = HTMLEntities.new
 		clear
 	end
 

@@ -502,6 +502,8 @@ This window shows a list of all sentence-independent nodes with their element re
 
 Neither the independent nodes window nor the regular sentence view shows connections between independent nodes; in order to see these you may have a look at the independent nodes graph view (command \code{s i}, cf. also \ref{befehl-s}).
 
+For performance reasons, you may set the maximum number of nodes that are displayed in this window in the program preferences – see \ref{preferences}.
+
 \subsubsection{Media}\label{window-media}
 
 For corpora with an associated media file, the media window offers an audio/video player.
@@ -676,6 +678,7 @@ There are the following settings:
 	\item \textit{Menu}: You can enable or disable the window button bar (cf. \ref{windows}) 
 	\item \textit{Autocomplete}: You may activate the autocomplete feature (cf. \ref{commandline}) and then choose which kinds of entities (commands, file names, sentence names, annotations, makros etc.) you want to get suggestions for. Note that the autocomplete feature is useless if you don’t choose things that should be suggested.
 	\item \textit{Autosave}: If you enable this option, your current corpus file is saved at intervals of a length you may specify (in minutes). This option has no effect when your current workspace is not related to a file (you see this from the indication next to the input line).
+	\item \textit{Independent nodes window}: Here you may set a maximum number up to which sentence-independent nodes are displayed in the independent nodes window (cf. \ref{window-independent}). This setting serves to preserve performance in big corpora: the list of independent nodes is rebuilt on each command, this may slow down the reactivity of the program when your copurs contains many sentence-independent nodes. To prevent this, adjust the number to your needs (or set it to 0 if you don’t need the list at all).
 \end{itemize}
 
 

@@ -98,6 +98,32 @@ class NodeOrEdge
 		@attr.keep_layers(@layers) if @attr
 	end
 
+	# returns a label for display of element
+	# @param filter [Hash] filter from GraphView
+	# @param ref [String] optionally a label for referencing the element in commands
+	def build_label(options = {})
+		if is_a?(Node)
+			if type == 's' || type == 'p'
+				return element_label(options).join(options[:mode] == :list ?  '&ensp;' : '<br>')
+			elsif type == 't'
+				label = element_label(options.merge(:privileged => 'token'))
+			else # normaler Knoten
+				label = element_label(options.merge(:privileged => 'cat'))
+			end
+		elsif is_a?(Edge)
+			label = element_label(options.merge(:privileged => 'cat'))
+		end
+		label << options[:ref] if options[:ref]
+		return label.join(options[:mode] == :list ?  '&ensp;' : '<br/>')
+	end
+
+	# is element hidden given the filter?
+	# @param filter_or_nil [Hash] filter from GraphView
+	def hidden?(filter_or_nil)
+		filter = filter_or_nil.to_h
+		filter[:mode] == 'hide' && filter[:show] != fulfil?(filter[:cond])
+	end
+
 	# whether self fulfils a given condition; returns numeral values for some condition types
 	# @param bedingung [Hash] a condition hash
 	# @param inherited [Boolean] whether the annotations of the ancestor sections (if self is a sentence or section node) should be considered as well; defaults to false
@@ -188,6 +214,38 @@ class NodeOrEdge
 			return self.is_a?(Edge)
 		else
 			return true
+		end
+	end
+
+	private
+
+	# helper for #build_label
+	def element_label(options = {})
+		label = []
+		attr.grouped_output.each do |key, value_layer_map|
+			case key
+			when options[:privileged]
+				label = map_layers(value_layer_map, options) + label
+			else
+				label += map_layers(value_layer_map, options.merge(:key => key))
+			end
+		end
+		label
+	end
+
+	# helper for #element_label
+	def map_layers(value_layer_map, options = {})
+		value_layer_map.map do |value, layers|
+			label = @graph.html_encoder.encode(options[:key] ? "#{options[:key]}: #{value}" : value, :hexadecimal)
+			label += ' ' * (label.length / 4) if options[:mode] != :list # compensate for poor centering of html labels
+			if l = @graph.conf.display_layer(layers)
+				if options[:mode] == :list
+					label = "<span style=\"color: #{hidden?(options[:filter]) ? @graph.conf.filtered_color : l.color}\">#{label}</span>"
+				else
+					label = "<font color=\"#{hidden?(options[:filter]) ? @graph.conf.filtered_color : l.color}\">#{label}</font>"
+				end
+			end
+			label
 		end
 	end
 end

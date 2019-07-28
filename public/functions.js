@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
+window.preferences = {};
+
 window.onload = function() {
 	loadGraph();
 

@@ -45,6 +45,14 @@
           %td
             %label{:for =>'autosave_interval'}
               autosave interval in minutes
+        %tr
+          %th{:colspan => 3} Independent nodes window
+        %tr
+          %td
+            %input#i_nodes_max{:name => 'i_nodes_max', :type => 'number', :value => preferences[:i_nodes_max], :min => 0}
+          %td{:colspan => 2}
+            %label{:for =>'i_nodes_max'}
+              max. number of nodes to show
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

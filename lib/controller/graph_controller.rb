@@ -21,7 +21,7 @@ class GraphController
 	include Autocomplete
 
 	attr_writer :sinatra
-	attr_reader :graph, :log, :search_result, :current_sections, :view
+	attr_reader :graph, :log, :search_result, :current_sections, :view, :preferences
 
 	def initialize
 		@graph = Graph.new
@@ -293,7 +293,7 @@ class GraphController
 		].each do |property|
 			@preferences[property] = !!@sinatra.params[property.to_s]
 		end
-		[:autosave_interval].each do |property|
+		[:autosave_interval, :i_nodes_max].each do |property|
 			@preferences[property] = @sinatra.params[property.to_s].to_i
 		end
 		File.open('conf/preferences.yml', 'w'){|f| f.write(@preferences.to_yaml)}
