@@ -492,25 +492,28 @@ class Graph
 	# append another graph to self
 	# @param other [Graph] the graph to be appended
 	def append!(other)
-		s_nodes = sentence_nodes
-		last_old_sentence_node = s_nodes.last
-		new_nodes = {}
+		last_old_sentence_node = sentence_nodes.last
+		first_new_sentence_node = other.sentence_nodes.first
 		node_map = {}
 		edge_map = {}
-		other.nodes.each do |id,n|
-			new_nodes[id] = add_node(n.to_h.merge(:id => nil))
-			node_map[n] = new_nodes[id]
+		other.nodes.each do |id, n|
+			node_map[n] = add_node(n.to_h.merge(:id => nil))
 		end
-		other.edges.each do |id,e|
-			if new_nodes[e.start.id] and new_nodes[e.end.id]
-				edge_map[e] = add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
+		other.edges.each do |id, e|
+			if node_map[e.start] && node_map[e.end]
+				edge_map[e] = add_edge(e.to_h.merge(:start => node_map[e.start], :end => node_map[e.end], :id => nil))
 			end
 		end
-		first_new_sentence_node = @node_index['s'].values.find{|n| !s_nodes.include?(n)}.ordered_sister_nodes.first
-		@multifile[:order_edges] << add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
+		@multifile[:order_edges] << add_order_edge(:start => last_old_sentence_node, :end => node_map[first_new_sentence_node])
 		@multifile[:order_edges] += other.multifile[:order_edges].map{|e| edge_map[e]}
 		other.multifile[:sentence_index].each do |file, sentence_nodes|
-			@multifile[:sentence_index][file] = sentence_nodes.map{|n| node_map[n]}
+			new_filename = file
+			i = 0
+			while @multifile[:sentence_index][new_filename] do
+				new_filename = "#{file.rpartition('.').first}_#{i += 1}.#{file.rpartition('.').last}"
+			end
+			@multifile[:sentence_index][new_filename] = sentence_nodes.map{|n| node_map[n]}
+			other.multifile[:files][other.multifile[:files].index(file)] = new_filename
 		end
 		@multifile[:files] += other.multifile[:files]
 		@conf.merge!(other.conf)
