@@ -10,3 +10,4 @@
 :button_bar: true
 :autosave: false
 :autosave_interval: 5
+:i_nodes_max: 200

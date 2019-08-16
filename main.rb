@@ -30,6 +30,14 @@ require './lib/controller.rb'
 
 controller = GraphController.new
 
+configure do
+  class << settings
+    def server_settings
+      { :timeout => 300 }
+    end
+  end
+end
+
 set :root, Dir.pwd
 set :static_cache_control, [:'no-cache']
 
