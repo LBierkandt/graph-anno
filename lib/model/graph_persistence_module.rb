@@ -65,7 +65,7 @@ module GraphPersistence
 		else
 			version = init_from_master(data)
 			if data['files']
-				(@multifile[:files] = data['files']).each do |file|
+				@multifile[:files].each do |file|
 					last_sentence_node = sentence_nodes.last
 					d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
 					preprocess_raw_data(d)
@@ -226,6 +226,7 @@ module GraphPersistence
 
 	def init_from_master(data)
 		reset_multifile
+		@multifile[:files] = data['files']
 		preprocess_raw_data(data)
 		add_configuration(data)
 		add_elements(data)
