@@ -1,9 +1,10 @@
 %form#modal-form.file{ :onsubmit => 'sendModal("file"); return false;', :onreset => 'closeModal(); return false;' }
-  %div.modal-form-element
+  %div.modal-form-element{:style => 'width: 100%'}
     %table
-      %tbody
+      %thead
         %tr
           %th{:colspan => 3} File settings
+      %tbody
         %tr
           %td
             %input#compact{:name => 'compact', :type => 'checkbox', :value => true, :checked => graph.file_settings[:compact]}
@@ -29,6 +30,25 @@
           %td{:colspan => 2}
             %label{:for =>'save-windows'}
               save window positions
+
+    %table{:style => 'width: 100%'}
+      %thead
+        %tr
+          %th Files
+      %tbody
+        %tr
+          %td
+            .file-list
+              %ul
+                - graph.multifile[:files].each do |file|
+                  %li.collapsed{:onclick => '$(this).toggleClass("collapsed")'}
+                    %b= file
+                    %ul{:onclick => 'event.stopPropagation()'}
+                      - if graph.multifile[:sentence_index][file].nil?
+                        %li not loaded
+                      - else
+                        - graph.multifile[:sentence_index][file].to_a.each do |sentence|
+                          %li= sentence.name
 
   #modal-submit.bottom-block
     %input{ :type => 'reset', :value => 'Cancel' }

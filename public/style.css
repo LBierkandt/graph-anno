@@ -307,7 +307,7 @@ table {
 #modal-content {
   position: absolute;
   width: 90vw;
-  margin: 1vw 5vw;
+  margin: 5vh 5vw;
   overflow: hidden;
   background-color: #dddddd; }
   #modal-content .modal-form-element {
@@ -357,6 +357,33 @@ table {
 
 .file input {
   margin-left: 0; }
+
+.file-list {
+  width: 100%;
+  height: calc(90vh - 160px);
+  overflow-y: auto;
+  background-color: white;
+  padding: 5px; }
+  .file-list ul {
+    list-style: none;
+    padding: 0 15px;
+    margin: 0;
+    position: relative;
+    overflow: hidden; }
+  .file-list > ul > li {
+    cursor: pointer; }
+    .file-list > ul > li:before {
+      content: "\25be";
+      position: absolute;
+      width: 15px;
+      left: 0;
+      padding-left: 2px; }
+    .file-list > ul > li ul {
+      cursor: auto; }
+    .file-list > ul > li.collapsed:before {
+      content: "\25b8"; }
+    .file-list > ul > li.collapsed ul {
+      display: none; }
 
 .pref input[type="number"] {
   width: 100px;
