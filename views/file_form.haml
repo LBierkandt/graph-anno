@@ -1,5 +1,7 @@
-%form#modal-form.file{ :onsubmit => 'sendModal("file"); return false;', :onreset => 'closeModal(); return false;' }
-  %div.modal-form-element{:style => 'width: 100%'}
+%form#modal-form.file{:onsubmit => 'sendModal("file"); return false;', :onreset => 'closeModal(); return false;'}
+  #modal-warning.error_message
+
+  .modal-form-element
     %table
       %thead
         %tr
@@ -31,6 +33,7 @@
             %label{:for =>'save-windows'}
               save window positions
 
+  .modal-form-element{:style => 'width: 100%'}
     %table{:style => 'width: 100%'}
       %thead
         %tr
@@ -41,9 +44,10 @@
             .file-list
               %ul
                 - graph.multifile[:files].each do |file|
-                  %li.collapsed{:onclick => '$(this).toggleClass("collapsed")'}
-                    %b= file
-                    %ul{:onclick => 'event.stopPropagation()'}
+                  %li.collapsed
+                    .toggler{:onclick => '$(this).parent().toggleClass("collapsed")'}
+                    %input{:name => 'filenames[]', :value => file, :type => 'text'}
+                    %ul
                       - if graph.multifile[:sentence_index][file].nil?
                         %li not loaded
                       - else

@@ -360,30 +360,36 @@ table {
 
 .file-list {
   width: 100%;
-  height: calc(90vh - 160px);
+  height: calc(90vh - 200px);
   overflow-y: auto;
   background-color: white;
   padding: 5px; }
   .file-list ul {
     list-style: none;
-    padding: 0 15px;
+    padding: 0 20px;
     margin: 0;
     position: relative;
     overflow: hidden; }
-  .file-list > ul > li {
-    cursor: pointer; }
-    .file-list > ul > li:before {
+  .file-list > ul > li > .toggler {
+    cursor: pointer;
+    width: 15px; }
+    .file-list > ul > li > .toggler:before {
       content: "\25be";
       position: absolute;
-      width: 15px;
       left: 0;
-      padding-left: 2px; }
-    .file-list > ul > li ul {
-      cursor: auto; }
-    .file-list > ul > li.collapsed:before {
-      content: "\25b8"; }
-    .file-list > ul > li.collapsed ul {
-      display: none; }
+      width: 20px;
+      height: 20px;
+      padding: 5px;
+      font-size: 120%; }
+  .file-list > ul > li input {
+    margin: 5px 0; }
+  .file-list > ul > li ul {
+    cursor: auto;
+    padding: 0 3px; }
+  .file-list > ul > li.collapsed > .toggler:before {
+    content: "\25b8"; }
+  .file-list > ul > li.collapsed ul {
+    display: none; }
 
 .pref input[type="number"] {
   width: 100px;

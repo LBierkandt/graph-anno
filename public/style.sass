@@ -372,28 +372,35 @@ table
 
 .file-list
   width: 100%
-  height: calc(90vh - 160px)
+  height: calc(90vh - 200px)
   overflow-y: auto
   background-color: #fff
   padding: 5px
   ul
     list-style: none
-    padding: 0 15px
+    padding: 0 20px
     margin: 0
     position: relative
     overflow: hidden
   & > ul > li
-    cursor: pointer
-    &:before
-      content: '\25be'
-      position: absolute
+    & > .toggler
+      cursor: pointer
       width: 15px
-      left: 0
-      padding-left: 2px
+      &:before
+        content: '\25be'
+        position: absolute
+        left: 0
+        width: 20px
+        height: 20px
+        padding: 5px
+        font-size: 120%
+    input
+      margin: 5px 0
     ul
       cursor: auto
+      padding: 0 3px
     &.collapsed
-      &:before
+      & > .toggler:before
         content: '\25b8'
       ul
         display: none

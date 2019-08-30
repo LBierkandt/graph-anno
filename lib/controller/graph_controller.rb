@@ -275,6 +275,15 @@ class GraphController
 		[:compact, :save_log, :separate_log, :save_windows].each do |property|
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
+		new_filenames = @sinatra.params['filenames'].map do |filename|
+			filename.match(/\.json$/) ? filename : "#{filename}.json"
+		end
+		return {:errors => 'File names must be unique.'}.to_json if new_filenames.length != new_filenames.uniq.length
+		old_filenames = @graph.multifile[:files]
+		@graph.multifile[:files] = new_filenames
+		old_filenames.zip(new_filenames).each do |old_filename, new_filename|
+			@graph.multifile[:sentence_index][new_filename] = @graph.multifile[:sentence_index].delete(old_filename)
+		end
 		return true.to_json
 	end
 
