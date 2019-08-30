@@ -120,7 +120,7 @@ module GraphPersistence
 	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
 	def store(path, additional = {})
 		@path = Pathname.new(path)
-		if @path.basename != 'master.json'
+		if @path.basename.to_s != 'master.json'
 			@path = @path.dirname + @path.basename.to_s.chomp('.json') + 'master.json'
 		end
 		# assign elements to files
