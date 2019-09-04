@@ -279,11 +279,8 @@ class GraphController
 			filename.match(/\.json$/) ? filename : "#{filename}.json"
 		end
 		return {:errors => 'File names must be unique.'}.to_json if new_filenames.length != new_filenames.uniq.length
-		old_filenames = @graph.multifile[:files]
-		@graph.multifile[:files] = new_filenames
-		old_filenames.zip(new_filenames).each do |old_filename, new_filename|
-			@graph.multifile[:sentence_index][new_filename] = @graph.multifile[:sentence_index].delete(old_filename)
-		end
+		return {:errors => 'File name “master.json” is not allowed.'}.to_json if new_filenames.include?('master.json')
+		@graph.rename_files(new_filenames)
 		return true.to_json
 	end
 

@@ -520,6 +520,20 @@ class Graph
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
 	end
 
+	def rename_files(new_filenames)
+		@multifile[:file_renames] = Hash[@multifile[:files].zip(new_filenames)]
+		if @multifile[:file_renames].all?{|old_filename, new_filenames| old_filename == new_filenames}
+			@multifile.delete(:file_renames)
+			return
+		end
+		@multifile[:files] = new_filenames
+		tmp_sentence_index = {}
+		@multifile[:file_renames].each do |old_filename, new_filename|
+			tmp_sentence_index[new_filename] = @multifile[:sentence_index][old_filename]
+		end
+		@multifile[:sentence_index] = tmp_sentence_index
+	end
+
 	# builds a clone of self, but does not clone the nodes and edges
 	# @return [Graph] the clone
 	def clone

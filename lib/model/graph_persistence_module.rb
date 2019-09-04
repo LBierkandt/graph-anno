@@ -123,6 +123,7 @@ module GraphPersistence
 		if !@path.basename.to_s.match(/\.json$/)
 			@path = @path.dirname + @path.basename.to_s.chomp('.json') + 'master.json'
 		end
+		rename_part_files if @multifile[:file_renames]
 		# assign elements to files
 		nodes_per_file = {}
 		edges_per_file = {}
@@ -285,6 +286,20 @@ module GraphPersistence
 			@multifile[:sentence_index][before].to_a.last,
 			@multifile[:sentence_index][after].to_a.first,
 		]
+	end
+
+	def rename_part_files
+		return unless @multifile[:file_renames]
+		prefix = 'kajhgf8743qgo7gfto8743qfgo843qgf'
+		@multifile[:file_renames].each do |old_filename, new_filename|
+			next if old_filename == new_filename
+			File.rename(@path.dirname + old_filename, @path.dirname + "#{prefix}#{old_filename}") rescue Errno::ENOENT
+		end
+		@multifile[:file_renames].each do |old_filename, new_filename|
+			next if old_filename == new_filename
+			File.rename(@path.dirname + "#{prefix}#{old_filename}", @path.dirname + new_filename) rescue Errno::ENOENT
+		end
+		@multifile.delete(:file_renames)
 	end
 
 	def write_json_file(path, data)
