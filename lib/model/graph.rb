@@ -513,9 +513,8 @@ class Graph
 				new_filename = "#{file.rpartition('.').first}_#{i += 1}.#{file.rpartition('.').last}"
 			end
 			@multifile[:sentence_index][new_filename] = sentence_nodes.map{|n| node_map[n]}
-			other.multifile[:files][other.multifile[:files].index(file)] = new_filename
+			@multifile[:files] << new_filename
 		end
-		@multifile[:files] += other.multifile[:files]
 		@conf.merge!(other.conf)
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
 	end
