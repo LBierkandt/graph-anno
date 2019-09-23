@@ -272,7 +272,7 @@ class GraphController
 
 	def save_file
 		@graph.file_settings.clear
-		[:compact, :save_log, :separate_log, :save_windows].each do |property|
+		[:compact, :save_log, :save_windows].each do |property|
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
 		new_filenames = @sinatra.params['filenames'].map do |filename|
@@ -840,12 +840,9 @@ class GraphController
 			path = parameters[:words][0] ? file_path(parameters[:words][0]) : @graph.path
 			raise 'Please specify a file name!' unless path
 			additional = {}
-			additional.merge!(:log => @log) if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
+			additional.merge!(:log => @log) if @graph.file_settings[:save_log]
 			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
 			@graph.store(path, additional)
-			if @graph.file_settings[:separate_log]
-				@log.write_json_file(path.sub(/\.json$/, '.log.json'), @graph.file_settings[:compact])
-			end
 
 		when 'clear' # clear workspace
 			clear_workspace
