@@ -119,9 +119,9 @@ module GraphPersistence
 	# @param path [String] path to the JSON file
 	# @param options [Hash] additional: data (hash) that should be added to the saved json; log: log object to be saved (or nil)
 	def store(path, options = {})
-		@path = Pathname.new(path)
-		if !@path.basename.to_s.match(/\.json$/)
-			@path = @path.dirname + @path.basename.to_s.chomp('.json') + 'master.json'
+		if path.is_a?(String)
+			base_path = path[0] == '/' ? '' : 'data/'
+			@path = Pathname.new(base_path + path) + 'master.json'
 		end
 		rename_part_files if @multifile[:file_renames]
 		# assign elements to files

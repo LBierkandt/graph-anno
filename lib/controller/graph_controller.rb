@@ -837,7 +837,7 @@ class GraphController
 			reload_sections = true
 
 		when 'save' # save workspace to corpus file
-			path = parameters[:words][0] ? file_path(parameters[:words][0]) : @graph.path
+			path = parameters[:words][0] || @graph.path
 			raise 'Please specify a file name!' unless path
 			additional = {}
 			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
