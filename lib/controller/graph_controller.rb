@@ -840,9 +840,12 @@ class GraphController
 			path = parameters[:words][0] ? file_path(parameters[:words][0]) : @graph.path
 			raise 'Please specify a file name!' unless path
 			additional = {}
-			additional.merge!(:log => @log) if @graph.file_settings[:save_log]
 			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
-			@graph.store(path, additional)
+			@graph.store(
+				path,
+				:additional => additional,
+				:log => (@log if @graph.file_settings[:save_log])
+			)
 
 		when 'clear' # clear workspace
 			clear_workspace

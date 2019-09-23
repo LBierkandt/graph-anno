@@ -117,8 +117,8 @@ module GraphPersistence
 
 	# serializes self in one ore multiple JSON file(s)
 	# @param path [String] path to the JSON file
-	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
-	def store(path, additional = {})
+	# @param options [Hash] additional: data (hash) that should be added to the saved json; log: log object to be saved (or nil)
+	def store(path, options = {})
 		@path = Pathname.new(path)
 		if !@path.basename.to_s.match(/\.json$/)
 			@path = @path.dirname + @path.basename.to_s.chomp('.json') + 'master.json'
@@ -134,7 +134,8 @@ module GraphPersistence
 		end
 		master_nodes = @node_index['sp']
 		master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
-		write_master_file(master_nodes, master_edges, additional, path != @path)
+		write_master_file(master_nodes, master_edges, options[:additional].to_h, path != @path)
+		write_log_file(options[:log]) if options[:log]
 	end
 
 	# export corpus as SQL file for import in GraphInspect
@@ -338,6 +339,10 @@ module GraphPersistence
 				}.merge(additional)
 			)
 		)
+	end
+
+	def write_log_file(log)
+		write_json_file(Pathname.new(@path.dirname + 'log.json'), log)
 	end
 
 	def update_raw_graph_data(data, version)
