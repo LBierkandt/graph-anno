@@ -59,11 +59,11 @@ module GraphPersistence
 		if data['master'] # is part file
 			@path = file_path.dirname + data['master']
 			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
-			version = init_from_master(master_data)
+			version, log_data = init_from_master(master_data).values_at(:version, :log_data)
 			preprocess_raw_data(data)
 			@multifile[:sentence_index][relative_path(file_path)] = add_elements(data)
 		else
-			version = init_from_master(data)
+			version, log_data = init_from_master(data).values_at(:version, :log_data)
 			if data['files']
 				@multifile[:files].each do |file|
 					last_sentence_node = sentence_nodes.last
@@ -82,7 +82,7 @@ module GraphPersistence
 
 		puts "Read #{file_path}."
 
-		return data
+		return {:graph_data => data, :log_data => log_data}
 	end
 
 	# load another part file of a partially loaded multi-file corpus
@@ -232,7 +232,17 @@ module GraphPersistence
 		preprocess_raw_data(data)
 		add_configuration(data)
 		add_elements(data)
-		return data['version'].to_i
+		log_data = if file_settings[:save_log]
+			begin
+				data['log'] || File.open(@path.dirname + 'log.json', 'r:utf-8'){|f| JSON.parse(f.read)}
+			rescue Errno::ENOENT
+				{}
+			end
+		end
+		return {
+			:version => data['version'].to_i,
+			:log_data => log_data,
+		}
 	end
 
 	def add_elements(data)

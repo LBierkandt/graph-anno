@@ -808,16 +808,8 @@ class GraphController
 		when 'load' # clear workspace and load corpus file
 			raise 'Please specify a file name!' unless parameters[:words][0]
 			clear_workspace
-			data = @graph.read_json_file(file_path(parameters[:words][0]))
-			if @graph.file_settings[:separate_log]
-				begin
-					@log = Log.new_from_file(@graph, @graph.path.sub(/\.json$/, '.log.json'))
-				rescue
-					@log = Log.new(@graph, nil, data['log'])
-				end
-			else
-				@log = Log.new(@graph, nil, data['log'])
-			end
+			data, log_data = @graph.read_json_file(file_path(parameters[:words][0])).values_at(:graph_data, :log_data)
+			@log = Log.new(@graph, nil, log_data)
 			@windows.merge!(data['windows'].to_h) if @graph.file_settings[:save_windows]
 			sentence_nodes = @graph.sentence_nodes
 			@current_sections = [sentence_nodes.find{|n| n.name == @current_sections.first.name}] if @current_sections
