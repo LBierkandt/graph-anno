@@ -280,6 +280,7 @@ class GraphController
 		end
 		return {:errors => 'File names must be unique.'}.to_json if new_filenames.length != new_filenames.uniq.length
 		return {:errors => 'File name “master.json” is not allowed.'}.to_json if new_filenames.include?('master.json')
+		return {:errors => 'File name log.json” is not allowed.'}.to_json if new_filenames.include?('log.json')
 		@graph.rename_files(new_filenames)
 		return true.to_json
 	end

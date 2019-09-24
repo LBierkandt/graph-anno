@@ -138,7 +138,7 @@ module Autocomplete
 				file.sub(/^.*\/([^\/]+)$/, '\1') + '/'
 			else
 				# exclude non-json and log files, strip path
-				(file.match(/\.json$/) && !file.match(/\.log\.json$/)) ? file.sub(/^(.+\/)?([^\/]+)$/, '\2') : nil
+				(file.match(/\.json$/) && !file.match(/log\.json$/)) ? file.sub(/^(.+\/)?([^\/]+)$/, '\2') : nil
 			end
 		}.compact
 	end
