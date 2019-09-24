@@ -272,9 +272,16 @@ class GraphController
 
 	def save_file
 		@graph.file_settings.clear
-		[:compact, :save_log, :separate_log, :save_windows].each do |property|
+		[:compact, :save_log, :save_windows].each do |property|
 			@graph.file_settings[property] = !!@sinatra.params[property.to_s]
 		end
+		new_filenames = @sinatra.params['filenames'].map do |filename|
+			filename.match(/\.json$/) ? filename : "#{filename}.json"
+		end
+		return {:errors => 'File names must be unique.'}.to_json if new_filenames.length != new_filenames.uniq.length
+		return {:errors => 'File name “master.json” is not allowed.'}.to_json if new_filenames.include?('master.json')
+		return {:errors => 'File name log.json” is not allowed.'}.to_json if new_filenames.include?('log.json')
+		@graph.rename_files(new_filenames)
 		return true.to_json
 	end
 
@@ -802,16 +809,8 @@ class GraphController
 		when 'load' # clear workspace and load corpus file
 			raise 'Please specify a file name!' unless parameters[:words][0]
 			clear_workspace
-			data = @graph.read_json_file(file_path(parameters[:words][0]))
-			if @graph.file_settings[:separate_log]
-				begin
-					@log = Log.new_from_file(@graph, @graph.path.sub(/\.json$/, '.log.json'))
-				rescue
-					@log = Log.new(@graph, nil, data['log'])
-				end
-			else
-				@log = Log.new(@graph, nil, data['log'])
-			end
+			data, log_data = @graph.read_json_file(file_path(parameters[:words][0])).values_at(:graph_data, :log_data)
+			@log = Log.new(@graph, nil, log_data)
 			@windows.merge!(data['windows'].to_h) if @graph.file_settings[:save_windows]
 			sentence_nodes = @graph.sentence_nodes
 			@current_sections = [sentence_nodes.find{|n| n.name == @current_sections.first.name}] if @current_sections
@@ -831,15 +830,15 @@ class GraphController
 			reload_sections = true
 
 		when 'save' # save workspace to corpus file
-			path = parameters[:words][0] ? file_path(parameters[:words][0]) : @graph.path
+			path = parameters[:words][0] || @graph.path
 			raise 'Please specify a file name!' unless path
 			additional = {}
-			additional.merge!(:log => @log) if @graph.file_settings[:save_log] && !@graph.file_settings[:separate_log]
 			additional.merge!(:windows => @windows) if @graph.file_settings[:save_windows]
-			@graph.store(path, additional)
-			if @graph.file_settings[:separate_log]
-				@log.write_json_file(path.sub(/\.json$/, '.log.json'), @graph.file_settings[:compact])
-			end
+			@graph.store(
+				path,
+				:additional => additional,
+				:log => (@log if @graph.file_settings[:save_log])
+			)
 
 		when 'clear' # clear workspace
 			clear_workspace
@@ -962,7 +961,10 @@ class GraphController
 	end
 
 	def file_path(input)
-		(input[0] == '/' ? '' : 'data/') + input + (input.match(/\.json$/) ? '' : '.json')
+		base_path = input[0] == '/' ? '' : 'data/'
+		path = input[-1] == '/' ? input + 'master.json' : input
+		file_extension = path.match(/\.json$/) ? '' : '.json'
+		base_path + path + file_extension
 	end
 
 	def validate_config(data)

@@ -119,7 +119,7 @@ table {
   background: #dddddd; }
   #button-bar button.active {
     background: #003090; }
-  #button-bar button:focus {
+  #button-bar button:not(.active):focus {
     background: #002050; }
 
 #sectioning {
@@ -307,7 +307,7 @@ table {
 #modal-content {
   position: absolute;
   width: 90vw;
-  margin: 1vw 5vw;
+  margin: 5vh 5vw;
   overflow: hidden;
   background-color: #dddddd; }
   #modal-content .modal-form-element {
@@ -357,6 +357,39 @@ table {
 
 .file input {
   margin-left: 0; }
+
+.file-list {
+  width: 100%;
+  height: calc(90vh - 200px);
+  overflow-y: auto;
+  background-color: white;
+  padding: 5px; }
+  .file-list ul {
+    list-style: none;
+    padding: 0 20px;
+    margin: 0;
+    position: relative;
+    overflow: hidden; }
+  .file-list > ul > li > .toggler {
+    cursor: pointer;
+    width: 15px; }
+    .file-list > ul > li > .toggler:before {
+      content: "\25be";
+      position: absolute;
+      left: 0;
+      width: 20px;
+      height: 20px;
+      padding: 5px;
+      font-size: 120%; }
+  .file-list > ul > li input {
+    margin: 5px 0; }
+  .file-list > ul > li ul {
+    cursor: auto;
+    padding: 0 3px; }
+  .file-list > ul > li.collapsed > .toggler:before {
+    content: "\25b8"; }
+  .file-list > ul > li.collapsed ul {
+    display: none; }
 
 .pref input[type="number"] {
   width: 100px;

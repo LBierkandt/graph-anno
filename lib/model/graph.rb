@@ -26,7 +26,7 @@ class Graph
 	include PaulaExporter
 	include SaltExporter
 
-	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media, :html_encoder
+	attr_reader :nodes, :edges, :highest_node_id, :highest_edge_id, :node_index, :annotators, :current_annotator, :file_settings, :media, :multifile, :html_encoder
 	attr_accessor :conf, :makros_plain, :makros, :info, :tagset, :anno_makros
 
 	# initializes empty graph
@@ -43,7 +43,7 @@ class Graph
 		@highest_edge_id = 0
 		@node_index = Hash.new{|h, k| h[k] = {}}
 		@path = nil
-		@multifile = nil
+		reset_multifile(:default_file => true)
 		@info = {}
 		@conf = GraphConf.new
 		@tagset = Tagset.new(self)
@@ -343,14 +343,14 @@ class Graph
 					add_part_edge(:start => sentence_before.parent_section, :end => s, :log => log_step)
 				end
 			end
-			if @multifile
-				@multifile[:sentence_index].each do |file, file_sentences|
-					if index = file_sentences.index(sentence_before)
-						file_sentences.insert(index + 1, *new_nodes)
-					end
+			@multifile[:sentence_index].each do |file, file_sentences|
+				if index = file_sentences.index(sentence_before)
+					file_sentences.insert(index + 1, *new_nodes)
 				end
-				rebuild_multifile_order_edges_list
 			end
+			rebuild_multifile_order_edges_list
+		else
+			@multifile[:sentence_index][@multifile[:sentence_index].keys.last] += new_nodes
 		end
 		return new_nodes
 	end
@@ -460,7 +460,7 @@ class Graph
 				end
 			end
 			# delete the section node itself
-			if @multifile && section.type == 's'
+			if section.type == 's'
 				@multifile[:sentence_index].each{|file, list| list.delete(section)}
 			end
 			section.delete(:log => log_step)
@@ -480,34 +480,57 @@ class Graph
 	# @param sections [Array] the sections to be tested
 	# @return [Boolean]
 	def sections_in_different_files?(sections)
-		@multifile &&
-			@multifile[:sentence_index].values.none?{|file_sentences|
-				(sections.map(&:sentence_nodes).flatten - file_sentences).empty?
-			}
+		@multifile[:sentence_index].values.none?{|file_sentences|
+			(sections.map(&:sentence_nodes).flatten - file_sentences).empty?
+		}
 	end
 
 	def inspect
 		'Graph'
 	end
 
-	# merges another graph into self
-	# @param other [Graph] the graph to be merged
-	def merge!(other)
-		s_nodes = sentence_nodes
-		last_old_sentence_node = s_nodes.last
-		new_nodes = {}
-		other.nodes.each do |id,n|
-			new_nodes[id] = add_node(n.to_h.merge(:id => nil))
+	# append another graph to self
+	# @param other [Graph] the graph to be appended
+	def append!(other)
+		last_old_sentence_node = sentence_nodes.last
+		first_new_sentence_node = other.sentence_nodes.first
+		node_map = {}
+		edge_map = {}
+		other.nodes.each do |id, n|
+			node_map[n] = add_node(n.to_h.merge(:id => nil))
 		end
-		other.edges.each do |id,e|
-			if new_nodes[e.start.id] and new_nodes[e.end.id]
-				add_edge(e.to_h.merge(:start => new_nodes[e.start.id], :end => new_nodes[e.end.id], :id => nil))
+		other.edges.each do |id, e|
+			if node_map[e.start] && node_map[e.end]
+				edge_map[e] = add_edge(e.to_h.merge(:start => node_map[e.start], :end => node_map[e.end], :id => nil))
 			end
 		end
-		first_new_sentence_node = @node_index['s'].values.find{|n| !s_nodes.include?(n)}.ordered_sister_nodes.first
-		add_order_edge(:start => last_old_sentence_node, :end => first_new_sentence_node)
+		@multifile[:order_edges] << add_order_edge(:start => last_old_sentence_node, :end => node_map[first_new_sentence_node])
+		@multifile[:order_edges] += other.multifile[:order_edges].map{|e| edge_map[e]}
+		other.multifile[:sentence_index].each do |file, sentence_nodes|
+			new_filename = file
+			i = 0
+			while @multifile[:sentence_index][new_filename] do
+				new_filename = "#{file.rpartition('.').first}_#{i += 1}.#{file.rpartition('.').last}"
+			end
+			@multifile[:sentence_index][new_filename] = sentence_nodes.map{|n| node_map[n]}
+			@multifile[:files] << new_filename
+		end
 		@conf.merge!(other.conf)
 		@annotators += other.annotators.select{|a| !@annotators.map(&:name).include?(a.name) }
+	end
+
+	def rename_files(new_filenames)
+		@multifile[:file_renames] = Hash[@multifile[:files].zip(new_filenames)]
+		if @multifile[:file_renames].all?{|old_filename, new_filenames| old_filename == new_filenames}
+			@multifile.delete(:file_renames)
+			return
+		end
+		@multifile[:files] = new_filenames
+		tmp_sentence_index = {}
+		@multifile[:file_renames].each do |old_filename, new_filename|
+			tmp_sentence_index[new_filename] = @multifile[:sentence_index][old_filename]
+		end
+		@multifile[:sentence_index] = tmp_sentence_index
 	end
 
 	# builds a clone of self, but does not clone the nodes and edges
@@ -783,7 +806,6 @@ class Graph
 
 	# rebuild list of order edges that connect the sentences of different files
 	def rebuild_multifile_order_edges_list
-		return unless @multifile
 		@multifile[:order_edges] = @multifile[:sentence_index].map{|f, list|
 			list.last.out.of_type('o').first
 		}.compact

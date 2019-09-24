@@ -266,17 +266,22 @@ Nodes and edges of different layers may be displayed in different colors and ali
 
 \subsection{Serialization format}\label{serialization-format}
 
-For persisting, the GraphAnno data is serialized as a JSON\footnote{See \url{http://json.org/} for a description.} object.
-This object has three obligatory keys: \code{nodes} and \code{edges} with an array of nodes and an array of edges, respectively, and \code{version} with the format version number (integer).
+For persisting, the GraphAnno data is serialized as multiple JSON\footnote{See \url{http://json.org/} for a description.} files:
+A GraphAnno corpus consists of one master file and at least one part file, each containing a JSON object.
+The details of the file contents are laid out in Section \ref{corpus-files}.
+How the graph itself (i.e., its nodes and edges) is serialized is explained in Section \ref{data-structure}.
+
+\subsubsection{Data structure}\label{data-structure}
+
+The JSON objects represented by the GraphAnno corpus files all contain the keys \code{nodes} and \code{edges} with an array of nodes and an array of edges, respectively.
 This is shown in Figure \ref{json-basic}.
-Furthermore, the JSON object has a number of optional attributes for configuration.
+The other attributes they (may) contain are dealt with in Section \ref{corpus-files}.
 
 \begin{figurel}
 	\begin{lstlisting}[gobble=8]
 		{
 		  "nodes": <array>,
-		  "edges": <array>,
-		  "version": <integer>
+		  "edges": <array>
 		}
 	\end{lstlisting}
 	\caption{A basic GraphAnno graph JSON object}
@@ -377,23 +382,67 @@ This structure could describe arbitrary directed graphs, but in order to work wi
 \end{table}
 
 
-\subsubsection{Multi-file corpora}
+\subsubsection{Corpus files}\label{corpus-files}
 
-For working with larger corpora, it can be handy to load only parts of a corpus.
-To this end you may create multi-file corpora, that can be loaded partially (currently it is not yet possible to create such multi-file corpora from within GraphAnno).
-A multi-file corpus consists of a master file and several part files, where the master file contains the configuration of the corpus and, optionally, independent nodes or edges, and the part files contain (consecutive) sentence nodes with their dominating section nodes and their associated token and annotation node, plus all connecting edges.
+A GraphAnno corpus consists of a master file and one or several part files.
+This is handy when working with larger corpora, as it allows you to load only parts (i.e., single files) of a corpus.
+Usually, the master and part files will be located in one directory (other structures are possible but not useful in most cases).
 
-The master file contains the version attribute, all configuration attributes and, additionally, the attributes \code{files}, \code{max\_node\_id} and \code{max\_edge\_id}.
-The value for \code{files} is an array of the relative paths of the part files (in the order their content has in the corpus).
-The value for \code{max\_node\_id} and \code{max\_edge\_id} is the highest node ID or edge ID, respectively, of the whole corpus graph.
-In some cases the master file may contain nodes, but no sentence or section nodes (i.e. a section cannot cross the boundaries of part files); only speaker nodes and sentence-independent nodes (to be implemented) are allowed.
-The master file contains those edges that connect nodes of the master file itself; nodes that connect nodes of the master file and nodes of a part file belong to the part file.
+The master file contains the configuration of the corpus and, optionally, independent nodes or edges, and the part files contain (consecutive) sentence nodes with their dominating section nodes and their associated token and annotation nodes, plus all connecting edges.
+Additionally, bot types of files contain references to each other.
 
-A part file contains the version attribute, the attribute \code{master}, and nodes and edges.
-The value of \code{master} is the relative path of the master file.
+The master file contains the version attribute, all configuration attributes of the corpus, attributes related to the corpus structure and nodes and edges as shown in Figure \ref{master-file}.
+The \code{version} attribute serves the correct handling of different formats that were produced by the different historic versions of GraphAnno.
+The subsequent (optional) attributes hold the different types of configuration, tagset, makros etc.
+\code{files} is an array of the relative paths of the part files (in the order their content has in the corpus; if the part files reside in the same directory, it will be the bare file names).
+The value for \code{max\_node\_id} and \code{max\_edge\_id} is the highest node ID or edge ID, respectively, of the whole corpus graph (to avoid mutliple assignment of IDs when not all corpus files are loaded).
+The master file also contains the corpus’ speaker nodes and sentence-independent nodes, but no sentence or section nodes (i.e., a section cannot cross the boundaries of part files) or annotation and token nodes.
+As for the edges, it contains those ones that connect nodes of the master file itself; nodes that connect nodes of the master file and nodes of a part file belong to the part file.
+
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "version": <integer>,
+		  
+		  "info": <object>,
+		  "conf": <object>,
+		  "tagset": <array>,
+		  "anno_makros": <object>,
+		  "search_makros": <array>,
+		  "annotators": <array>,
+		  "file_settings": <object>,
+		  
+		  "files": <array>,
+		  "max_node_id": <integer>,
+		  "max_edge_id": <integer>,
+		  
+		  "nodes": <array>,
+		  "edges": <array>
+		}
+	\end{lstlisting}
+	\caption{Structure of the master file}
+	\label{master-file}
+\end{figurel}
+
+A part file contains the version attribute, the attribute \code{master}, and nodes and edges as shown in Figure \ref{part-file}.
+The \code{version} attribute, as in the master file, serves the correct handling of the format.
+The value of \code{master} is the relative path of the master file (i.e., the bare file name if the master file is located in the same directory).
 The nodes are a consecutive number of sentence nodes, with their dominating section nodes as well as their associated tokens and annotation nodes.
-The edges comprise all edges that connect the nodes of the part file, plus those edges that connect nodes of the part file and nodes of the master file.
+The edges comprise all edges that connect the nodes of the part file, plus those edges that connect nodes of the part file to nodes of the master file.
 It is not possible to have edges between nodes of different part files.
+
+\begin{figurel}
+	\begin{lstlisting}[gobble=8]
+		{
+		  "version": <integer>,
+		  "master": <string>,
+		  "nodes": <array>,
+		  "edges": <array>
+		}
+	\end{lstlisting}
+	\caption{Structure of a part file}
+	\label{part-file}
+\end{figurel}
 
 See Section \ref{data-and-navigation} for how to handle loading and saving of multi-file corpora.
 
@@ -655,17 +704,19 @@ If you want to log out the current annotator and work on the public annotations 
 
 \subsection{File settings}\label{filesettings}
 
-The command \code{file} opens a window, in which you can specify the settings for the file in which the work space will be saved:
+The command \code{file} opens a window, in which you can specify some settings for the files in which the corpus will be saved:
 
 \begin{itemize}
 	\item	\textit{compact file format}: Should the file be stored in a compact JSON format?
 			This has the advantage of reducing the file size, but the file will be less readable for potential inspection or editing in a text editor.
 	\item	\textit{save editing history}: Should the the change log (cf. \ref{befehl-undo}) be saved, so that it stays available accross settings?
-			%The change log can be saved in the graph file or in another file (with a name of the form \code{<corpus name>.log.json}).
-			(Attention, this option can lead to very big files and long saving/loading times.)
+			The change log will be saved in a file called \texttt{log.json} in the corpus directory.
+			(Attention, log files can become very big and lead to high saving/loading times.)
 	\item	\textit{save window positions}: Should the position of the windows (filter, search etc.) be saved in the graph file (i.e., project-specific)?
 			(Otherwise, the positions are only saved in the browser.)
 \end{itemize}
+
+Additionally, the window displays a list of the corpus’ part files, each with a (collapsible) list of the sentences that are (or will be) saved in it. Here you may also rename the part files. Keep in mind that the file names must be unique and cannot be \texttt{master.json} or \texttt{log.json}. The real renaming won’t take place until the corpus is saved.
 
 
 \subsection{Program preferences}\label{preferences}
@@ -689,18 +740,16 @@ There are the following settings:
 
 \subsubsection{Load file: \texttt{load}}
 
-With the command \code{load} you load a graph file into the work space.
-By default, the file will be loaded from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems).
+With the command \code{load} you load a corpus (or a corpus’ part file) into the work space.
+By default, the corpus will be loaded from the \texttt{data} directory located in the GraphAnno main directory; but you can also provide a path (directories are separated by the normal slash \texttt{/} on all operating systems; the path has to be enclosed in double quotes (\code{\quo...\quo}) if it contains spaces).
 If the path does not start with a slash, it will be interpreted relative to the \texttt{data} directory; if it starts with a slash, it will be interpreted as an absolute path (in the partition GraphAnno is installed in if you are working on a Windows systems).
-Provide the file name with or without the extension \code{.json}; the path has to be enclosed in double quotes (\code{\quo...\quo}) if it contains spaces.
+
+If you want to load a whole corpus, you may either provide the path to the master file (with or without the extension \code{.json}) or the path to the corpus directory (ending in \texttt{/}), then GraphAnno will look for the file \texttt{master.json} in that directory.
+If you want to load only one file of a multi-file corpus, then provide the path to that file (you can add other parts of the corpus using the command \code{add}).
 
 Before loading, the work space is cleared from all data.
 So, changes that were not saved explicitly (using the command \code{save}) are lost.
-The name of the loaded file (or the master file in case of multi-file corpora) is shown next to the input line on the bottom of the user interface.
-
-When working with a multi-file corpus, you have two options:
-Either you provide the path to the master file, then the whole corpus is loaded into the work space; or you provide the path to a part file, then only this part of the corpus is loaded.
-You can add other parts of the corpus using the command \code{add}.
+The name of the master file of the corpus is shown next to the input line on the bottom of the user interface.
 
 
 \subsubsection{Add part file of multi-file corpus: \texttt{add}}
@@ -712,25 +761,29 @@ You will see an error message if you try to load a file that is not part of the 
 
 \subsubsection{Append file: \texttt{append}}
 
-The command \code{append} appends the contents of the given file (specify the file as described for \code{load}) to the work space.
-If you had loaded a multi-file corpus before, the content of the workspace will be treated as one-file corpus after the \code{append}.
+The command \code{append} appends the contents of the given corpus or file (specify the file as described for \code{load}) to the work space.
+When you save the work space, the appended files will be appended as files to your corpus (if there are duplicate file names, they will be suffixed).
 
 
 \subsubsection{Save file: \texttt{save}}
 
-The command \code{save} saves the work space to a GraphAnno file (see the command \code{load} for details concerning the file path).
-If there is a file name indicated next to the input line, the work space can be saved to this file without specifying the file name.
-Attention: no warning is issued when an existing file will be overwritten.
+The command \code{save} saves the work space to a GraphAnno corpus.
+If there is a corpus name indicated next to the input line, the work space can be saved to this corpus without specifying a path.
+Note that only the loaded parts and the master file will be rewritten (the other parts remain unchanged).
 
-When working with a multi-file corpus, only the loaded parts and the master file will be rewritten (the other parts remain unchanged).
-If you specify a new name when saving a partially loaded multi-file corpus, the new corpus will only consist of the loaded parts.
+If you specify a path (see the command \code{load} for details concerning the path), \code{save} will act like the \textit{save as} function of other programs and save a new corpus.
+The path you provide will be turned into a directory, and in this directory GraphAnno will save the corpus.
+If you had created a corpus from scratch, GraphAnno will create the master file \texttt{master.json} and one part file \texttt{0001.json}.
+If you save a loaded corpus, GraphAnno will save only the loaded parts (preserving their file names) and the master file.
+
+Attention: no warning is issued when an existing file will be overwritten.
 
 
 \subsubsection{Clear work space: \texttt{clear}}
 
 The command \code{clear} clears the work space from all data.
 Changes that were not saved are lost.
-Next to the input line no file will be indicated anymore.
+Next to the input line no corpus will be indicated anymore.
 
 
 \subsubsection{Go to sentence/section: \texttt{s}}\label{befehl-s}

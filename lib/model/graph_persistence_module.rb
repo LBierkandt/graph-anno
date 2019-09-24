@@ -49,47 +49,50 @@ module GraphPersistence
 	end
 
 	# reads a graph JSON file into self, clearing self before
-	# @param path [String] path to the JSON file
+	# @param p [String] path to the JSON file
 	def read_json_file(p)
 		puts "Reading file #{p} ..."
 		self.clear
 
-		@path = path = Pathname.new(p)
-		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		if data['files'] # is master file
-			version = init_from_master(data)
-			data['files'].each do |file|
-				last_sentence_node = sentence_nodes.last
-				d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
-				preprocess_raw_data(d)
-				@multifile[:sentence_index][file] = add_elements(d)
-				@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
-			end
-		elsif data['master'] # is part file
-			@path = path.dirname + data['master']
+		@path = file_path = Pathname.new(p)
+		data = File.open(file_path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		if data['master'] # is part file
+			@path = file_path.dirname + data['master']
 			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
-			version = init_from_master(master_data)
+			version, log_data = init_from_master(master_data).values_at(:version, :log_data)
 			preprocess_raw_data(data)
-			@multifile[:sentence_index][relative_path(path)] = add_elements(data)
-		else # is single-file corpus
-			version = init_from_master(data)
+			@multifile[:sentence_index][relative_path(file_path)] = add_elements(data)
+		else
+			version, log_data = init_from_master(data).values_at(:version, :log_data)
+			if data['files']
+				@multifile[:files].each do |file|
+					last_sentence_node = sentence_nodes.last
+					d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
+					preprocess_raw_data(d)
+					@multifile[:sentence_index][file] = add_elements(d)
+					@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
+				end
+			else
+				@multifile[:files] = ['0001.json']
+				@multifile[:sentence_index] = {'0001.json' => sentence_nodes}
+			end
 		end
 
 		update_graph_format(version) if version < GRAPH_FORMAT_VERSION
 
-		puts "Read #{path}."
+		puts "Read #{file_path}."
 
-		return data
+		return {:graph_data => data, :log_data => log_data}
 	end
 
 	# load another part file of a partially loaded multi-file corpus
 	# @param p [String] path to the part file
 	def add_part_file(p)
 		puts "Reading file #{p} ..."
-		path = Pathname.new(p)
-		data = File.open(path, 'r:utf-8'){|f| JSON.parse(f.read)}
-		file = relative_path(path)
-		raise 'File is not a part of the loaded corpus!' unless data['master'] and data['master'] == relative_path(@path, path)
+		file_path = Pathname.new(p)
+		data = File.open(file_path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		file = relative_path(file_path)
+		raise 'File is not a part of the loaded corpus!' unless data['master'] and data['master'] == relative_path(@path, file_path)
 		raise 'File is not listed as part of the loaded corpus!' unless @multifile[:files].include?(file)
 		raise 'File has been loaded already!' if @multifile[:sentence_index][file]
 		before, after = adjacent_sentence_nodes(file)
@@ -106,33 +109,33 @@ module GraphPersistence
 	# @param p [String] path to the graph file
 	def append_file(p)
 		puts "Reading file #{p} ..."
-		path = Pathname.new(p)
+		file_path = Pathname.new(p)
 		new_graph = Graph.new
-		new_graph.read_json_file(path)
-		@path = nil
-		@multifile = nil
-		self.merge!(new_graph)
+		new_graph.read_json_file(file_path)
+		self.append!(new_graph)
 	end
 
 	# serializes self in one ore multiple JSON file(s)
 	# @param path [String] path to the JSON file
-	# @param additional [Hash] data that should be added to the saved json in the form {:key => <data_to_be_saved>}, where data_to_be_save has to be convertible to JSON
-	def store(path, additional = {})
-		@path = Pathname.new(path)
-		unless @multifile
-			write_corpus_file(path, additional)
-		else
-			nodes_per_file = {}
-			edges_per_file = {}
-			@multifile[:sentence_index].each do |file, sentences|
-				nodes_per_file[file] = (sections_hierarchy(sentences) + sentences.map(&:nodes)).flatten
-				edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
-				write_part_file(file, nodes_per_file[file], edges_per_file[file])
-			end
-			master_nodes = @node_index['sp']
-			master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
-			write_master_file(master_nodes, master_edges, additional, path != @path)
+	# @param options [Hash] additional: data (hash) that should be added to the saved json; log: log object to be saved (or nil)
+	def store(path, options = {})
+		if path.is_a?(String)
+			base_path = path[0] == '/' ? '' : 'data/'
+			@path = Pathname.new(base_path + path) + 'master.json'
 		end
+		rename_part_files if @multifile[:file_renames]
+		# assign elements to files
+		nodes_per_file = {}
+		edges_per_file = {}
+		@multifile[:sentence_index].each do |file, sentences|
+			nodes_per_file[file] = (sections_hierarchy(sentences) + sentences.map(&:nodes)).flatten
+			edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
+			write_part_file(file, nodes_per_file[file], edges_per_file[file])
+		end
+		master_nodes = @node_index['sp']
+		master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
+		write_master_file(master_nodes, master_edges, options[:additional].to_h, path != @path)
+		write_log_file(options[:log]) if options[:log]
 	end
 
 	# export corpus as SQL file for import in GraphInspect
@@ -215,12 +218,31 @@ module GraphPersistence
 
 	private
 
+	def reset_multifile(options = {})
+		@multifile = {:files => [], :sentence_index => {}, :order_edges => []}
+		if options[:default_file]
+			@multifile[:files] = ['0001.json']
+			@multifile[:sentence_index] = {'0001.json' => []}
+		end
+	end
+
 	def init_from_master(data)
-		@multifile = {:sentence_index => {}, :order_edges => []} if data['files']
+		reset_multifile
+		@multifile[:files] = data['files']
 		preprocess_raw_data(data)
 		add_configuration(data)
 		add_elements(data)
-		return data['version'].to_i
+		log_data = if file_settings[:save_log]
+			begin
+				data['log'] || File.open(@path.dirname + 'log.json', 'r:utf-8'){|f| JSON.parse(f.read)}
+			rescue Errno::ENOENT
+				{}
+			end
+		end
+		return {
+			:version => data['version'].to_i,
+			:log_data => log_data,
+		}
 	end
 
 	def add_elements(data)
@@ -239,7 +261,6 @@ module GraphPersistence
 	end
 
 	def add_configuration(data)
-		@multifile[:files] = data['files'] if @multifile
  		@annotators = (data['annotators'] || []).map{|a| Annotator.new(a.symbolize_keys.merge(:graph => self))}
 		@anno_makros = (data['anno_makros'] || {}).map_hash do |key, annotations|
 			if annotations.is_a?(Hash) # old format before introduction of layer-specific annotations
@@ -278,8 +299,21 @@ module GraphPersistence
 		]
 	end
 
+	def rename_part_files
+		return unless @multifile[:file_renames]
+		prefix = 'kajhgf8743qgo7gfto8743qfgo843qgf'
+		@multifile[:file_renames].each do |old_filename, new_filename|
+			next if old_filename == new_filename
+			File.rename(@path.dirname + old_filename, @path.dirname + "#{prefix}#{old_filename}") rescue Errno::ENOENT
+		end
+		@multifile[:file_renames].each do |old_filename, new_filename|
+			next if old_filename == new_filename
+			File.rename(@path.dirname + "#{prefix}#{old_filename}", @path.dirname + new_filename) rescue Errno::ENOENT
+		end
+		@multifile.delete(:file_renames)
+	end
+
 	def write_json_file(path, data)
-		path = Pathname.new(path)
 		puts "Writing file #{path}..."
 		FileUtils.mkdir_p(path.dirname) unless File.exist?(path.dirname)
 		json = @file_settings[:compact] ? data.to_json : JSON.pretty_generate(data, :indent => ' ', :space => '')
@@ -289,17 +323,13 @@ module GraphPersistence
 		puts "Wrote #{path}."
 	end
 
-	def write_corpus_file(path, additional)
-		write_json_file(path, self.to_h(:additional => additional))
-	end
-
 	def write_part_file(file, nodes, edges)
-		path = Pathname.new(@path.dirname + file)
+		file_path = Pathname.new(@path.dirname + file)
 		write_json_file(
-			path,
+			file_path,
 			{
 				:version => GRAPH_FORMAT_VERSION,
-				:master => relative_path(@path, path),
+				:master => relative_path(@path, file_path),
 				:nodes => nodes.map(&:to_h),
 				:edges => edges.map(&:to_h),
 			}
@@ -319,6 +349,10 @@ module GraphPersistence
 				}.merge(additional)
 			)
 		)
+	end
+
+	def write_log_file(log)
+		write_json_file(Pathname.new(@path.dirname + 'log.json'), log)
 	end
 
 	def update_raw_graph_data(data, version)

@@ -127,7 +127,7 @@ table
   button
     &.active
       background: $theme-color-highlight
-    &:focus
+    &:not(.active):focus
       background: $theme-color
 
 #sectioning
@@ -317,7 +317,7 @@ table
 #modal-content
   position: absolute
   width: 90vw
-  margin: 1vw 5vw
+  margin: 5vh 5vw
   overflow: hidden
   background-color: $background-color
   .modal-form-element
@@ -369,6 +369,41 @@ table
 .file
   input
     margin-left: 0
+
+.file-list
+  width: 100%
+  height: calc(90vh - 200px)
+  overflow-y: auto
+  background-color: #fff
+  padding: 5px
+  ul
+    list-style: none
+    padding: 0 20px
+    margin: 0
+    position: relative
+    overflow: hidden
+  & > ul > li
+    & > .toggler
+      cursor: pointer
+      width: 15px
+      &:before
+        content: '\25be'
+        position: absolute
+        left: 0
+        width: 20px
+        height: 20px
+        padding: 5px
+        font-size: 120%
+    input
+      margin: 5px 0
+    ul
+      cursor: auto
+      padding: 0 3px
+    &.collapsed
+      & > .toggler:before
+        content: '\25b8'
+      ul
+        display: none
 
 .pref
   input[type="number"]

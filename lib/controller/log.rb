@@ -23,7 +23,7 @@ class Log
 
 	def initialize(graph, user = nil, data = nil)
 		@graph = graph
-		@steps = data ? data['steps'].map{|s| Step.new_from_hash(s.merge(:log => self))} : []
+		@steps = data ? data['steps'].to_a.map{|s| Step.new_from_hash(s.merge(:log => self))} : []
 		@current_index = data ? data['current_index'] : -1
 		@user = user
 	end
