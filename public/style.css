@@ -119,7 +119,7 @@ table {
   background: #dddddd; }
   #button-bar button.active {
     background: #003090; }
-  #button-bar button:focus {
+  #button-bar button:not(.active):focus {
     background: #002050; }
 
 #sectioning {
