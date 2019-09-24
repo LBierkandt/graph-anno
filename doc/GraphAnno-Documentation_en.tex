@@ -704,17 +704,19 @@ If you want to log out the current annotator and work on the public annotations 
 
 \subsection{File settings}\label{filesettings}
 
-The command \code{file} opens a window, in which you can specify the settings for the file in which the work space will be saved:
+The command \code{file} opens a window, in which you can specify some settings for the files in which the corpus will be saved:
 
 \begin{itemize}
 	\item	\textit{compact file format}: Should the file be stored in a compact JSON format?
 			This has the advantage of reducing the file size, but the file will be less readable for potential inspection or editing in a text editor.
 	\item	\textit{save editing history}: Should the the change log (cf. \ref{befehl-undo}) be saved, so that it stays available accross settings?
-			%The change log can be saved in the graph file or in another file (with a name of the form \code{<corpus name>.log.json}).
-			(Attention, this option can lead to very big files and long saving/loading times.)
+			The change log will be saved in a file called \texttt{log.json} in the corpus directory.
+			(Attention, log files can become very big and lead to high saving/loading times.)
 	\item	\textit{save window positions}: Should the position of the windows (filter, search etc.) be saved in the graph file (i.e., project-specific)?
 			(Otherwise, the positions are only saved in the browser.)
 \end{itemize}
+
+Additionally, the window displays a list of the corpus’ part files, each with a (collapsible) list of the sentences that are (or will be) saved in it. Here you may also rename the part files. Keep in mind that the file names must be unique and cannot be \texttt{master.json} or \texttt{log.json}. The real renaming won’t take place until the corpus is saved.
 
 
 \subsection{Program preferences}\label{preferences}
