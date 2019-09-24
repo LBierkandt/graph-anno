@@ -61,15 +61,17 @@ module GraphPersistence
 			master_data = File.open(@path, 'r:utf-8'){|f| JSON.parse(f.read)}
 			version, log_data = init_from_master(master_data).values_at(:version, :log_data)
 			preprocess_raw_data(data)
-			@multifile[:sentence_index][relative_path(file_path)] = add_elements(data)
+			text = read_text_file_for(file_path)
+			@multifile[:sentence_index][relative_path(file_path)] = add_elements(data, text)
 		else
 			version, log_data = init_from_master(data).values_at(:version, :log_data)
 			if data['files']
 				@multifile[:files].each do |file|
 					last_sentence_node = sentence_nodes.last
 					d = File.open(@path.dirname + file, 'r:utf-8'){|f| JSON.parse(f.read)}
+					text = read_text_file_for(@path.dirname + file)
 					preprocess_raw_data(d)
-					@multifile[:sentence_index][file] = add_elements(d)
+					@multifile[:sentence_index][file] = add_elements(d, text)
 					@multifile[:order_edges] << add_order_edge(:start => last_sentence_node, :end => @multifile[:sentence_index][file].first)
 				end
 			else
@@ -91,6 +93,7 @@ module GraphPersistence
 		puts "Reading file #{p} ..."
 		file_path = Pathname.new(p)
 		data = File.open(file_path, 'r:utf-8'){|f| JSON.parse(f.read)}
+		text = read_text_file_for(file_path)
 		file = relative_path(file_path)
 		raise 'File is not a part of the loaded corpus!' unless data['master'] and data['master'] == relative_path(@path, file_path)
 		raise 'File is not listed as part of the loaded corpus!' unless @multifile[:files].include?(file)
@@ -100,7 +103,7 @@ module GraphPersistence
 			@multifile[:order_edges].delete(e.delete)
 		end
 		preprocess_raw_data(data)
-		@multifile[:sentence_index][file] = add_elements(data)
+		@multifile[:sentence_index][file] = add_elements(data, text)
 		@multifile[:order_edges] << add_order_edge(:start => before, :end => @multifile[:sentence_index][file].first)
 		@multifile[:order_edges] << add_order_edge(:start => @multifile[:sentence_index][file].last, :end => after)
 	end
@@ -245,12 +248,18 @@ module GraphPersistence
 		}
 	end
 
-	def add_elements(data)
+	def read_text_file_for(path)
+		File.open(path.dirname + path.basename.sub(/\.json$/, '.txt'), 'r:utf-8'){|f| f.read}
+	rescue Errno::ENOENT
+		nil
+	end
+
+	def add_elements(data, text = nil)
 		@highest_node_id = [@highest_node_id, data['max_node_id'].to_i].max
 		@highest_edge_id = [@highest_edge_id, data['max_edge_id'].to_i].max
 		sentence_node = nil
 		(data['nodes'] || []).each do |n|
-			node = add_node(n.merge(:raw => true))
+			node = add_node(n.merge(:raw => true, :text => text))
 			sentence_node = node if node.type == 's'
 		end
 		(data['edges'] || []).each do |e|

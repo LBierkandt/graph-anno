@@ -26,6 +26,9 @@ class Attributes
 			# set directly
 			@attr = expand(attr)
 			@private_attr = Hash[private_attr.map {|k, v| [@host.graph.get_annotator(:id => k), expand(v)] }]
+			if @host.type == 't' && @host.from && @host.to && h[:text]
+				annotate_with('token' => h[:text][@host.from..@host.to])
+			end
 		else
 			# set via key-distinguishing function
 			@attr = {}

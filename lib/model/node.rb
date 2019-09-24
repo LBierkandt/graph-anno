@@ -18,11 +18,13 @@
 # along with GraphAnno. If not, see <http://www.gnu.org/licenses/>.
 
 class Node < NodeOrEdge
-	attr_accessor :id, :in, :out, :start, :end
+	attr_accessor :id, :in, :out, :start, :end, :from, :to
 
 	# initializes node
 	# @param h [{:graph => Graph, :id => String, :attr => Hash}]
 	def initialize(h)
+		@from = h[:from]
+		@to = h[:to]
 		super
 		@in = []
 		@out = []
