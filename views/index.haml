@@ -16,6 +16,9 @@
     %script{ :type => 'text/javascript', :language => 'JavaScript', :src => "/functions.js" }
     :javascript
       window.autocompleteCommands = #{Autocomplete.commands.to_json}
+    - if CORPUS
+      :javascript
+        window.corpus = '#{CORPUS}'
 
   %body
     #graph
@@ -24,14 +27,16 @@
       #textline.bottom-block
       #meta.bottom-block
       #cmddiv.bottom-block
-        %form{ :name => "cmd" }
-          %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}", :autocomplete => "off" }
-          %select{ :name => "layer", :id => "layer" }
-            = haml :layer_options, :locals => {:controller => controller}
-          %input{ :type => "submit", :value => "Send" }
-        %div
-          #active_file= "file: #{controller.graph.path}"
-          #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
+        - if !CORPUS
+          %form{ :name => "cmd" }
+            %input{ :size => "50", :type => "text", :name => "txtcmd", :id => "txtcmd", :value => "#{request.cookies['traw_cmd'].to_s}", :autocomplete => "off" }
+            %select{ :name => "layer", :id => "layer" }
+              = haml :layer_options, :locals => {:controller => controller}
+            %input{ :type => "submit", :value => "Send" }
+        - if !CORPUS
+          %div
+            #active_file= "file: #{controller.graph.path}"
+            #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
         #documentation
           %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
 
@@ -115,40 +120,41 @@
           %li show/hide search window: F7
           %li show/hide log window: F8
           %li show/hide navigation window: F9
-        %h3 Command line commands
-        %h4 Data and navigation
-        %ul
-          %li load file: <i>load file_name_or_path</i>
-          %li add corpus part: <i>add file_name_or_path</i>
-          %li append file: <i>append file_name_or_path</i>
-          %li save workspace to file: <i>save (file_name_or_path)</i>
-          %li clear workspace: <i>clear</i>
-          %li create new sentence: <i>ns sentence_name</i>
-          %li go to sentence: <i>s sentence</i>
-          %li delete sentence: <i>del (sentence_name)</i>
-          %li import: <i>import format name</i>
-          %li export: <i>export format name</i>
-          %li edit layer configuration: <i>config</i>
-          %li edit tagset: <i>tagset</i>
-          %li edit makros: <i>makros</i>
-          %li edit metadata: <i>metadata</i>
-          %li edit annotators: <i>annotators</i>
-          %li edit file settings: <i>file</i>
-          %li switch annotators: <i>annotator (annotator_name)</i>
-        %h4 Annotation
-        %ul
-          %li new node: <i>n key:value key:value ...</i>
-          %li new edge: <i>e start end key:value key:value ...</i>
-          %li annotate: <i>a target target ... key:value key:value ...</i>
-          %li set layer: <i>l target target ... layer_shortcut</i>
-          %li delete: <i>d target target ...</i>
-          %li group nodes under new mother node: <i>g node node ... key:value key:value ...</i>
-          %li attach new child node: <i>h node1 node2 ... key:value key:value ...</i>
-          %li insert node into edge: <i>ni edge key:value key:value ...</i>
-          %li delete node and in/out edges: <i>di node</i> or <i>do node</i>
-          %li tokenise (and append): <i>t A string separated by spaces .</i>
-          %li tokenise and insert before: <i>tb token A string separated by spaces .</i>
-          %li tokenise and insert after: <i>ta token A string separated by spaces .</i>
+        - if !CORPUS
+          %h3 Command line commands
+          %h4 Data and navigation
+          %ul
+            %li load file: <i>load file_name_or_path</i>
+            %li add corpus part: <i>add file_name_or_path</i>
+            %li append file: <i>append file_name_or_path</i>
+            %li save workspace to file: <i>save (file_name_or_path)</i>
+            %li clear workspace: <i>clear</i>
+            %li create new sentence: <i>ns sentence_name</i>
+            %li go to sentence: <i>s sentence</i>
+            %li delete sentence: <i>del (sentence_name)</i>
+            %li import: <i>import format name</i>
+            %li export: <i>export format name</i>
+            %li edit layer configuration: <i>config</i>
+            %li edit tagset: <i>tagset</i>
+            %li edit makros: <i>makros</i>
+            %li edit metadata: <i>metadata</i>
+            %li edit annotators: <i>annotators</i>
+            %li edit file settings: <i>file</i>
+            %li switch annotators: <i>annotator (annotator_name)</i>
+          %h4 Annotation
+          %ul
+            %li new node: <i>n key:value key:value ...</i>
+            %li new edge: <i>e start end key:value key:value ...</i>
+            %li annotate: <i>a target target ... key:value key:value ...</i>
+            %li set layer: <i>l target target ... layer_shortcut</i>
+            %li delete: <i>d target target ...</i>
+            %li group nodes under new mother node: <i>g node node ... key:value key:value ...</i>
+            %li attach new child node: <i>h node1 node2 ... key:value key:value ...</i>
+            %li insert node into edge: <i>ni edge key:value key:value ...</i>
+            %li delete node and in/out edges: <i>di node</i> or <i>do node</i>
+            %li tokenise (and append): <i>t A string separated by spaces .</i>
+            %li tokenise and insert before: <i>tb token A string separated by spaces .</i>
+            %li tokenise and insert after: <i>ta token A string separated by spaces .</i>
 
     #modal-background
       #modal-content

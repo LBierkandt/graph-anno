@@ -28,6 +28,8 @@ require './lib/extensions.rb'
 require './lib/model.rb'
 require './lib/controller.rb'
 
+CORPUS = 'asdf/'
+
 controller = GraphController.new
 
 configure do

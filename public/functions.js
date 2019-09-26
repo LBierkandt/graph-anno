@@ -18,7 +18,8 @@
 window.preferences = {};
 
 window.onload = function() {
-	loadGraph();
+	if (window.corpus) sendCmd('load ' + window.corpus);
+	else loadGraph();
 
 	window.onkeydown = taste;
 
@@ -167,15 +168,15 @@ function taste(e) {
 		}
 	}
 }
-function sendCmd() {
-	var txtcmd = document.cmd.txtcmd.value.trim();
+function sendCmd(command) {
+	var txtcmd = command || document.cmd.txtcmd.value.trim();
 	if (txtcmd.indexOf('image ') == 0) {
 		GraphDisplay.saveImage(txtcmd.replace(/\s+/g, ' ').split(' ')[1]);
 		return;
 	}
 	postRequest('/handle_commandline', {
 		txtcmd: txtcmd,
-		layer: document.cmd.layer.value,
+		layer: document.cmd ? document.cmd.layer.value : null,
 		sections: Sectioning.getCurrent(),
 	});
 }
