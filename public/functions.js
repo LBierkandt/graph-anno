@@ -33,6 +33,11 @@ window.onload = function() {
 		Autocomplete.disable();
 	})
 
+	// zoom buttons
+	$('#fit').click(function(){GraphDisplay.fitGraph()});
+	$('#smaller').click(function(){GraphDisplay.scaleGraph('-')});
+	$('#bigger').click(function(){GraphDisplay.scaleGraph('+')});
+
 	// behaviour of file settings modal
 	$(document).on('change', '.file #save-log', function(){
 		disableInputs($(this), '.file #separate-log');

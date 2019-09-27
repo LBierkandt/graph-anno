@@ -48,6 +48,10 @@
       %button{data: {box: 'sectioning'}} Nav
       %button{data: {box: 'independent'}} i nodes
       %button{data: {box: 'media'}} Media
+      .spacer
+      %button#smaller{:title => 'zoom out (ctrl+shift+"−")'} −
+      %button#fit{:title => 'zoom to fit (ctrl+shift+0)'} 0
+      %button#bigger{:title => 'zoom in (ctrl+shift+"+")'} +
 
     #sectioning.box{ :'min-height' => 45, :'min-width' => 50 }
       .handle Nav

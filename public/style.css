@@ -121,6 +121,8 @@ table {
     background: #003090; }
   #button-bar button:not(.active):focus {
     background: #002050; }
+  #button-bar .spacer {
+    height: 15px; }
 
 #sectioning {
   display: block;
