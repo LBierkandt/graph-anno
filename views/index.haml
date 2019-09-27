@@ -49,7 +49,8 @@
       %button{data: {box: 'help'}, title: 'F1'} Help
       %button{data: {box: 'filter'}, title: 'F6'} Filter
       %button{data: {box: 'search'}, title: 'F7'} Search
-      %button{data: {box: 'log'}, title: 'F8'} Log
+      - if !CORPUS
+        %button{data: {box: 'log'}, title: 'F8'} Log
       %button{data: {box: 'sectioning'}, title: 'F9'} Nav
       %button{data: {box: 'independent'}, title: 'F10'} i nodes
       %button{data: {box: 'media'}, title: 'ctrl+F10'} Media
