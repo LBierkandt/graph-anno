@@ -33,6 +33,12 @@ window.onload = function() {
 		Autocomplete.disable();
 	})
 
+	// nav buttons
+	$('#first_sentence').click(function(){Sectioning.navigateSentences('first');});
+	$('#prev_sentence').click(function(){Sectioning.navigateSentences('prev');});
+	$('#next_sentence').click(function(){Sectioning.navigateSentences('next');});
+	$('#last_sentence').click(function(){Sectioning.navigateSentences('last');});
+
 	// zoom buttons
 	$('#fit').click(function(){GraphDisplay.fitGraph()});
 	$('#smaller').click(function(){GraphDisplay.scaleGraph('-')});

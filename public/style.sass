@@ -100,6 +100,14 @@ table
       font-weight: bold
   #documentation
     float: right
+  #nav-buttons
+    position: relative
+    left: 50%
+    transform: translateX(-50%)
+    button
+      width: 3em
+      &:focus
+        background: $theme-color
 
 #autocomplete
   display: none

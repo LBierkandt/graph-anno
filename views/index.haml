@@ -33,10 +33,15 @@
             %select{ :name => "layer", :id => "layer" }
               = haml :layer_options, :locals => {:controller => controller}
             %input{ :type => "submit", :value => "Send" }
-        - if !CORPUS
           %div
             #active_file= "file: #{controller.graph.path}"
             #current_annotator= if controller.graph.current_annotator then 'annotator: ' + controller.graph.current_annotator.name else 'annotator:' end
+        - else
+          #nav-buttons
+            %button#first_sentence{:title => 'first sentence (alt+pos1)'} |<
+            %button#prev_sentence{:title => 'previous sentence (alt+←)'} <
+            %button#next_sentence{:title => 'next sentence (alt+→)'} >
+            %button#last_sentence{:title => 'last sentence (alt+end)'} >|
         #documentation
           %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
 

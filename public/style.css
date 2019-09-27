@@ -93,6 +93,14 @@ table {
       font-weight: bold; }
   #cmddiv #documentation {
     float: right; }
+  #cmddiv #nav-buttons {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%); }
+    #cmddiv #nav-buttons button {
+      width: 3em; }
+      #cmddiv #nav-buttons button:focus {
+        background: #002050; }
 
 #autocomplete {
   display: none;
