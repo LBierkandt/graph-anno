@@ -29,7 +29,7 @@ class GraphView
 		@edges = []
 		@i_nodes = []
 		@filter = {:mode => 'unfilter'}
-		@show_refs = true
+		@show_refs = !CORPUS
 	end
 
 	def generate
