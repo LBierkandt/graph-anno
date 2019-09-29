@@ -162,7 +162,7 @@ class Attributes
 	end
 
 	def layers
-		@attr.keys.map{|l| @host.graph.conf.layer_by_shortcut[l]}
+		@attr.except('').keys.map{|l| @host.graph.conf.layer_by_shortcut[l]}
 	end
 
 	def to_h

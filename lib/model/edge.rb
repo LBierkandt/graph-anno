@@ -64,7 +64,6 @@ class Edge < NodeOrEdge
 			:id     => @id,
 			:type   => @type,
 			:custom => @custom,
-			:layers => @layers.empty? ? nil : @layers,
 		}.merge(@attr.to_h).compact
 	end
 

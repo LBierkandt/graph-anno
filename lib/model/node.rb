@@ -43,7 +43,6 @@ class Node < NodeOrEdge
 			:start  => @start,
 			:end    => @end,
 			:custom => @custom,
-			:layers => @layers.empty? ? nil : @layers,
 		}.merge(@attr.to_h).compact
 	end
 

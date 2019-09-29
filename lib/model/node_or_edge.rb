@@ -19,7 +19,7 @@
 
 class NodeOrEdge
 	attr_reader :graph
-	attr_accessor :attr, :type, :layers
+	attr_accessor :attr, :type
 
 	# common tasks for element initialization
 	def initialize(h)
@@ -28,7 +28,6 @@ class NodeOrEdge
 		@type = h[:type]
 		@custom = h[:custom]
 		@attr = Attributes.new(h.merge(:host => self))
-		set_layer(@attr.layers)
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -81,7 +80,7 @@ class NodeOrEdge
 		@attr.annotate_with(effective_annotations).remove_empty!
 	end
 
-	# set self's layer array
+	# set self's layers
 	# @param layer [AnnoLayer or Array] the new layer or layer combination, or an Array of layers or layer shortcuts
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def set_layer(layer, log_step = nil)
@@ -94,8 +93,13 @@ class NodeOrEdge
 			[]
 		end.compact
 		log_step.add_change(:action => :update, :element => self, :layers => layers_array, :attr => {}) if log_step
-		@layers = layers_array
-		@attr.keep_layers(@layers) if @attr
+		@attr.keep_layers(layers_array) if @attr
+	end
+
+	# returns an array of AnnoLayers
+	def layers
+		return [] unless @attr
+		@attr.layers
 	end
 
 	# returns a label for display of element
@@ -152,7 +156,7 @@ class NodeOrEdge
 			end
 			return false
 		when 'layer'
-			return bedingung[:layers] - @layers == []
+			return bedingung[:layers] - layers == []
 		when 'not'
 			return (not self.fulfil?(bedingung[:arg]))
 		when 'and'
