@@ -27,8 +27,8 @@ class NodeOrEdge
 		@id = h[:id]
 		@type = h[:type]
 		@custom = h[:custom]
-		set_layer(h[:layers])
 		@attr = Attributes.new(h.merge(:host => self))
+		set_layer(@attr.layers)
 	end
 
 	# provides the to_json method needed by the JSON gem
@@ -82,7 +82,7 @@ class NodeOrEdge
 	end
 
 	# set self's layer array
-	# @param attributes [AnnoLayer] the new layer or layer combination
+	# @param layer [AnnoLayer or Array] the new layer or layer combination, or an Array of layers or layer shortcuts
 	# @param log_step [Step] optionally a log step to which the changes will be logged
 	def set_layer(layer, log_step = nil)
 		layers_array = case layer
@@ -92,7 +92,7 @@ class NodeOrEdge
 			layer.map{|l| l.is_a?(AnnoLayer) ? l : @graph.conf.layer_by_shortcut[l]}
 		else
 			[]
-		end
+		end.compact
 		log_step.add_change(:action => :update, :element => self, :layers => layers_array, :attr => {}) if log_step
 		@layers = layers_array
 		@attr.keep_layers(@layers) if @attr
