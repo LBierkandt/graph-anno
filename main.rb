@@ -28,7 +28,7 @@ require './lib/extensions.rb'
 require './lib/model.rb'
 require './lib/controller.rb'
 
-CORPUS = 'asdf/'
+CORPUS = File.exist?('conf/corpus.txt') ? File.read('conf/corpus.txt').strip : nil
 
 controller = GraphController.new
 
