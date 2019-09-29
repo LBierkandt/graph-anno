@@ -20,7 +20,7 @@
 require 'pathname.rb'
 
 module GraphPersistence
-	GRAPH_FORMAT_VERSION = 11
+	GRAPH_FORMAT_VERSION = 12
 	attr_reader :path
 
 	# @return [Hash] the graph in hash format with version number and settings: {:nodes => [...], :edges => [...], :version => String, ...}
@@ -373,6 +373,8 @@ module GraphPersistence
 			layer_definitions['combinations'].each do |c|
 				c['layers'] = c['attr'].map{|a| layer_map[a]}
 			end
+		end
+		if version < 12
 			klass = nil
 			([:node] + data['nodes'].to_a + [:edge] + data['edges'].to_a).each do |el|
 				klass = el and next if el.is_a?(Symbol)
@@ -417,6 +419,37 @@ module GraphPersistence
 				if version < 10 && el['attr']
 					layers = layer_map.map{|attr, shortcut| ('t' == el['attr'].delete(attr)) ? shortcut : nil}.compact
 					el['layers'] = layers unless layers.empty?
+				end
+				if version < 12
+					layers = el.delete('layers')
+					attr = el['attr'].to_h
+					el['attr'] = {}
+					(layers || ['']).each do |layer|
+						el['attr'][layer] = {} # make sure the layer is represented
+						attr.each do |key, val|
+							case val
+							when String
+								el['attr'][layer][key] = val
+							when Hash
+								el['attr'][layer][key] = val[layer]
+							end
+						end
+					end
+					if el['private_attr']
+						el['private_attr'].each do |annotator_id, annotations|
+							el['private_attr'][annotator_id] = Hash.new{|h, k| h[k] = {}}
+							(layers || ['']).each do |layer|
+								annotations.each do |key, val|
+									case val
+									when String
+										el['private_attr'][annotator_id][layer][key] = val
+									when Hash
+										el['private_attr'][annotator_id][layer][key] = val[layer]
+									end
+								end
+							end
+						end
+					end
 				end
 			end
 		end
