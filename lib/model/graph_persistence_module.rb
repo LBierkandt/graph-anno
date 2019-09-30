@@ -431,7 +431,7 @@ module GraphPersistence
 							when String
 								el['attr'][layer][key] = val
 							when Hash
-								el['attr'][layer][key] = val[layer]
+								el['attr'][layer][key] = val[layer] if val[layer]
 							end
 						end
 					end
@@ -444,7 +444,7 @@ module GraphPersistence
 									when String
 										el['private_attr'][annotator_id][layer][key] = val
 									when Hash
-										el['private_attr'][annotator_id][layer][key] = val[layer]
+										el['private_attr'][annotator_id][layer][key] = val[layer] if val[layer]
 									end
 								end
 							end
