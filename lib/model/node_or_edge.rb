@@ -92,8 +92,8 @@ class NodeOrEdge
 		else
 			[]
 		end.compact
-		log_step.add_change(:action => :update, :element => self, :layers => layers_array, :attr => {}) if log_step
-		@attr.keep_layers(layers_array) if @attr
+		log_step.add_change(:action => :update, :element => self, :layers => layers_array) if log_step
+		@attr.set_layers(layers_array) if @attr
 	end
 
 	# returns an array of AnnoLayers

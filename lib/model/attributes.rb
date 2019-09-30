@@ -125,10 +125,13 @@ class Attributes
 		self
 	end
 
-	def keep_layers(layers)
+	def set_layers(layers)
 		return self unless layers
 		([@attr] + @private_attr.values).each do |attr|
 			attr.keep_if{|layer, key_value_map| (layers.map{|l| l.shortcut} + ['']).include?(layer)}
+		end
+		layers.map{|l| l.shortcut}.each do |layer|
+			@attr[layer] = {} unless @attr[layer]
 		end
 		self
 	end
@@ -167,8 +170,8 @@ class Attributes
 
 	def to_h
 		h = {}
-		h[:attr] = @attr unless @attr.empty?
-		h[:private_attr] = Hash[@private_attr.map {|annotator, attr| [annotator.id, attr] }] unless @private_attr.empty?
+		h[:attr] = @attr.clone unless @attr.empty?
+		h[:private_attr] = Hash[@private_attr.map {|annotator, attr| [annotator.id, attr.clone] }] unless @private_attr.empty?
 		h
 	end
 
