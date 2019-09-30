@@ -132,7 +132,7 @@ module GraphPersistence
 			edges_per_file[file] = nodes_per_file[file].map{|n| n.in + n.out}.flatten.uniq - @multifile[:order_edges]
 			write_part_file(file, nodes_per_file[file], edges_per_file[file])
 		end
-		master_nodes = @node_index['sp']
+		master_nodes = @node_index['sp'].values + @node_index['a'].values.select{|n| !n.sentence}
 		master_edges = @edges.values - edges_per_file.values.flatten - @multifile[:order_edges]
 		write_master_file(master_nodes, master_edges, options[:additional].to_h, path != @path)
 		write_log_file(options[:log]) if options[:log]
