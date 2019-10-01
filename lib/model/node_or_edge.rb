@@ -28,6 +28,7 @@ class NodeOrEdge
 		@type = h[:type]
 		@custom = h[:custom]
 		@attr = Attributes.new(h.merge(:host => self))
+		set_layer(h[:layers]) if h[:layers]
 	end
 
 	# provides the to_json method needed by the JSON gem
