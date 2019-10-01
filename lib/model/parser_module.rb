@@ -276,7 +276,7 @@ module Parser
 
 	def parse_attribute(obj)
 		return parse_attribute(lex_ql(obj)) if obj.is_a?(String)
-		layer, key, i = if obj[1][:cl] == :key
+		layer, key, i = if obj[1] && obj[1][:cl] == :key
 			[obj[0][:str], obj[1][:str], 2]
 		else
 			[nil, obj[0][:str], 1]

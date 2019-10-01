@@ -36,13 +36,13 @@
           %a{ :href => "/documentation/GraphAnno-Documentation_en.pdf"} Documentation
 
     #button-bar
-      %button{data: {box: 'help'}} Help
-      %button{data: {box: 'filter'}} Filter
-      %button{data: {box: 'search'}} Search
-      %button{data: {box: 'log'}} Log
-      %button{data: {box: 'sectioning'}} Nav
-      %button{data: {box: 'independent'}} i nodes
-      %button{data: {box: 'media'}} Media
+      %button{data: {box: 'help'}, title: 'F1'} Help
+      %button{data: {box: 'filter'}, title: 'F6'} Filter
+      %button{data: {box: 'search'}, title: 'F7'} Search
+      %button{data: {box: 'log'}, title: 'F8'} Log
+      %button{data: {box: 'sectioning'}, title: 'F9'} Nav
+      %button{data: {box: 'independent'}, title: 'F10'} i nodes
+      %button{data: {box: 'media'}, title: 'ctrl+F10'} Media
 
     #sectioning.box{ :'min-height' => 45, :'min-width' => 50 }
       .handle Nav
