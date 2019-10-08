@@ -241,7 +241,7 @@ module Parser
 				if keywords.include?(p[:op][:operator])
 					terms << p[:op]
 				elsif @conf.layers_and_combinations.map(&:shortcut).include?(tok[:str])
-					terms << {:operator => 'layer', :layers => @conf.layer_by_shortcut[tok[:str]].layers}
+					terms << {:operator => 'layer', :layers => @conf.layer_by_shortcut[tok[:str]].layers.map(&:shortcut)}
 				elsif @makros.map{|m| m[:name]}.include?(tok[:str])
 					raise 'No makros as context allowed' if for_context
 					m = parse_attributes(@makros.select{|m| m[:name] == tok[:str]}[-1][:arg])

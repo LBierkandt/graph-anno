@@ -56,7 +56,7 @@ class Tagset < Array
 			select do |rule|
 				elements.all? do |el|
 					el.fulfil?(rule.parsed_context) &&
-						(rule.layer_shortcuts ? (rule.layer_shortcuts - el.layers.map{|l| l.shortcut}).empty? : true)
+						(rule.layer_shortcuts ? (rule.layer_shortcuts - el.layers).empty? : true)
 				end
 			end
 		else

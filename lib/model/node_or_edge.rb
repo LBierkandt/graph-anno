@@ -87,9 +87,9 @@ class NodeOrEdge
 	def set_layer(layer, log_step = nil)
 		layers_array = case layer
 		when AnnoLayer
-			layer.layers
+			layer.layers.map(&:shortcut)
 		when Array
-			layer.map{|l| l.is_a?(AnnoLayer) ? l : @graph.conf.layer_by_shortcut[l]}
+			layer.map{|l| l.is_a?(AnnoLayer) ? l.shortcut : l}
 		else
 			[]
 		end.compact

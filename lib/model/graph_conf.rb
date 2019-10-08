@@ -110,7 +110,7 @@ class GraphConf
 	# @return [AnnoLayer]
 	def display_layer(layer_list)
 		layers_and_combinations.sort{|a, b| b.layers.length <=> a.layers.length}.each do |l|
-			return l if layer_list && l.layers - layer_list == []
+			return l if layer_list && l.layers.map(&:shortcut) - layer_list == []
 		end
 		return nil
 	end

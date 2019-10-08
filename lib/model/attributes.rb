@@ -60,7 +60,7 @@ class Attributes
 		result = Hash.new{|h, k| h[k] = Hash.new{|h, k| h[k] = []}}
 		output.each do |layer, key_value_map|
 			key_value_map.each do |key, value|
-				result[key][value] << @host.graph.conf.layer_by_shortcut[layer]
+				result[key][value] << layer
 				result[key][value].uniq!
 			end
 		end
@@ -128,10 +128,10 @@ class Attributes
 	def set_layers(layers)
 		return self unless layers
 		([@attr] + @private_attr.values).each do |attr|
-			attr.keep_if{|layer, key_value_map| (layers.map{|l| l.shortcut} + ['']).include?(layer)}
+			attr.keep_if{|layer, key_value_map| (layers + ['']).include?(layer)}
 		end
-		layers.map{|l| l.shortcut}.each do |layer|
-			@attr[layer] = {} unless @attr[layer]
+		layers.each do |layer|
+			@attr[layer] ||= {}
 		end
 		self
 	end
@@ -165,7 +165,7 @@ class Attributes
 	end
 
 	def layers
-		@attr.except('').keys.map{|l| @host.graph.conf.layer_by_shortcut[l]}
+		@attr.except('').keys
 	end
 
 	def to_h
@@ -203,7 +203,7 @@ class Attributes
 				if @host.layers.empty?
 					raw_hash[''][a[:key]] = a[:value]
 				else
-					@host.layers.map(&:shortcut).each do |shortcut|
+					@host.layers.each do |shortcut|
 						raw_hash[shortcut][a[:key]] = a[:value]
 					end
 				end

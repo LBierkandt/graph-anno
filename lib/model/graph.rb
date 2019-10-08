@@ -748,12 +748,12 @@ class Graph
 		allowed = annotations.select do |a|
 			!a[:layer] ||
 				@conf.layer_by_shortcut[a[:layer]] &&
-				(@conf.expand_shortcut(a[:layer]) - element.layers.map(&:shortcut)).empty?
+				(@conf.expand_shortcut(a[:layer]) - element.layers).empty?
 		end
 		if element.type == 'a' || element.type == 't'
 			# expand layerless rules
 			allowed.map! do |a|
-				(a[:layer] || element.layers.empty?) ? a : element.layers.map{|l| a.merge(:layer => l.shortcut)}
+				(a[:layer] || element.layers.empty?) ? a : element.layers.map{|l| a.merge(:layer => l)}
 			end.flatten!
 			# check against tagset
 			allowed = @tagset.allowed_annotations(allowed, element)
