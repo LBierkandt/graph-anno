@@ -70,7 +70,7 @@ class Attributes
 	def [](layer_or_key, key = nil)
 		layer, key = key ? [layer_or_key, key] : [nil, layer_or_key]
 		if layer
-			output[@host.graph.conf.layer_by_shortcut[layer]].to_h[key]
+			output[layer].to_h[key]
 		else
 			if value_layers_map = grouped_output[key]
 				value_layers_map.find{|value, layers| host_layers?(layers)}.to_a.first

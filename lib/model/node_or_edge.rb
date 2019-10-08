@@ -139,7 +139,7 @@ class NodeOrEdge
 		satzzeichen = '.,;:?!"'
 		case bedingung[:operator]
 		when 'attr'
-			element_value = (inherited && is_a?(Node) ? inherited_attributes : @attr)[bedingung[:key], bedingung[:layer]]
+			element_value = (inherited && is_a?(Node) ? inherited_attributes : @attr)[bedingung[:layer], bedingung[:key]]
 			value = bedingung[:value]
 			return true unless element_value || value
 			return false unless element_value && value
