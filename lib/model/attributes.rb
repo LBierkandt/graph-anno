@@ -169,13 +169,22 @@ class Attributes
 	end
 
 	def to_h
-		h = {}
-		h[:attr] = @attr.clone unless @attr.empty?
-		h[:private_attr] = Hash[@private_attr.map {|annotator, attr| [annotator.id, attr.clone] }] unless @private_attr.empty?
-		h
+		{
+			:attr => compress(@attr, preserve_layers: true),
+			:private_attr => compress(Hash[@private_attr.map {|annotator, attr| [annotator.id, compress(attr)] }]),
+		}.compact
 	end
 
 	private
+
+	def compress(attr, options = {})
+		compressed = if options[:preserve_layers]
+			attr.reject{|k, v| k == '' && v.to_h.empty?}
+		else
+			attr.reject{|k, v| v.to_h.empty?}
+		end
+		compressed.empty? ? nil : compressed
+	end
 
 	def remove_empty_values(attr)
 		attr.each do |layer, key_value_map|
