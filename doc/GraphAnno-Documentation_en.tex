@@ -290,11 +290,13 @@ The other attributes they (may) contain are dealt with in Section \ref{corpus-fi
 
 Each node has the attributes \code{id} with a unique identifier (integer) and \code{type} for representing the type of the node (string).
 For the strings representing the different node and edge types see Table \ref{types-strings}.
-Optionally, a node bears the attribute \code{attr} with its annotations (object), that are arbitrary keys with string values.
-Annotation nodes also optionally bear the attribute \code{layers} (array), a list of strings that are taken from the layer shortcuts as defined in the \code{conf} attribute of the graph.
+Additionally, a node bears the attribute \code{attr}, an object that holds information on the node’s layers and annotations.
+The keys of the \code{attr} object represent the node’s layers (where the keys have to be taken from the layer shortcuts as defined in the \code{conf} attribute of the graph).
+The values are objects that represent the annotations on the respective layer.
+Nodes that don’t belong to any layer (like token nodes, e.g.) bear their annotations under the key \code{""}.
 
 Edges have the same attributes as nodes plus the additional attributes \code{start} and \code{end} with the IDs of the edges’s start and end node, respectively.
-Only annotation edges, however, may bear \code{attr} and \code{layers}.
+Only annotation edges, however, may bear \code{attr}.
 
 The structure of nodes and edges in JSON format can be seen in Figure \ref{json-node} and \ref{json-edge}, respectively.
 
@@ -325,8 +327,13 @@ The structure of nodes and edges in JSON format can be seen in Figure \ref{json-
 		{
 		  "id": <integer>,
 		  "type": "t" | "a" | "s" | "p",
-		  "attr": <object>,
-		  "layers": <array>
+		  "attr": {
+		    <layer shortcut>: {
+		      <annotation key (string)>: <annotation value (string)>,
+		      ...
+		    },
+		    ...
+		  }
 		}
 	\end{lstlisting}
 	\caption{A GraphAnno node JSON object}
@@ -339,8 +346,13 @@ The structure of nodes and edges in JSON format can be seen in Figure \ref{json-
 		  "start":<integer>,
 		  "end":<integer>,
 		  "type": "a" | "s" | "p" | "o",
-		  "attr":<object>,
-		  "layers": <array>
+		  "attr": {
+		    <layer shortcut>: {
+		      <annotation key (string)>: <annotation value (string)>,
+		      ...
+		    },
+		    ...
+		  }
 		}
 	\end{lstlisting}
 	\caption{A GraphAnno edge JSON object}
@@ -1517,7 +1529,7 @@ The clause is composed of the keyword \code{cond} and the condition in Ruby code
 The nodes and node sets are referenced with the IDs used in the other clauses of the query.
 When using IDs, note that the nodes and edges found by \code{node} and \code{edge} are single elements, whereas those found by \code{nodes}, \code{text} and \code{link} are arrays of elements.
 
-In the condition, you may access the attributes of elements using square brackets like this: \code{['key', 'layer\_shortcut']} (where \code{layer\_shortcut} mustn’t be a layer combination) or this: \code{['key']}.
+In the condition, you may access the attributes of elements using square brackets like this: \code{['layer\_shortcut', 'key']} (where \code{layer\_shortcut} mustn’t be a layer combination) or this: \code{['key']}.
 The first variant gives you the value for the given key on the given layer; the second variant gives you the value for the given key if it has the same value on all layers or \code{nil} if it hasn’t.
 For the attributes \code{token} and \code{cat} you can use as a shortcut the accessor methods \code{.token} and \code{.cat}.
 The layer(s) of an element are accessed via the method \code{.layers}; this method returns an array of the shortcuts of the layers the element belongs to.
