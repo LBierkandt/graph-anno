@@ -4,10 +4,10 @@
   %tr
     %td.context
       %input{:name => "contexts[#{i}]", :type => 'text', :value => defined?(context) ? context : ''}
-    %td.key
-      %input{:name => "keys[#{i}]", :type => 'text', :value => defined?(key) ? key : ''}
     %td.layer
       %input{:name => "layer[#{i}]", :type => 'text', :value => defined?(layer) ? layer : ''}
+    %td.key
+      %input{:name => "keys[#{i}]", :type => 'text', :value => defined?(key) ? key : ''}
     %td.expand
       %input{:name => "values[#{i}]", :type => 'text', :value => defined?(value) ? value : ''}
     %td

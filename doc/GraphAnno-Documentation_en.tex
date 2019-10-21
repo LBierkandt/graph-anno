@@ -293,7 +293,7 @@ For the strings representing the different node and edge types see Table \ref{ty
 Additionally, a node bears the attribute \code{attr}, an object that holds information on the node’s layers and annotations.
 The keys of the \code{attr} object represent the node’s layers (where the keys have to be taken from the layer shortcuts as defined in the \code{conf} attribute of the graph).
 The values are objects that represent the annotations on the respective layer.
-Nodes that don’t belong to any layer (like token nodes, e.g.) bear their annotations under the key \code{""}.
+Nodes that don’t belong to any layer (like token nodes, e.g.) bear their annotations under the key \code{\quo\quo}.
 
 Edges have the same attributes as nodes plus the additional attributes \code{start} and \code{end} with the IDs of the edges’s start and end node, respectively.
 Only annotation edges, however, may bear \code{attr}.
@@ -656,20 +656,20 @@ But if you have defined at least one tagset rule, only those annotations are all
 Already existing annotations, however, are not affected by changing the rules.
 As a special case, the \code{token} annotation on token nodes – i.e., changing the token text – is always possible.
 
-Tagset rules consist of four components: context, key, layer and values.
+Tagset rules consist of four components: context, layer, key and values.
 
 The \textit{context} restricts the scope of a rule; i.e., the rule only applies to those elements that match its context definition.
 The context definition is basically an \textit{element description} of the query language (cf. Section \ref{elementbeschreibung}), but only a subset may be used for context definitions:
 You may only use the keywords \code{token}, \code{node}, \code{edge}, \code{i} and the layer shortcuts defined in the layer configuration (cf. Section \ref{ebenenkonfiguration}), and combine them with logical operators (\code{!}, \code{\&}, \code{|} and parentheses).
 If you leave the context input field empty, the rule applies to all elements.
 
-The \textit{key} is the annotation key that will be permitted by the rule.
-Write the key without quotes, even if it contains special characters.
-If you leave this input field empty, all annotations are allowed for the given context.
-
 In the \textit{layer} field you may add the shortcut for a layer or layer combination.
 This will restrict the annotations that are permitted by the rule to the given layer(s).
 To reduce confusion: layers you mention in the context field refer to the element’s layers, the layer(s) in the layer field refer to the layer(s) of the annotation. 
+
+The \textit{key} is the annotation key that will be permitted by the rule.
+Write the key without quotes, even if it contains special characters.
+If you leave this input field empty, all annotations are allowed for the given context.
 
 The \textit{values} restrict the permitted annotation values for the given key.
 Enter the values separated by spaces.
