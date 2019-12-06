@@ -236,8 +236,9 @@ class NodeOrEdge
 	# helper for #element_label
 	def map_layers(value_layer_map, options = {})
 		value_layer_map.map do |value, layers|
-			label = @graph.html_encoder.encode(options[:key] ? "#{options[:key]}: #{value}" : value, :hexadecimal)
-			label += ' ' * (label.length / 4) if options[:mode] != :list # compensate for poor centering of html labels
+			raw_label = options[:key] ? "#{options[:key]}: #{value}" : value
+			label = @graph.html_encoder.encode(raw_label, :hexadecimal)
+			label += ' ' * (raw_label.length / 4) if options[:mode] != :list # compensate for poor centering of html labels
 			if l = @graph.conf.display_layer(layers)
 				if options[:mode] == :list
 					label = "<span style=\"color: #{hidden?(options[:filter]) ? @graph.conf.filtered_color : l.color}\">#{label}</span>"
